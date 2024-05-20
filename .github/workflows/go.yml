@@ -16,6 +16,13 @@ jobs:
           fetch-depth: 0
       - name: Set up Go
         uses: actions/setup-go@v4
+      - name: "Git Version"
+        id: generate-version
+        uses: codacy/git-version@2.8.0
+      - name: "Tag version"
+        run: |
+          git tag ${{ steps.generate-version.outputs.version }}
+          git push --tags "https://codacy:${{ secrets.GITHUB_TOKEN }}@github.com/codacy/codacy-cli-v2"
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
         with:
