@@ -1,0 +1,4 @@
+runtimes:
+    - node@22.1.0
+tools:
+    - eslint@9.3.0
