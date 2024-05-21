@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
 )
@@ -32,6 +33,10 @@ func (r *Runtime) AddTool(tool *ConfigTool) {
 	r.tools = append(r.tools, *tool)
 }
 
+func (r *Runtime) FullName() string {
+	return fmt.Sprintf("%s-%s", r.name, r.version)
+}
+
 func parseConfigFile(configContents []byte) (map[string]*Runtime, error) {
 	configFile := configFile{}
 	if err := yaml.Unmarshal(configContents, &configFile); err != nil {
@@ -42,6 +47,7 @@ func parseConfigFile(configContents []byte) (map[string]*Runtime, error) {
 	for _, rt := range configFile.RUNTIMES {
 		ct, err := parseConfigTool(rt)
 		if err != nil {
+			return nil, err
 		}
 		runtimes[ct.name] = &Runtime{
 			name: ct.name,
@@ -52,6 +58,7 @@ func parseConfigFile(configContents []byte) (map[string]*Runtime, error) {
 	for _, tl := range configFile.TOOLS {
 		ct, err := parseConfigTool(tl)
 		if err != nil {
+			return nil, err
 		}
 		switch ct.name {
 		case "eslint":
