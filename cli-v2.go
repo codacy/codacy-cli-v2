@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 
@@ -110,15 +111,13 @@ func extract(t *os.File) {
 
 		fmt.Printf("Contents of %s:\n", f.NameInArchive)
 
-		// fmt.Printf("isDir: %s\n", f.IsDir())
-
-		f.Mode()
+		path := ".codacy/runtimes/" + f.NameInArchive
 
 		switch f.IsDir() {
 		case true:
 			// create a directory
 			fmt.Println("creating:   " + f.NameInArchive)
-			err := os.MkdirAll(f.NameInArchive, 0777)
+			err := os.MkdirAll(path, 0777)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -126,7 +125,8 @@ func extract(t *os.File) {
 		case false:
 
 			if f.LinkTarget != "" {
-				err := os.Symlink(f.LinkTarget, f.NameInArchive)
+				os.Remove(path)
+				err := os.Symlink(f.LinkTarget, path)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -137,7 +137,7 @@ func extract(t *os.File) {
 			// write a file
 			fmt.Println("extracting: " + f.NameInArchive)
 			fmt.Println("targe link: " + f.LinkTarget)
-			w, err := os.OpenFile(f.NameInArchive, os.O_RDWR|os.O_CREATE|os.O_TRUNC, f.Mode())
+			w, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, f.Mode())
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -162,6 +162,52 @@ func extract(t *os.File) {
 
 }
 
+func installESLint(npmExecutablePath string, ESLintversion string) {
+
+	fmt.Println("Installing ESLint")
+
+	cmd := exec.Command(npmExecutablePath, "install", "--prefix", "./.codacy/tools/"+ESLintversion, ESLintversion)
+	stdout, err := cmd.Output()
+
+	// Print the output
+	fmt.Println(string(stdout))
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	workingDirectory, _ := os.Getwd()
+
+	nodeVersion := "22.2.0-darwin-x64"
+
+	// TODO clean eslint version
+
+	scriptContent := fmt.Sprintf(`
+#!/bin/sh
+
+export PATH="%s/.codacy/tools/%s/node_modules/.bin:%s/node-v%s/bin:${PATH}"
+export HOME="${HOME:-}"
+export NODE_PATH="%s/.codacy/tools/%s/node_modules"
+
+
+exec eslint "$@"
+    
+    `, workingDirectory, ESLintversion, workingDirectory, nodeVersion, workingDirectory, ESLintversion)
+
+	w, err := os.OpenFile(".codacy/tools/"+ESLintversion+"/eslint.sh", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0770)
+	defer w.Close()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = io.WriteString(w, scriptContent)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
 	content, err := os.ReadFile(".codacy/codacy.yaml")
 	if err != nil {
@@ -174,14 +220,15 @@ func main() {
 	}
 
 	fmt.Println(config)
-	downloadURL := getNodeDownloadURL("v22.2.0")
-	nodeTar, _ := downloadFile(downloadURL, ".codacy")
-	fmt.Println(nodeTar)
+	downloadNodeURL := getNodeDownloadURL("v22.2.0")
+	nodeTar, _ := downloadFile(downloadNodeURL, ".codacy")
 
 	t, _ := os.Open(nodeTar)
 	defer t.Close()
 
 	extract(t)
+
+	installESLint(".codacy/runtimes/node-v22.2.0-darwin-x64/bin/npm", "eslint@9.3.0")
 
 	cmd.Execute()
 }
