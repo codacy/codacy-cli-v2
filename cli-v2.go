@@ -205,27 +205,9 @@ func fetchTools(runtime *config.Runtime, runtimesDirectory string, toolsDirector
 	}
 }
 
-func main() {
-	homePath, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	codacyDirectory := filepath.Join(homePath, ".cache", "codacy")
-	runtimesDirectory := filepath.Join(codacyDirectory, "runtimes")
-	toolsDirectory := filepath.Join(codacyDirectory, "tools")
-	fmt.Println("creating: " + codacyDirectory)
-	if os.MkdirAll(codacyDirectory, 0777) != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("creating: " + runtimesDirectory)
-	if os.MkdirAll(runtimesDirectory, 0777) != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("creating: " + toolsDirectory)
-	if os.MkdirAll(toolsDirectory, 0777) != nil {
-		log.Fatal(err)
-	}
+func main() {
+	config.Init()
 
 	// TODO can use a variable to stored the "local" codacy dir
 	runtimes, configErr := config.ReadConfigFile(filepath.Join(".codacy", "codacy.yaml"))
@@ -234,9 +216,9 @@ func main() {
 	}
 
 	// install runtimes
-	fetchRuntimes(runtimes, runtimesDirectory)
+	fetchRuntimes(runtimes, config.Config.RuntimesDirectory())
 	for _, r := range runtimes {
-		fetchTools(r, runtimesDirectory, toolsDirectory)
+		fetchTools(r, config.Config.RuntimesDirectory(), config.Config.ToolsDirectory())
 	}
 
 	cmd.Execute()
