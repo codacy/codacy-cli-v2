@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 )
 
-func RunEslintToFile(repositoryToAnalyseDirectory string, eslintInstallationDirectory string, nodeBinary string, outputFile string) error {
-	_, err := runEslint(repositoryToAnalyseDirectory, eslintInstallationDirectory, nodeBinary, outputFile)
+func RunEslintToFile(repositoryToAnalyseDirectory string, eslintInstallationDirectory string, nodeBinary string, outputFolder string) error {
+	_, err := runEslint(repositoryToAnalyseDirectory, eslintInstallationDirectory, nodeBinary, outputFolder)
 	return err
 }
 
@@ -25,7 +25,7 @@ func runEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 	cmd := exec.Command(nodeBinary, eslintJsPath, "-f", "@microsoft/eslint-formatter-sarif")
 
 	if outputFolder != "" {
-		outputFile := filepath.Join(outputFolder, "eslint.json")
+		outputFile := filepath.Join(outputFolder, "eslint.sarif")
 		cmd.Args = append(cmd.Args, "-o", outputFile)
 	}
 

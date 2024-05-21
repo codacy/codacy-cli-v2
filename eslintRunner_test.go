@@ -71,7 +71,7 @@ func TestRunEslintToFile(t *testing.T) {
 		log.Fatal(err.Error())
 	}
 
-	eslintOutputPath := filepath.Join(tempDir, "eslint.json")
+	eslintOutputPath := filepath.Join(tempDir, "eslint.sarif")
 
 	eslintOutputBytes, err := os.ReadFile(eslintOutputPath)
 	if err != nil {
