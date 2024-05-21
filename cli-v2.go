@@ -2,6 +2,7 @@ package main
 
 import (
 	"codacy/cli-v2/cmd"
+	"codacy/cli-v2/config"
 	"context"
 	"fmt"
 	"io"
@@ -13,7 +14,6 @@ import (
 	"runtime"
 
 	"github.com/mholt/archiver/v4"
-	"gopkg.in/yaml.v3"
 )
 
 // https://nodejs.org/dist/v22.2.0/node-v22.2.0-linux-arm64.tar.xz
@@ -181,15 +181,22 @@ func installESLint(npmExecutablePath string, ESLintversion string, codacyPath st
 	}
 }
 
-func main() {
-	content, err := os.ReadFile(".codacy/codacy.yaml")
-	if err != nil {
-		log.Fatal(err)
+func fetchRuntimes(runtimes map[string]*config.Runtime) {
+	for _, runtime := range runtimes {
+		switch runtime.Name() {
+		case "node":
+			fmt.Println("Fetching node...")
+		default:
+			fmt.Println("Unknown runtime:", runtime.Name())
+		}
 	}
+}
 
-	config := Config{}
-	if err := yaml.Unmarshal(content, &config); err != nil {
-		log.Fatalf("error: %v", err)
+func main() {
+	_, configErr := config.ReadConfigFile(".codacy/codacy.yaml")
+	if configErr != nil {
+		log.Fatal(configErr)
+		return
 	}
 
 	homePath, err := os.UserHomeDir()
@@ -219,9 +226,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(codacyDirectory)
-
-	fmt.Println(config)
 	downloadNodeURL := getNodeDownloadURL("v22.2.0")
 
 	nodeTar, err := downloadFile(downloadNodeURL, codacyDirectory)
