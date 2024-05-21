@@ -1,13 +1,24 @@
 on:
   pull_request:
   push:
-    branches: [ main ]
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
-  goreleaser:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+      - name: "Run tests"
+        run: |
+          go test
+
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,7 +39,7 @@ jobs:
         with:
           distribution: goreleaser
           # 'latest', 'nightly', or a semver
-          version: 'latest'
+          version: "latest"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
