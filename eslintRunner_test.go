@@ -35,7 +35,7 @@ func TestRunEslint(t *testing.T) {
 		log.Fatal(err.Error())
 	}
 
-	filePrefix := "file://" + currentDirectory
+	filePrefix := "file://" + currentDirectory + "/"
 	actualSarif := strings.ReplaceAll(eslintOutput, filePrefix, "")
 
 	expectedSarif := string(expectedSarifBytes)

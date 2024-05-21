@@ -12,7 +12,7 @@ import (
 // * The local installed ESLint should have the @microsoft/eslint-formatter-sarif installed
 func runEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory string, nodeBinary string) (string, error) {
 	eslintInstallationNodeModules := filepath.Join(eslintInstallationDirectory, "node_modules")
-	eslintJsPath := filepath.Join(eslintInstallationNodeModules, "eslint/bin/eslint.js")
+	eslintJsPath := filepath.Join(eslintInstallationNodeModules, ".bin/eslint")
 
 	cmd := exec.Command(nodeBinary, eslintJsPath, "-f", "@microsoft/eslint-formatter-sarif", ".")
 	cmd.Dir = repositoryToAnalyseDirectory
