@@ -2,6 +2,7 @@ package main
 
 import (
 	"codacy/cli-v2/cmd"
+	"codacy/cli-v2/config"
 	"context"
 	"fmt"
 	"io"
@@ -13,14 +14,9 @@ import (
 	"runtime"
 
 	"github.com/mholt/archiver/v4"
-	"gopkg.in/yaml.v3"
 )
 
-// https://nodejs.org/dist/v22.2.0/node-v22.2.0-linux-arm64.tar.xz
-// https://nodejs.org/dist/v22.2.0/node-v22.2.0-darwin-x64.tar.gz
-// https://nodejs.org/dist/v13.14.0/node-v13.14.0-win-x64.zip
-// https://nodejs.org/dist/v22.2.0/node-v22.2.0-linux-armv7l.tar.xz
-func getNodeDownloadURL(version string) string {
+func getNodeFileName(nodeRuntime *config.Runtime) string {
 	// Detect the OS and architecture
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
@@ -40,13 +36,20 @@ func getNodeDownloadURL(version string) string {
 		nodeArch = goarch
 	}
 
+	return fmt.Sprintf("node-v%s-%s-%s", nodeRuntime.Version(), goos, nodeArch)
+}
+
+func getNodeDownloadURL(nodeRuntime *config.Runtime) string {
+	// Detect the OS and architecture
+	goos := runtime.GOOS
+
 	// Construct the Node.js download URL
 	extension := "tar.gz"
 	if goos == "windows" {
 		extension = "zip"
 	}
 
-	downloadURL := fmt.Sprintf("https://nodejs.org/dist/%s/node-%s-%s-%s.%s", version, version, goos, nodeArch, extension)
+	downloadURL := fmt.Sprintf("https://nodejs.org/dist/v%s/%s.%s", nodeRuntime.Version(), getNodeFileName(nodeRuntime), extension)
 	return downloadURL
 }
 
@@ -89,29 +92,14 @@ func downloadFile(url string, destDir string) (string, error) {
 	return destPath, nil
 }
 
-func extract(t *os.File, codacyDirectory string) {
-
+func extract(t *os.File, targetDir string) {
 	format := archiver.CompressedArchive{
 		Compression: archiver.Gz{},
 		Archival:    archiver.Tar{},
 	}
 
-	// format, _, err := archiver.Identify(t.Name(), nil)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// the list of files we want out of the archive; any
-	// directories will include all their contents unless
-	// we return fs.SkipDir from our handler
-	// (leave this nil to walk ALL files from the archive)
-	// fileList := []string{"file1.txt", "subfolder"}
-
 	handler := func(ctx context.Context, f archiver.File) error {
-
-		fmt.Printf("Contents of %s:\n", f.NameInArchive)
-
-		path := filepath.Join(codacyDirectory, "runtimes", f.NameInArchive)
+		path := filepath.Join(targetDir, f.NameInArchive)
 
 		switch f.IsDir() {
 		case true:
@@ -123,20 +111,19 @@ func extract(t *os.File, codacyDirectory string) {
 			}
 
 		case false:
+			log.Print("extracting: " + f.NameInArchive)
 
+			// if is a symlink
 			if f.LinkTarget != "" {
 				os.Remove(path)
 				err := os.Symlink(f.LinkTarget, path)
 				if err != nil {
 					log.Fatal(err)
 				}
-
 				return nil
 			}
 
 			// write a file
-			fmt.Println("extracting: " + f.NameInArchive)
-			fmt.Println("targe link: " + f.LinkTarget)
 			w, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, f.Mode())
 			if err != nil {
 				log.Fatal(err)
@@ -159,14 +146,12 @@ func extract(t *os.File, codacyDirectory string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
 
-func installESLint(npmExecutablePath string, ESLintversion string, codacyPath string) {
+func installESLint(npmExecutablePath string, ESLintversion string, toolsDirectory string) {
+	log.Println("Installing ESLint")
 
-	fmt.Println("Installing ESLint")
-
-	eslintInstallationFolder := filepath.Join(codacyPath, "tools", ESLintversion)
+	eslintInstallationFolder := filepath.Join(toolsDirectory, ESLintversion)
 
 	cmd := exec.Command(npmExecutablePath, "install", "--prefix", eslintInstallationFolder, ESLintversion, "@microsoft/eslint-formatter-sarif")
 	// to use the chdir command we needed to create the folder before, we can change this after
@@ -181,17 +166,46 @@ func installESLint(npmExecutablePath string, ESLintversion string, codacyPath st
 	}
 }
 
+func fetchRuntimes(runtimes map[string]*config.Runtime, runtimesDirectory string) {
+	for _, runtime := range runtimes {
+		switch runtime.Name() {
+		case "node":
+			// TODO should delete downloaded archive
+			// TODO check for deflated archive
+			log.Println("Fetching node...")
+			downloadNodeURL := getNodeDownloadURL(runtime)
+			nodeTar, err := downloadFile(downloadNodeURL, runtimesDirectory)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// deflate node archive
+			t, err := os.Open(nodeTar)
+			defer t.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+			extract(t, runtimesDirectory)
+		default:
+			log.Fatal("Unknown runtime:", runtime.Name())
+		}
+	}
+}
+
+func fetchTools(runtime *config.Runtime, runtimesDirectory string, toolsDirectory string) {
+	for _, tool := range runtime.Tools() {
+		switch tool.Name() {
+		case "eslint":
+			npmPath := filepath.Join(runtimesDirectory, getNodeFileName(runtime),
+				"bin", "npm")
+			installESLint(npmPath, "eslint@" + tool.Version(), toolsDirectory)
+		default:
+			log.Fatal("Unknown tool:", tool.Name())
+		}
+	}
+}
+
 func main() {
-	content, err := os.ReadFile(".codacy/codacy.yaml")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	config := Config{}
-	if err := yaml.Unmarshal(content, &config); err != nil {
-		log.Fatalf("error: %v", err)
-	}
-
 	homePath, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatal(err)
@@ -200,50 +214,30 @@ func main() {
 	codacyDirectory := filepath.Join(homePath, ".cache", "codacy")
 	runtimesDirectory := filepath.Join(codacyDirectory, "runtimes")
 	toolsDirectory := filepath.Join(codacyDirectory, "tools")
-
-	fmt.Println("creating:   " + codacyDirectory)
-	err = os.MkdirAll(codacyDirectory, 0777)
-	if err != nil {
+	fmt.Println("creating: " + codacyDirectory)
+	if os.MkdirAll(codacyDirectory, 0777) != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("creating: " + runtimesDirectory)
+	if os.MkdirAll(runtimesDirectory, 0777) != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("creating: " + toolsDirectory)
+	if os.MkdirAll(toolsDirectory, 0777) != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println("creating:   " + runtimesDirectory)
-	err = os.MkdirAll(runtimesDirectory, 0777)
-	if err != nil {
-		log.Fatal(err)
+	// TODO can use a variable to stored the "local" codacy dir
+	runtimes, configErr := config.ReadConfigFile(filepath.Join(".codacy", "codacy.yaml"))
+	if configErr != nil {
+		log.Fatal(configErr)
 	}
 
-	fmt.Println("creating:   " + toolsDirectory)
-	err = os.MkdirAll(toolsDirectory, 0777)
-	if err != nil {
-		log.Fatal(err)
+	// install runtimes
+	fetchRuntimes(runtimes, runtimesDirectory)
+	for _, r := range runtimes {
+		fetchTools(r, runtimesDirectory, toolsDirectory)
 	}
-
-	fmt.Println(codacyDirectory)
-
-	fmt.Println(config)
-	downloadNodeURL := getNodeDownloadURL("v22.2.0")
-
-	nodeTar, err := downloadFile(downloadNodeURL, codacyDirectory)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("Downloaded node: " + nodeTar)
-
-	t, err := os.Open(nodeTar)
-	defer t.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("About to extract node: " + t.Name())
-	extract(t, codacyDirectory)
-
-	npmPath := filepath.Join(codacyDirectory, "runtimes", "node-v22.2.0-darwin-x64", "bin", "npm")
-
-	fmt.Println("About to install eslint")
-	installESLint(npmPath, "eslint@9.3.0", codacyDirectory)
 
 	cmd.Execute()
 }
