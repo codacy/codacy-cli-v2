@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRunEslint(t *testing.T) {
+func TestRunEslintToString(t *testing.T) {
 	homeDirectory, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatal(err.Error())
@@ -25,7 +25,7 @@ func TestRunEslint(t *testing.T) {
 	eslintInstallationDirectory := filepath.Join(homeDirectory, ".cache/codacy-cli-v2/tools/eslint")
 	nodeBinary := "node"
 
-	eslintOutput, err := runEslint(repositoryToAnalyze, eslintInstallationDirectory, nodeBinary)
+	eslintOutput, err := RunEslintToString(repositoryToAnalyze, eslintInstallationDirectory, nodeBinary)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -39,6 +39,49 @@ func TestRunEslint(t *testing.T) {
 	actualSarif := strings.ReplaceAll(eslintOutput, filePrefix, "")
 
 	expectedSarif := string(expectedSarifBytes)
+
+	assert.Equal(t, expectedSarif, actualSarif, "output did not match expected")
+}
+
+func TestRunEslintToFile(t *testing.T) {
+	homeDirectory, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	currentDirectory, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	testDirectory := "testdata/repositories/test1"
+	tempDir := os.TempDir()
+	defer os.RemoveAll(tempDir)
+
+	repositoryToAnalyze := filepath.Join(testDirectory, "src")
+	sarifOutputFile := filepath.Join(testDirectory, "sarif.json")
+	eslintInstallationDirectory := filepath.Join(homeDirectory, ".cache/codacy-cli-v2/tools/eslint")
+	nodeBinary := "node"
+
+	err = RunEslintToFile(repositoryToAnalyze, eslintInstallationDirectory, nodeBinary, tempDir)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	expectedSarifBytes, err := os.ReadFile(sarifOutputFile)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	eslintOutputPath := filepath.Join(tempDir, "eslint.sarif")
+
+	eslintOutputBytes, err := os.ReadFile(eslintOutputPath)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	eslintOutput := string(eslintOutputBytes)
+	filePrefix := "file://" + currentDirectory + "/"
+	actualSarif := strings.ReplaceAll(eslintOutput, filePrefix, "")
+
+	expectedSarif := strings.TrimSpace(string(expectedSarifBytes))
 
 	assert.Equal(t, expectedSarif, actualSarif, "output did not match expected")
 }
