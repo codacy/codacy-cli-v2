@@ -89,7 +89,7 @@ func downloadFile(url string, destDir string) (string, error) {
 	return destPath, nil
 }
 
-func extract(t *os.File) {
+func extract(t *os.File, codacyDirectory string) {
 
 	format := archiver.CompressedArchive{
 		Compression: archiver.Gz{},
@@ -111,7 +111,7 @@ func extract(t *os.File) {
 
 		fmt.Printf("Contents of %s:\n", f.NameInArchive)
 
-		path := ".codacy/runtimes/" + f.NameInArchive
+		path := filepath.Join(codacyDirectory, "runtimes", f.NameInArchive)
 
 		switch f.IsDir() {
 		case true:
@@ -162,47 +162,20 @@ func extract(t *os.File) {
 
 }
 
-func installESLint(npmExecutablePath string, ESLintversion string) {
+func installESLint(npmExecutablePath string, ESLintversion string, codacyPath string) {
 
 	fmt.Println("Installing ESLint")
 
-	cmd := exec.Command(npmExecutablePath, "install", "--prefix", "./.codacy/tools/"+ESLintversion, ESLintversion)
+	eslintInstallationFolder := filepath.Join(codacyPath, "tools", ESLintversion)
+
+	cmd := exec.Command(npmExecutablePath, "install", "--prefix", eslintInstallationFolder, ESLintversion, "@microsoft/eslint-formatter-sarif")
+	// to use the chdir command we needed to create the folder before, we can change this after
+	// cmd.Dir = eslintInstallationFolder
 	stdout, err := cmd.Output()
 
 	// Print the output
 	fmt.Println(string(stdout))
 
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-
-	workingDirectory, _ := os.Getwd()
-
-	nodeVersion := "22.2.0-darwin-x64"
-
-	// TODO clean eslint version
-
-	scriptContent := fmt.Sprintf(`
-#!/bin/sh
-
-export PATH="%s/.codacy/tools/%s/node_modules/.bin:%s/node-v%s/bin:${PATH}"
-export HOME="${HOME:-}"
-export NODE_PATH="%s/.codacy/tools/%s/node_modules"
-
-
-exec eslint "$@"
-    
-    `, workingDirectory, ESLintversion, workingDirectory, nodeVersion, workingDirectory, ESLintversion)
-
-	w, err := os.OpenFile(".codacy/tools/"+ESLintversion+"/eslint.sh", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0770)
-	defer w.Close()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = io.WriteString(w, scriptContent)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -219,16 +192,58 @@ func main() {
 		log.Fatalf("error: %v", err)
 	}
 
+	homePath, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	codacyDirectory := filepath.Join(homePath, ".cache", "codacy")
+	runtimesDirectory := filepath.Join(codacyDirectory, "runtimes")
+	toolsDirectory := filepath.Join(codacyDirectory, "tools")
+
+	fmt.Println("creating:   " + codacyDirectory)
+	err = os.MkdirAll(codacyDirectory, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("creating:   " + runtimesDirectory)
+	err = os.MkdirAll(runtimesDirectory, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("creating:   " + toolsDirectory)
+	err = os.MkdirAll(toolsDirectory, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(codacyDirectory)
+
 	fmt.Println(config)
 	downloadNodeURL := getNodeDownloadURL("v22.2.0")
-	nodeTar, _ := downloadFile(downloadNodeURL, ".codacy")
 
-	t, _ := os.Open(nodeTar)
+	nodeTar, err := downloadFile(downloadNodeURL, codacyDirectory)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Downloaded node: " + nodeTar)
+
+	t, err := os.Open(nodeTar)
 	defer t.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	extract(t)
+	fmt.Println("About to extract node: " + t.Name())
+	extract(t, codacyDirectory)
 
-	installESLint(".codacy/runtimes/node-v22.2.0-darwin-x64/bin/npm", "eslint@9.3.0")
+	npmPath := filepath.Join(codacyDirectory, "runtimes", "node-v22.2.0-darwin-x64", "bin", "npm")
+
+	fmt.Println("About to install eslint")
+	installESLint(npmPath, "eslint@9.3.0", codacyDirectory)
 
 	cmd.Execute()
 }
