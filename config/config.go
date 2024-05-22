@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-type configType struct {
+type ConfigType struct {
 	homePath             string
 	codacyDirectory      string
 	runtimesDirectory    string
@@ -15,41 +15,51 @@ type configType struct {
 	projectConfigFile    string
 
 	runtimes map[string]*Runtime
+	tools map[string]*Runtime
 }
 
-func (c *configType) HomePath() string {
+func (c *ConfigType) HomePath() string {
 	return c.homePath
 }
 
-func (c *configType) CodacyDirectory() string {
+func (c *ConfigType) CodacyDirectory() string {
 	return c.codacyDirectory
 }
 
-func (c *configType) RuntimesDirectory() string {
+func (c *ConfigType) RuntimesDirectory() string {
 	return c.runtimesDirectory
 }
 
-func (c *configType) ToolsDirectory() string {
+func (c *ConfigType) ToolsDirectory() string {
 	return c.toolsDirectory
 }
 
-func (c *configType) LocalCodacyDirectory() string {
+func (c *ConfigType) LocalCodacyDirectory() string {
 	return c.localCodacyDirectory
 }
 
-func (c *configType) ProjectConfigFile() string {
+func (c *ConfigType) ProjectConfigFile() string {
 	return c.projectConfigFile
 }
 
-func (c *configType) Runtimes() map[string]*Runtime {
+func (c *ConfigType) Runtimes() map[string]*Runtime {
 	return c.runtimes
 }
 
-func (c *configType) SetRuntimes(runtimes map[string]*Runtime) {
-	c.runtimes = runtimes
+func (c *ConfigType) AddRuntime(r *Runtime) {
+	c.runtimes[r.Name()] = r
 }
 
-func (c *configType) initCodacyDirs() {
+// TODO do inheritance with tool
+func (c *ConfigType) Tools() map[string]*Runtime {
+	return c.tools
+}
+
+func (c *ConfigType) AddTool(t *Runtime) {
+	c.tools[t.Name()] = t
+}
+
+func (c *ConfigType) initCodacyDirs() {
 	c.codacyDirectory = filepath.Join(c.homePath, ".cache", "codacy")
 	err := os.MkdirAll(c.codacyDirectory, 0777)
 	if err != nil {
@@ -84,6 +94,10 @@ func Init() {
 	Config.homePath = homePath
 
 	Config.initCodacyDirs()
+
+	Config.runtimes = make(map[string]*Runtime)
+	Config.tools = make(map[string]*Runtime)
 }
 
-var Config = configType{}
+// Global singleton config-file
+var Config = ConfigType{}

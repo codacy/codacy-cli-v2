@@ -1,11 +1,13 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Runtime struct {
 	name string
 	version string
-	tools []ConfigTool
+	info map[string]string
 }
 
 func (r *Runtime) Name() string {
@@ -16,24 +18,28 @@ func (r *Runtime) Version() string {
 	return r.version
 }
 
-func (r *Runtime) Tools() []ConfigTool {
-	return r.tools
-}
-
-func (r *Runtime) AddTool(tool *ConfigTool) {
-	r.tools = append(r.tools, *tool)
-}
-
 func (r *Runtime) FullName() string {
 	return fmt.Sprintf("%s-%s", r.name, r.version)
 }
 
-func (r *Runtime) GetTool(name string) *ConfigTool  {
-	// TODO might become a map
-	for _, tool := range r.tools {
-		if tool.name == name {
-			return &tool
-		}
+func (r *Runtime) Info() map[string]string {
+	return r.info
+}
+
+func (r *Runtime) populateInfo() {
+	switch r.Name() {
+	case "node":
+		r.info = genInfoNode(r)
+	case "eslint":
+		r.info = genInfoEslint(r)
 	}
-	return nil
+}
+
+func NewRuntime(name string, version string) *Runtime {
+	r := Runtime{
+		name:    name,
+		version: version,
+	}
+	r.populateInfo()
+	return &r
 }
