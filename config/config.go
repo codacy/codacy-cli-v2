@@ -7,12 +7,12 @@ import (
 )
 
 type ConfigType struct {
-	homePath string
-	codacyDirectory string
-	runtimesDirectory string
-	toolsDirectory string
+	homePath             string
+	codacyDirectory      string
+	runtimesDirectory    string
+	toolsDirectory       string
 	localCodacyDirectory string
-	projectConfigFile string
+	projectConfigFile    string
 
 	runtimes map[string]*Runtime
 	tools map[string]*Runtime
