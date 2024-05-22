@@ -32,24 +32,9 @@ var analyzeCmd = &cobra.Command{
 
 		eslint := config.Config.Tools()["eslint"]
 		eslintInstallationDirectory := eslint.Info()["installDir"]
-
 		nodeRuntime := config.Config.Runtimes()["node"]
 		nodeBinary := nodeRuntime.Info()["node"]
 
-		log.Printf("Running %s...\n", args[0])
-		if outputFile != "" {
-			log.Printf("Output will be available at %s\n", outputFile)
-			err = tools.RunEslintToFile(workDirectory, eslintInstallationDirectory, nodeBinary, outputFile)
-			if err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			out, err2 := tools.RunEslintToString(workDirectory, eslintInstallationDirectory, nodeBinary)
-			if err2 != nil {
-				log.Fatal(err2)
-			}
-
-			log.Println(out)
-		}
+		tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, outputFile)
 	},
 }
