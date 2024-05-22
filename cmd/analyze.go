@@ -22,25 +22,22 @@ var analyzeCmd = &cobra.Command{
 	Short: "Runs all linters.",
 	Long:  "Runs all tools for all runtimes.",
 	Run: func(cmd *cobra.Command, args []string) {
-
 		fmt.Println(outputFolder)
-
-		eslintRunInfo, err := config.GetToolRunInfo("eslint")
-		if err != nil {
-			log.Fatal(err)
-		}
 
 		workDirectory, err := os.Getwd()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		eslintInstallationDirectory := eslintRunInfo["eslintInstallationDirectory"]
-		nodeBinary := eslintRunInfo["nodeBinary"]
-
 		if len(args) == 0 {
 			log.Fatal("You need to specify the tool you want to run for now! ;D")
 		}
+
+		eslint := config.Config.Tools()["eslint"]
+		eslintInstallationDirectory := eslint.Info()["installDir"]
+
+		nodeRuntime := config.Config.Runtimes()["node"]
+		nodeBinary := nodeRuntime.Info()["node"]
 
 		fmt.Printf("Running the tool %s. Output will be available at %s\n", args[0], outputFolder)
 		err = tools.RunEslintToFile(workDirectory, eslintInstallationDirectory, nodeBinary, outputFolder)

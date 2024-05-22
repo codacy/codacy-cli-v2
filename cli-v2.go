@@ -2,18 +2,18 @@ package main
 
 import (
 	"codacy/cli-v2/cmd"
-	cfg "codacy/cli-v2/config"
+	"codacy/cli-v2/config"
+	cfg "codacy/cli-v2/config-file"
 	"log"
 )
 
 func main() {
-	cfg.Init()
+	config.Init()
 
-	runtimes, configErr := cfg.ReadConfigFile(cfg.Config.ProjectConfigFile())
+	configErr := cfg.ReadConfigFile(config.Config.ProjectConfigFile())
 	if configErr != nil {
 		log.Fatal(configErr)
 	}
-	cfg.Config.SetRuntimes(runtimes)
 
 	cmd.Execute()
 }

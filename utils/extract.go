@@ -2,10 +2,8 @@ package utils
 
 import (
 	"context"
-	"fmt"
 	"github.com/mholt/archiver/v4"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -22,14 +20,14 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 		switch f.IsDir() {
 		case true:
 			// create a directory
-			fmt.Println("creating:   " + f.NameInArchive)
+			//fmt.Println("creating:   " + f.NameInArchive)
 			err := os.MkdirAll(path, 0777)
 			if err != nil {
 				return err
 			}
 
 		case false:
-			log.Print("extracting: " + f.NameInArchive)
+			//log.Print("extracting: " + f.NameInArchive)
 
 			// if is a symlink
 			if f.LinkTarget != "" {
