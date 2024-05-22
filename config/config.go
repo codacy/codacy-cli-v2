@@ -6,16 +6,13 @@ import (
 	"path/filepath"
 )
 
-
-var Config = configType{}
-
 type configType struct {
-	homePath string
-	codacyDirectory string
-	runtimesDirectory string
-	toolsDirectory string
+	homePath             string
+	codacyDirectory      string
+	runtimesDirectory    string
+	toolsDirectory       string
 	localCodacyDirectory string
-	projectConfigFile string
+	projectConfigFile    string
 
 	runtimes map[string]*Runtime
 }
@@ -88,3 +85,5 @@ func Init() {
 
 	Config.initCodacyDirs()
 }
+
+var Config = configType{}
