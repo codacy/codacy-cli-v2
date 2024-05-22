@@ -13,7 +13,7 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 	eslintInstallationNodeModules := filepath.Join(eslintInstallationDirectory, "node_modules")
 	eslintJsPath := filepath.Join(eslintInstallationNodeModules, ".bin", "eslint")
 
-	cmd := exec.Command(nodeBinary, eslintJsPath)
+	cmd := exec.Command(nodeBinary, eslintJsPath, ".")
 	if outputFile != "" {
 		//When writing to file, we write is SARIF
 		cmd.Args = append(cmd.Args, "-f", "@microsoft/eslint-formatter-sarif", "-o", outputFile)
@@ -25,6 +25,10 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 
 	nodePathEnv := "NODE_PATH=" + eslintInstallationNodeModules
 	cmd.Env = append(cmd.Env, nodePathEnv)
+
+	//DEBUG
+	//fmt.Println(cmd.Env)
+	//fmt.Println(cmd)
 
 	// TODO eslint returns 1 when it finds errors, so we're not propagating it
 	cmd.Run()
