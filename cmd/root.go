@@ -8,7 +8,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "codacy-cli",
+	Use: "codacy-cli-v2",
 	Short: "Codacy CLI",
 	Long:  "Code analysis",
 	Run: func(cmd *cobra.Command, args []string) {

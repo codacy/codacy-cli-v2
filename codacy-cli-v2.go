@@ -1,8 +1,8 @@
 package main
 
 import (
-	"codacy/cli-v2/cmd"
-	cfg "codacy/cli-v2/config"
+	"codacy/codacy-cli-v2/cmd"
+	cfg "codacy/codacy-cli-v2/config"
 	"log"
 )
 

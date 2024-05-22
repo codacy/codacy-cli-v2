@@ -30,9 +30,9 @@ download() {
 
     download_file "$url"
     # checksum "$file_name" "$checksum_url"
-    if [ "$os_name_arch" = "Linux x86_64" ] || [ "$os_name_arch" = "Darwin x86_64" ]; then
-        mv "$file_name" "$output_filename"
-    fi
+    #if [ "$os_name_arch" = "Linux x86_64" ] || [ "$os_name_arch" = "Darwin x86_64" ]; then
+    #    mv "$file_name" "$output_filename"
+    #fi
 
     cd "$original_folder"
 }
@@ -72,6 +72,9 @@ if [ -z "$CODACY_CLI_V2_TMP_FOLDER" ]; then
 fi
 
 reporter_filename="codacy-cli-v2"
+
+# TODO remove this
+CODACY_CLI_V2_VERSION="0.1.0-main.24.610d50e"
 
 # Folder containing the binary
 reporter_folder="$CODACY_CLI_V2_TMP_FOLDER"/"$CODACY_CLI_V2_VERSION"

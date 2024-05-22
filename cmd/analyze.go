@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"codacy/cli-v2/config"
-	"codacy/cli-v2/tools"
+	"codacy/codacy-cli-v2/config"
+	"codacy/codacy-cli-v2/tools"
 	"fmt"
 	"github.com/spf13/cobra"
 	"log"
