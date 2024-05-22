@@ -35,7 +35,7 @@ func fetchRuntimes(runtimes map[string]*cfg.Runtime, runtimesDirectory string) {
 			// TODO should delete downloaded archive
 			// TODO check for deflated archive
 			log.Println("Fetching node...")
-			downloadNodeURL := toolutils.GetNodeDownloadURL(r)
+			downloadNodeURL := cfg.GetNodeDownloadURL(r)
 			nodeTar, err := utils.DownloadFile(downloadNodeURL, runtimesDirectory)
 			if err != nil {
 				log.Fatal(err)
@@ -61,7 +61,7 @@ func fetchTools(runtime *cfg.Runtime, runtimesDirectory string, toolsDirectory s
 	for _, tool := range runtime.Tools() {
 		switch tool.Name() {
 		case "eslint":
-			npmPath := filepath.Join(runtimesDirectory, toolutils.GetNodeFileName(runtime),
+			npmPath := filepath.Join(runtimesDirectory, cfg.GetNodeFileName(runtime),
 				"bin", "npm")
 			toolutils.InstallESLint(npmPath, "eslint@" + tool.Version(), toolsDirectory)
 		default:
