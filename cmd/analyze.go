@@ -4,16 +4,16 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
 	"fmt"
-	"github.com/spf13/cobra"
 	"log"
 	"os"
-	"path"
+
+	"github.com/spf13/cobra"
 )
 
-var outputFolder string
+var outputFile string
 
 func init() {
-	analyzeCmd.Flags().StringVarP(&outputFolder, "output", "o", path.Join(".codacy", "out"), "where to output the results")
+	analyzeCmd.Flags().StringVarP(&outputFile, "output", "o", "", "output file for the results")
 	rootCmd.AddCommand(analyzeCmd)
 }
 
@@ -22,8 +22,6 @@ var analyzeCmd = &cobra.Command{
 	Short: "Runs all linters.",
 	Long:  "Runs all tools for all runtimes.",
 	Run: func(cmd *cobra.Command, args []string) {
-
-		fmt.Println(outputFolder)
 
 		eslintRunInfo, err := config.GetToolRunInfo("eslint")
 		if err != nil {
@@ -42,8 +40,22 @@ var analyzeCmd = &cobra.Command{
 			log.Fatal("You need to specify the tool you want to run for now! ;D")
 		}
 
-		fmt.Printf("Running the tool %s. Output will be available at %s\n", args[0], outputFolder)
-		err = tools.RunEslintToFile(workDirectory, eslintInstallationDirectory, nodeBinary, outputFolder)
+		fmt.Printf("Running %s...\n", args[0])
+		if outputFile != "" {
+			fmt.Printf("Output will be available at %s\n", outputFile)
+		}
+
+		if outputFile != "" {
+			err = tools.RunEslintToFile(workDirectory, eslintInstallationDirectory, nodeBinary, outputFile)
+		} else {
+			out, err2 := tools.RunEslintToString(workDirectory, eslintInstallationDirectory, nodeBinary)
+			if err2 != nil {
+				log.Fatal(err2)
+			}
+
+			fmt.Println(out)
+		}
+
 		if err != nil {
 			log.Fatal(err)
 		}
