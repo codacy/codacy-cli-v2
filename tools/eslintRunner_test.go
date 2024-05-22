@@ -24,26 +24,25 @@ func TestRunEslintToFile(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	repositoryToAnalyze := filepath.Join(testDirectory, "src")
-	sarifOutputFile := filepath.Join(testDirectory, "sarif.json")
-	eslintInstallationDirectory := filepath.Join(homeDirectory, ".cache/codacy-cli-v2/tools/eslint")
+	expectedSarifFile := filepath.Join(testDirectory, "expected.sarif")
+	eslintInstallationDirectory := filepath.Join(homeDirectory, ".cache/codacy/tools/eslint@9.3.0")
 	nodeBinary := "node"
+	obtainedSarifFile := filepath.Join(tempDir, "eslint.sarif")
 
-	RunEslint(repositoryToAnalyze, eslintInstallationDirectory, nodeBinary, sarifOutputFile)
+	RunEslint(repositoryToAnalyze, eslintInstallationDirectory, nodeBinary, obtainedSarifFile)
 
-	expectedSarifBytes, err := os.ReadFile(sarifOutputFile)
+	expectedSarifBytes, err := os.ReadFile(expectedSarifFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	obtainedSarifBytes, err := os.ReadFile(obtainedSarifFile)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-
-	eslintOutputPath := filepath.Join(tempDir, "eslint.sarif")
-
-	eslintOutputBytes, err := os.ReadFile(eslintOutputPath)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	eslintOutput := string(eslintOutputBytes)
+	obtainedSarif := string(obtainedSarifBytes)
 	filePrefix := "file://" + currentDirectory + "/"
-	actualSarif := strings.ReplaceAll(eslintOutput, filePrefix, "")
+	actualSarif := strings.ReplaceAll(obtainedSarif, filePrefix, "")
 
 	expectedSarif := strings.TrimSpace(string(expectedSarifBytes))
 
