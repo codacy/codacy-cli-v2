@@ -2,14 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
-	Use: "codacy-cli",
+	Use:   "codacy-cli",
 	Short: "Codacy CLI",
-	Long: "Code analysis",
+	Long:  "Code analysis",
 	Run: func(cmd *cobra.Command, args []string) {
 	},
 }

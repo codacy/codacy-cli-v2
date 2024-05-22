@@ -52,7 +52,7 @@ func (c *configType) SetRuntimes(runtimes map[string]*Runtime) {
 	c.runtimes = runtimes
 }
 
-func (c configType) initCodacyDirs() {
+func (c *configType) initCodacyDirs() {
 	c.codacyDirectory = filepath.Join(c.homePath, ".cache", "codacy")
 	err := os.MkdirAll(c.codacyDirectory, 0777)
 	if err != nil {
