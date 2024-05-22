@@ -1,18 +1,19 @@
 package cmd
 
 import (
-	"codacy/cli-v2/tools"
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/tools"
 	"fmt"
+	"github.com/spf13/cobra"
 	"log"
 	"os"
-	"github.com/spf13/cobra"
+	"path"
 )
 
 var outputFolder string
 
 func init() {
-	analyzeCmd.Flags().StringVarP(&outputFolder, "output", "o", ".codacy/out/eslint.sarif", "where to output the results")
+	analyzeCmd.Flags().StringVarP(&outputFolder, "output", "o", path.Join(".codacy", "out"), "where to output the results")
 	rootCmd.AddCommand(analyzeCmd)
 }
 
@@ -41,8 +42,7 @@ var analyzeCmd = &cobra.Command{
 			log.Fatal("You need to specify the tool you want to run for now! ;D")
 		}
 
-		msg := fmt.Sprintf("Running the tool %s. Output will be available at %s", args[0], outputFolder)
-		fmt.Println(msg)
+		fmt.Printf("Running the tool %s. Output will be available at %s\n", args[0], outputFolder)
 		err = tools.RunEslintToFile(workDirectory, eslintInstallationDirectory, nodeBinary, outputFolder)
 		if err != nil {
 			log.Fatal(err)

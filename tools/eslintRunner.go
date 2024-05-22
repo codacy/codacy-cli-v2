@@ -20,7 +20,7 @@ func RunEslintToString(repositoryToAnalyseDirectory string, eslintInstallationDi
 // * The local installed ESLint should have the @microsoft/eslint-formatter-sarif installed
 func runEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory string, nodeBinary string, outputFolder string) (string, error) {
 	eslintInstallationNodeModules := filepath.Join(eslintInstallationDirectory, "node_modules")
-	eslintJsPath := filepath.Join(eslintInstallationNodeModules, ".bin/eslint")
+	eslintJsPath := filepath.Join(eslintInstallationNodeModules, ".bin", "eslint")
 
 	cmd := exec.Command(nodeBinary, eslintJsPath, "-f", "@microsoft/eslint-formatter-sarif")
 
@@ -35,10 +35,8 @@ func runEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 	nodePathEnv := "NODE_PATH=" + eslintInstallationNodeModules
 	cmd.Env = append(cmd.Env, nodePathEnv)
 
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
+	// TODO eslint returns 1 when it finds errors, so we're not propagating it
+	out, _ := cmd.Output()
 
 	return string(out), nil
 }
