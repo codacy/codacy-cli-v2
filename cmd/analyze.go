@@ -35,6 +35,11 @@ var analyzeCmd = &cobra.Command{
 		nodeRuntime := config.Config.Runtimes()["node"]
 		nodeBinary := nodeRuntime.Info()["node"]
 
+		log.Printf("Running %s...\n", args[0])
+		if outputFile != "" {
+			log.Printf("Output will be available at %s\n", outputFile)
+		}
+
 		tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, outputFile)
 	},
 }
