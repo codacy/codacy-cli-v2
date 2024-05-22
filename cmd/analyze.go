@@ -45,19 +45,6 @@ var analyzeCmd = &cobra.Command{
 			fmt.Printf("Output will be available at %s\n", outputFile)
 		}
 
-		if outputFile != "" {
-			err = tools.RunEslintToFile(workDirectory, eslintInstallationDirectory, nodeBinary, outputFile)
-		} else {
-			out, err2 := tools.RunEslintToString(workDirectory, eslintInstallationDirectory, nodeBinary)
-			if err2 != nil {
-				log.Fatal(err2)
-			}
-
-			fmt.Println(out)
-		}
-
-		if err != nil {
-			log.Fatal(err)
-		}
+		tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, outputFile)
 	},
 }
