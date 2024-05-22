@@ -29,45 +29,28 @@ download_file() {
 
 download() {
     local url="$1"
-    local file_name="$2"
-    local output_folder="$3"
-    local output_filename="$4"
-    local checksum_url="$5"
-    local original_folder
-    original_folder="$(pwd)"
+    local output_folder="$2"
 
-    cd "$output_folder"
-
-    download_file "$url"
-    # checksum "$file_name" "$checksum_url"
-
-    cd "$original_folder"
+    ( cd "$output_folder" && download_file "$url" )
 }
 
-download_reporter() {
+download_cli() {
     # OS name lower case
     suffix=$(echo "$os_name" | tr '[:upper:]' '[:lower:]')
 
-    local binary_name="codacy-cli-v2-$suffix"
-    local reporter_path="$1"
-    local reporter_folder="$2"
-    local reporter_filename="$3"
+    local bin_folder="$1"
+    local bin_path="$2"
 
-    if [ ! -f "$reporter_path" ]
-    then
-        echo "$i" "Downloading the codacy cli v2 $binary_name... ($CODACY_CLI_V2_VERSION)"
+    if [ ! -f "$bin_path" ]; then
+        echo "Downloading the codacy cli v2 version ($CODACY_CLI_V2_VERSION)"
 
         remote_file="codacy-cli-v2_${CODACY_CLI_V2_VERSION}_${suffix}_${arch}.tar.gz"
-        binary_url="https://github.com/codacy/codacy-cli-v2/releases/download/${CODACY_CLI_V2_VERSION}/${remote_file}"
-        # echo $binary_url
-        # checksum_url="https://github.com/codacy/codacy-coverage-reporter/releases/download/$CODACY_CLI_V2_VERSION/$binary_name.SHA512SUM"
+        url="https://github.com/codacy/codacy-cli-v2/releases/download/${CODACY_CLI_V2_VERSION}/${remote_file}"
 
-        download "$binary_url" "$binary_name" "$reporter_folder" "$reporter_filename" "$checksum_url"
-
-        echo "${reporter_folder}/${remote_file}"
-        tar xzfv "${reporter_folder}/${remote_file}" -C "${reporter_folder}"
+        download "$url" "$bin_folder"
+        tar xzfv "${bin_folder}/${remote_file}" -C "${bin_folder}"
     else
-        echo "$i" "Codacy reporter $binary_name already in cache"
+        echo "$i" "Codacy  cli v2 $binary_name already in cache"
     fi
 }
 
@@ -82,8 +65,6 @@ if [ -z "$CODACY_CLI_V2_TMP_FOLDER" ]; then
     fi
 fi
 
-reporter_filename="codacy-cli-v2"
-
 # if no version is specified, we fetch the latest
 if [ -z "$CODACY_CLI_V2_VERSION" ]; then
   CODACY_CLI_V2_VERSION="$(curl -Lq "https://api.github.com/repos/codacy/codacy-cli-v2/releases/latest" 2>/dev/null | grep -m 1 tag_name | cut -d'"' -f4)"
@@ -91,27 +72,27 @@ if [ -z "$CODACY_CLI_V2_VERSION" ]; then
 fi
 
 # Folder containing the binary
-reporter_folder="$CODACY_CLI_V2_TMP_FOLDER"/"$CODACY_CLI_V2_VERSION"
+bin_folder="${CODACY_CLI_V2_TMP_FOLDER}/${CODACY_CLI_V2_VERSION}"
+# Create the folder if not exists
+mkdir -p "$bin_folder"
 
-# Create the reporter folder if not exists
-mkdir -p "$reporter_folder"
+# name of the binary
+bin_name="codacy-cli-v2"
 
 # Set binary path
-reporter_path="$reporter_folder"/"$reporter_filename"
+bin_path="$bin_folder"/"$bin_name"
 
-download_reporter "$reporter_path" "$reporter_folder" "$reporter_filename"
+# download the tool
+download_cli "$bin_folder" "$bin_path"
+chmod +x "$bin_path"
 
-chmod +x "$reporter_path"
-run_command="$reporter_path"
-
-if [ -z "$run_command" ]
-then
+run_command="$bin_path"
+if [ -z "$run_command" ]; then
     fatal "Codacy cli v2 binary could not be found."
 fi
 
-if [ "$#" -eq 1 ] && [ "$1" = "download" ];
-then
-    echo "$g" "Codacy reporter download succeeded";
+if [ "$#" -eq 1 ] && [ "$1" = "download" ]; then
+    echo "$g" "Codacy cli v2 download succeeded";
 else
     eval "$run_command $*"
 fi
