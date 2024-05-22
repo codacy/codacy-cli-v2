@@ -49,8 +49,6 @@ download_cli() {
 
         download "$url" "$bin_folder"
         tar xzfv "${bin_folder}/${remote_file}" -C "${bin_folder}"
-    else
-        echo "$i" "Codacy  cli v2 $binary_name already in cache"
     fi
 }
 
@@ -68,7 +66,6 @@ fi
 # if no version is specified, we fetch the latest
 if [ -z "$CODACY_CLI_V2_VERSION" ]; then
   CODACY_CLI_V2_VERSION="$(curl -Lq "https://api.github.com/repos/codacy/codacy-cli-v2/releases/latest" 2>/dev/null | grep -m 1 tag_name | cut -d'"' -f4)"
-  echo "Fetching latest version: ${CODACY_CLI_V2_VERSION}"
 fi
 
 # Folder containing the binary
