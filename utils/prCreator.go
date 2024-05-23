@@ -1,9 +1,8 @@
 package utils
 
 import (
-	"fmt"
-	"io"
 	"log"
+	"os"
 
 	"os/exec"
 
@@ -20,29 +19,34 @@ func CreatePr(dryRun bool) bool {
 	prBranchName := "codacy-cli-fix-" + uuid
 
 	cmd := exec.Command("/bin/sh")
-	cmd.Env = append(cmd.Env, "PR_BRANCH_NAME=" + prBranchName)
+	cmd.Env = append(cmd.Env, "PR_BRANCH_NAME="+prBranchName)
 
 	if dryRun {
-		fmt.Println("Would create PR with branch name " + prBranchName)
-		fmt.Println("Commands:")
-		fmt.Println(prCreatorScriptContent)
+		log.Println("Would create PR with branch name " + prBranchName)
+		log.Println("Commands:")
+		log.Println(prCreatorScriptContent)
 		return false
 	} else {
-		stdin, err := cmd.StdinPipe()
+		tmpFile, err := os.CreateTemp(os.TempDir(), "prCreator*.sh")
+		defer os.Remove(tmpFile.Name())
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("Error creating the temporary file for the script:", err)
 		}
-		io.WriteString(stdin, prCreatorScriptContent)
-		stdin.Close()
 
-		stdout, err := cmd.Output()
+		_, err = tmpFile.WriteString(prCreatorScriptContent)
 		if err != nil {
-			 log.Fatal(err, string(stdout))
-			 return false
-		 }
+			log.Fatal("Error writing the script temporary file:", err)
+		}
 
-		// Print the output
-		fmt.Println(string(stdout))
+		// Execute the script
+		cmd := exec.Command("/bin/sh", tmpFile.Name(), prBranchName)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			log.Fatal("Error executing script:", err)
+		}
+
 		return true
 	}
 }
