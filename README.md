@@ -58,7 +58,7 @@ codacy-cli-v2 analyze --tool eslint
 Alternatively, you can store the results as SARIF to a file:
 
 ```bash
-codacy-cli-v2 analyze eslint -o eslint.sarif
+codacy-cli-v2 analyze -t eslint -o eslint.sarif
 ```
 
 ## Example repo
