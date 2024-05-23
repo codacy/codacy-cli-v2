@@ -39,3 +39,27 @@ func TestCreateEslintConfigConfig1(t *testing.T) {
     }
 ];`)
 }
+
+func TestCreateEslintConfigConfig2(t *testing.T) {
+	testConfig(t,
+		toolConfiguration{
+			patternsConfiguration: []patternConfiguration{
+				{
+					patternId: "semi",
+					paramenterConfiguration: []patternParameterConfiguration{
+						{
+							name:  "unnamedParam",
+							value: "never",
+						},
+					},
+				},
+			},
+		},
+		`export default [
+    {
+        rules: {
+          "semi": ["error", "never"],
+        }
+    }
+];`)
+}

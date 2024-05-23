@@ -1,5 +1,7 @@
 package tools
 
+import "fmt"
+
 type patternParameterConfiguration struct {
 	name  string
 	value string
@@ -40,9 +42,23 @@ func CreateEslintConfig(configuration toolConfiguration) string {
 `
 
 	for _, patternConfiguration := range configuration.PatternsConfiguration() {
-		result += "          \""
-		result += patternConfiguration.patternId
-		result += "\": \"error\",\n"
+		var unnamedParam *string
+
+		for _, parameter := range patternConfiguration.paramenterConfiguration {
+			if parameter.name == "unnamedParam" {
+				unnamedParam = &parameter.value
+			}
+		}
+
+		result += "          "
+
+		if unnamedParam == nil {
+			result += fmt.Sprintf(`"%s": "error",`, patternConfiguration.patternId)
+			result += "\n"
+		} else {
+			result += fmt.Sprintf(`"%s": ["error", "%s"],`, patternConfiguration.patternId, *unnamedParam)
+			result += "\n"
+		}
 	}
 
 	result += `        }
