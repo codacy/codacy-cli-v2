@@ -4,15 +4,16 @@ import (
 	"codacy/cli-v2/cmd"
 	"codacy/cli-v2/config"
 	cfg "codacy/cli-v2/config-file"
-	"log"
+	"fmt"
 )
 
 func main() {
-	config.Init()
 
+	config.Init()
 	configErr := cfg.ReadConfigFile(config.Config.ProjectConfigFile())
 	if configErr != nil {
-		log.Fatal(configErr)
+		fmt.Println(configErr)
+		fmt.Println("No configuration file was found, execute init command first.")
 	}
 
 	cmd.Execute()
