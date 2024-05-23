@@ -20,23 +20,22 @@ func TestRunEslintToFile(t *testing.T) {
 		log.Fatal(err.Error())
 	}
 	testDirectory := "testdata/repositories/test1"
-	tempDir := os.TempDir()
-	defer os.RemoveAll(tempDir)
+	tempResultFile := filepath.Join(os.TempDir(), "eslint.sarif")
+	defer os.Remove(tempResultFile)
 
 	repositoryToAnalyze := filepath.Join(testDirectory, "src")
 	expectedSarifFile := filepath.Join(testDirectory, "expected.sarif")
 	eslintInstallationDirectory := filepath.Join(homeDirectory, ".cache/codacy/tools/eslint@9.3.0")
 	nodeBinary := "node"
-	obtainedSarifFile := filepath.Join(tempDir, "eslint.sarif")
 
-	RunEslint(repositoryToAnalyze, eslintInstallationDirectory, nodeBinary, obtainedSarifFile)
+	RunEslint(repositoryToAnalyze, eslintInstallationDirectory, nodeBinary, tempResultFile)
 
 	expectedSarifBytes, err := os.ReadFile(expectedSarifFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	obtainedSarifBytes, err := os.ReadFile(obtainedSarifFile)
+	obtainedSarifBytes, err := os.ReadFile(tempResultFile)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
