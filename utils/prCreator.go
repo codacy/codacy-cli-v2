@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"io"
 	"log"
 
 	"os/exec"
@@ -29,10 +28,11 @@ func CreatePr(dryRun bool) bool {
 		return false
 	} else {
 		stdin, err := cmd.StdinPipe()
+		defer stdin.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
-		io.WriteString(stdin, prCreatorScriptContent)
+		fmt.Fprintln(stdin, prCreatorScriptContent)
 		stdin.Close()
 
 		stdout, err := cmd.Output()
