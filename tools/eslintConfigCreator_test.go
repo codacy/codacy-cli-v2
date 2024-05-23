@@ -63,3 +63,55 @@ func TestCreateEslintConfigUnnamedParam(t *testing.T) {
     }
 ];`)
 }
+
+func TestCreateEslintConfigNamedParam(t *testing.T) {
+	testConfig(t,
+		toolConfiguration{
+			patternsConfiguration: []patternConfiguration{
+				{
+					patternId: "consistent-return",
+					paramenterConfiguration: []patternParameterConfiguration{
+						{
+							name:  "treatUndefinedAsUnspecified",
+							value: "false",
+						},
+					},
+				},
+			},
+		},
+		`export default [
+    {
+        rules: {
+          "consistent-return": ["error", {"treatUndefinedAsUnspecified": false}],
+        }
+    }
+];`)
+}
+
+func TestCreateEslintConfigUnnamedAndNamedParam(t *testing.T) {
+	testConfig(t,
+		toolConfiguration{
+			patternsConfiguration: []patternConfiguration{
+				{
+					patternId: "consistent-return",
+					paramenterConfiguration: []patternParameterConfiguration{
+						{
+							name:  "treatUndefinedAsUnspecified",
+							value: "false",
+						},
+						{
+							name:  "unnamedParam",
+							value: "foo",
+						},
+					},
+				},
+			},
+		},
+		`export default [
+    {
+        rules: {
+          "consistent-return": ["error", "foo", {"treatUndefinedAsUnspecified": false}],
+        }
+    }
+];`)
+}
