@@ -52,7 +52,7 @@ To install the tools specified on your `.codacy/.codacy.yaml` you should:
 For now, we only support ESLint, to run and output the results to the terminal:
 
 ```bash
-codacy-cli-v2 analyze eslint
+codacy-cli-v2 analyze --tool eslint
 ```
 
 Alternatively, you can store the results as SARIF to a file:
