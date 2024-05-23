@@ -40,7 +40,7 @@ func TestCreateEslintConfigConfig1(t *testing.T) {
 ];`)
 }
 
-func TestCreateEslintConfigConfig2(t *testing.T) {
+func TestCreateEslintConfigUnnamedParam(t *testing.T) {
 	testConfig(t,
 		toolConfiguration{
 			patternsConfiguration: []patternConfiguration{
