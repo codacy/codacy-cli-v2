@@ -12,11 +12,13 @@ import (
 )
 
 var outputFile string
+var toolToAnalyze string
 var autoFix bool
 var doNewPr bool
 
 func init() {
 	analyzeCmd.Flags().StringVarP(&outputFile, "output", "o", "", "output file for the results")
+	analyzeCmd.Flags().StringVarP(&toolToAnalyze, "tool", "t", "", "Which tool to run analysis with")
 	analyzeCmd.Flags().BoolVarP(&autoFix, "fix", "f", false, "Apply auto fix to your issues when available")
 	analyzeCmd.Flags().BoolVar(&doNewPr, "new-pr", false, "Create a new PR on GitHub containing the fixed issues")
 	rootCmd.AddCommand(analyzeCmd)
@@ -32,8 +34,14 @@ var analyzeCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		if len(args) == 0 {
-			log.Fatal("You need to specify the tool you want to run for now! ;D")
+		// TODO add more tools here
+		switch toolToAnalyze {
+		case "eslint":
+			// nothing
+		case "":
+			log.Fatal("You need to specify a tool to run analysis with, e.g., '--tool eslint'", toolToAnalyze)
+		default:
+			log.Fatal("Trying to run unsupported tool: ", toolToAnalyze)
 		}
 
 		// can't create a new PR if there will be no changes/fixed issues
@@ -48,11 +56,12 @@ var analyzeCmd = &cobra.Command{
 		nodeRuntime := config.Config.Runtimes()["node"]
 		nodeBinary := nodeRuntime.Info()["node"]
 
-		log.Printf("Running %s...\n", args[0])
+		log.Printf("Running %s...\n", toolToAnalyze)
 		if outputFile != "" {
 			log.Println("Output will be available at", outputFile)
 		}
-		tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, autoFix, outputFile)
+
+		tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, args, autoFix, outputFile)
 
 		if doNewPr {
 			utils.CreatePr(false)
