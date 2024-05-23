@@ -28,7 +28,7 @@ func TestRunEslintToFile(t *testing.T) {
 	eslintInstallationDirectory := filepath.Join(homeDirectory, ".cache/codacy/tools/eslint@9.3.0")
 	nodeBinary := "node"
 
-	RunEslint(repositoryToAnalyze, eslintInstallationDirectory, nodeBinary, tempResultFile)
+	RunEslint(repositoryToAnalyze, eslintInstallationDirectory, nodeBinary, false, tempResultFile)
 
 	expectedSarifBytes, err := os.ReadFile(expectedSarifFile)
 	if err != nil {

@@ -10,9 +10,11 @@ import (
 )
 
 var outputFile string
+var autoFix bool
 
 func init() {
 	analyzeCmd.Flags().StringVarP(&outputFile, "output", "o", "", "output file for the results")
+	analyzeCmd.Flags().BoolVarP(&autoFix, "fix", "f", false, "Apply auto fix to your issues when available")
 	rootCmd.AddCommand(analyzeCmd)
 }
 
@@ -40,6 +42,6 @@ var analyzeCmd = &cobra.Command{
 			log.Printf("Output will be available at %s\n", outputFile)
 		}
 
-		tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, outputFile)
+		tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, autoFix, outputFile)
 	},
 }
