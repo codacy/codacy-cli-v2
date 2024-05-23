@@ -3,7 +3,6 @@ package cmd
 import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
-	"fmt"
 	"log"
 	"os"
 
@@ -22,27 +21,23 @@ var analyzeCmd = &cobra.Command{
 	Short: "Runs all linters.",
 	Long:  "Runs all tools for all runtimes.",
 	Run: func(cmd *cobra.Command, args []string) {
-
-		eslintRunInfo, err := config.GetToolRunInfo("eslint")
-		if err != nil {
-			log.Fatal(err)
-		}
-
 		workDirectory, err := os.Getwd()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		eslintInstallationDirectory := eslintRunInfo["eslintInstallationDirectory"]
-		nodeBinary := eslintRunInfo["nodeBinary"]
-
 		if len(args) == 0 {
 			log.Fatal("You need to specify the tool you want to run for now! ;D")
 		}
 
-		fmt.Printf("Running %s...\n", args[0])
+		eslint := config.Config.Tools()["eslint"]
+		eslintInstallationDirectory := eslint.Info()["installDir"]
+		nodeRuntime := config.Config.Runtimes()["node"]
+		nodeBinary := nodeRuntime.Info()["node"]
+
+		log.Printf("Running %s...\n", args[0])
 		if outputFile != "" {
-			fmt.Printf("Output will be available at %s\n", outputFile)
+			log.Printf("Output will be available at %s\n", outputFile)
 		}
 
 		tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, outputFile)
