@@ -3,6 +3,7 @@ package cmd
 import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
+	"fmt"
 	"log"
 	"os"
 
@@ -31,6 +32,10 @@ var analyzeCmd = &cobra.Command{
 		}
 
 		eslint := config.Config.Tools()["eslint"]
+		if eslint == nil {
+			fmt.Println("Eslint is not installed, make sure that it is before running analyze command")
+			return
+		}
 		eslintInstallationDirectory := eslint.Info()["installDir"]
 		nodeRuntime := config.Config.Runtimes()["node"]
 		nodeBinary := nodeRuntime.Info()["node"]

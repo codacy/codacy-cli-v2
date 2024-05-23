@@ -1,4 +1,4 @@
 runtimes:
-    - node@22.2.0
+  - node@22.2.0
 tools:
-    - eslint@9.3.0
+  - eslint@9.3.0
