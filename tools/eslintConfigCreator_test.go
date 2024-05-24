@@ -6,14 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testConfig(t *testing.T, configuration toolConfiguration, expected string) {
+func testConfig(t *testing.T, configuration ToolConfiguration, expected string) {
 	actual := CreateEslintConfig(configuration)
 	assert.Equal(t, expected, actual)
 }
 
 func TestCreateEslintConfigEmptyConfig(t *testing.T) {
 	testConfig(t,
-		toolConfiguration{},
+		ToolConfiguration{},
 		`export default [
     {
         rules: {
@@ -24,10 +24,10 @@ func TestCreateEslintConfigEmptyConfig(t *testing.T) {
 
 func TestCreateEslintConfigConfig1(t *testing.T) {
 	testConfig(t,
-		toolConfiguration{
-			patternsConfiguration: []patternConfiguration{
+		ToolConfiguration{
+			PatternsConfiguration: []PatternConfiguration{
 				{
-					patternId: "semi",
+					PatternId: "ESLint8_semi",
 				},
 			},
 		},
@@ -42,14 +42,14 @@ func TestCreateEslintConfigConfig1(t *testing.T) {
 
 func TestCreateEslintConfigUnnamedParam(t *testing.T) {
 	testConfig(t,
-		toolConfiguration{
-			patternsConfiguration: []patternConfiguration{
+		ToolConfiguration{
+			PatternsConfiguration: []PatternConfiguration{
 				{
-					patternId: "semi",
-					paramenterConfiguration: []patternParameterConfiguration{
+					PatternId: "ESLint8_semi",
+					ParamenterConfigurations: []PatternParameterConfiguration{
 						{
-							name:  "unnamedParam",
-							value: "never",
+							Name:  "unnamedParam",
+							Value: "never",
 						},
 					},
 				},
