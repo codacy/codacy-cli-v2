@@ -4,6 +4,7 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -29,23 +30,27 @@ var initCmd = &cobra.Command{
 	Short: "Bootstraps project configuration",
 	Long:  "Bootstraps project configuration, creates codacy configuration file",
 	Run: func(cmd *cobra.Command, args []string) {
-		apiTools, err := tools.GetTools()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		err = createConfigurationFile(apiTools)
 		if len(codacyRepositoryToken) == 0 {
 			fmt.Println("No project token was specified, skipping fetch configurations ")
-		} else {
-			fmt.Println("Fetching project configuration from codacy ... ")
-			err := buildRepositoryConfigurationFiles(codacyRepositoryToken)
+			noTools := []tools.Tool{}
+			err := createConfigurationFile(noTools)
 			if err != nil {
 				log.Fatal(err)
 			}
-		}
-		if err != nil {
-			log.Fatal(err)
+		} else {
+			apiTools, err := tools.GetTools()
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = createConfigurationFile(apiTools)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println("Fetching project configuration from codacy ... ")
+			err = buildRepositoryConfigurationFiles(codacyRepositoryToken)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 		fmt.Println("Run install command to install dependencies.")
 	},
@@ -69,7 +74,8 @@ func createConfigurationFile(tools []tools.Tool) error {
 
 func configFileTemplate(tools []tools.Tool) string {
 
-	var eslintVersion string
+	// Default version
+	eslintVersion := "9.3.0"
 
 	for _, tool := range tools {
 		if tool.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
@@ -113,6 +119,10 @@ func buildRepositoryConfigurationFiles(token string) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return errors.New("failed to get repository's configuration from Codacy API")
+	}
 
 	// Read the response body
 	body, err := io.ReadAll(resp.Body)
