@@ -45,7 +45,6 @@ var initCmd = &cobra.Command{
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println("Fetching project configuration from codacy ... ")
 			err = buildRepositoryConfigurationFiles(codacyRepositoryToken)
 			if err != nil {
 				log.Fatal(err)

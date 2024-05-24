@@ -2,6 +2,7 @@ package tools
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,10 +27,13 @@ func GetTools() ([]Tool, error) {
 		fmt.Println("Error:", err)
 		return nil, err
 	}
-	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, errors.New("failed to get tools from Codacy API")
+	}
 
 	// Read the response body
 	body, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
 	if err != nil {
 		fmt.Println("Error:", err)
 		return nil, err
