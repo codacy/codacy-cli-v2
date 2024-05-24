@@ -15,7 +15,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO change to prod???
 const CodacyApiBase = "https://app.codacy.com"
 
 var codacyRepositoryToken string
