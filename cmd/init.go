@@ -5,12 +5,13 @@ import (
 	"codacy/cli-v2/tools"
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 // TODO change to prod???
@@ -28,7 +29,12 @@ var initCmd = &cobra.Command{
 	Short: "Bootstraps project configuration",
 	Long:  "Bootstraps project configuration, creates codacy configuration file",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := configurationFileSetup()
+		apiTools, err := tools.GetTools()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = createConfigurationFile(apiTools)
 		if len(codacyRepositoryToken) == 0 {
 			fmt.Println("No project token was specified, skipping fetch configurations ")
 		} else {
@@ -45,24 +51,7 @@ var initCmd = &cobra.Command{
 	},
 }
 
-func configurationFileSetup() error {
-	configFile, err := os.Open(config.Config.ProjectConfigFile())
-	defer configFile.Close()
-	if err != nil {
-		fmt.Println("Codacy cli configuration file was not found in", config.Config.LocalCodacyDirectory(), "- Creating file now.")
-		err := createConfigurationFile()
-		if err != nil {
-			return err
-		}
-		return nil
-	} else {
-		fmt.Println("Codacy cli configuration file was already present in ", config.Config.LocalCodacyDirectory())
-	}
-
-	return nil
-}
-
-func createConfigurationFile() error {
+func createConfigurationFile(tools []tools.Tool) error {
 
 	configFile, err := os.Create(config.Config.ProjectConfigFile())
 	defer configFile.Close()
@@ -70,7 +59,7 @@ func createConfigurationFile() error {
 		log.Fatal(err)
 	}
 
-	_, err = configFile.WriteString(configFileTemplate())
+	_, err = configFile.WriteString(configFileTemplate(tools))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,12 +67,21 @@ func createConfigurationFile() error {
 	return nil
 }
 
-func configFileTemplate() string {
-	return `runtimes:
+func configFileTemplate(tools []tools.Tool) string {
+
+	var eslintVersion string
+
+	for _, tool := range tools {
+		if tool.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
+			eslintVersion = tool.Version
+		}
+	}
+
+	return fmt.Sprintf(`runtimes:
     - node@22.2.0
 tools:
-    - eslint@9.3.0
-`
+    - eslint@%s
+`, eslintVersion)
 }
 
 func buildRepositoryConfigurationFiles(token string) error {

@@ -7,7 +7,7 @@ import (
 )
 
 func TestGetTools(t *testing.T) {
-	obtained, err := getTools()
+	obtained, err := GetTools()
 
 	assert.Nil(t, err)
 

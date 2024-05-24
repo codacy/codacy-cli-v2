@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func getTools() ([]Tool, error) {
+func GetTools() ([]Tool, error) {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
