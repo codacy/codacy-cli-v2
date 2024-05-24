@@ -67,13 +67,13 @@ func TestCreateEslintConfigUnnamedParam(t *testing.T) {
 func TestCreateEslintConfigNamedParam(t *testing.T) {
 	testConfig(t,
 		ToolConfiguration{
-			patternsConfiguration: []PatternConfiguration{
+			PatternsConfiguration: []PatternConfiguration{
 				{
-					patternId: "consistent-return",
-					paramenterConfiguration: []PatternParameterConfiguration{
+					PatternId: "consistent-return",
+					ParamenterConfigurations: []PatternParameterConfiguration{
 						{
-							name:  "treatUndefinedAsUnspecified",
-							value: "false",
+							Name:  "treatUndefinedAsUnspecified",
+							Value: "false",
 						},
 					},
 				},
@@ -111,6 +111,23 @@ func TestCreateEslintConfigUnnamedAndNamedParam(t *testing.T) {
     {
         rules: {
           "consistent-return": ["error", "foo", {"treatUndefinedAsUnspecified": false}],
+        }
+    }
+];`)
+}
+
+func TestCreateEslintConfigSkipPlugins(t *testing.T) {
+	testConfig(t,
+		ToolConfiguration{
+			PatternsConfiguration: []PatternConfiguration{
+				{
+					PatternId: "plugin/consistent-return",
+				},
+			},
+		},
+		`export default [
+    {
+        rules: {
         }
     }
 ];`)
