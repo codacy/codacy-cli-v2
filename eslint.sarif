@@ -1,0 +1,151 @@
+{
+  "version": "2.1.0",
+  "$schema": "http://json.schemastore.org/sarif-2.1.0-rtm.5",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "ESLint",
+          "informationUri": "https://eslint.org",
+          "rules": [
+            {
+              "id": "no-unused-vars",
+              "helpUri": "https://eslint.org/docs/latest/rules/no-unused-vars",
+              "properties": {},
+              "shortDescription": {
+                "text": "Disallow unused variables"
+              }
+            },
+            {
+              "id": "unicorn/better-regex",
+              "helpUri": "https://github.com/sindresorhus/eslint-plugin-unicorn/blob/v53.0.0/docs/rules/better-regex.md",
+              "properties": {},
+              "shortDescription": {
+                "text": "Improve regexes by making them shorter, consistent, and safer."
+              }
+            },
+            {
+              "id": "no-redeclare",
+              "helpUri": "https://eslint.org/docs/latest/rules/no-redeclare",
+              "properties": {},
+              "shortDescription": {
+                "text": "Disallow variable redeclaration"
+              }
+            }
+          ],
+          "version": "8.57.0"
+        }
+      },
+      "artifacts": [
+        {
+          "location": {
+            "uri": "file:///Users/stefan/Documents/Projects/repositories/eslint-test-examples/eslint.config.mjs"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///Users/stefan/Documents/Projects/repositories/eslint-test-examples/with-config-file.js"
+          }
+        }
+      ],
+      "results": [
+        {
+          "level": "error",
+          "message": {
+            "text": "'regex' is assigned a value but never used."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///Users/stefan/Documents/Projects/repositories/eslint-test-examples/with-config-file.js",
+                  "index": 1
+                },
+                "region": {
+                  "startLine": 11,
+                  "startColumn": 7,
+                  "endLine": 11,
+                  "endColumn": 12
+                }
+              }
+            }
+          ],
+          "ruleId": "no-unused-vars",
+          "ruleIndex": 0
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "/[0-9]/ can be optimized to /\\d/."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///Users/stefan/Documents/Projects/repositories/eslint-test-examples/with-config-file.js",
+                  "index": 1
+                },
+                "region": {
+                  "startLine": 11,
+                  "startColumn": 15,
+                  "endLine": 11,
+                  "endColumn": 22
+                }
+              }
+            }
+          ],
+          "ruleId": "unicorn/better-regex",
+          "ruleIndex": 1
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "'regex2' is assigned a value but never used."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///Users/stefan/Documents/Projects/repositories/eslint-test-examples/with-config-file.js",
+                  "index": 1
+                },
+                "region": {
+                  "startLine": 13,
+                  "startColumn": 7,
+                  "endLine": 13,
+                  "endColumn": 13
+                }
+              }
+            }
+          ],
+          "ruleId": "no-unused-vars",
+          "ruleIndex": 0
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "'o' is already defined."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///Users/stefan/Documents/Projects/repositories/eslint-test-examples/with-config-file.js",
+                  "index": 1
+                },
+                "region": {
+                  "startLine": 15,
+                  "startColumn": 5,
+                  "endLine": 15,
+                  "endColumn": 6
+                }
+              }
+            }
+          ],
+          "ruleId": "no-redeclare",
+          "ruleIndex": 2
+        }
+      ]
+    }
+  ]
+}
