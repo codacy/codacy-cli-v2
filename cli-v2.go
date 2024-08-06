@@ -90,7 +90,6 @@ type CodacyPayload struct {
 var codacyPatterns []CodacyPattern
 
 func main() {
-
 	fmt.Println("Running original CLI functionality...")
 	// Original functionality
 	config.Init()
@@ -103,22 +102,24 @@ func main() {
 	}
 
 	cmd.Execute()
-	var sarifPath, commitUuid, projectToken, baseDir, apiToken string
+}
+
+func run() {
+	var sarifPath, commitUuid, projectToken, apiToken string
 	flag.StringVar(&sarifPath, "sarif-path", "", "Path to the SARIF report")
 	flag.StringVar(&commitUuid, "commit-uuid", "", "Commit UUID")
 	flag.StringVar(&projectToken, "project-token", "", "Project token for Codacy API")
-	flag.StringVar(&baseDir, "basedir", "", "Base directory where code is cloned")
 	flag.StringVar(&apiToken, "api-token", "", "API token for Codacy")
 	flag.Parse()
 
-	if commitUuid != "" && projectToken != "" && baseDir != "" && apiToken != "" {
+	if commitUuid != "" && projectToken != "" && apiToken != "" {
 		fmt.Println("Processing SARIF and sending results...")
-		processSarifAndSendResults(sarifPath, commitUuid, projectToken, baseDir, apiToken)
+		processSarifAndSendResults(sarifPath, commitUuid, projectToken, apiToken)
 		return
 	}
 }
 
-func processSarifAndSendResults(sarifPath, commitUuid, projectToken, baseDir, apiToken string) {
+func processSarifAndSendResults(sarifPath, commitUuid, projectToken, apiToken string) {
 	fmt.Printf("Loading SARIF file from path: %s\n", sarifPath)
 	// Load SARIF file
 	sarifFile, err := os.Open(sarifPath)
@@ -142,7 +143,7 @@ func processSarifAndSendResults(sarifPath, commitUuid, projectToken, baseDir, ap
 
 	fmt.Println("Processing SARIF results...")
 	// Process SARIF results
-	codacyIssues := processSarif(sarif, baseDir)
+	codacyIssues := processSarif(sarif)
 
 	fmt.Println("Filtering issues...")
 	// Filter issues
@@ -153,7 +154,6 @@ func processSarifAndSendResults(sarifPath, commitUuid, projectToken, baseDir, ap
 	sendResults(filterIn, commitUuid, projectToken)
 }
 
-// Helper function to extract cursor from JSON response body
 func extractCursorFromResponseBody(body io.Reader) (string, error) {
 	var response struct {
 		Pagination struct {
@@ -194,14 +194,12 @@ func loadCodacyPatterns(apiToken string) {
 		os.Exit(1)
 	}
 
-	// Read the response body into a buffer
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Printf("Error reading response body: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Decode the body into patternResp
 	var patternResp struct {
 		Data []CodacyPattern `json:"data"`
 	}
@@ -216,7 +214,6 @@ func loadCodacyPatterns(apiToken string) {
 	fmt.Printf("Loaded %d patterns.\n", patternCount)
 	codacyPatterns = append(codacyPatterns, patternResp.Data...)
 
-	// Extract cursor from the body
 	cursor, err = extractCursorFromResponseBody(bytes.NewReader(body))
 	if err != nil {
 		fmt.Printf("Error extracting cursor: %v\n", err)
@@ -224,7 +221,6 @@ func loadCodacyPatterns(apiToken string) {
 	}
 
 	for {
-		// Construct the URL with the cursor if it exists
 		url := baseURL
 		if cursor != "" {
 			url += "?cursor=" + cursor
@@ -250,14 +246,12 @@ func loadCodacyPatterns(apiToken string) {
 			os.Exit(1)
 		}
 
-		// Read the response body into a buffer
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Printf("Error reading response body: %v\n", err)
 			os.Exit(1)
 		}
 
-		// Decode the body into patternResp
 		var patternResp struct {
 			Data []CodacyPattern `json:"data"`
 		}
@@ -272,7 +266,6 @@ func loadCodacyPatterns(apiToken string) {
 		fmt.Printf("Loaded %d patterns.\n", patternCount)
 		codacyPatterns = append(codacyPatterns, patternResp.Data...)
 
-		// Extract cursor from the body
 		cursor, err = extractCursorFromResponseBody(bytes.NewReader(body))
 		if err != nil {
 			fmt.Printf("Error extracting cursor: %v\n", err)
@@ -286,7 +279,7 @@ func loadCodacyPatterns(apiToken string) {
 	}
 }
 
-func processSarif(sarif Sarif, baseDir string) []CodacyIssue {
+func processSarif(sarif Sarif) []CodacyIssue {
 	fmt.Println("Processing SARIF results...")
 	var codacyIssues []CodacyIssue
 
@@ -294,7 +287,6 @@ func processSarif(sarif Sarif, baseDir string) []CodacyIssue {
 		for _, result := range run.Results {
 			for _, location := range result.Locations {
 				source := strings.Replace(location.PhysicalLocation.ArtifactLocation.URI, "file://", "", 1)
-				source = strings.Replace(source, baseDir, "", 1)
 
 				codacyIssues = append(codacyIssues, CodacyIssue{
 					Source:  source,
