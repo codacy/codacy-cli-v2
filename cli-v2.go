@@ -2,9 +2,6 @@ package main
 
 import (
 	"bytes"
-	"codacy/cli-v2/cmd"
-	"codacy/cli-v2/config"
-	cfg "codacy/cli-v2/config-file"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -89,22 +86,23 @@ type CodacyPayload struct {
 
 var codacyPatterns []CodacyPattern
 
+//func main() {
+//	fmt.Println("Running original CLI functionality...")
+//	// Original functionality
+//	config.Init()
+//
+//	configErr := cfg.ReadConfigFile(config.Config.ProjectConfigFile())
+//	// whenever there is no configuration file, the only command allowed to run is the 'init'
+//	if configErr != nil && len(os.Args) > 1 && os.Args[1] != "init" {
+//		fmt.Println("No configuration file was found, execute init command first.")
+//		return
+//	}
+//
+//	cmd.Execute()
+//}
+
 func main() {
-	fmt.Println("Running original CLI functionality...")
-	// Original functionality
-	config.Init()
-
-	configErr := cfg.ReadConfigFile(config.Config.ProjectConfigFile())
-	// whenever there is no configuration file, the only command allowed to run is the 'init'
-	if configErr != nil && len(os.Args) > 1 && os.Args[1] != "init" {
-		fmt.Println("No configuration file was found, execute init command first.")
-		return
-	}
-
-	cmd.Execute()
-}
-
-func run() {
+	fmt.Println("SARIF processer and parser starting.")
 	var sarifPath, commitUuid, projectToken, apiToken string
 	flag.StringVar(&sarifPath, "sarif-path", "", "Path to the SARIF report")
 	flag.StringVar(&commitUuid, "commit-uuid", "", "Commit UUID")
@@ -139,7 +137,7 @@ func processSarifAndSendResults(sarifPath, commitUuid, projectToken, apiToken st
 
 	fmt.Println("Loading Codacy patterns...")
 	// Load Codacy patterns
-	loadCodacyPatterns(apiToken)
+	loadCodacyESLintPatterns(apiToken)
 
 	fmt.Println("Processing SARIF results...")
 	// Process SARIF results
@@ -168,13 +166,12 @@ func extractCursorFromResponseBody(body io.Reader) (string, error) {
 	return response.Pagination.Cursor, nil
 }
 
-func loadCodacyPatterns(apiToken string) {
+func loadCodacyESLintPatterns(apiToken string) {
 	fmt.Println("Fetching Codacy patterns...")
 
 	var cursor string
 	const baseURL = "https://app.codacy.com/api/v3/tools/f8b29663-2cb2-498d-b923-a10c6a8c05cd/patterns"
 
-	fmt.Printf("Requesting patterns from URL: %s\n", baseURL)
 	req, err := http.NewRequest("GET", baseURL, nil)
 	if err != nil {
 		fmt.Printf("Error creating request: %v\n", err)
@@ -203,7 +200,6 @@ func loadCodacyPatterns(apiToken string) {
 	var patternResp struct {
 		Data []CodacyPattern `json:"data"`
 	}
-	fmt.Println("Decoding pattern response...")
 	err = json.Unmarshal(body, &patternResp)
 	if err != nil {
 		fmt.Printf("Error decoding pattern response: %v\n", err)
@@ -255,7 +251,6 @@ func loadCodacyPatterns(apiToken string) {
 		var patternResp struct {
 			Data []CodacyPattern `json:"data"`
 		}
-		fmt.Println("Decoding pattern response...")
 		err = json.Unmarshal(body, &patternResp)
 		if err != nil {
 			fmt.Printf("Error decoding pattern response: %v\n", err)
@@ -288,10 +283,13 @@ func processSarif(sarif Sarif) []CodacyIssue {
 			for _, location := range result.Locations {
 				source := strings.Replace(location.PhysicalLocation.ArtifactLocation.URI, "file://", "", 1)
 
+				// Modify the Type to start with ESLint8_ and replace / with _
+				modifiedType := "ESLint8_" + strings.Replace(result.RuleID, "/", "_", -1)
+
 				codacyIssues = append(codacyIssues, CodacyIssue{
 					Source:  source,
 					Line:    location.PhysicalLocation.Region.StartLine,
-					Type:    result.RuleID,
+					Type:    modifiedType,
 					Message: result.Message.Text,
 					Level:   result.Level,
 				})
@@ -300,7 +298,6 @@ func processSarif(sarif Sarif) []CodacyIssue {
 	}
 
 	fmt.Printf("Processed %d issues from SARIF.\n", len(codacyIssues))
-	fmt.Print(codacyIssues)
 	return codacyIssues
 }
 
@@ -313,7 +310,9 @@ func filterPatterns(issues []CodacyIssue) ([]CodacyIssue, []CodacyIssue) {
 		codacyPatternMap[pattern.ID] = pattern
 	}
 
+	fmt.Println("next for #######")
 	for _, issue := range issues {
+		fmt.Println(issue.Type)
 		if pattern, exists := codacyPatternMap[issue.Type]; exists {
 			issue.Type = pattern.ID
 			filterIn = append(filterIn, issue)
@@ -334,7 +333,7 @@ func sendResults(issues []CodacyIssue, commitUuid, projectToken string) {
 		}{Name: "ESLint"},
 		Issues: issues,
 	}
-
+	fmt.Println(payload)
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Printf("Error marshaling payload: %v\n", err)
