@@ -80,7 +80,7 @@ codacy-cli-v2 analyze -t eslint -o eslint.sarif
 To upload a SARIF file to Codacy:
 
 ```bash
-codacy-cli-v2 upload --sarif-path path/to/your.sarif --commit-uuid your-commit-uuid --project-token your-project-token
+codacy-cli-v2 upload -s path/to/your.sarif -c your-commit-uuid -t your-project-token
 ```
 
 ### Example Repository
