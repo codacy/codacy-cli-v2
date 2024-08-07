@@ -29,7 +29,7 @@ The `codacy-cli-v2` is a command-line tool for Codacy that supports analyzing co
       - eslint@9.3.0
   
 - **`codacy-cli-v2 install`**: Command to install the specified node and eslint versions before running analysis.
-- 
+
 ## Download
 
 ### MacOS (brew)
