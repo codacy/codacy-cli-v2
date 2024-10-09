@@ -14,10 +14,18 @@ The `codacy-cli-v2` is a command-line tool for Codacy that supports analyzing co
     - `--fix, -f`: Automatically fixes issues when possible.
     - `--new-pr`: Creates a new GitHub PR with fixed issues.
 
-- **`upload` Command**: Uploads a SARIF file containing analysis results to Codacy.
+- **`upload` Command With Project Token**: Uploads a SARIF file containing analysis results to Codacy.
     - `--sarif-path, -s`: Path to the SARIF report.
     - `--commit-uuid, -c`: Commit UUID.
     - `--project-token, -t`: Project token for Codacy API.
+
+- **`upload` Command With API Token**: Uploads a SARIF file containing analysis results to Codacy.
+    - `--sarif-path, -s`: Path to the SARIF report.
+    - `--commit-uuid, -c`: Commit UUID.
+    - `--api-token, -a`: User level token for Codacy API.
+    - `--provider, -p`: Provider name (e.g., gh, gl, bb).
+    - `--owner, -o`: Repository owner.
+    - `--repository, -r`: Repository name.
 
 ### Important Concepts
 
