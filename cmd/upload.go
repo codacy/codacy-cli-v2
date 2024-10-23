@@ -104,40 +104,53 @@ func processSarif(sarif Sarif) [][]map[string]interface{} {
 				})
 			}
 		}
-		groups := make(map[string]map[string]interface{})
+		var results []map[string]interface{}
 		for _, obj := range codacyIssues {
 			source := obj["source"].(string)
-			if _, ok := groups[source]; !ok {
-				groups[source] = map[string]interface{}{
-					"filename": source,
-					"results":  []interface{}{},
-				}
-			}
-			groups[source]["results"] = append(groups[source]["results"].([]interface{}), map[string]interface{}{
-				"Issue": map[string]interface{}{
-					"patternId": map[string]string{
-						"value": obj["type"].(string),
-					},
-					"filename": source,
-					"message": map[string]string{
-						"text": obj["message"].(string),
-					},
-					"level":    obj["level"].(string),
-					"category": obj["category"].(string),
-					"location": map[string]interface{}{
-						"LineLocation": map[string]int{
-							"line": obj["line"].(int),
-						},
+			issue := map[string]interface{}{
+				"patternId": map[string]string{
+					"value": obj["type"].(string),
+				},
+				"filename": source,
+				"message": map[string]string{
+					"text": obj["message"].(string),
+				},
+				"level": obj["level"].(string),
+				//"category": obj["category"].(string),
+				"location": map[string]interface{}{
+					"LineLocation": map[string]int{
+						"line": obj["line"].(int),
 					},
 				},
-			})
+			}
+
+			// Check if we already have an entry for this filename
+			found := false
+			for i, result := range results {
+				if result["filename"] == source {
+					// If we do, append this issue to its results
+					results[i]["results"] = append(results[i]["results"].([]map[string]interface{}), map[string]interface{}{"Issue": issue})
+					found = true
+					break
+				}
+			}
+
+			// If we don't, create a new entry
+			if !found {
+				results = append(results, map[string]interface{}{
+					"filename": source,
+					"results":  []map[string]interface{}{{"Issue": issue}},
+				})
+			}
+
 		}
+
 		payload := []map[string]interface{}{
 			{
 				"tool": toolName,
 				"issues": map[string]interface{}{
 					"Success": map[string]interface{}{
-						"results": groups,
+						"results": results,
 					},
 				},
 			},
@@ -216,6 +229,7 @@ func sendResultsWithProjectToken(payload []map[string]interface{}, commitUUID st
 
 	url := fmt.Sprintf("https://api.codacy.com/2.0/commit/%s/issuesRemoteResults", commitUUID)
 	fmt.Printf("Sending results to URL: %s\n", url)
+	fmt.Println("Payload:", string(payloadBytes))
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		fmt.Printf("Error creating request: %v\n", err)
@@ -265,5 +279,7 @@ func sendResultsWithAPIToken(payload []map[string]interface{}, commitUUID string
 	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("Error sending results, status code: %d\n", resp.StatusCode)
 		os.Exit(1)
+	} else {
+		fmt.Println("Results sent successfully")
 	}
 }
