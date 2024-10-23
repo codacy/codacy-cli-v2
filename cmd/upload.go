@@ -105,6 +105,15 @@ func processSarif(sarif Sarif) [][]map[string]interface{} {
 			}
 		}
 		var results []map[string]interface{}
+		// Iterate through run.Artifacts and create entries in the results object
+		for _, artifact := range run.Artifacts {
+			if artifact.Location.URI != "" {
+				results = append(results, map[string]interface{}{
+					"filename": artifact.Location.URI,
+					"results":  []map[string]interface{}{},
+				})
+			}
+		}
 		for _, obj := range codacyIssues {
 			source := obj["source"].(string)
 			issue := map[string]interface{}{
