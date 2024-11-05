@@ -2,18 +2,23 @@ package cmd
 
 import (
 	cfg "codacy/cli-v2/config"
-	"github.com/spf13/cobra"
+	"fmt"
 	"log"
+
+	"github.com/spf13/cobra"
 )
 
+var registry string
+
 func init() {
+	installCmd.Flags().StringVarP(&registry, "registry", "r", "", "Registry to use for installing tools")
 	rootCmd.AddCommand(installCmd)
 }
 
 var installCmd = &cobra.Command{
-	Use: "install",
+	Use:   "install",
 	Short: "Installs the tools specified in the project's config-file.",
-	Long: "Installs all runtimes and tools specified in the project's config-file file.",
+	Long:  "Installs all runtimes and tools specified in the project's config-file file.",
 	Run: func(cmd *cobra.Command, args []string) {
 		// install runtimes
 		fetchRuntimes(&cfg.Config)
@@ -42,8 +47,9 @@ func fetchTools(config *cfg.ConfigType) {
 		case "eslint":
 			// eslint needs node runtime
 			nodeRuntime := config.Runtimes()["node"]
-			err := cfg.InstallEslint(nodeRuntime, tool)
+			err := cfg.InstallEslint(nodeRuntime, tool, registry)
 			if err != nil {
+				fmt.Println(err.Error())
 				log.Fatal(err)
 			}
 		default:
@@ -51,5 +57,3 @@ func fetchTools(config *cfg.ConfigType) {
 		}
 	}
 }
-
-
