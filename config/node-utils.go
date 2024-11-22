@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 )
 
@@ -37,9 +38,9 @@ func genInfoNode(r *Runtime) map[string]string {
 
 	return map[string]string{
 		"nodeFileName": nodeFileName,
-		"installDir": path.Join(Config.RuntimesDirectory(), nodeFileName),
-		"node": path.Join(Config.RuntimesDirectory(), nodeFileName, "bin", "node"),
-		"npm": path.Join(Config.RuntimesDirectory(), nodeFileName, "bin", "npm"),
+		"installDir":   path.Join(Config.RuntimesDirectory(), nodeFileName),
+		"node":         path.Join(Config.RuntimesDirectory(), nodeFileName, "bin", "node"),
+		"npm":          path.Join(Config.RuntimesDirectory(), nodeFileName, "bin", "npm"),
 	}
 }
 
@@ -60,24 +61,30 @@ func getNodeDownloadURL(nodeRuntime *Runtime) string {
 func InstallNode(r *Runtime) error {
 	// TODO should delete downloaded archive
 	// TODO check for deflated archive
-	log.Println("Fetching node...")
 	downloadNodeURL := getNodeDownloadURL(r)
-	nodeTar, err := utils.DownloadFile(downloadNodeURL, Config.RuntimesDirectory())
-	if err != nil {
-		return err
-	}
-
-	// deflate node archive
-	t, err := os.Open(nodeTar)
+	fileName := filepath.Base(downloadNodeURL)
+	t, err := os.Open(filepath.Join(Config.RuntimesDirectory(), fileName))
 	defer t.Close()
 	if err != nil {
-		return err
+		log.Println("Node is not present, fetching node...")
+		nodeTar, err := utils.DownloadFile(downloadNodeURL, Config.RuntimesDirectory())
+		if err != nil {
+			return err
+		}
+		t, err = os.Open(nodeTar)
+		defer t.Close()
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Println("Node is already present...")
 	}
+	fmt.Println("Extracting node...")
+	// deflate node archive
+
 	err = utils.ExtractTarGz(t, Config.RuntimesDirectory())
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
-
