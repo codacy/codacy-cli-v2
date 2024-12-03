@@ -83,7 +83,15 @@ func (c *ConfigType) initCodacyDirs() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	c.projectConfigFile = filepath.Join(c.localCodacyDirectory, "codacy.yaml")
+	
+	yamlPath := filepath.Join(c.localCodacyDirectory, "codacy.yaml")
+	ymlPath := filepath.Join(c.localCodacyDirectory, "codacy.yml")
+	
+	if _, err := os.Stat(ymlPath); err == nil {
+		c.projectConfigFile = ymlPath
+	} else {
+		c.projectConfigFile = yamlPath
+	}
 }
 
 func Init() {

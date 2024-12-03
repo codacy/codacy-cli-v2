@@ -29,7 +29,7 @@ The `codacy-cli-v2` is a command-line tool for Codacy that supports analyzing co
 
 ### Important Concepts
 
-- **`.codacy/.codacy.yaml`**: Configuration file to specify `node` and `eslint` versions for the CLI.
+- **`.codacy/codacy.yaml`**: Configuration file to specify `node` and `eslint` versions for the CLI.
   ```yaml
   runtimes:
       - node@22.2.0
@@ -66,7 +66,7 @@ alias codacy-cli-v2="bash <(curl -Ls https://raw.githubusercontent.com/codacy/co
 Before running the analysis, install the specified tools:
 
 ```bash
-codacy-cli-v2 install
+codacy-cli install
 ```
 
 ### Run Analysis
@@ -74,13 +74,13 @@ codacy-cli-v2 install
 To run ESLint and output the results to the terminal:
 
 ```bash
-codacy-cli-v2 analyze --tool eslint
+codacy-cli analyze --tool eslint
 ```
 
 To store the results as SARIF in a file:
 
 ```bash
-codacy-cli-v2 analyze -t eslint -o eslint.sarif
+codacy-cli analyze -t eslint -o eslint.sarif
 ```
 
 ## Upload Results
@@ -88,7 +88,7 @@ codacy-cli-v2 analyze -t eslint -o eslint.sarif
 To upload a SARIF file to Codacy:
 
 ```bash
-codacy-cli-v2 upload -s path/to/your.sarif -c your-commit-uuid -t your-project-token
+codacy-cli upload -s path/to/your.sarif -c your-commit-uuid -t your-project-token
 ```
 
 ### Example Repository

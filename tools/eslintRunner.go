@@ -19,7 +19,8 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 	}
 	if outputFile != "" {
 		//When writing to file, we write is SARIF
-		cmd.Args = append(cmd.Args, "-f", "@microsoft/eslint-formatter-sarif", "-o", outputFile)
+		// Add --max-warnings -1 to include files with no issues in output
+		cmd.Args = append(cmd.Args, "-f", "@microsoft/eslint-formatter-sarif", "--max-warnings", "-1", "-o", outputFile)
 	}
 	if len(pathsToCheck) > 0 {
 		cmd.Args = append(cmd.Args, pathsToCheck...)
