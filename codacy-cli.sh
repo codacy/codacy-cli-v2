@@ -65,7 +65,11 @@ fi
 
 # if no version is specified, we fetch the latest
 if [ -z "$CODACY_CLI_V2_VERSION" ]; then
-  CODACY_CLI_V2_VERSION="$(curl -Lq "https://api.github.com/repos/codacy/codacy-cli-v2/releases/latest" 2>/dev/null | grep -m 1 tag_name | cut -d'"' -f4)"
+  if [ -n "$GH_TOKEN" ]; then
+    CODACY_CLI_V2_VERSION="$(curl -Lq --header "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/codacy/codacy-cli-v2/releases/latest" 2>/dev/null | grep -m 1 tag_name | cut -d'"' -f4)"
+  else
+    CODACY_CLI_V2_VERSION="$(curl -Lq "https://api.github.com/repos/codacy/codacy-cli-v2/releases/latest" 2>/dev/null | grep -m 1 tag_name | cut -d'"' -f4)"
+  fi
 fi
 
 # Folder containing the binary
