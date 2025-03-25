@@ -5,9 +5,9 @@ import (
 )
 
 type Runtime struct {
-	name string
+	name    string
 	version string
-	info map[string]string
+	info    map[string]string
 }
 
 func (r *Runtime) Name() string {
