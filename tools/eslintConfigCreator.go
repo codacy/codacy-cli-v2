@@ -33,10 +33,6 @@ func CreateEslintConfig(configuration ToolConfiguration) string {
 		rule = strings.ReplaceAll(rule, "_", "/")
 		rule = strings.ReplaceAll(rule, tempstring, "_")
 
-		/*if strings.Contains(rule, "/") {
-			continue
-		}*/
-
 		parametersString := ""
 
 		for _, parameter := range patternConfiguration.ParamenterConfigurations {

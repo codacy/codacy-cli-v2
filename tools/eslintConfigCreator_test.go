@@ -116,7 +116,7 @@ func TestCreateEslintConfigUnnamedAndNamedParam(t *testing.T) {
 ];`)
 }
 
-func TestCreateEslintConfigSkipPlugins(t *testing.T) {
+func TestCreateEslintConfigSupportPlugins(t *testing.T) {
 	testConfig(t,
 		ToolConfiguration{
 			PatternsConfiguration: []PatternConfiguration{
@@ -128,6 +128,7 @@ func TestCreateEslintConfigSkipPlugins(t *testing.T) {
 		`export default [
     {
         rules: {
+          "plugin/consistent-return": "error",
         }
     }
 ];`)
