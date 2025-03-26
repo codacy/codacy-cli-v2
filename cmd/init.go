@@ -74,18 +74,24 @@ func configFileTemplate(tools []tools.Tool) string {
 
 	// Default version
 	eslintVersion := "9.3.0"
+	pylintVersion := "2.13.9"
 
 	for _, tool := range tools {
 		if tool.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
 			eslintVersion = tool.Version
 		}
+		if tool.Uuid == "34225275-f79e-4b85-8126-c7512c987c0d" {
+			pylintVersion = tool.Version
+		}
 	}
 
 	return fmt.Sprintf(`runtimes:
     - node@22.2.0
+    - python@3.9.21
 tools:
     - eslint@%s
-`, eslintVersion)
+    - pylint@%s
+`, eslintVersion, pylintVersion)
 }
 
 func buildRepositoryConfigurationFiles(token string) error {

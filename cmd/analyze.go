@@ -198,8 +198,24 @@ var analyzeCmd = &cobra.Command{
 		switch toolToAnalyze {
 		case "eslint":
 			// nothing
+		case "pylint":
+			pylint := config.Config.Tools()["pylint"]
+			if pylint == nil {
+				log.Fatal("Pylint is not installed. Please install it using 'codacy-cli install'.")
+			}
+			pylintInstallationDirectory := pylint.Info()["installDir"]
+			pythonRuntime := config.Config.Runtimes()["python"]
+			pythonBinary := pythonRuntime.Info()["python"]
+
+			log.Printf("Running %s...\n", toolToAnalyze)
+			if outputFile != "" {
+				log.Println("Output will be available at", outputFile)
+			}
+			tools.RunPylint(workDirectory, pylintInstallationDirectory, pythonBinary, args, autoFix, outputFile)
+
 		case "":
 			log.Fatal("You need to specify a tool to run analysis with, e.g., '--tool eslint'", toolToAnalyze)
+
 		default:
 			log.Fatal("Trying to run unsupported tool: ", toolToAnalyze)
 		}

@@ -35,6 +35,11 @@ func fetchRuntimes(config *cfg.ConfigType) {
 			if err != nil {
 				log.Fatal(err)
 			}
+		case "python":
+			err := cfg.InstallPython(r)
+			if err != nil {
+				log.Fatal(err)
+			}
 		default:
 			log.Fatal("Unknown runtime:", r.Name())
 		}
@@ -50,6 +55,12 @@ func fetchTools(config *cfg.ConfigType) {
 			err := cfg.InstallEslint(nodeRuntime, tool, registry)
 			if err != nil {
 				fmt.Println(err.Error())
+				log.Fatal(err)
+			}
+		case "pylint":
+			pythonRuntime := config.Runtimes()["python"]
+			err := cfg.InstallPylint(pythonRuntime, tool)
+			if err != nil {
 				log.Fatal(err)
 			}
 		default:
