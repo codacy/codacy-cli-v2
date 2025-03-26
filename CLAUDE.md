@@ -3,6 +3,7 @@
 ## Build & Test Commands
 - Build: `go build ./cli-v2.go`
 - Run all tests: `go test ./...`
+- Run all tests with coverage: `go test -coverprofile=unit.coverage.out ./...`
 - Run specific test: `go test -run TestName ./package/path`
 - Example: `go test -run TestGetTools ./tools`
 - Format code: `go fmt ./...`
