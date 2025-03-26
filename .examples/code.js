@@ -5,6 +5,3 @@ class FooComponent extends Component {
     tryInvoke(this.args, 'bar', ['baz']);
   }
 }
-
-
-var token = "github_rXGj85G0qUmzPu2ijX8msJsZRMzweyUuXaF0MeTvQEmGUP6AKSHeWuYn9Ue";
