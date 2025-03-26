@@ -35,6 +35,11 @@ func fetchRuntimes(config *cfg.ConfigType) {
 			if err != nil {
 				log.Fatal(err)
 			}
+		case "dart":
+			err := cfg.InstallDart(r)
+			if err != nil {
+				log.Fatal(err)
+			}
 		default:
 			log.Fatal("Unknown runtime:", r.Name())
 		}
@@ -50,6 +55,13 @@ func fetchTools(config *cfg.ConfigType) {
 			err := cfg.InstallEslint(nodeRuntime, tool, registry)
 			if err != nil {
 				fmt.Println(err.Error())
+				log.Fatal(err)
+			}
+		case "dartanalyzer":
+			// dartanalyzer needs dart runtime
+			dartRuntime := config.Runtimes()["dart"]
+			err := cfg.InstallDartAnalyzer(dartRuntime, tool, registry)
+			if err != nil {
 				log.Fatal(err)
 			}
 		default:
