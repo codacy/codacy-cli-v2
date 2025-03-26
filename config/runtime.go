@@ -32,6 +32,8 @@ func (r *Runtime) populateInfo() {
 		r.info = genInfoNode(r)
 	case "eslint":
 		r.info = genInfoEslint(r)
+	case "trivy":
+		r.info = genInfoTrivy(r)
 	}
 }
 

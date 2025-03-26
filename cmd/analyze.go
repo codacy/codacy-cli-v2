@@ -202,8 +202,10 @@ var analyzeCmd = &cobra.Command{
 		switch toolToAnalyze {
 		case "eslint":
 			// nothing
+		case "trivy":
+			// nothing
 		case "":
-			log.Fatal("You need to specify a tool to run analysis with, e.g., '--tool eslint'", toolToAnalyze)
+			log.Fatal("You need to specify a tool to run analysis with, e.g., '--tool eslint' or '--tool trivy'")
 		default:
 			log.Fatal("Trying to run unsupported tool: ", toolToAnalyze)
 		}
@@ -215,11 +217,6 @@ var analyzeCmd = &cobra.Command{
 			failIfThereArePendingChanges()
 		}
 
-		eslint := config.Config.Tools()["eslint"]
-		eslintInstallationDirectory := eslint.Info()["installDir"]
-		nodeRuntime := config.Config.Runtimes()["node"]
-		nodeBinary := nodeRuntime.Info()["node"]
-
 		log.Printf("Running %s...\n", toolToAnalyze)
 		if outputFile != "" {
 			log.Println("Output will be available at", outputFile)
@@ -227,7 +224,23 @@ var analyzeCmd = &cobra.Command{
 			log.Println("Output will be in SARIF format")
 		}
 
-		tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, args, autoFix, outputFile, outputFormat)
+		switch toolToAnalyze {
+		case "eslint":
+			eslint := config.Config.Tools()["eslint"]
+			eslintInstallationDirectory := eslint.Info()["installDir"]
+			nodeRuntime := config.Config.Runtimes()["node"]
+			nodeBinary := nodeRuntime.Info()["node"]
+
+			tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, args, autoFix, outputFile, outputFormat)
+		case "trivy":
+			trivy := config.Config.Tools()["trivy"]
+			trivyBinary := trivy.Info()["trivy"]
+
+			err := tools.RunTrivy(workDirectory, trivyBinary, args, outputFile, outputFormat)
+			if err != nil {
+				log.Printf("Error running Trivy: %v", err)
+			}
+		}
 
 		if doNewPr {
 			utils.CreatePr(false)

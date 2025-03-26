@@ -72,20 +72,23 @@ func createConfigurationFile(tools []tools.Tool) error {
 
 func configFileTemplate(tools []tools.Tool) string {
 
-	// Default version
+	// Default versions
 	eslintVersion := "9.3.0"
+	trivyVersion := "0.50.0" // Use the latest stable version
 
 	for _, tool := range tools {
 		if tool.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
 			eslintVersion = tool.Version
 		}
+		// If Codacy API provides UUID for Trivy, you would check it here
 	}
 
 	return fmt.Sprintf(`runtimes:
     - node@22.2.0
 tools:
     - eslint@%s
-`, eslintVersion)
+    - trivy@%s
+`, eslintVersion, trivyVersion)
 }
 
 func buildRepositoryConfigurationFiles(token string) error {
