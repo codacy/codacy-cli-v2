@@ -37,9 +37,9 @@ func genInfoNode(r *Runtime) map[string]string {
 
 	return map[string]string{
 		"nodeFileName": nodeFileName,
-		"installDir": path.Join(Config.RuntimesDirectory(), nodeFileName),
-		"node": path.Join(Config.RuntimesDirectory(), nodeFileName, "bin", "node"),
-		"npm": path.Join(Config.RuntimesDirectory(), nodeFileName, "bin", "npm"),
+		"installDir":   path.Join(Config.RuntimesDirectory(), nodeFileName),
+		"node":         path.Join(Config.RuntimesDirectory(), nodeFileName, "bin", "node"),
+		"npm":          path.Join(Config.RuntimesDirectory(), nodeFileName, "bin", "npm"),
 	}
 }
 
@@ -80,4 +80,3 @@ func InstallNode(r *Runtime) error {
 
 	return nil
 }
-

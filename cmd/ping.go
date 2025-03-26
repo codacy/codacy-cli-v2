@@ -10,9 +10,9 @@ func init() {
 }
 
 var pingCmd = &cobra.Command{
-	Use: "ping",
+	Use:   "ping",
 	Short: "Replies with 'pong'.",
-	Long: "Test command. Replies with 'pong'.",
+	Long:  "Test command. Replies with 'pong'.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("pong")
 	},

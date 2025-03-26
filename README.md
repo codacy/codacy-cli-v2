@@ -11,6 +11,7 @@ The `codacy-cli-v2` is a command-line tool for Codacy that supports analyzing co
 - **`analyze` Command**: Runs ESLint analysis on the codebase.
     - `--output, -o`: Output file for the results.
     - `--tool, -t`: Specifies the tool to run analysis with (e.g., ESLint).
+    - `--format`: Output format (use 'sarif' for SARIF format to terminal).
     - `--fix, -f`: Automatically fixes issues when possible.
     - `--new-pr`: Creates a new GitHub PR with fixed issues.
 
@@ -75,6 +76,12 @@ To run ESLint and output the results to the terminal:
 
 ```bash
 codacy-cli analyze --tool eslint
+```
+
+To output results in SARIF format to the terminal:
+
+```bash
+codacy-cli analyze --tool eslint --format sarif
 ```
 
 To store the results as SARIF in a file:

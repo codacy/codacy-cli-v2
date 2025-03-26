@@ -15,7 +15,7 @@ type ConfigType struct {
 	projectConfigFile    string
 
 	runtimes map[string]*Runtime
-	tools map[string]*Runtime
+	tools    map[string]*Runtime
 }
 
 func (c *ConfigType) HomePath() string {
@@ -83,10 +83,10 @@ func (c *ConfigType) initCodacyDirs() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	yamlPath := filepath.Join(c.localCodacyDirectory, "codacy.yaml")
 	ymlPath := filepath.Join(c.localCodacyDirectory, "codacy.yml")
-	
+
 	if _, err := os.Stat(ymlPath); err == nil {
 		c.projectConfigFile = ymlPath
 	} else {
