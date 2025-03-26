@@ -19,7 +19,12 @@ jobs:
           ./cli-v2 install
       - name: "Run tests"
         run: |
-          go test ./...
+          go test -coverprofile=unit.coverage.out ./...
+      - name: "Upload coverage to Codacy"
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        run: |
+          bash <(curl -Ls https://coverage.codacy.com/get.sh) report --force-coverage-parser go -r unit.coverage.out
 
   release:
     needs: test
