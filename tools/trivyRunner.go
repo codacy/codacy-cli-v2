@@ -1,7 +1,6 @@
 package tools
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -55,56 +54,4 @@ func RunTrivy(repositoryToAnalyseDirectory string, trivyBinary string, pathsToCh
 
 	// If outputting to file, just run the command
 	return cmd.Run()
-}
-
-// TrivyJsonToSarif converts Trivy JSON output to SARIF format
-// Note: This function is not needed when using Trivy's built-in SARIF output
-// but is included for completeness if you need custom conversions
-func TrivyJsonToSarif(trivyJsonFile string, sarifOutputFile string) error {
-	// Read Trivy JSON output
-	data, err := os.ReadFile(trivyJsonFile)
-	if err != nil {
-		return fmt.Errorf("failed to read Trivy JSON file: %w", err)
-	}
-
-	// Parse Trivy JSON
-	var trivyResults map[string]interface{}
-	if err := json.Unmarshal(data, &trivyResults); err != nil {
-		return fmt.Errorf("failed to parse Trivy JSON: %w", err)
-	}
-
-	// Build SARIF structure
-	sarif := map[string]interface{}{
-		"$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
-		"version": "2.1.0",
-		"runs": []map[string]interface{}{
-			{
-				"tool": map[string]interface{}{
-					"driver": map[string]interface{}{
-						"name":            "Trivy",
-						"informationUri":  "https://github.com/aquasecurity/trivy",
-						"semanticVersion": "1.0.0",
-						"rules":           []interface{}{},
-					},
-				},
-				"results": []interface{}{},
-			},
-		},
-	}
-
-	// Convert results and rules (simplified implementation)
-	// In a real implementation, you would iterate through Trivy results
-	// and convert each one to SARIF format
-
-	// Write SARIF output
-	sarifData, err := json.MarshalIndent(sarif, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal SARIF data: %w", err)
-	}
-
-	if err := os.WriteFile(sarifOutputFile, sarifData, 0644); err != nil {
-		return fmt.Errorf("failed to write SARIF file: %w", err)
-	}
-
-	return nil
 }
