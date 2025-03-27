@@ -17,12 +17,14 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 	if autoFix {
 		cmd.Args = append(cmd.Args, "--fix")
 	}
-	if outputFile != "" {
-		//When writing to file, we write is SARIF
-		cmd.Args = append(cmd.Args, "-f", "@microsoft/eslint-formatter-sarif", "-o", outputFile)
-	} else if outputFormat == "sarif" {
-		//When outputting to terminal in SARIF format
+	if outputFormat == "sarif" {
+		//When outputting in SARIF format
 		cmd.Args = append(cmd.Args, "-f", "@microsoft/eslint-formatter-sarif")
+	}
+
+	if outputFile != "" {
+		//When writing to file, use the output file option
+		cmd.Args = append(cmd.Args, "-o", outputFile)
 	}
 	if len(pathsToCheck) > 0 {
 		cmd.Args = append(cmd.Args, pathsToCheck...)
