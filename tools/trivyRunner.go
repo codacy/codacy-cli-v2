@@ -24,9 +24,7 @@ func RunTrivy(repositoryToAnalyseDirectory string, trivyBinary string, pathsToCh
 
 	// Add specific targets or use current directory
 	if len(pathsToCheck) > 0 {
-		for _, path := range pathsToCheck {
-			cmd.Args = append(cmd.Args, path)
-		}
+		cmd.Args = append(cmd.Args, pathsToCheck...)
 	} else {
 		cmd.Args = append(cmd.Args, ".")
 	}
