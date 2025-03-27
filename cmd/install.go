@@ -40,6 +40,11 @@ func fetchRuntimes(config *cfg.ConfigType) {
 			if err != nil {
 				log.Fatal(err)
 			}
+		case "flutter":
+			err := cfg.InstallFlutter(r)
+			if err != nil {
+				log.Fatal(err)
+			}
 		default:
 			log.Fatal("Unknown runtime:", r.Name())
 		}
@@ -60,9 +65,17 @@ func fetchTools(config *cfg.ConfigType) {
 		case "dartanalyzer":
 			// dartanalyzer needs dart runtime
 			dartRuntime := config.Runtimes()["dart"]
-			err := cfg.InstallDartAnalyzer(dartRuntime, tool, registry)
-			if err != nil {
-				log.Fatal(err)
+			if config.Runtimes()["flutter"] != nil {
+				flutterRuntime := config.Runtimes()["flutter"]
+				err := cfg.InstallFlutterDartAnalyzer(flutterRuntime, tool, registry)
+				if err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				err := cfg.InstallDartAnalyzer(dartRuntime, tool, registry)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 		default:
 			log.Fatal("Unknown tool:", tool.Name())
