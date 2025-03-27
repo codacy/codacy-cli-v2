@@ -24,3 +24,6 @@ go.work.sum
 .idea/
 
 cli-v2
+
+# ESLint config
+eslint.config.mjs

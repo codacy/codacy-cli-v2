@@ -4,15 +4,15 @@ This is a POC for what could be a new CLI for us. The idea is to rely on the nat
 
 ## Overview
 
-The `codacy-cli-v2` is a command-line tool for Codacy that supports analyzing code using ESLint and uploading the results in SARIF format to Codacy. It provides two main commands: `analyze` and `upload`.
+The `codacy-cli-v2` is a command-line tool for Codacy that supports analyzing code using ESLint, Trivy, and uploading the results in SARIF format to Codacy. It provides two main commands: `analyze` and `upload`.
 
 ### Commands
 
-- **`analyze` Command**: Runs ESLint analysis on the codebase.
+- **`analyze` Command**: Runs analysis tools on the codebase.
     - `--output, -o`: Output file for the results.
-    - `--tool, -t`: Specifies the tool to run analysis with (e.g., ESLint).
+    - `--tool, -t`: Specifies the tool to run analysis with (e.g., ESLint, Trivy).
     - `--format`: Output format (use 'sarif' for SARIF format to terminal).
-    - `--fix, -f`: Automatically fixes issues when possible.
+    - `--fix, -f`: Automatically fixes issues when possible (only applicable to certain tools).
     - `--new-pr`: Creates a new GitHub PR with fixed issues.
 
 - **`upload` Command With Project Token**: Uploads a SARIF file containing analysis results to Codacy.
@@ -30,14 +30,15 @@ The `codacy-cli-v2` is a command-line tool for Codacy that supports analyzing co
 
 ### Important Concepts
 
-- **`.codacy/codacy.yaml`**: Configuration file to specify `node` and `eslint` versions for the CLI.
+- **`.codacy/codacy.yaml`**: Configuration file to specify runtimes and tools versions for the CLI.
   ```yaml
   runtimes:
       - node@22.2.0
   tools:
       - eslint@9.3.0
+      - trivy@0.50.0
   
-- **`codacy-cli-v2 install`**: Command to install the specified node and eslint versions before running analysis.
+- **`codacy-cli-v2 install`**: Command to install the specified runtimes and tools before running analysis.
 
 ## Download
 
@@ -78,16 +79,30 @@ To run ESLint and output the results to the terminal:
 codacy-cli analyze --tool eslint
 ```
 
+To run Trivy vulnerability scanner:
+
+```bash
+codacy-cli analyze --tool trivy
+```
+
 To output results in SARIF format to the terminal:
 
 ```bash
 codacy-cli analyze --tool eslint --format sarif
 ```
 
+```bash
+codacy-cli analyze --tool trivy --format sarif
+```
+
 To store the results as SARIF in a file:
 
 ```bash
 codacy-cli analyze -t eslint -o eslint.sarif
+```
+
+```bash
+codacy-cli analyze -t trivy -o trivy.sarif
 ```
 
 ## Upload Results
