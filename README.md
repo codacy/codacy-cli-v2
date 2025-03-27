@@ -1,10 +1,6 @@
 # codacy-cli-v2
 
-This is a POC for what could be a new CLI for us. The idea is to rely on the native tools and SARIF format instead of relying on Docker.
-
-## Overview
-
-The `codacy-cli-v2` is a command-line tool for Codacy that supports analyzing code using ESLint and uploading the results in SARIF format to Codacy. It provides two main commands: `analyze` and `upload`.
+The `codacy-cli-v2` is a command-line tool for Codacy that supports analyzing code using tools like ESLint and uploading the results in SARIF format to Codacy. It provides two main commands: `analyze` and `upload`.
 
 ### Commands
 
@@ -12,8 +8,7 @@ The `codacy-cli-v2` is a command-line tool for Codacy that supports analyzing co
     - `--output, -o`: Output file for the results.
     - `--tool, -t`: Specifies the tool to run analysis with (e.g., ESLint).
     - `--format`: Output format (use 'sarif' for SARIF format to terminal).
-    - `--fix, -f`: Automatically fixes issues when possible.
-    - `--new-pr`: Creates a new GitHub PR with fixed issues.
+    - `--fix`: Automatically fixes issues when possible.
 
 - **`upload` Command With Project Token**: Uploads a SARIF file containing analysis results to Codacy.
     - `--sarif-path, -s`: Path to the SARIF report.
@@ -30,7 +25,7 @@ The `codacy-cli-v2` is a command-line tool for Codacy that supports analyzing co
 
 ### Important Concepts
 
-- **`.codacy/codacy.yaml`**: Configuration file to specify `node` and `eslint` versions for the CLI.
+- **`.codacy/codacy.yaml`**: Configuration file to specify runtimes and tools versions for the CLI.
   ```yaml
   runtimes:
       - node@22.2.0
@@ -87,7 +82,7 @@ codacy-cli analyze --tool eslint --format sarif
 To store the results as SARIF in a file:
 
 ```bash
-codacy-cli analyze -t eslint -o eslint.sarif
+codacy-cli analyze -t eslint --format sarif -o eslint.sarif
 ```
 
 ## Upload Results
@@ -101,4 +96,3 @@ codacy-cli upload -s path/to/your.sarif -c your-commit-uuid -t your-project-toke
 ### Example Repository
 
 As an example, you can check https://github.com/troubleshoot-codacy/eslint-test-examples for a repository that has an action relying on this CLI.
-

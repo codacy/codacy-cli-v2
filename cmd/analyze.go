@@ -3,14 +3,12 @@ package cmd
 import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
-	"codacy/cli-v2/utils"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 
 	"github.com/spf13/cobra"
 )
@@ -18,7 +16,6 @@ import (
 var outputFile string
 var toolToAnalyze string
 var autoFix bool
-var doNewPr bool
 var outputFormat string
 var sarifPath string
 var commitUuid string
@@ -97,8 +94,7 @@ func init() {
 	analyzeCmd.Flags().StringVarP(&outputFile, "output", "o", "", "output file for the results")
 	analyzeCmd.Flags().StringVarP(&toolToAnalyze, "tool", "t", "", "Which tool to run analysis with")
 	analyzeCmd.Flags().StringVar(&outputFormat, "format", "", "Output format (use 'sarif' for SARIF format)")
-	analyzeCmd.Flags().BoolVarP(&autoFix, "fix", "f", false, "Apply auto fix to your issues when available")
-	analyzeCmd.Flags().BoolVar(&doNewPr, "new-pr", false, "Create a new PR on GitHub containing the fixed issues")
+	analyzeCmd.Flags().BoolVar(&autoFix, "fix", false, "Apply auto fix to your issues when available")
 	rootCmd.AddCommand(analyzeCmd)
 }
 
@@ -208,13 +204,6 @@ var analyzeCmd = &cobra.Command{
 			log.Fatal("Trying to run unsupported tool: ", toolToAnalyze)
 		}
 
-		// can't create a new PR if there will be no changes/fixed issues
-		if doNewPr && !autoFix {
-			log.Fatal("Can't create a new PR with fixes without fixing issues. Use the '--fix' option.")
-		} else if doNewPr {
-			failIfThereArePendingChanges()
-		}
-
 		eslint := config.Config.Tools()["eslint"]
 		eslintInstallationDirectory := eslint.Info()["installDir"]
 		nodeRuntime := config.Config.Runtimes()["node"]
@@ -230,18 +219,5 @@ var analyzeCmd = &cobra.Command{
 		}
 
 		tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, args, autoFix, outputFile, outputFormat)
-
-		if doNewPr {
-			utils.CreatePr(false)
-		}
 	},
-}
-
-func failIfThereArePendingChanges() {
-	cmd := exec.Command("git", "status", "--porcelain")
-	out, _ := cmd.Output()
-
-	if string(out) != "" {
-		log.Fatal("There are pending changes, cannot proceed. Commit your pending changes.")
-	}
 }
