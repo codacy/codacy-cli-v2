@@ -190,8 +190,8 @@ func getToolName(toolName string, version string) string {
 
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
-	Short: "Runs all linters.",
-	Long:  "Runs all tools for all runtimes.",
+	Short: "Runs selected tool.",
+	Long:  "Runs selected tool on defined runtime.",
 	Run: func(cmd *cobra.Command, args []string) {
 		workDirectory, err := os.Getwd()
 		if err != nil {
@@ -201,7 +201,33 @@ var analyzeCmd = &cobra.Command{
 		// TODO add more tools here
 		switch toolToAnalyze {
 		case "eslint":
-			// nothing
+			eslint := config.Config.Tools()["eslint"]
+			eslintInstallationDirectory := eslint.Info()["installDir"]
+			nodeRuntime := config.Config.Runtimes()["node"]
+			nodeBinary := nodeRuntime.Info()["node"]
+
+			log.Printf("Running %s...\n", toolToAnalyze)
+			if outputFormat == "sarif" {
+				log.Println("Output will be in SARIF format")
+			}
+
+			if outputFile != "" {
+				log.Println("Output will be available at", outputFile)
+			}
+
+			tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, args, autoFix, outputFile, outputFormat)
+		case "dartanalyzer":
+			var dart *config.Runtime
+			if config.Config.Runtimes()["flutter"] != nil {
+				dart = config.Config.Runtimes()["flutter"]
+			} else {
+				dart = config.Config.Runtimes()["dart"]
+			}
+			dartInstallationDirectory := dart.Info()["installDir"]
+			dartBinary := dart.Info()["dart"]
+
+			log.Printf("Running %s...\n", toolToAnalyze)
+			tools.RunDartAnalyzer(workDirectory, dartInstallationDirectory, dartBinary, args, autoFix, outputFile, outputFormat)
 		case "":
 			log.Fatal("You need to specify a tool to run analysis with, e.g., '--tool eslint'", toolToAnalyze)
 		default:
@@ -214,22 +240,6 @@ var analyzeCmd = &cobra.Command{
 		} else if doNewPr {
 			failIfThereArePendingChanges()
 		}
-
-		eslint := config.Config.Tools()["eslint"]
-		eslintInstallationDirectory := eslint.Info()["installDir"]
-		nodeRuntime := config.Config.Runtimes()["node"]
-		nodeBinary := nodeRuntime.Info()["node"]
-
-		log.Printf("Running %s...\n", toolToAnalyze)
-		if outputFormat == "sarif" {
-			log.Println("Output will be in SARIF format")
-		}
-
-		if outputFile != "" {
-			log.Println("Output will be available at", outputFile)
-		}
-
-		tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, args, autoFix, outputFile, outputFormat)
 
 		if doNewPr {
 			utils.CreatePr(false)
