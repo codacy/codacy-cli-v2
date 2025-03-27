@@ -96,7 +96,7 @@ type Pattern struct {
 func init() {
 	analyzeCmd.Flags().StringVarP(&outputFile, "output", "o", "", "output file for the results")
 	analyzeCmd.Flags().StringVarP(&toolToAnalyze, "tool", "t", "", "Which tool to run analysis with")
-	analyzeCmd.Flags().StringVar(&outputFormat, "format", "", "Output format (use 'sarif' for SARIF format to terminal)")
+	analyzeCmd.Flags().StringVar(&outputFormat, "format", "", "Output format (use 'sarif' for SARIF format)")
 	analyzeCmd.Flags().BoolVarP(&autoFix, "fix", "f", false, "Apply auto fix to your issues when available")
 	analyzeCmd.Flags().BoolVar(&doNewPr, "new-pr", false, "Create a new PR on GitHub containing the fixed issues")
 	rootCmd.AddCommand(analyzeCmd)
@@ -221,10 +221,12 @@ var analyzeCmd = &cobra.Command{
 		nodeBinary := nodeRuntime.Info()["node"]
 
 		log.Printf("Running %s...\n", toolToAnalyze)
+		if outputFormat == "sarif" {
+			log.Println("Output will be in SARIF format")
+		}
+
 		if outputFile != "" {
 			log.Println("Output will be available at", outputFile)
-		} else if outputFormat == "sarif" {
-			log.Println("Output will be in SARIF format")
 		}
 
 		tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, args, autoFix, outputFile, outputFormat)
