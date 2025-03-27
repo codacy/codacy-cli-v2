@@ -2,6 +2,7 @@ package cmd
 
 import (
 	cfg "codacy/cli-v2/config"
+	"codacy/cli-v2/plugins"
 	"fmt"
 	"log"
 
@@ -28,16 +29,9 @@ var installCmd = &cobra.Command{
 }
 
 func fetchRuntimes(config *cfg.ConfigType) {
-	for _, r := range config.Runtimes() {
-		switch r.Name() {
-		case "node":
-			err := cfg.InstallNode(r)
-			if err != nil {
-				log.Fatal(err)
-			}
-		default:
-			log.Fatal("Unknown runtime:", r.Name())
-		}
+	err := plugins.InstallRuntimes(config.Runtimes())
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 

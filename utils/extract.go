@@ -64,3 +64,69 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 	}
 	return nil
 }
+
+func ExtractZip(filePath string, targetDir string) error {
+	archive, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer archive.Close()
+
+	format := archiver.Zip{}
+
+	handler := func(ctx context.Context, f archiver.File) error {
+		path := filepath.Join(targetDir, f.NameInArchive)
+
+		switch f.IsDir() {
+		case true:
+			// create a directory
+			err := os.MkdirAll(path, 0777)
+			if err != nil {
+				return err
+			}
+
+		case false:
+			// if is a symlink
+			if f.LinkTarget != "" {
+				os.Remove(path)
+				err := os.Symlink(f.LinkTarget, path)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+
+			// ensure parent directory exists
+			parentDir := filepath.Dir(path)
+			if err := os.MkdirAll(parentDir, 0777); err != nil {
+				return err
+			}
+
+			// write a file
+			w, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, f.Mode())
+			if err != nil {
+				return err
+			}
+			defer w.Close()
+
+			stream, err := f.Open()
+			if err != nil {
+				return err
+			}
+			defer stream.Close()
+
+			_, err = io.Copy(w, stream)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	err = format.Extract(context.Background(), archive, nil, handler)
+	if err != nil {
+		return err
+	}
+	return nil
+}
