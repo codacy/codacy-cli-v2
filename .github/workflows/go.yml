@@ -83,12 +83,6 @@ jobs:
           dir
           echo "Binary exists check:"
           if (Test-Path cli-v2.exe) { Write-Host "Binary exists" } else { Write-Host "Binary not found" }
-      - name: Setup Node.js for Windows
-        if: matrix.os == 'windows-latest'
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
       - name: Install dependencies from .codacy/codacy.yaml
         if: matrix.os != 'windows-latest'
         run: |
