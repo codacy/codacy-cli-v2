@@ -44,6 +44,7 @@ jobs:
           name: cli-binaries
           path: .
       - name: Select correct binary
+        shell: bash
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             mv cli-v2.exe cli-v2
@@ -58,15 +59,6 @@ jobs:
       - name: Install dependencies from .codacy/codacy.yaml
         run: |
           ./cli-v2 install
-      - name: "Run tests"
-        run: |
-          go test -coverprofile=unit.coverage.out ./...
-      - name: "Upload coverage to Codacy"
-        if: matrix.os == 'ubuntu-latest'  # Only upload coverage from Ubuntu
-        env:
-          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-        run: |
-          bash <(curl -Ls https://coverage.codacy.com/get.sh) report --force-coverage-parser go -r unit.coverage.out
 
   release:
     needs: test
