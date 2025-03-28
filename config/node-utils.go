@@ -105,9 +105,14 @@ func InstallNode(r *Runtime) error {
 		fmt.Println("Node is already present...")
 	}
 	fmt.Println("Extracting node...")
-	// deflate node archive
 
-	err = utils.ExtractTarGz(t, Config.RuntimesDirectory())
+	// Handle different archive types
+	if runtime.GOOS == "windows" {
+		err = utils.ExtractZip(t, Config.RuntimesDirectory())
+	} else {
+		err = utils.ExtractTarGz(t, Config.RuntimesDirectory())
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to extract Node.js archive: %w", err)
 	}
