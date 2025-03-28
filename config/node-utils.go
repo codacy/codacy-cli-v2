@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 )
@@ -30,7 +29,18 @@ func getNodeFileName(nodeRuntime *Runtime) string {
 		nodeArch = goarch
 	}
 
-	return fmt.Sprintf("node-v%s-%s-%s", nodeRuntime.Version(), goos, nodeArch)
+	// Map Go OS to Node.js OS name
+	var nodeOS string
+	switch goos {
+	case "windows":
+		nodeOS = "win"
+	default:
+		nodeOS = goos
+	}
+
+	version := nodeRuntime.Version()
+
+	return filepath.Join("node-v" + version + "-" + nodeOS + "-" + nodeArch)
 }
 
 func genInfoNode(r *Runtime) map[string]string {
@@ -38,9 +48,9 @@ func genInfoNode(r *Runtime) map[string]string {
 
 	return map[string]string{
 		"nodeFileName": nodeFileName,
-		"installDir":   path.Join(Config.RuntimesDirectory(), nodeFileName),
-		"node":         path.Join(Config.RuntimesDirectory(), nodeFileName, "bin", "node"),
-		"npm":          path.Join(Config.RuntimesDirectory(), nodeFileName, "bin", "npm"),
+		"installDir":   filepath.Join(Config.RuntimesDirectory(), nodeFileName),
+		"node":         filepath.Join(Config.RuntimesDirectory(), nodeFileName, "bin", "node"),
+		"npm":          filepath.Join(Config.RuntimesDirectory(), nodeFileName, "bin", "npm"),
 	}
 }
 
