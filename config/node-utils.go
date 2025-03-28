@@ -40,7 +40,7 @@ func getNodeFileName(nodeRuntime *Runtime) string {
 
 	version := nodeRuntime.Version()
 
-	return filepath.Join("node-v" + version + "-" + nodeOS + "-" + nodeArch)
+	return fmt.Sprintf("node-v%s-%s-%s", version, nodeOS, nodeArch)
 }
 
 func genInfoNode(r *Runtime) map[string]string {

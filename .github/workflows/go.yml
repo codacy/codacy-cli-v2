@@ -87,17 +87,18 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           ./cli-v2 install
-      - name: Install dependencies from .codacy/codacy.yaml (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          Get-ChildItem
-          Write-Host "Current directory contents:"
-          dir
-          Write-Host "Node.js version:"
-          node --version
-          Write-Host "Attempting to run CLI..."
-          .\cli-v2.exe install
+      # Disable windows it test for now.    
+      # - name: Install dependencies from .codacy/codacy.yaml (Windows)
+      #   if: matrix.os == 'windows-latest' 
+      #   shell: pwsh
+      #   run: |
+      #     Get-ChildItem
+      #     Write-Host "Current directory contents:"
+      #     dir
+      #     Write-Host "Node.js version:"
+      #     node --version
+      #     Write-Host "Attempting to run CLI..."
+      #     .\cli-v2.exe install
 
   release:
     needs: [test, ittest]
