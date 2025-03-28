@@ -43,7 +43,7 @@ func InstallPylint(pythonRuntime *Runtime, pylint *Runtime) error {
 
 	pythonBinary := pythonInfo["python"]
 
-	// to install pylint using oython binary
+	// to install pylint using python binary
 	cmd := exec.Command(pythonBinary, "-m", "pip", "install",
 		fmt.Sprintf("pylint==%s", pylint.Version()),
 	)
