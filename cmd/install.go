@@ -20,28 +20,19 @@ var installCmd = &cobra.Command{
 	Short: "Installs the tools specified in the project's config-file.",
 	Long:  "Installs all runtimes and tools specified in the project's config-file file.",
 	Run: func(cmd *cobra.Command, args []string) {
-		// install runtimes
-		fetchRuntimes(&cfg.Config)
-		// install tools
-		fetchTools(&cfg.Config)
+		installRuntimes(&cfg.Config)
+		installTools(&cfg.Config)
 	},
 }
 
-func fetchRuntimes(config *cfg.ConfigType) {
-	for _, r := range config.Runtimes() {
-		switch r.Name() {
-		case "node":
-			err := cfg.InstallNode(r)
-			if err != nil {
-				log.Fatal(err)
-			}
-		default:
-			log.Fatal("Unknown runtime:", r.Name())
-		}
+func installRuntimes(config *cfg.ConfigType) {
+	err := cfg.InstallRuntimes()
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
-func fetchTools(config *cfg.ConfigType) {
+func installTools(config *cfg.ConfigType) {
 	for _, tool := range config.Tools() {
 		switch tool.Name() {
 		case "eslint":

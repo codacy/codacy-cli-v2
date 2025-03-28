@@ -5,6 +5,7 @@ import (
 	"log"
 	"os/exec"
 	"path"
+	"codacy/cli-v2/plugins"
 )
 
 func genInfoEslint(r *Runtime) map[string]string {
@@ -20,20 +21,20 @@ func genInfoEslint(r *Runtime) map[string]string {
 /*
  * This installs eslint using node's npm alongside its sarif extension
  */
-func InstallEslint(nodeRuntime *Runtime, eslint *Runtime, registry string) error {
+func InstallEslint(nodeRuntime *plugins.RuntimeInfo, eslint *Runtime, registry string) error {
 	log.Println("Installing ESLint")
 
 	eslintInstallArg := fmt.Sprintf("%s@%s", eslint.Name(), eslint.Version())
 	if registry != "" {
 		fmt.Println("Using registry:", registry)
-		configCmd := exec.Command(nodeRuntime.Info()["npm"], "config", "set", "registry", registry)
+		configCmd := exec.Command(nodeRuntime.Binaries["npm"], "config", "set", "registry", registry)
 		if configOut, err := configCmd.Output(); err != nil {
 			fmt.Println("Error setting npm registry:", err)
 			fmt.Println(string(configOut))
 			return err
 		}
 	}
-	cmd := exec.Command(nodeRuntime.Info()["npm"], "install", "--prefix", eslint.Info()["installDir"],
+	cmd := exec.Command(nodeRuntime.Binaries["npm"], "install", "--prefix", eslint.Info()["installDir"],
 		eslintInstallArg, "@microsoft/eslint-formatter-sarif")
 	fmt.Println(cmd.String())
 	// to use the chdir command we needed to create the folder before, we can change this after

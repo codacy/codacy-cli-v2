@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+// Note that this is only used by tools
 type Runtime struct {
 	name    string
 	version string
@@ -26,10 +27,9 @@ func (r *Runtime) Info() map[string]string {
 	return r.info
 }
 
+// populateInfo populates the runtime info
 func (r *Runtime) populateInfo() {
 	switch r.Name() {
-	case "node":
-		r.info = genInfoNode(r)
 	case "eslint":
 		r.info = genInfoEslint(r)
 	}
