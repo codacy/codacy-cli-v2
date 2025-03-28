@@ -30,6 +30,26 @@ jobs:
             cli-v2-macos
 
   test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+      - name: Install dependencies from .codacy/codacy.yaml
+        run: |
+          go build ./cli-v2.go
+          ./cli-v2 install
+      - name: "Run tests"
+        run: |
+          go test -coverprofile=unit.coverage.out ./...
+      - name: "Upload coverage to Codacy"
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        run: |
+          bash <(curl -Ls https://coverage.codacy.com/get.sh) report --force-coverage-parser go -r unit.coverage.out
+
+  ittest:
     needs: build
     runs-on: ${{ matrix.os }}
     strategy:
@@ -61,7 +81,7 @@ jobs:
           ./cli-v2 install
 
   release:
-    needs: test
+    needs: [test, ittest]
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
