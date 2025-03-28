@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
+	"codacy/cli-v2/plugins"
 )
 
 type ConfigType struct {
@@ -14,7 +16,7 @@ type ConfigType struct {
 	localCodacyDirectory string
 	projectConfigFile    string
 
-	runtimes map[string]*Runtime
+	runtimes map[string]*plugins.RuntimeInfo
 	tools    map[string]*Runtime
 }
 
@@ -42,12 +44,23 @@ func (c *ConfigType) ProjectConfigFile() string {
 	return c.projectConfigFile
 }
 
-func (c *ConfigType) Runtimes() map[string]*Runtime {
+func (c *ConfigType) Runtimes() map[string]*plugins.RuntimeInfo {
 	return c.runtimes
 }
 
-func (c *ConfigType) AddRuntime(r *Runtime) {
-	c.runtimes[r.Name()] = r
+func (c *ConfigType) AddRuntimes(configs []plugins.RuntimeConfig) error {
+	// Process the runtime configurations using the plugins.ProcessRuntimes function
+	runtimeInfoMap, err := plugins.ProcessRuntimes(configs, c.runtimesDirectory)
+	if err != nil {
+		return err
+	}
+
+	// Store the runtime information in the config
+	for name, info := range runtimeInfoMap {
+		c.runtimes[name] = info
+	}
+
+	return nil
 }
 
 // TODO do inheritance with tool
@@ -103,7 +116,7 @@ func Init() {
 
 	Config.initCodacyDirs()
 
-	Config.runtimes = make(map[string]*Runtime)
+	Config.runtimes = make(map[string]*plugins.RuntimeInfo)
 	Config.tools = make(map[string]*Runtime)
 }
 

@@ -2,6 +2,7 @@ package config_file
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/plugins"
 	"gopkg.in/yaml.v3"
 	"os"
 )
@@ -17,12 +18,22 @@ func parseConfigFile(configContents []byte) error {
 		return err
 	}
 
+	// Convert the runtime strings to RuntimeConfig objects
+	runtimeConfigs := make([]plugins.RuntimeConfig, 0, len(configFile.RUNTIMES))
 	for _, rt := range configFile.RUNTIMES {
 		ct, err := parseConfigTool(rt)
 		if err != nil {
 			return err
 		}
-		config.Config.AddRuntime(config.NewRuntime(ct.name, ct.version))
+		runtimeConfigs = append(runtimeConfigs, plugins.RuntimeConfig{
+			Name:    ct.name,
+			Version: ct.version,
+		})
+	}
+
+	// Add all runtimes at once
+	if err := config.Config.AddRuntimes(runtimeConfigs); err != nil {
+		return err
 	}
 
 	for _, tl := range configFile.TOOLS {
