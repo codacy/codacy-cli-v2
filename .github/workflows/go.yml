@@ -4,6 +4,31 @@ permissions:
   contents: write
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+      - name: Build CLI for Linux
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o cli-v2-linux ./cli-v2.go
+      - name: Build CLI for Windows
+        run: |
+          GOOS=windows GOARCH=amd64 go build -o cli-v2.exe ./cli-v2.go
+      - name: Build CLI for macOS
+        run: |
+          GOOS=darwin GOARCH=amd64 go build -o cli-v2-macos ./cli-v2.go
+      - name: Upload CLI binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-binaries
+          path: |
+            cli-v2-linux
+            cli-v2.exe
+            cli-v2-macos
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -24,8 +49,59 @@ jobs:
         run: |
           bash <(curl -Ls https://coverage.codacy.com/get.sh) report --force-coverage-parser go -r unit.coverage.out
 
+  ittest:
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download CLI binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: cli-binaries
+          path: .
+      - name: Select correct binary
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # Keep the .exe extension for Windows
+            echo "Using Windows binary with .exe extension"
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+            mv cli-v2-macos cli-v2
+          else
+            mv cli-v2-linux cli-v2
+          fi
+      - name: Make binary executable
+        if: matrix.os != 'windows-latest'
+        run: chmod +x cli-v2
+      - name: Debug Windows binary
+        if: matrix.os == 'windows-latest'
+        run: |
+          dir
+          echo "Binary exists check:"
+          if (Test-Path cli-v2.exe) { Write-Host "Binary exists" } else { Write-Host "Binary not found" }
+      - name: Install dependencies from .codacy/codacy.yaml
+        if: matrix.os != 'windows-latest'
+        run: |
+          ./cli-v2 install
+      # Disable windows it test for now.    
+      # - name: Install dependencies from .codacy/codacy.yaml (Windows)
+      #   if: matrix.os == 'windows-latest' 
+      #   shell: pwsh
+      #   run: |
+      #     Get-ChildItem
+      #     Write-Host "Current directory contents:"
+      #     dir
+      #     Write-Host "Node.js version:"
+      #     node --version
+      #     Write-Host "Attempting to run CLI..."
+      #     .\cli-v2.exe install
+
   release:
-    needs: test
+    needs: [test, ittest]
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
