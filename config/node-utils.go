@@ -79,12 +79,6 @@ func getNodeDownloadURL(nodeRuntime *Runtime) string {
 		extension = "zip"
 	}
 
-	// Use a more reliable Node.js version if the requested one doesn't exist
-	version := nodeRuntime.Version()
-	if version == "22.2.0" {
-		version = "20.11.1" // Latest LTS version
-	}
-
 	downloadURL := fmt.Sprintf("https://nodejs.org/dist/v%s/node-v%s-%s-%s.%s", version, version, nodeOS, nodeArch, extension)
 	return downloadURL
 }
