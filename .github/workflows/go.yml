@@ -76,9 +76,21 @@ jobs:
       - name: Make binary executable
         if: matrix.os != 'windows-latest'
         run: chmod +x cli-v2
+      - name: Debug Windows binary
+        if: matrix.os == 'windows-latest'
+        run: |
+          dir
+          echo "Binary exists check:"
+          if (Test-Path cli-v2.exe) { Write-Host "Binary exists" } else { Write-Host "Binary not found" }
       - name: Install dependencies from .codacy/codacy.yaml
+        if: matrix.os != 'windows-latest'
         run: |
           ./cli-v2 install
+      - name: Install dependencies from .codacy/codacy.yaml (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          .\cli-v2.exe install
 
   release:
     needs: [test, ittest]
