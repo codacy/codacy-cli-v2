@@ -5,7 +5,10 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,6 +22,7 @@ jobs:
         run: |
           go test -coverprofile=unit.coverage.out ./...
       - name: "Upload coverage to Codacy"
+        if: matrix.os == 'ubuntu-latest'  # Only upload coverage from Ubuntu
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         run: |
