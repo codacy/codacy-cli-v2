@@ -67,7 +67,8 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            mv cli-v2.exe cli-v2
+            # Keep the .exe extension for Windows
+            echo "Using Windows binary with .exe extension"
           elif [ "${{ matrix.os }}" = "macos-latest" ]; then
             mv cli-v2-macos cli-v2
           else
@@ -90,6 +91,10 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
+          Get-ChildItem
+          Write-Host "Current directory contents:"
+          dir
+          Write-Host "Attempting to run CLI..."
           .\cli-v2.exe install
 
   release:
