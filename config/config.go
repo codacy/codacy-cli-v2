@@ -17,7 +17,7 @@ type ConfigType struct {
 	projectConfigFile    string
 
 	runtimes map[string]*plugins.RuntimeInfo
-	tools    map[string]*Runtime
+	tools    map[string]*plugins.ToolInfo
 }
 
 func (c *ConfigType) HomePath() string {
@@ -63,13 +63,23 @@ func (c *ConfigType) AddRuntimes(configs []plugins.RuntimeConfig) error {
 	return nil
 }
 
-// TODO do inheritance with tool
-func (c *ConfigType) Tools() map[string]*Runtime {
+func (c *ConfigType) Tools() map[string]*plugins.ToolInfo {
 	return c.tools
 }
 
-func (c *ConfigType) AddTool(t *Runtime) {
-	c.tools[t.Name()] = t
+func (c *ConfigType) AddTools(configs []plugins.ToolConfig) error {
+	// Process the tool configurations using the plugins.ProcessTools function
+	toolInfoMap, err := plugins.ProcessTools(configs, c.toolsDirectory)
+	if err != nil {
+		return err
+	}
+
+	// Store the tool information in the config
+	for name, info := range toolInfoMap {
+		c.tools[name] = info
+	}
+
+	return nil
 }
 
 func (c *ConfigType) initCodacyDirs() {
@@ -117,7 +127,7 @@ func Init() {
 	Config.initCodacyDirs()
 
 	Config.runtimes = make(map[string]*plugins.RuntimeInfo)
-	Config.tools = make(map[string]*Runtime)
+	Config.tools = make(map[string]*plugins.ToolInfo)
 }
 
 // Global singleton config-file

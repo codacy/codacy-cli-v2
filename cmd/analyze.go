@@ -205,7 +205,7 @@ var analyzeCmd = &cobra.Command{
 		}
 
 		eslint := config.Config.Tools()["eslint"]
-		eslintInstallationDirectory := eslint.Info()["installDir"]
+		eslintInstallationDirectory := eslint.InstallDir
 		nodeRuntime := config.Config.Runtimes()["node"]
 		nodeBinary := nodeRuntime.Binaries["node"]
 
