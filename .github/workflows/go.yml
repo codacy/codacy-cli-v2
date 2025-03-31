@@ -94,30 +94,31 @@ jobs:
       #     Write-Host "Attempting to run CLI..."
       #     .\cli-v2.exe install
 
-  release:
-    needs: [test, ittest]
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Set up Go
-        uses: actions/setup-go@v4
-      - name: "Git Version"
-        id: generate-version
-        uses: codacy/git-version@2.8.0
-      - name: "Tag version"
-        run: |
-          git tag ${{ steps.generate-version.outputs.version }}
-          git push --tags "https://codacy:${{ secrets.GITHUB_TOKEN }}@github.com/codacy/codacy-cli-v2"
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
-        with:
-          distribution: goreleaser
-          # 'latest', 'nightly', or a semver
-          version: "latest"
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+## For now we are not releasing the CLI, as we are making some quicker iterations
+  # release:
+  #   needs: [test, ittest]
+  #   if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event_name == 'push'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v4
+  #     - name: "Git Version"
+  #       id: generate-version
+  #       uses: codacy/git-version@2.8.0
+  #     - name: "Tag version"
+  #       run: |
+  #         git tag ${{ steps.generate-version.outputs.version }}
+  #         git push --tags "https://codacy:${{ secrets.GITHUB_TOKEN }}@github.com/codacy/codacy-cli-v2"
+  #     - name: Run GoReleaser
+  #       uses: goreleaser/goreleaser-action@v5
+  #       with:
+  #         distribution: goreleaser
+  #         # 'latest', 'nightly', or a semver
+  #         version: "latest"
+  #         args: release --clean
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
