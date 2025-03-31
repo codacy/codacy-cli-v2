@@ -19,3 +19,10 @@ download:
 binaries:
   - name: trivy
     path: "trivy"
+formatters:
+  - name: sarif
+    flag: "--format sarif"
+output_options:
+  file_flag: "-o"
+analysis_options:
+  default_path: "."
