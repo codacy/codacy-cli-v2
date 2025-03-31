@@ -2,10 +2,7 @@ module codacy/cli-v2
 
 go 1.22.3
 
-require (
-	github.com/google/uuid v1.6.0
-	github.com/spf13/cobra v1.8.0
-)
+require github.com/spf13/cobra v1.8.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
