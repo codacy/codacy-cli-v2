@@ -27,7 +27,7 @@ func TestRunTrivyToFile(t *testing.T) {
 
 	repositoryToAnalyze := filepath.Join(testDirectory, "src")
 
-	trivyBinary := filepath.Join(homeDirectory, ".cache/codacy/tools/trivy@0.50.0/trivy")
+	trivyBinary := filepath.Join(homeDirectory, ".cache/codacy/tools/trivy@0.59.1/trivy")
 
 	err = RunTrivy(repositoryToAnalyze, trivyBinary, nil, tempResultFile, "sarif")
 	if err != nil {
