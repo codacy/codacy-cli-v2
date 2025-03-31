@@ -1,0 +1,80 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "fullName": "Trivy Vulnerability Scanner",
+          "informationUri": "https://github.com/aquasecurity/trivy",
+          "name": "Trivy",
+          "rules": [
+            {
+              "id": "CVE-2024-21538",
+              "name": "LanguageSpecificPackageVulnerability",
+              "shortDescription": {
+                "text": "cross-spawn: regular expression denial of service"
+              },
+              "fullDescription": {
+                "text": "Versions of the package cross-spawn before 7.0.5 are vulnerable to Regular Expression Denial of Service (ReDoS) due to improper input sanitization. An attacker can increase the CPU usage and crash the program by crafting a very large and well crafted string."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://avd.aquasec.com/nvd/cve-2024-21538",
+              "help": {
+                "text": "Vulnerability CVE-2024-21538\nSeverity: HIGH\nPackage: cross-spawn\nFixed Version: 7.0.5, 6.0.6\nLink: [CVE-2024-21538](https://avd.aquasec.com/nvd/cve-2024-21538)\nVersions of the package cross-spawn before 7.0.5 are vulnerable to Regular Expression Denial of Service (ReDoS) due to improper input sanitization. An attacker can increase the CPU usage and crash the program by crafting a very large and well crafted string.",
+                "markdown": "**Vulnerability CVE-2024-21538**\n| Severity | Package | Fixed Version | Link |\n| --- | --- | --- | --- |\n|HIGH|cross-spawn|7.0.5, 6.0.6|[CVE-2024-21538](https://avd.aquasec.com/nvd/cve-2024-21538)|\n\nVersions of the package cross-spawn before 7.0.5 are vulnerable to Regular Expression Denial of Service (ReDoS) due to improper input sanitization. An attacker can increase the CPU usage and crash the program by crafting a very large and well crafted string."
+              },
+              "properties": {
+                "precision": "very-high",
+                "security-severity": "7.5",
+                "tags": [
+                  "vulnerability",
+                  "security",
+                  "HIGH"
+                ]
+              }
+            }
+          ],
+          "version": "0.50.0"
+        }
+      },
+      "results": [
+        {
+          "ruleId": "CVE-2024-21538",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "Package: cross-spawn\nInstalled Version: 7.0.3\nVulnerability CVE-2024-21538\nSeverity: HIGH\nFixed Version: 7.0.5, 6.0.6\nLink: [CVE-2024-21538](https://avd.aquasec.com/nvd/cve-2024-21538)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package-lock.json",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 515,
+                  "startColumn": 1,
+                  "endLine": 527,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "package-lock.json: cross-spawn@7.0.3"
+              }
+            }
+          ]
+        }
+      ],
+      "columnKind": "utf16CodeUnits",
+      "originalUriBaseIds": {
+        "ROOTPATH": {
+          "uri": "testdata/repositories/trivy/src/"
+        }
+      }
+    }
+  ]
+}
