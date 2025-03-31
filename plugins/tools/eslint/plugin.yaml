@@ -1,0 +1,13 @@
+name: eslint
+description: JavaScript Linting Utility
+downloads:
+  - os: [linux, macos, windows]
+    url_template: "https://registry.npmjs.org/eslint/-/eslint-{{.Version}}.tgz"
+    file_name_template: "eslint-{{.Version}}"
+    extension:
+      default: "tgz"
+arch_mapping:
+  "amd64": "x64"
+binaries:
+  - name: eslint
+    path: "node_modules/.bin/eslint" 

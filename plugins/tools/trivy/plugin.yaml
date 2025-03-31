@@ -1,0 +1,28 @@
+name: trivy
+description: Container and Filesystem Vulnerability Scanner
+downloads:
+  - os: [linux]
+    url_template: "https://github.com/aquasecurity/trivy/releases/download/{{.Version}}/trivy_{{.Version}}_Linux-{{.Arch}}.{{.Extension}}"
+    file_name_template: "trivy_{{.Version}}_{{.OS}}_{{.Arch}}"
+    extension:
+      windows: "zip"
+      default: "tar.gz"
+  - os: [macos]
+    url_template: "https://github.com/aquasecurity/trivy/releases/download/{{.Version}}/trivy_{{.Version}}_macOS-{{.Arch}}.{{.Extension}}"
+    file_name_template: "trivy_{{.Version}}_{{.OS}}_{{.Arch}}"
+    extension:
+      windows: "zip"
+      default: "tar.gz"
+  - os: [windows]
+    url_template: "https://github.com/aquasecurity/trivy/releases/download/{{.Version}}/trivy_{{.Version}}_windows-{{.Arch}}.{{.Extension}}"
+    file_name_template: "trivy_{{.Version}}_{{.OS}}_{{.Arch}}"
+    extension:
+      default: "zip"
+arch_mapping:
+  "386": "x86"
+  "amd64": "x64"
+  "arm": "armv7l"
+  "arm64": "arm64"
+binaries:
+  - name: trivy
+    path: "trivy"
