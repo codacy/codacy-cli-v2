@@ -2,10 +2,12 @@ package utils
 
 import (
 	"context"
-	"github.com/mholt/archiver/v4"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/mholt/archiver/v4"
 )
 
 func ExtractTarGz(archive *os.File, targetDir string) error {
@@ -14,29 +16,31 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 		Archival:    archiver.Tar{},
 	}
 
+	// Create a map to store symlinks for later creation
+	symlinks := make(map[string]string)
+
 	handler := func(ctx context.Context, f archiver.File) error {
 		path := filepath.Join(targetDir, f.NameInArchive)
 
 		switch f.IsDir() {
 		case true:
 			// create a directory
-			//fmt.Println("creating:   " + f.NameInArchive)
 			err := os.MkdirAll(path, 0777)
 			if err != nil {
 				return err
 			}
 
 		case false:
-			//log.Print("extracting: " + f.NameInArchive)
-
-			// if is a symlink
+			// if is a symlink, store it for later
 			if f.LinkTarget != "" {
-				os.Remove(path)
-				err := os.Symlink(f.LinkTarget, path)
-				if err != nil {
-					return err
-				}
+				symlinks[path] = f.LinkTarget
 				return nil
+			}
+
+			// ensure parent directory exists
+			err := os.MkdirAll(filepath.Dir(path), 0777)
+			if err != nil {
+				return err
 			}
 
 			// write a file
@@ -62,6 +66,25 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 	if err != nil {
 		return err
 	}
+
+	// Create symlinks after all files have been extracted
+	for path, target := range symlinks {
+		// Remove any existing file/symlink
+		os.Remove(path)
+
+		// Ensure parent directory exists
+		err := os.MkdirAll(filepath.Dir(path), 0777)
+		if err != nil {
+			return err
+		}
+
+		// Create the symlink
+		err = os.Symlink(target, path)
+		if err != nil {
+			return fmt.Errorf("failed to create symlink %s -> %s: %w", path, target, err)
+		}
+	}
+
 	return nil
 }
 

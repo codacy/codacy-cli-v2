@@ -83,6 +83,7 @@ func configFileTemplate(tools []tools.Tool) string {
 
 	return fmt.Sprintf(`runtimes:
     - node@22.2.0
+    - python@3.11.11
 tools:
     - eslint@%s
 `, eslintVersion)

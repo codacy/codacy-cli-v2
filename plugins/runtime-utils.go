@@ -24,10 +24,10 @@ type binary struct {
 
 // pluginConfig holds the structure of the plugin.yaml file
 type pluginConfig struct {
-	Name        string            `yaml:"name"`
-	Description string            `yaml:"description"`
-	Download    downloadConfig    `yaml:"download"`
-	Binaries    []binary          `yaml:"binaries"`
+	Name        string         `yaml:"name"`
+	Description string         `yaml:"description"`
+	Download    downloadConfig `yaml:"download"`
+	Binaries    []binary       `yaml:"binaries"`
 }
 
 // downloadConfig holds the download configuration from the plugin.yaml
@@ -36,6 +36,8 @@ type downloadConfig struct {
 	FileNameTemplate string            `yaml:"file_name_template"`
 	Extension        extensionConfig   `yaml:"extension"`
 	ArchMapping      map[string]string `yaml:"arch_mapping"`
+	OSMapping        map[string]string `yaml:"os_mapping"`
+	ReleaseVersion   string            `yaml:"release_version"`
 }
 
 // extensionConfig defines the file extension based on OS
@@ -46,11 +48,12 @@ type extensionConfig struct {
 
 // templateData holds the data to be used in template substitution
 type templateData struct {
-	Version   string
-	FileName  string
-	OS        string
-	Arch      string
-	Extension string
+	Version        string
+	FileName       string
+	OS             string
+	Arch           string
+	Extension      string
+	ReleaseVersion string
 }
 
 // runtimePlugin represents a runtime plugin with methods to interact with it
@@ -79,19 +82,18 @@ type RuntimeInfo struct {
 // ProcessRuntimes processes a list of runtime configurations and returns a map of runtime information
 func ProcessRuntimes(configs []RuntimeConfig, runtimesDir string) (map[string]*RuntimeInfo, error) {
 	result := make(map[string]*RuntimeInfo)
-	
+
 	for _, config := range configs {
 		runtimeInfo, err := processRuntime(config, runtimesDir)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		result[config.Name] = runtimeInfo
 	}
-	
+
 	return result, nil
 }
-
 
 // ProcessRuntime processes a single runtime configuration and returns detailed runtime info
 func processRuntime(config RuntimeConfig, runtimesDir string) (*RuntimeInfo, error) {
@@ -99,11 +101,11 @@ func processRuntime(config RuntimeConfig, runtimesDir string) (*RuntimeInfo, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to load plugin for runtime %s: %w", config.Name, err)
 	}
-	
+
 	fileName := plugin.getFileName(config.Version)
 	extension := plugin.getExtension(runtime.GOOS)
 	installDir := plugin.getInstallationDirectoryPath(runtimesDir, config.Version)
-	
+
 	// Create RuntimeInfo with essential information
 	info := &RuntimeInfo{
 		Name:        config.Name,
@@ -114,39 +116,38 @@ func processRuntime(config RuntimeConfig, runtimesDir string) (*RuntimeInfo, err
 		Extension:   extension,
 		Binaries:    make(map[string]string),
 	}
-	
+
 	// Process binary paths
 	for _, binary := range plugin.Config.Binaries {
 		binaryPath := path.Join(installDir, binary.Path)
-		
+
 		// Add file extension for Windows executables
 		if runtime.GOOS == "windows" && !strings.HasSuffix(binaryPath, ".exe") {
 			binaryPath += ".exe"
 		}
-		
+
 		info.Binaries[binary.Name] = binaryPath
 	}
-	
+
 	return info, nil
 }
-
 
 // LoadPlugin loads a plugin configuration from the specified plugin directory
 func loadPlugin(runtimeName string) (*runtimePlugin, error) {
 	pluginPath := filepath.Join("runtimes", runtimeName, "plugin.yaml")
-	
+
 	// Read from embedded filesystem
 	data, err := pluginsFS.ReadFile(pluginPath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading plugin.yaml: %w", err)
 	}
-	
+
 	var config pluginConfig
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing plugin.yaml: %w", err)
 	}
-	
+
 	return &runtimePlugin{
 		Config:     config,
 		ConfigPath: pluginPath,
@@ -175,67 +176,79 @@ func (p *runtimePlugin) getExtension(goos string) string {
 func (p *runtimePlugin) getFileName(version string) string {
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
-	
-	// Map Go architecture to runtime-specific architecture
+
+	// Map Go architecture and OS to runtime-specific values
 	mappedArch := p.getMappedArch(goarch)
-	
+	mappedOS := p.getMappedOS(goos)
+	releaseVersion := p.getReleaseVersion()
+
 	// Prepare template data
 	data := templateData{
-		Version: version,
-		OS:      goos,
-		Arch:    mappedArch,
+		Version:        version,
+		OS:             mappedOS,
+		Arch:           mappedArch,
+		ReleaseVersion: releaseVersion,
 	}
-	
+
 	// Execute template substitution for filename
 	tmpl, err := template.New("filename").Parse(p.Config.Download.FileNameTemplate)
 	if err != nil {
 		return ""
 	}
-	
+
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, data)
 	if err != nil {
 		return ""
 	}
-	
+
 	return buf.String()
+}
+
+// GetReleaseVersion returns the release version from the plugin configuration
+func (p *runtimePlugin) getReleaseVersion() string {
+	return p.Config.Download.ReleaseVersion
 }
 
 // GetDownloadURL generates the download URL based on the template in plugin.yaml
 func (p *runtimePlugin) getDownloadURL(version string) string {
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
-	
-	// Map Go architecture to runtime-specific architecture
+
+	// Map Go architecture and OS to runtime-specific values
 	mappedArch := p.getMappedArch(goarch)
-	
+	mappedOS := p.getMappedOS(goos)
+
 	// Get the appropriate extension
 	extension := p.getExtension(goos)
-	
+
 	// Get the filename
 	fileName := p.getFileName(version)
-	
+
+	releaseVersion := p.getReleaseVersion()
+
 	// Prepare template data
 	data := templateData{
-		Version:   version,
-		FileName:  fileName,
-		OS:        goos,
-		Arch:      mappedArch,
-		Extension: extension,
+		Version:        version,
+		FileName:       fileName,
+		OS:             mappedOS,
+		Arch:           mappedArch,
+		Extension:      extension,
+		ReleaseVersion: releaseVersion,
 	}
-	
+
 	// Execute template substitution for URL
 	tmpl, err := template.New("url").Parse(p.Config.Download.URLTemplate)
 	if err != nil {
 		return ""
 	}
-	
+
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, data)
 	if err != nil {
 		return ""
 	}
-	
+
 	return buf.String()
 }
 
@@ -243,4 +256,14 @@ func (p *runtimePlugin) getDownloadURL(version string) string {
 func (p *runtimePlugin) getInstallationDirectoryPath(runtimesDir string, version string) string {
 	fileName := p.getFileName(version)
 	return path.Join(runtimesDir, fileName)
+}
+
+// GetMappedOS returns the OS mapping for the current system
+func (p *runtimePlugin) getMappedOS(goos string) string {
+	// Check if there's a mapping for this OS
+	if mappedOS, ok := p.Config.Download.OSMapping[goos]; ok {
+		return mappedOS
+	}
+	// Return the original OS if no mapping exists
+	return goos
 }
