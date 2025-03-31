@@ -2,7 +2,6 @@ package cmd
 
 import (
 	cfg "codacy/cli-v2/config"
-	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -33,18 +32,9 @@ func installRuntimes(config *cfg.ConfigType) {
 }
 
 func installTools(config *cfg.ConfigType) {
-	for _, tool := range config.Tools() {
-		switch tool.Name() {
-		case "eslint":
-			// eslint needs node runtime
-			nodeRuntime := config.Runtimes()["node"]
-			err := cfg.InstallEslint(nodeRuntime, tool, registry)
-			if err != nil {
-				fmt.Println(err.Error())
-				log.Fatal(err)
-			}
-		default:
-			log.Fatal("Unknown tool:", tool.Name())
-		}
+	// Use the new tools-installer instead of manual installation
+	err := cfg.InstallTools()
+	if err != nil {
+		log.Fatal(err)
 	}
 }

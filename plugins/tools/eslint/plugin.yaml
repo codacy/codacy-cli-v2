@@ -1,0 +1,20 @@
+name: eslint
+description: ESLint JavaScript linter
+runtime: node
+runtime_binaries:
+  package_manager: npm
+  execution: node
+installation:
+  command: "install --prefix {{.InstallDir}} {{.PackageName}}@{{.Version}} @microsoft/eslint-formatter-sarif"
+  registry_template: "{{if .Registry}}config set registry {{.Registry}}{{end}}"
+binaries:
+  - name: eslint
+    path: "node_modules/.bin/eslint"
+formatters:
+  - name: sarif
+    flag: "-f @microsoft/eslint-formatter-sarif"
+output_options:
+  file_flag: "-o"
+analysis_options:
+  autofix_flag: "--fix"
+  default_path: "."
