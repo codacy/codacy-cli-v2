@@ -71,9 +71,9 @@ func createConfigurationFile(tools []tools.Tool) error {
 }
 
 func configFileTemplate(tools []tools.Tool) string {
-
-	// Default version
+	// Default versions
 	eslintVersion := "9.3.0"
+	trivyVersion := "0.49.1"
 
 	for _, tool := range tools {
 		if tool.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
@@ -85,7 +85,8 @@ func configFileTemplate(tools []tools.Tool) string {
     - node@22.2.0
 tools:
     - eslint@%s
-`, eslintVersion)
+    - trivy@%s
+`, eslintVersion, trivyVersion)
 }
 
 func buildRepositoryConfigurationFiles(token string) error {

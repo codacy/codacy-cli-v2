@@ -43,6 +43,12 @@ func installTools(config *cfg.ConfigType) {
 				fmt.Println(err.Error())
 				log.Fatal(err)
 			}
+		case "trivy":
+			err := cfg.InstallTrivy(tool, registry)
+			if err != nil {
+				fmt.Println(err.Error())
+				log.Fatal(err)
+			}
 		default:
 			log.Fatal("Unknown tool:", tool.Name())
 		}

@@ -32,6 +32,18 @@ func (r *Runtime) populateInfo() {
 	switch r.Name() {
 	case "eslint":
 		r.info = genInfoEslint(r)
+	case "trivy":
+		r.info = genInfoTrivy(r)
+	}
+}
+
+// genInfoTrivy generates the info map for Trivy
+func genInfoTrivy(r *Runtime) map[string]string {
+	return map[string]string{
+		"name":        r.name,
+		"version":     r.version,
+		"description": "Container and Filesystem Vulnerability Scanner",
+		"binary":      "trivy",
 	}
 }
 
