@@ -8,10 +8,42 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
+// TrivyPluginConfig represents the structure of the trivy plugin.yaml file
+type TrivyPluginConfig struct {
+	Name        string                `yaml:"name"`
+	Description string                `yaml:"description"`
+	Downloads   []TrivyDownloadConfig `yaml:"downloads"`
+	ArchMapping map[string]string     `yaml:"arch_mapping"`
+	Binaries    []TrivyBinaryConfig   `yaml:"binaries"`
+}
+
+// TrivyDownloadConfig represents the download configuration in plugin.yaml
+type TrivyDownloadConfig struct {
+	OS               []string             `yaml:"os"`
+	URLTemplate      string               `yaml:"url_template"`
+	FileNameTemplate string               `yaml:"file_name_template"`
+	Extension        TrivyExtensionConfig `yaml:"extension"`
+}
+
+// TrivyExtensionConfig defines the file extension based on OS
+type TrivyExtensionConfig struct {
+	Windows string `yaml:"windows"`
+	Default string `yaml:"default"`
+}
+
+// TrivyBinaryConfig represents a binary executable
+type TrivyBinaryConfig struct {
+	Name string `yaml:"name"`
+	Path string `yaml:"path"`
+}
+
 /*
- * This installs Trivy using the official install script
+ * This installs Trivy based on the plugin.yaml configuration
  */
 func InstallTrivy(trivyConfig *Runtime, registry string) error {
 	log.Println("Installing Trivy")
@@ -20,66 +52,156 @@ func InstallTrivy(trivyConfig *Runtime, registry string) error {
 	trivyFolder := fmt.Sprintf("%s@%s", trivyConfig.Name(), trivyConfig.Version())
 	installDir := filepath.Join(Config.ToolsDirectory(), trivyFolder)
 
-	// Check if already installed
-	if isTrivyInstalled(trivyConfig) {
-		fmt.Printf("Trivy %s is already installed\n", trivyConfig.Version())
-		return nil
-	}
-
 	// Create installation directory
 	err := os.MkdirAll(installDir, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create installation directory: %w", err)
 	}
 
-	// Use the official install script to download and install Trivy
-	version := fmt.Sprintf("v%s", trivyConfig.Version())
-	installScriptURL := "https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh"
+	// Load the plugin configuration
+	pluginPath := filepath.Join("plugins", "tools", "trivy", "plugin.yaml")
+	pluginConfig, err := loadTrivyPluginConfig(pluginPath)
+	if err != nil {
+		return fmt.Errorf("failed to load Trivy plugin configuration: %w", err)
+	}
 
-	log.Printf("Installing Trivy %s using the official install script\n", version)
+	// Find the download configuration for the current OS
+	var downloadConfig *TrivyDownloadConfig
+	currentOS := runtime.GOOS
+	if currentOS == "darwin" {
+		currentOS = "macos"
+	}
 
-	// Create a temporary directory for the installation
+	for i := range pluginConfig.Downloads {
+		for _, os := range pluginConfig.Downloads[i].OS {
+			if os == currentOS {
+				downloadConfig = &pluginConfig.Downloads[i]
+				break
+			}
+		}
+		if downloadConfig != nil {
+			break
+		}
+	}
+
+	if downloadConfig == nil {
+		return fmt.Errorf("no download configuration found for OS %s", runtime.GOOS)
+	}
+
+	// Get the mapped architecture
+	arch := runtime.GOARCH
+	if mappedArch, ok := pluginConfig.ArchMapping[arch]; ok {
+		arch = mappedArch
+	}
+
+	// Get the appropriate extension
+	extension := downloadConfig.Extension.Default
+	if runtime.GOOS == "windows" && downloadConfig.Extension.Windows != "" {
+		extension = downloadConfig.Extension.Windows
+	}
+
+	// Template substitution for URL
+	version := trivyConfig.Version()
+	versionWithPrefix := fmt.Sprintf("v%s", version)
+
+	// Handle template substitution properly
+	fileName := strings.ReplaceAll(downloadConfig.FileNameTemplate, "{{.Version}}", version)
+	fileName = strings.ReplaceAll(fileName, "{{.OS}}", currentOS)
+	fileName = strings.ReplaceAll(fileName, "{{.Arch}}", arch)
+
+	// Generate URL, making sure to handle the version format
+	url := strings.ReplaceAll(downloadConfig.URLTemplate, "{{.Version}}", versionWithPrefix)
+	// If URL template already has v prefix, we need to use version without prefix
+	if strings.Contains(downloadConfig.URLTemplate, "/v{{.Version}}/") {
+		url = strings.ReplaceAll(downloadConfig.URLTemplate, "{{.Version}}", version)
+	}
+
+	url = strings.ReplaceAll(url, "{{.FileName}}", fileName)
+	url = strings.ReplaceAll(url, "{{.Extension}}", extension)
+	url = strings.ReplaceAll(url, "{{.OS}}", currentOS)
+	url = strings.ReplaceAll(url, "{{.Arch}}", arch)
+
+	log.Printf("Using download URL from plugin configuration: %s\n", url)
+	log.Printf("Using filename: %s.%s\n", fileName, extension)
+
+	// Create a temporary directory for the download
 	tempDir := filepath.Join(installDir, "temp")
 	err = os.MkdirAll(tempDir, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create temporary directory: %w", err)
 	}
+	defer os.RemoveAll(tempDir)
 
-	// Download and run the install script
-	cmd := exec.Command("sh", "-c", fmt.Sprintf("curl -sfL %s | sh -s -- -b %s %s",
-		installScriptURL, tempDir, version))
-
+	// Download and extract
+	downloadPath := filepath.Join(tempDir, fmt.Sprintf("%s.%s", fileName, extension))
+	cmd := exec.Command("curl", "-L", "-o", downloadPath, url)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to run Trivy install script: %w\nOutput: %s", err, string(output))
+		return fmt.Errorf("failed to download Trivy: %w\nOutput: %s", err, string(output))
 	}
 
-	log.Printf("Install script output: %s\n", string(output))
+	log.Printf("Downloaded Trivy to: %s\n", downloadPath)
 
-	// Copy the Trivy binary to the final location
-	sourcePath := filepath.Join(tempDir, "trivy")
+	// Extract the archive
+	extractDir := filepath.Join(tempDir, "extracted")
+	err = os.MkdirAll(extractDir, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create extraction directory: %w", err)
+	}
+
+	if extension == "zip" {
+		cmd = exec.Command("unzip", "-q", downloadPath, "-d", extractDir)
+	} else {
+		cmd = exec.Command("tar", "-xzf", downloadPath, "-C", extractDir)
+	}
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to extract Trivy: %w\nOutput: %s", err, string(output))
+	}
+
+	log.Printf("Extracted Trivy to: %s\n", extractDir)
+
+	// Find the binary from the plugin configuration
+	var binaryConfig *TrivyBinaryConfig
+	if len(pluginConfig.Binaries) > 0 {
+		binaryConfig = &pluginConfig.Binaries[0]
+	} else {
+		return fmt.Errorf("no binary configuration found in the plugin")
+	}
+
+	// Find the binary in the extracted directory
+	var binaryPath string
+	binaryName := binaryConfig.Name
 	if runtime.GOOS == "windows" {
-		sourcePath += ".exe"
+		binaryName += ".exe"
 	}
 
-	binaryPath := filepath.Join(installDir, "trivy")
-	if runtime.GOOS == "windows" {
-		binaryPath += ".exe"
+	err = filepath.Walk(extractDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && filepath.Base(path) == binaryName {
+			binaryPath = path
+			return filepath.SkipDir
+		}
+		return nil
+	})
+
+	if binaryPath == "" {
+		return fmt.Errorf("could not find %s binary in extracted files", binaryName)
 	}
 
-	// Check if the source binary exists
-	if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
-		return fmt.Errorf("trivy binary not found at %s after installation", sourcePath)
-	}
+	log.Printf("Found Trivy binary at: %s\n", binaryPath)
 
 	// Copy the binary to the final location
-	source, err := os.Open(sourcePath)
+	destPath := filepath.Join(installDir, binaryName)
+	source, err := os.Open(binaryPath)
 	if err != nil {
 		return fmt.Errorf("failed to open source binary: %w", err)
 	}
 	defer source.Close()
 
-	destination, err := os.Create(binaryPath)
+	destination, err := os.Create(destPath)
 	if err != nil {
 		return fmt.Errorf("failed to create destination binary: %w", err)
 	}
@@ -90,17 +212,30 @@ func InstallTrivy(trivyConfig *Runtime, registry string) error {
 		return fmt.Errorf("failed to copy binary: %w", err)
 	}
 
-	// Make the copied binary executable
-	err = os.Chmod(binaryPath, 0755)
+	// Make the binary executable
+	err = os.Chmod(destPath, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to make binary executable: %w", err)
 	}
 
-	// Clean up the temporary directory
-	os.RemoveAll(tempDir)
-
 	log.Printf("Successfully installed Trivy %s\n", trivyConfig.Version())
 	return nil
+}
+
+// loadTrivyPluginConfig loads the Trivy plugin configuration from the plugin.yaml file
+func loadTrivyPluginConfig(path string) (*TrivyPluginConfig, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("error reading plugin config file: %w", err)
+	}
+
+	var config TrivyPluginConfig
+	err = yaml.Unmarshal(data, &config)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing plugin config file: %w", err)
+	}
+
+	return &config, nil
 }
 
 // isTrivyInstalled checks if Trivy is already installed
