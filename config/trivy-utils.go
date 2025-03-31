@@ -1,6 +1,7 @@
 package config
 
 import (
+	"codacy/cli-v2/plugins"
 	"fmt"
 	"io"
 	"log"
@@ -9,38 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
-
-// TrivyPluginConfig represents the structure of the trivy plugin.yaml file
-type TrivyPluginConfig struct {
-	Name        string                `yaml:"name"`
-	Description string                `yaml:"description"`
-	Downloads   []TrivyDownloadConfig `yaml:"downloads"`
-	ArchMapping map[string]string     `yaml:"arch_mapping"`
-	Binaries    []TrivyBinaryConfig   `yaml:"binaries"`
-}
-
-// TrivyDownloadConfig represents the download configuration in plugin.yaml
-type TrivyDownloadConfig struct {
-	OS               []string             `yaml:"os"`
-	URLTemplate      string               `yaml:"url_template"`
-	FileNameTemplate string               `yaml:"file_name_template"`
-	Extension        TrivyExtensionConfig `yaml:"extension"`
-}
-
-// TrivyExtensionConfig defines the file extension based on OS
-type TrivyExtensionConfig struct {
-	Windows string `yaml:"windows"`
-	Default string `yaml:"default"`
-}
-
-// TrivyBinaryConfig represents a binary executable
-type TrivyBinaryConfig struct {
-	Name string `yaml:"name"`
-	Path string `yaml:"path"`
-}
 
 /*
  * This installs Trivy based on the plugin.yaml configuration
@@ -60,13 +30,13 @@ func InstallTrivy(trivyConfig *Runtime, registry string) error {
 
 	// Load the plugin configuration
 	pluginPath := filepath.Join("plugins", "tools", "trivy", "plugin.yaml")
-	pluginConfig, err := loadTrivyPluginConfig(pluginPath)
+	pluginConfig, err := plugins.LoadPluginConfig(pluginPath)
 	if err != nil {
 		return fmt.Errorf("failed to load Trivy plugin configuration: %w", err)
 	}
 
 	// Find the download configuration for the current OS
-	var downloadConfig *TrivyDownloadConfig
+	var downloadConfig *plugins.DownloadConfig
 	currentOS := runtime.GOOS
 	if currentOS == "darwin" {
 		currentOS = "macos"
@@ -162,7 +132,7 @@ func InstallTrivy(trivyConfig *Runtime, registry string) error {
 	log.Printf("Extracted Trivy to: %s\n", extractDir)
 
 	// Find the binary from the plugin configuration
-	var binaryConfig *TrivyBinaryConfig
+	var binaryConfig *plugins.BinaryConfig
 	if len(pluginConfig.Binaries) > 0 {
 		binaryConfig = &pluginConfig.Binaries[0]
 	} else {
@@ -220,22 +190,6 @@ func InstallTrivy(trivyConfig *Runtime, registry string) error {
 
 	log.Printf("Successfully installed Trivy %s\n", trivyConfig.Version())
 	return nil
-}
-
-// loadTrivyPluginConfig loads the Trivy plugin configuration from the plugin.yaml file
-func loadTrivyPluginConfig(path string) (*TrivyPluginConfig, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("error reading plugin config file: %w", err)
-	}
-
-	var config TrivyPluginConfig
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing plugin config file: %w", err)
-	}
-
-	return &config, nil
 }
 
 // isTrivyInstalled checks if Trivy is already installed
