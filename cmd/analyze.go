@@ -207,7 +207,7 @@ var analyzeCmd = &cobra.Command{
 		eslint := config.Config.Tools()["eslint"]
 		eslintInstallationDirectory := eslint.Info()["installDir"]
 		nodeRuntime := config.Config.Runtimes()["node"]
-		nodeBinary := nodeRuntime.Info()["node"]
+		nodeBinary := nodeRuntime.Binaries["node"]
 
 		log.Printf("Running %s...\n", toolToAnalyze)
 		if outputFormat == "sarif" {
