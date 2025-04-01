@@ -1,0 +1,10 @@
+name: pmd
+description: PMD - An extensible cross-language static code analyzer
+download:
+  url_template: https://github.com/pmd/pmd/releases/download/pmd_releases%2F{{.Version}}/pmd-dist-{{.Version}}-bin.zip
+  file_name_template: pmd-dist-{{.Version}}-bin.zip
+  extension:
+    default: .zip
+binaries:
+  - name: pmd
+    path: pmd-bin-{{.Version}}/bin/pmd

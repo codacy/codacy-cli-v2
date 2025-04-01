@@ -20,6 +20,7 @@ var outputFormat string
 var sarifPath string
 var commitUuid string
 var projectToken string
+var pmdRulesetFile string
 
 type Sarif struct {
 	Runs []struct {
@@ -95,6 +96,7 @@ func init() {
 	analyzeCmd.Flags().StringVarP(&toolToAnalyze, "tool", "t", "", "Which tool to run analysis with")
 	analyzeCmd.Flags().StringVar(&outputFormat, "format", "", "Output format (use 'sarif' for SARIF format)")
 	analyzeCmd.Flags().BoolVar(&autoFix, "fix", false, "Apply auto fix to your issues when available")
+	analyzeCmd.Flags().StringVar(&pmdRulesetFile, "rulesets", "", "Path to PMD ruleset file")
 	rootCmd.AddCommand(analyzeCmd)
 }
 
@@ -203,6 +205,16 @@ func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile st
 	}
 }
 
+func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
+	pmd := config.Config.Tools()["pmd"]
+	pmdBinary := pmd.Binaries["pmd"]
+
+	err := tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, pmdRulesetFile)
+	if err != nil {
+		log.Fatalf("Error running PMD: %v", err)
+	}
+}
+
 func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
 	pylint := config.Config.Tools()["pylint"]
 
@@ -235,6 +247,8 @@ var analyzeCmd = &cobra.Command{
 			runEslintAnalysis(workDirectory, args, autoFix, outputFile, outputFormat)
 		case "trivy":
 			runTrivyAnalysis(workDirectory, args, outputFile, outputFormat)
+		case "pmd":
+			runPmdAnalysis(workDirectory, args, outputFile, outputFormat)
 		case "pylint":
 			runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
 		case "":

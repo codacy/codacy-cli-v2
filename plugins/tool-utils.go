@@ -174,7 +174,23 @@ func ProcessTools(configs []ToolConfig, toolDir string) (map[string]*ToolInfo, e
 
 		// Process binary paths
 		for _, binary := range pluginConfig.Binaries {
-			binaryPath := path.Join(installDir, binary.Path)
+			// Process template variables in binary path
+			tmpl, err := template.New("binary_path").Parse(binary.Path)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing binary path template for %s: %w", config.Name, err)
+			}
+
+			var buf bytes.Buffer
+			err = tmpl.Execute(&buf, struct {
+				Version string
+			}{
+				Version: config.Version,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("error executing binary path template for %s: %w", config.Name, err)
+			}
+
+			binaryPath := filepath.Join(installDir, buf.String())
 			info.Binaries[binary.Name] = binaryPath
 		}
 
