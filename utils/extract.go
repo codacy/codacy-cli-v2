@@ -2,10 +2,11 @@ package utils
 
 import (
 	"context"
-	"github.com/mholt/archiver/v4"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/mholt/archiver/v4"
 )
 
 func ExtractTarGz(archive *os.File, targetDir string) error {
@@ -37,6 +38,12 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 					return err
 				}
 				return nil
+			}
+
+			// Ensure parent directory exists
+			err := os.MkdirAll(filepath.Dir(path), 0777)
+			if err != nil {
+				return err
 			}
 
 			// write a file

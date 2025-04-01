@@ -1,0 +1,21 @@
+name: trivy
+description: Trivy vulnerability scanner
+download:
+  url_template: "https://github.com/aquasecurity/trivy/releases/download/v{{.Version}}/trivy_{{.Version}}_{{.OS}}-{{.Arch}}.{{.Extension}}"
+  file_name_template: "trivy_{{.Version}}_{{.OS}}_{{.Arch}}"
+  extension:
+    windows: "zip"
+    default: "tar.gz"
+  arch_mapping:
+    "386": "32bit"
+    "amd64": "64bit"
+    "arm": "ARM"
+    "arm64": "ARM64"
+  os_mapping:
+    "darwin": "macOS"
+    "linux": "Linux"
+    "windows": "Windows"
+    
+binaries:
+  - name: trivy
+    path: "trivy"
