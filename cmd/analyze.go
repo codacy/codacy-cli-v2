@@ -184,6 +184,25 @@ func getToolName(toolName string, version string) string {
 	return toolName
 }
 
+func runEslintAnalysis(workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string) {
+	eslint := config.Config.Tools()["eslint"]
+	eslintInstallationDirectory := eslint.InstallDir
+	nodeRuntime := config.Config.Runtimes()["node"]
+	nodeBinary := nodeRuntime.Binaries["node"]
+
+	tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, pathsToCheck, autoFix, outputFile, outputFormat)
+}
+
+func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
+	trivy := config.Config.Tools()["trivy"]
+	trivyBinary := trivy.Binaries["trivy"]
+
+	err := tools.RunTrivy(workDirectory, trivyBinary, pathsToCheck, outputFile, outputFormat)
+	if err != nil {
+		log.Fatalf("Error running Trivy: %v", err)
+	}
+}
+
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Runs all linters.",
@@ -194,30 +213,23 @@ var analyzeCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		// TODO add more tools here
-		switch toolToAnalyze {
-		case "eslint":
-			// nothing
-		case "":
-			log.Fatal("You need to specify a tool to run analysis with, e.g., '--tool eslint'", toolToAnalyze)
-		default:
-			log.Fatal("Trying to run unsupported tool: ", toolToAnalyze)
-		}
-
-		eslint := config.Config.Tools()["eslint"]
-		eslintInstallationDirectory := eslint.Info()["installDir"]
-		nodeRuntime := config.Config.Runtimes()["node"]
-		nodeBinary := nodeRuntime.Binaries["node"]
-
 		log.Printf("Running %s...\n", toolToAnalyze)
 		if outputFormat == "sarif" {
 			log.Println("Output will be in SARIF format")
 		}
-
 		if outputFile != "" {
 			log.Println("Output will be available at", outputFile)
 		}
 
-		tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, args, autoFix, outputFile, outputFormat)
+		switch toolToAnalyze {
+		case "eslint":
+			runEslintAnalysis(workDirectory, args, autoFix, outputFile, outputFormat)
+		case "trivy":
+			runTrivyAnalysis(workDirectory, args, outputFile, outputFormat)
+		case "":
+			log.Fatal("You need to specify a tool to run analysis with, e.g., '--tool eslint'")
+		default:
+			log.Fatal("Trying to run unsupported tool: ", toolToAnalyze)
+		}
 	},
 }

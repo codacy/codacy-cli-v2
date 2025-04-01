@@ -37,7 +37,8 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 				return nil
 			}
 
-			// ensure parent directory exists
+
+			// Ensure parent directory exists
 			err := os.MkdirAll(filepath.Dir(path), 0777)
 			if err != nil {
 				return err

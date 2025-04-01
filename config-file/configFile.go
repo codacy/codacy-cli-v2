@@ -36,12 +36,22 @@ func parseConfigFile(configContents []byte) error {
 		return err
 	}
 
+	// Convert the tool strings to ToolConfig objects
+	toolConfigs := make([]plugins.ToolConfig, 0, len(configFile.TOOLS))
 	for _, tl := range configFile.TOOLS {
 		ct, err := parseConfigTool(tl)
 		if err != nil {
 			return err
 		}
-		config.Config.AddTool(config.NewRuntime(ct.name, ct.version))
+		toolConfigs = append(toolConfigs, plugins.ToolConfig{
+			Name:    ct.name,
+			Version: ct.version,
+		})
+	}
+
+	// Add all tools at once
+	if err := config.Config.AddTools(toolConfigs); err != nil {
+		return err
 	}
 
 	return nil

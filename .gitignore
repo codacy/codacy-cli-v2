@@ -22,5 +22,6 @@ go.work
 go.work.sum
 
 .idea/
+.vscode/
 
 cli-v2
