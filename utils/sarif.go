@@ -1,0 +1,171 @@
+package utils
+
+import (
+	"encoding/json"
+)
+
+// PylintIssue represents a single issue in Pylint's JSON output
+type PylintIssue struct {
+	Type      string `json:"type"`
+	Module    string `json:"module"`
+	Obj       string `json:"obj"`
+	Line      int    `json:"line"`
+	Column    int    `json:"column"`
+	Path      string `json:"path"`
+	Symbol    string `json:"symbol"`
+	Message   string `json:"message"`
+	MessageID string `json:"message-id"`
+}
+
+// SarifReport represents the SARIF report structure
+type SarifReport struct {
+	Version string `json:"version"`
+	Schema  string `json:"$schema"`
+	Runs    []Run  `json:"runs"`
+}
+
+type Run struct {
+	Tool    Tool     `json:"tool"`
+	Results []Result `json:"results"`
+}
+
+type Tool struct {
+	Driver Driver `json:"driver"`
+}
+
+type Driver struct {
+	Name           string `json:"name"`
+	Version        string `json:"version"`
+	InformationURI string `json:"informationUri"`
+	Rules          []Rule `json:"rules"`
+}
+
+type Rule struct {
+	ID               string            `json:"id"`
+	ShortDescription MessageText       `json:"shortDescription"`
+	Properties       map[string]string `json:"properties"`
+}
+
+type Result struct {
+	RuleID    string      `json:"ruleId"`
+	Level     string      `json:"level"`
+	Message   MessageText `json:"message"`
+	Locations []Location  `json:"locations"`
+}
+
+type Location struct {
+	PhysicalLocation PhysicalLocation `json:"physicalLocation"`
+}
+
+type PhysicalLocation struct {
+	ArtifactLocation ArtifactLocation `json:"artifactLocation"`
+	Region           Region           `json:"region"`
+}
+
+type ArtifactLocation struct {
+	URI string `json:"uri"`
+}
+
+type Region struct {
+	StartLine   int `json:"startLine"`
+	StartColumn int `json:"startColumn"`
+}
+
+type MessageText struct {
+	Text string `json:"text"`
+}
+
+// ConvertPylintToSarif converts Pylint JSON output to SARIF format
+func ConvertPylintToSarif(pylintOutput []byte) []byte {
+	var issues []PylintIssue
+	if err := json.Unmarshal(pylintOutput, &issues); err != nil {
+		// If parsing fails, return empty SARIF report
+		return createEmptySarifReport()
+	}
+
+	// Create SARIF report
+	sarifReport := SarifReport{
+		Version: "2.1.0",
+		Schema:  "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+		Runs: []Run{
+			{
+				Tool: Tool{
+					Driver: Driver{
+						Name:           "Pylint",
+						Version:        "3.3.6", // TODO: Get this dynamically
+						InformationURI: "https://pylint.org",
+					},
+				},
+				Results: make([]Result, 0, len(issues)),
+			},
+		},
+	}
+
+	// Convert each Pylint issue to SARIF result
+	for _, issue := range issues {
+		result := Result{
+			RuleID: issue.Symbol,
+			Level:  getSarifLevel(issue.Type),
+			Message: MessageText{
+				Text: issue.Message,
+			},
+			Locations: []Location{
+				{
+					PhysicalLocation: PhysicalLocation{
+						ArtifactLocation: ArtifactLocation{
+							URI: issue.Path,
+						},
+						Region: Region{
+							StartLine:   issue.Line,
+							StartColumn: issue.Column,
+						},
+					},
+				},
+			},
+		}
+		sarifReport.Runs[0].Results = append(sarifReport.Runs[0].Results, result)
+	}
+
+	sarifData, err := json.MarshalIndent(sarifReport, "", "  ")
+	if err != nil {
+		return createEmptySarifReport()
+	}
+
+	return sarifData
+}
+
+// getSarifLevel converts Pylint message type to SARIF level
+func getSarifLevel(pylintType string) string {
+	switch pylintType {
+	case "error", "fatal":
+		return "error"
+	case "warning":
+		return "warning"
+	case "convention", "refactor":
+		return "note"
+	default:
+		return "none"
+	}
+}
+
+// createEmptySarifReport creates an empty SARIF report in case of errors
+func createEmptySarifReport() []byte {
+	emptyReport := SarifReport{
+		Version: "2.1.0",
+		Schema:  "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+		Runs: []Run{
+			{
+				Tool: Tool{
+					Driver: Driver{
+						Name:           "Pylint",
+						Version:        "3.3.6",
+						InformationURI: "https://pylint.org",
+					},
+				},
+				Results: []Result{},
+			},
+		},
+	}
+	sarifData, _ := json.MarshalIndent(emptyReport, "", "  ")
+	return sarifData
+}

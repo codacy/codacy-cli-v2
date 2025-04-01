@@ -91,7 +91,7 @@ type Pattern struct {
 }
 
 func init() {
-	analyzeCmd.Flags().StringVarP(&outputFile, "output", "o", "", "output file for the results")
+	analyzeCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for analysis results")
 	analyzeCmd.Flags().StringVarP(&toolToAnalyze, "tool", "t", "", "Which tool to run analysis with")
 	analyzeCmd.Flags().StringVar(&outputFormat, "format", "", "Output format (use 'sarif' for SARIF format)")
 	analyzeCmd.Flags().BoolVar(&autoFix, "fix", false, "Apply auto fix to your issues when available")
@@ -203,6 +203,15 @@ func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile st
 	}
 }
 
+func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
+	pylint := config.Config.Tools()["pylint"]
+
+	err := tools.RunPylint(workDirectory, pylint, pathsToCheck, outputFile, outputFormat)
+	if err != nil {
+		log.Fatalf("Error running Pylint: %v", err)
+	}
+}
+
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Runs all linters.",
@@ -226,6 +235,8 @@ var analyzeCmd = &cobra.Command{
 			runEslintAnalysis(workDirectory, args, autoFix, outputFile, outputFormat)
 		case "trivy":
 			runTrivyAnalysis(workDirectory, args, outputFile, outputFormat)
+		case "pylint":
+			runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
 		case "":
 			log.Fatal("You need to specify a tool to run analysis with, e.g., '--tool eslint'")
 		default:
