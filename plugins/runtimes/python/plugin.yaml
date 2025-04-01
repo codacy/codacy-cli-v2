@@ -1,0 +1,23 @@
+name: python
+description: Python runtime
+download:
+  url_template: "https://github.com/astral-sh/python-build-standalone/releases/download/{{.ReleaseVersion}}/cpython-{{.Version}}+{{.ReleaseVersion}}-{{.Arch}}-{{.OS}}-install_only.{{.Extension}}"
+  file_name_template: "cpython-{{.Version}}+{{.ReleaseVersion}}-{{.Arch}}-{{.OS}}"
+  release_version: "20250317"
+  extension:
+    windows: "tar.gz"
+    default: "tar.gz"
+  arch_mapping:
+    "386": "x86"
+    "amd64": "x86_64"
+    "arm": "armv7l"
+    "arm64": "aarch64"
+  os_mapping:
+    "darwin": "apple-darwin"
+    "linux": "unknown-linux-gnu"
+    "windows": "pc-windows-msvc"
+binaries:
+  - name: python3
+    path: "python/bin/python3"
+  - name: pip
+    path: "python/bin/pip"
