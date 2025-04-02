@@ -37,22 +37,65 @@ var installCmd = &cobra.Command{
 			log.Fatalf("Failed to load config file: %v", err)
 		}
 
+		// Check if anything needs to be installed
+		needsInstallation := false
+		for name, runtime := range cfg.Config.Runtimes() {
+			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
+				needsInstallation = true
+				break
+			}
+		}
+		if !needsInstallation {
+			for name, tool := range cfg.Config.Tools() {
+				if !cfg.Config.IsToolInstalled(name, tool) {
+					needsInstallation = true
+					break
+				}
+			}
+		}
+
+		if !needsInstallation {
+			fmt.Println()
+			bold.Println("✅ All components are already installed!")
+			return
+		}
+
 		fmt.Println()
 		bold.Println("🚀 Starting installation process...")
 		fmt.Println()
 
+		// Calculate total items to install
+		totalItems := 0
+		for name, runtime := range cfg.Config.Runtimes() {
+			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
+				totalItems++
+			}
+		}
+		for name, tool := range cfg.Config.Tools() {
+			if !cfg.Config.IsToolInstalled(name, tool) {
+				totalItems++
+			}
+		}
+
+		if totalItems == 0 {
+			fmt.Println()
+			bold.Println("✅ All components are already installed!")
+			return
+		}
+
 		// Print list of items to install
 		fmt.Println("📦 Items to install:")
 		for name, runtime := range cfg.Config.Runtimes() {
-			fmt.Printf("  • Runtime: %s v%s\n", name, runtime.Version)
+			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
+				fmt.Printf("  • Runtime: %s v%s\n", name, runtime.Version)
+			}
 		}
 		for name, tool := range cfg.Config.Tools() {
-			fmt.Printf("  • Tool: %s v%s\n", name, tool.Version)
+			if !cfg.Config.IsToolInstalled(name, tool) {
+				fmt.Printf("  • Tool: %s v%s\n", name, tool.Version)
+			}
 		}
 		fmt.Println()
-
-		// Calculate total items to install
-		totalItems := len(cfg.Config.Runtimes()) + len(cfg.Config.Tools())
 
 		// Create a single progress bar for the entire installation
 		progressBar := progressbar.NewOptions(totalItems,
@@ -84,22 +127,26 @@ var installCmd = &cobra.Command{
 
 		// Install runtimes
 		for name, runtime := range cfg.Config.Runtimes() {
-			progressBar.Describe(fmt.Sprintf("Installing runtime: %s v%s...", name, runtime.Version))
-			err := cfg.InstallRuntime(name, runtime)
-			if err != nil {
-				log.Fatal(err)
+			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
+				progressBar.Describe(fmt.Sprintf("Installing runtime: %s v%s...", name, runtime.Version))
+				err := cfg.InstallRuntime(name, runtime)
+				if err != nil {
+					log.Fatal(err)
+				}
+				progressBar.Add(1)
 			}
-			progressBar.Add(1)
 		}
 
 		// Install tools
 		for name, tool := range cfg.Config.Tools() {
-			progressBar.Describe(fmt.Sprintf("Installing tool: %s v%s...", name, tool.Version))
-			err := cfg.InstallTool(name, tool)
-			if err != nil {
-				log.Fatal(err)
+			if !cfg.Config.IsToolInstalled(name, tool) {
+				progressBar.Describe(fmt.Sprintf("Installing tool: %s v%s...", name, tool.Version))
+				err := cfg.InstallTool(name, tool)
+				if err != nil {
+					log.Fatal(err)
+				}
+				progressBar.Add(1)
 			}
-			progressBar.Add(1)
 		}
 
 		// Restore output
@@ -110,10 +157,14 @@ var installCmd = &cobra.Command{
 		// Print completion status
 		fmt.Println()
 		for name, runtime := range cfg.Config.Runtimes() {
-			green.Printf("  ✓ Runtime: %s v%s\n", name, runtime.Version)
+			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
+				green.Printf("  ✓ Runtime: %s v%s\n", name, runtime.Version)
+			}
 		}
 		for name, tool := range cfg.Config.Tools() {
-			green.Printf("  ✓ Tool: %s v%s\n", name, tool.Version)
+			if !cfg.Config.IsToolInstalled(name, tool) {
+				green.Printf("  ✓ Tool: %s v%s\n", name, tool.Version)
+			}
 		}
 		fmt.Println()
 		bold.Println("✅ Installation completed successfully!")

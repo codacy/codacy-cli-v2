@@ -130,5 +130,43 @@ func Init() {
 	Config.tools = make(map[string]*plugins.ToolInfo)
 }
 
+// IsRuntimeInstalled checks if a runtime is already installed
+func (c *ConfigType) IsRuntimeInstalled(name string, runtime *plugins.RuntimeInfo) bool {
+	// If there are no binaries, check the install directory
+	if len(runtime.Binaries) == 0 {
+		_, err := os.Stat(runtime.InstallDir)
+		return err == nil
+	}
+
+	// Check if at least one binary exists
+	for _, binaryPath := range runtime.Binaries {
+		_, err := os.Stat(binaryPath)
+		if err == nil {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsToolInstalled checks if a tool is already installed
+func (c *ConfigType) IsToolInstalled(name string, tool *plugins.ToolInfo) bool {
+	// If there are no binaries, check the install directory
+	if len(tool.Binaries) == 0 {
+		_, err := os.Stat(tool.InstallDir)
+		return err == nil
+	}
+
+	// Check if at least one binary exists
+	for _, binaryPath := range tool.Binaries {
+		_, err := os.Stat(binaryPath)
+		if err == nil {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Global singleton config-file
 var Config = ConfigType{}
