@@ -29,6 +29,9 @@ var initCmd = &cobra.Command{
 	Short: "Bootstraps project configuration",
 	Long:  "Bootstraps project configuration, creates codacy configuration file",
 	Run: func(cmd *cobra.Command, args []string) {
+
+		config.Init()
+
 		if len(codacyRepositoryToken) == 0 {
 			fmt.Println("No project token was specified, skipping fetch configurations ")
 			noTools := []tools.Tool{}
