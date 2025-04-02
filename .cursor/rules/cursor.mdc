@@ -1,0 +1,22 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+## Code Style Guidelines
+- **Imports**: Standard lib first, external packages second, internal last
+- **Naming**: PascalCase for exported (public), camelCase for unexported (private)
+- **Error handling**: Return errors as last value, check with `if err != nil`
+- **Testing**: Use testify/assert package for assertions
+- **Package organization**: Keep related functionality in dedicated packages
+- **Documentation**: Document all exported functions, types, and packages
+- **Commit messages**: Start with verb, be concise and descriptive
+
+## Project Structure
+- `cmd/`: CLI command implementations
+- `config/`: Configuration handling
+- `tools/`: Tool-specific implementations
+- `utils/`: Utility functions
