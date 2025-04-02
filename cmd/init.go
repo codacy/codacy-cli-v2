@@ -17,8 +17,6 @@ import (
 
 const CodacyApiBase = "https://app.codacy.com"
 
-var codacyRepositoryToken string
-
 func init() {
 	initCmd.Flags().StringVar(&codacyRepositoryToken, "repository-token", "", "optional codacy repository token, if defined configurations will be fetched from codacy")
 	rootCmd.AddCommand(initCmd)
@@ -29,8 +27,13 @@ var initCmd = &cobra.Command{
 	Short: "Bootstraps project configuration",
 	Long:  "Bootstraps project configuration, creates codacy configuration file",
 	Run: func(cmd *cobra.Command, args []string) {
-
+		// Initialize configuration without creating directories
 		config.Init()
+
+		// Create necessary directories
+		if err := config.EnsureDirectories(); err != nil {
+			log.Fatal(err)
+		}
 
 		if len(codacyRepositoryToken) == 0 {
 			fmt.Println("No project token was specified, skipping fetch configurations ")
@@ -45,10 +48,6 @@ var initCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 			err = createConfigurationFile(apiTools)
-			if err != nil {
-				log.Fatal(err)
-			}
-			err = buildRepositoryConfigurationFiles(codacyRepositoryToken)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -79,7 +78,7 @@ func configFileTemplate(tools []tools.Tool) string {
 	eslintVersion := "9.3.0"
 	trivyVersion := "0.59.1" // Latest stable version
 	pylintVersion := "3.3.6"
-
+	pmdVersion := "7.12.0"
 	for _, tool := range tools {
 		if tool.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
 			eslintVersion = tool.Version
@@ -99,7 +98,8 @@ tools:
     - eslint@%s
     - trivy@%s
     - pylint@%s
-`, eslintVersion, trivyVersion, pylintVersion)
+	- pmd@%s
+`, eslintVersion, trivyVersion, pylintVersion, pmdVersion)
 }
 
 func buildRepositoryConfigurationFiles(token string) error {

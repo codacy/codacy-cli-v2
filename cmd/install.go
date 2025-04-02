@@ -4,7 +4,6 @@ import (
 	cfg "codacy/cli-v2/config"
 	config_file "codacy/cli-v2/config-file"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"time"
@@ -15,9 +14,11 @@ import (
 )
 
 var registry string
+var codacyRepositoryToken string
 
 func init() {
 	installCmd.Flags().StringVarP(&registry, "registry", "r", "", "Registry to use for installing tools")
+	installCmd.Flags().StringVar(&codacyRepositoryToken, "repository-token", "", "Codacy repository token for fetching tool configurations")
 	rootCmd.AddCommand(installCmd)
 }
 
@@ -29,12 +30,16 @@ var installCmd = &cobra.Command{
 		bold := color.New(color.Bold)
 		green := color.New(color.FgGreen)
 
-		// Initialize config
+		// Initialize config global object
 		cfg.Init()
 
 		// Load config file
 		if err := config_file.ReadConfigFile(cfg.Config.ProjectConfigFile()); err != nil {
-			log.Fatalf("Failed to load config file: %v", err)
+			fmt.Println()
+			color.Red("⚠️  Warning: Could not find configuration file!")
+			fmt.Println("Please run 'codacy-cli init' first to create a configuration file.")
+			fmt.Println()
+			os.Exit(1)
 		}
 
 		// Check if anything needs to be installed
@@ -119,13 +124,7 @@ var installCmd = &cobra.Command{
 			}),
 		)
 
-		// Redirect all output to /dev/null during installation
-		oldStdout := os.Stdout
-		devNull, _ := os.Open(os.DevNull)
-		os.Stdout = devNull
-		log.SetOutput(io.Discard)
-
-		// Install runtimes
+		// Install runtimes first
 		for name, runtime := range cfg.Config.Runtimes() {
 			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
 				progressBar.Describe(fmt.Sprintf("Installing runtime: %s v%s...", name, runtime.Version))
@@ -148,11 +147,6 @@ var installCmd = &cobra.Command{
 				progressBar.Add(1)
 			}
 		}
-
-		// Restore output
-		os.Stdout = oldStdout
-		devNull.Close()
-		log.SetOutput(os.Stderr)
 
 		// Print completion status
 		fmt.Println()

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -82,30 +83,11 @@ func (c *ConfigType) AddTools(configs []plugins.ToolConfig) error {
 	return nil
 }
 
-func (c *ConfigType) initCodacyDirs() {
+func (c *ConfigType) setupCodacyPaths() {
 	c.codacyDirectory = filepath.Join(c.homePath, ".cache", "codacy")
-	err := os.MkdirAll(c.codacyDirectory, 0777)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	c.runtimesDirectory = filepath.Join(c.codacyDirectory, "runtimes")
-	err = os.MkdirAll(c.runtimesDirectory, 0777)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	c.toolsDirectory = filepath.Join(c.codacyDirectory, "tools")
-	err = os.MkdirAll(c.toolsDirectory, 0777)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	c.localCodacyDirectory = ".codacy"
-	err = os.MkdirAll(c.localCodacyDirectory, 0777)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	yamlPath := filepath.Join(c.localCodacyDirectory, "codacy.yaml")
 	ymlPath := filepath.Join(c.localCodacyDirectory, "codacy.yml")
@@ -117,6 +99,26 @@ func (c *ConfigType) initCodacyDirs() {
 	}
 }
 
+func (c *ConfigType) createCodacyDirs() error {
+	if err := os.MkdirAll(c.codacyDirectory, 0777); err != nil {
+		return fmt.Errorf("failed to create codacy directory: %w", err)
+	}
+
+	if err := os.MkdirAll(c.runtimesDirectory, 0777); err != nil {
+		return fmt.Errorf("failed to create runtimes directory: %w", err)
+	}
+
+	if err := os.MkdirAll(c.toolsDirectory, 0777); err != nil {
+		return fmt.Errorf("failed to create tools directory: %w", err)
+	}
+
+	if err := os.MkdirAll(c.localCodacyDirectory, 0777); err != nil {
+		return fmt.Errorf("failed to create local codacy directory: %w", err)
+	}
+
+	return nil
+}
+
 func Init() {
 	homePath, err := os.UserHomeDir()
 	if err != nil {
@@ -124,10 +126,14 @@ func Init() {
 	}
 	Config.homePath = homePath
 
-	Config.initCodacyDirs()
-
+	Config.setupCodacyPaths()
 	Config.runtimes = make(map[string]*plugins.RuntimeInfo)
 	Config.tools = make(map[string]*plugins.ToolInfo)
+}
+
+// EnsureDirectories creates all necessary Codacy directories if they don't exist
+func EnsureDirectories() error {
+	return Config.createCodacyDirs()
 }
 
 // IsRuntimeInstalled checks if a runtime is already installed
