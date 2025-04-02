@@ -57,7 +57,6 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error
 	// For runtime-based tools
 	fmt.Printf("Installing %s using %s runtime...\n", name, toolInfo.Runtime)
 	return installRuntimeTool(name, toolInfo, registry)
-
 }
 
 func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string) error {
