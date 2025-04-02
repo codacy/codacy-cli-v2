@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<ruleset name="Codacy PMD Ruleset"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <rule ref="category/java/codestyle.xml/AtLeastOneConstructor"/>
+    <rule ref="category/java/design.xml/UnusedPrivateField"/>
+    <rule ref="category/java/design.xml/LoosePackageCoupling">
+        <properties>
+            <property name="packages" value="java.util,java.io"/>
+        </properties>
+    </rule>
+</ruleset> 

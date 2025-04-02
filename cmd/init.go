@@ -55,7 +55,6 @@ var initCmd = &cobra.Command{
 }
 
 func createConfigurationFile(tools []tools.Tool) error {
-
 	configFile, err := os.Create(config.Config.ProjectConfigFile())
 	defer configFile.Close()
 	if err != nil {
@@ -76,6 +75,7 @@ func configFileTemplate(tools []tools.Tool) string {
 	eslintVersion := "9.3.0"
 	trivyVersion := "0.59.1" // Latest stable version
 	pylintVersion := "3.3.6"
+	pmdVersion := "6.55.0"
 
 	for _, tool := range tools {
 		if tool.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
@@ -87,6 +87,9 @@ func configFileTemplate(tools []tools.Tool) string {
 		if tool.Uuid == "31677b6d-4ae0-4f56-8041-606a8d7a8e61" {
 			pylintVersion = tool.Version
 		}
+		if tool.Uuid == "9ed24812-b6ee-4a58-9004-0ed183c45b8f" {
+			pmdVersion = tool.Version
+		}
 	}
 
 	return fmt.Sprintf(`runtimes:
@@ -96,11 +99,11 @@ tools:
     - eslint@%s
     - trivy@%s
     - pylint@%s
-`, eslintVersion, trivyVersion, pylintVersion)
+    - pmd@%s
+`, eslintVersion, trivyVersion, pylintVersion, pmdVersion)
 }
 
 func buildRepositoryConfigurationFiles(token string) error {
-
 	fmt.Println("Building project configuration files ...")
 	fmt.Println("Fetching project configuration from codacy ...")
 
@@ -163,22 +166,36 @@ func buildRepositoryConfigurationFiles(token string) error {
 		log.Fatal(err)
 	}
 
-	// Create Trivy configuration after processing ESLint
+	// Trivy configuration
 	trivyApiConfiguration := extractTrivyConfiguration(apiToolConfigurations)
 	if trivyApiConfiguration != nil {
-		// Create trivy.yaml file based on API configuration
 		err = createTrivyConfigFile(*trivyApiConfiguration)
 		if err != nil {
 			log.Fatal(err)
 		}
 		fmt.Println("Trivy configuration created based on Codacy settings")
 	} else {
-		// Create default trivy.yaml if no configuration from API
 		err = createDefaultTrivyConfigFile()
 		if err != nil {
 			log.Fatal(err)
 		}
 		fmt.Println("Default Trivy configuration created")
+	}
+
+	// PMD configuration
+	pmdApiConfiguration := extractPMDConfiguration(apiToolConfigurations)
+	if pmdApiConfiguration != nil {
+		err = createPMDConfigFile(*pmdApiConfiguration)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("PMD configuration created based on Codacy settings")
+	} else {
+		err = createDefaultPMDConfigFile()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Default PMD configuration created")
 	}
 
 	return nil
@@ -237,6 +254,29 @@ func extractTrivyConfiguration(toolConfigurations []CodacyToolConfiguration) *Co
 	}
 
 	return nil
+}
+
+// Add PMD-specific functions
+func extractPMDConfiguration(toolConfigurations []CodacyToolConfiguration) *CodacyToolConfiguration {
+	const PMDUUID = "9ed24812-b6ee-4a58-9004-0ed183c45b8f"
+	for _, toolConfiguration := range toolConfigurations {
+		if toolConfiguration.Uuid == PMDUUID {
+			return &toolConfiguration
+		}
+	}
+	return nil
+}
+
+func createPMDConfigFile(config CodacyToolConfiguration) error {
+	pmdDomainConfiguration := convertAPIToolConfigurationToDomain(config)
+	pmdConfigurationString := tools.CreatePmdConfig(pmdDomainConfiguration)
+	return os.WriteFile("pmd-ruleset.xml", []byte(pmdConfigurationString), 0644)
+}
+
+func createDefaultPMDConfigFile() error {
+	emptyConfig := tools.ToolConfiguration{}
+	content := tools.CreatePmdConfig(emptyConfig)
+	return os.WriteFile("pmd-ruleset.xml", []byte(content), 0644)
 }
 
 type CodacyToolConfiguration struct {
