@@ -65,7 +65,7 @@ func TestProcessTools(t *testing.T) {
 
 	// Assert installation command templates are correctly set
 	assert.Equal(t, "install --prefix {{.InstallDir}} {{.PackageName}}@{{.Version}} @microsoft/eslint-formatter-sarif", eslintInfo.InstallCommand)
-	assert.Equal(t, "{{if .Registry}}config set registry {{.Registry}}{{end}}", eslintInfo.RegistryCommand)
+	assert.Equal(t, "config set registry {{.Registry}}", eslintInfo.RegistryCommand)
 }
 
 func TestProcessToolsWithDownload(t *testing.T) {
