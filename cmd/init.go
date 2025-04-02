@@ -75,6 +75,7 @@ func configFileTemplate(tools []tools.Tool) string {
 	// Default versions
 	eslintVersion := "9.3.0"
 	trivyVersion := "0.59.1" // Latest stable version
+	pylintVersion := "3.3.6"
 
 	for _, tool := range tools {
 		if tool.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
@@ -82,6 +83,9 @@ func configFileTemplate(tools []tools.Tool) string {
 		}
 		if tool.Uuid == "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb" {
 			trivyVersion = tool.Version
+		}
+		if tool.Uuid == "31677b6d-4ae0-4f56-8041-606a8d7a8e61" {
+			pylintVersion = tool.Version
 		}
 	}
 
@@ -91,7 +95,8 @@ func configFileTemplate(tools []tools.Tool) string {
 tools:
     - eslint@%s
     - trivy@%s
-`, eslintVersion, trivyVersion)
+    - pylint@%s
+`, eslintVersion, trivyVersion, pylintVersion)
 }
 
 func buildRepositoryConfigurationFiles(token string) error {

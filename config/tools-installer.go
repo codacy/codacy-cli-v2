@@ -44,8 +44,16 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo) error {
 		return installDownloadBasedTool(toolInfo)
 	}
 
-	// This is a runtime-based tool, proceed with regular installation
+	// Handle Python tools differently
+	if toolInfo.Runtime == "python" {
+		return installPythonTool(name, toolInfo)
+	}
 
+	// Handle other runtime-based tools
+	return installRuntimeTool(name, toolInfo)
+}
+
+func installRuntimeTool(name string, toolInfo *plugins.ToolInfo) error {
 	// Get the runtime for this tool
 	runtimeInfo, ok := Config.Runtimes()[toolInfo.Runtime]
 	if !ok {
@@ -153,6 +161,38 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 		if err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("failed to make binary executable: %w", err)
 		}
+	}
+
+	log.Printf("Successfully installed %s v%s\n", toolInfo.Name, toolInfo.Version)
+	return nil
+}
+
+func installPythonTool(name string, toolInfo *plugins.ToolInfo) error {
+	log.Printf("Installing %s v%s...\n", toolInfo.Name, toolInfo.Version)
+
+	runtimeInfo, ok := Config.Runtimes()[toolInfo.Runtime]
+	if !ok {
+		return fmt.Errorf("required runtime %s not found for tool %s", toolInfo.Runtime, name)
+	}
+
+	pythonBinary, ok := runtimeInfo.Binaries["python3"]
+	if !ok {
+		return fmt.Errorf("python3 binary not found in runtime")
+	}
+
+	// Create venv
+	cmd := exec.Command(pythonBinary, "-m", "venv", filepath.Join(toolInfo.InstallDir, "venv"))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to create venv: %s\nError: %w", string(output), err)
+	}
+
+	// Install the tool using pip from venv
+	pipPath := filepath.Join(toolInfo.InstallDir, "venv", "bin", "pip")
+	cmd = exec.Command(pipPath, "install", fmt.Sprintf("%s==%s", toolInfo.Name, toolInfo.Version))
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to install tool: %s\nError: %w", string(output), err)
 	}
 
 	log.Printf("Successfully installed %s v%s\n", toolInfo.Name, toolInfo.Version)

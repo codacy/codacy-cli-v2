@@ -254,6 +254,11 @@ func (p *runtimePlugin) getDownloadURL(version string) string {
 
 // GetInstallationDirectoryPath returns the installation directory path for the runtime
 func (p *runtimePlugin) getInstallationDirectoryPath(runtimesDir string, version string) string {
+	// For Python, we want to use a simpler directory structure
+	if p.Config.Name == "python" {
+		return path.Join(runtimesDir, "python")
+	}
+	// For other runtimes, keep using the filename-based directory
 	fileName := p.getFileName(version)
 	return path.Join(runtimesDir, fileName)
 }

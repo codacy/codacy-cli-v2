@@ -18,6 +18,6 @@ download:
     "windows": "pc-windows-msvc"
 binaries:
   - name: python3
-    path: "python/bin/python3"
+    path: "bin/python3"
   - name: pip
-    path: "python/bin/pip"
+    path: "bin/pip"
