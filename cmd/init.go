@@ -98,7 +98,7 @@ tools:
     - eslint@%s
     - trivy@%s
     - pylint@%s
-	- pmd@%s
+    - pmd@%s
 `, eslintVersion, trivyVersion, pylintVersion, pmdVersion)
 }
 

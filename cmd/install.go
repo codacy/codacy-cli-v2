@@ -30,9 +30,6 @@ var installCmd = &cobra.Command{
 		bold := color.New(color.Bold)
 		green := color.New(color.FgGreen)
 
-		// Initialize config global object
-		cfg.Init()
-
 		// Load config file
 		if err := config_file.ReadConfigFile(cfg.Config.ProjectConfigFile()); err != nil {
 			fmt.Println()
