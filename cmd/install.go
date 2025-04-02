@@ -148,7 +148,7 @@ var installCmd = &cobra.Command{
 		for name, tool := range cfg.Config.Tools() {
 			if !cfg.Config.IsToolInstalled(name, tool) {
 				progressBar.Describe(fmt.Sprintf("Installing tool: %s v%s...", name, tool.Version))
-				err := cfg.InstallTool(name, tool)
+				err := cfg.InstallTool(name, tool, registry)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -179,15 +179,15 @@ var installCmd = &cobra.Command{
 }
 
 func installRuntimes(config *cfg.ConfigType) {
-	err := cfg.InstallRuntimes()
+	err := cfg.InstallRuntimes(config)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func installTools(config *cfg.ConfigType) {
+func installTools(config *cfg.ConfigType, registry string) {
 	// Use the new tools-installer instead of manual installation
-	err := cfg.InstallTools()
+	err := cfg.InstallTools(config, registry)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -6,7 +6,7 @@ runtime_binaries:
   execution: node
 installation:
   command: "install --prefix {{.InstallDir}} {{.PackageName}}@{{.Version}} @microsoft/eslint-formatter-sarif"
-  registry_template: "{{if .Registry}}config set registry {{.Registry}}{{end}}"
+  registry_template: "config set registry {{.Registry}}"
 binaries:
   - name: eslint
     path: "node_modules/.bin/eslint"

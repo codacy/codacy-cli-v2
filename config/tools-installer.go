@@ -14,10 +14,10 @@ import (
 )
 
 // InstallTools installs all tools defined in the configuration
-func InstallTools() error {
-	for name, toolInfo := range Config.Tools() {
+func InstallTools(config *ConfigType, registry string) error {
+	for name, toolInfo := range config.Tools() {
 		fmt.Printf("Installing tool: %s v%s...\n", name, toolInfo.Version)
-		err := InstallTool(name, toolInfo)
+		err := InstallTool(name, toolInfo, registry)
 		if err != nil {
 			return fmt.Errorf("failed to install tool %s: %w", name, err)
 		}
@@ -27,7 +27,7 @@ func InstallTools() error {
 }
 
 // InstallTool installs a specific tool
-func InstallTool(name string, toolInfo *plugins.ToolInfo) error {
+func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error {
 	fmt.Println("Installing tool", name, "in", toolInfo.InstallDir)
 	// Check if the tool is already installed
 	if isToolInstalled(toolInfo) {
@@ -57,10 +57,10 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo) error {
 
 	// For runtime-based tools
 	fmt.Printf("Installing %s using %s runtime...\n", name, toolInfo.Runtime)
-	return installRuntimeTool(name, toolInfo)
+	return installRuntimeTool(name, toolInfo, registry)
 }
 
-func installRuntimeTool(name string, toolInfo *plugins.ToolInfo) error {
+func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string) error {
 	// Get the runtime for this tool
 	runtimeInfo, ok := Config.Runtimes()[toolInfo.Runtime]
 	if !ok {
@@ -72,7 +72,7 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo) error {
 		"InstallDir":  toolInfo.InstallDir,
 		"PackageName": toolInfo.Name,
 		"Version":     toolInfo.Version,
-		"Registry":    "", // TODO: Get registry from config
+		"Registry":    registry,
 	}
 
 	// Get package manager binary based on the tool configuration
@@ -83,11 +83,13 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo) error {
 	}
 
 	// Set registry if provided
-	if toolInfo.RegistryCommand != "" {
+	if registry != "" {
 		regCmd, err := executeToolTemplate(toolInfo.RegistryCommand, templateData)
 		if err != nil {
 			return fmt.Errorf("failed to prepare registry command: %w", err)
 		}
+
+		log.Printf("Setting registry...\n %s %s\n", packageManagerBinary, regCmd)
 
 		if regCmd != "" {
 			registryCmd := exec.Command(packageManagerBinary, strings.Split(regCmd, " ")...)
