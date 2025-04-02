@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"codacy/cli-v2/config"
 	cfg "codacy/cli-v2/config"
 	config_file "codacy/cli-v2/config-file"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -29,6 +31,11 @@ var installCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		bold := color.New(color.Bold)
 		green := color.New(color.FgGreen)
+
+		// Create necessary directories
+		if err := config.Config.CreateCodacyDirs(); err != nil {
+			log.Fatal(err)
+		}
 
 		// Load config file
 		if err := config_file.ReadConfigFile(cfg.Config.ProjectConfigFile()); err != nil {
@@ -121,6 +128,12 @@ var installCmd = &cobra.Command{
 			}),
 		)
 
+		// Redirect all output to /dev/null during installation
+		oldStdout := os.Stdout
+		devNull, _ := os.Open(os.DevNull)
+		os.Stdout = devNull
+		log.SetOutput(io.Discard)
+
 		// Install runtimes first
 		for name, runtime := range cfg.Config.Runtimes() {
 			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
@@ -144,6 +157,11 @@ var installCmd = &cobra.Command{
 				progressBar.Add(1)
 			}
 		}
+
+		// Restore output
+		os.Stdout = oldStdout
+		devNull.Close()
+		log.SetOutput(os.Stderr)
 
 		// Print completion status
 		fmt.Println()

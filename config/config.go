@@ -11,7 +11,7 @@ import (
 
 type ConfigType struct {
 	homePath             string
-	codacyDirectory      string
+	globalCacheDirectory string
 	runtimesDirectory    string
 	toolsDirectory       string
 	localCodacyDirectory string
@@ -26,7 +26,7 @@ func (c *ConfigType) HomePath() string {
 }
 
 func (c *ConfigType) CodacyDirectory() string {
-	return c.codacyDirectory
+	return c.globalCacheDirectory
 }
 
 func (c *ConfigType) RuntimesDirectory() string {
@@ -84,9 +84,9 @@ func (c *ConfigType) AddTools(configs []plugins.ToolConfig) error {
 }
 
 func (c *ConfigType) setupCodacyPaths() {
-	c.codacyDirectory = filepath.Join(c.homePath, ".cache", "codacy")
-	c.runtimesDirectory = filepath.Join(c.codacyDirectory, "runtimes")
-	c.toolsDirectory = filepath.Join(c.codacyDirectory, "tools")
+	c.globalCacheDirectory = filepath.Join(c.homePath, ".cache", "codacy")
+	c.runtimesDirectory = filepath.Join(c.globalCacheDirectory, "runtimes")
+	c.toolsDirectory = filepath.Join(c.globalCacheDirectory, "tools")
 	c.localCodacyDirectory = ".codacy"
 
 	yamlPath := filepath.Join(c.localCodacyDirectory, "codacy.yaml")
@@ -99,8 +99,8 @@ func (c *ConfigType) setupCodacyPaths() {
 	}
 }
 
-func (c *ConfigType) createCodacyDirs() error {
-	if err := os.MkdirAll(c.codacyDirectory, 0777); err != nil {
+func (c *ConfigType) CreateCodacyDirs() error {
+	if err := os.MkdirAll(c.globalCacheDirectory, 0777); err != nil {
 		return fmt.Errorf("failed to create codacy directory: %w", err)
 	}
 
@@ -111,11 +111,13 @@ func (c *ConfigType) createCodacyDirs() error {
 	if err := os.MkdirAll(c.toolsDirectory, 0777); err != nil {
 		return fmt.Errorf("failed to create tools directory: %w", err)
 	}
+	return nil
+}
 
+func (c *ConfigType) CreateLocalCodacyDir() error {
 	if err := os.MkdirAll(c.localCodacyDirectory, 0777); err != nil {
 		return fmt.Errorf("failed to create local codacy directory: %w", err)
 	}
-
 	return nil
 }
 
@@ -129,11 +131,6 @@ func Init() {
 	Config.setupCodacyPaths()
 	Config.runtimes = make(map[string]*plugins.RuntimeInfo)
 	Config.tools = make(map[string]*plugins.ToolInfo)
-}
-
-// EnsureDirectories creates all necessary Codacy directories if they don't exist
-func EnsureDirectories() error {
-	return Config.createCodacyDirs()
 }
 
 // IsRuntimeInstalled checks if a runtime is already installed

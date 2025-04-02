@@ -29,11 +29,7 @@ var initCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Initialize configuration without creating directories
 		config.Init()
-
-		// Create necessary directories
-		if err := config.EnsureDirectories(); err != nil {
-			log.Fatal(err)
-		}
+		config.Config.CreateLocalCodacyDir()
 
 		if len(codacyRepositoryToken) == 0 {
 			fmt.Println("No project token was specified, skipping fetch configurations ")
