@@ -4,6 +4,7 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/pylint"
 	"codacy/cli-v2/utils"
 	"encoding/json"
 	"errors"
@@ -319,6 +320,11 @@ func createPMDConfigFile(config []domain.PatternConfiguration, toolsConfigDir st
 func createDefaultPMDConfigFile(toolsConfigDir string) error {
 	content := tools.CreatePmdConfig([]domain.PatternConfiguration{})
 	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(content), utils.DefaultFilePerms)
+}
+
+func createDefaultPylintConfigFile() error {
+	pylintConfigurationString := pylint.GeneratePylintRCDefault()
+	return os.WriteFile(".pylintrc", []byte(pylintConfigurationString), 0644)
 }
 
 // createTrivyConfigFile creates a trivy.yaml configuration file based on the API configuration
