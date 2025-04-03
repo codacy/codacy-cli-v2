@@ -4,6 +4,7 @@ import (
 	"codacy/cli-v2/tools/types"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -109,11 +110,20 @@ func GeneratePylintRC(patterns []types.PylintPatternConfiguration) string {
 	rcContent.WriteString("[MESSAGES CONTROL]\n")
 	rcContent.WriteString("disable=all\n")
 
-	// Collect all enabled pattern IDs
+	// Collect all enabled pattern IDs and their parameters
 	var enabledPatterns []string
+	patternParams := make(map[string]map[string]string)
 	for _, pattern := range patterns {
 		if pattern.Enabled {
-			enabledPatterns = append(enabledPatterns, ExtractPatternID(pattern.Id))
+			patternID := ExtractPatternID(pattern.Id)
+			enabledPatterns = append(enabledPatterns, patternID)
+
+			// Store parameters for this pattern
+			params := make(map[string]string)
+			for _, param := range pattern.Parameters {
+				params[param.Name] = param.Value
+			}
+			patternParams[patternID] = params
 		}
 	}
 
@@ -164,6 +174,7 @@ func GroupParametersBySection(patterns []types.PylintPatternConfiguration) map[s
 		for _, param := range pattern.Parameters {
 			// Skip parameters without a section name
 			if param.SectionName == nil {
+				log.Printf("Parameter %s has no section name", param.Name)
 				continue
 			}
 

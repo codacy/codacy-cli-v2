@@ -395,15 +395,6 @@ func TestFilterEnabledPatterns(t *testing.T) {
 	assert.Equal(t, "max-line-length", enabledPatterns[0].Parameters[0].Name)
 	assert.Equal(t, "145", enabledPatterns[0].Parameters[0].Value)
 
-	groupedParams := pylint.GroupParametersBySection(enabledPatterns)
-
-	// Get and log the keys
-	keys := make([]string, 0, len(groupedParams))
-	for k := range groupedParams {
-		keys = append(keys, k)
-	}
-	t.Logf("Grouped Parameters Keys: %v", keys)
-	t.Logf("Grouped Parameters: %+v", groupedParams)
 }
 
 func TestGeneratePylintRC(t *testing.T) {
@@ -419,7 +410,6 @@ func TestGeneratePylintRC(t *testing.T) {
 
 	// Finally generate the pylintrc content
 	rcContentNonEmptyParameters := pylint.GeneratePylintRC(enabledPatterns)
-	t.Logf("Generated pylintrc content:\n%s", rcContentNonEmptyParameters)
 
 	// Verify the pylintrc content matches the expected format
 	expectedContent := `[MASTER]
@@ -445,6 +435,7 @@ inlinevar-rgx=[A-Za-z0-9_]*$
 method-rgx=[a-z_][a-z0-9_]{2,30}$
 module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
 variable-rgx=[a-z_][a-z0-9_]{2,30}$
+
 `
 	assert.Equal(t, expectedContent, rcContentNonEmptyParameters)
 
@@ -457,7 +448,6 @@ variable-rgx=[a-z_][a-z0-9_]{2,30}$
 		},
 	}
 	rcContentEmptyParameters := pylint.GeneratePylintRC(emptyPatterns)
-	t.Logf("Generated pylintrc content:\n%s", rcContentEmptyParameters)
 	assert.Contains(t, rcContentEmptyParameters, "enable=C0209")       // Single line with all enabled patterns
 	assert.NotContains(t, rcContentEmptyParameters, "max-line-length") // Should not include any parameters
 }
@@ -475,7 +465,6 @@ func TestComplexPatternSet(t *testing.T) {
 	// Generate pylintrc content
 	rcContent := pylint.GeneratePylintRC(enabledPatterns)
 
-	// Print the generated content
 	t.Logf("Generated pylintrc content:\n%s", rcContent)
 
 	// Verify all enabled patterns are present in a single line
@@ -483,16 +472,16 @@ func TestComplexPatternSet(t *testing.T) {
 	assert.Contains(t, rcContent, expectedEnableLine)
 
 	// Verify parameters for patterns with user-defined values
-	assert.Contains(t, rcContent, "max-line-length=145")            // C0301
-	assert.Contains(t, rcContent, "max-doc-length=80")              // C0111
-	assert.Contains(t, rcContent, "max-branches=15")                // R0912
-	assert.Contains(t, rcContent, "method-naming-style=snake_case") // C0103
-	assert.Contains(t, rcContent, "docstring-min-length=20")        // C0114
-	assert.Contains(t, rcContent, "max-module-lines=2000")          // C0302
+	assert.Contains(t, rcContent, "max-line-length=145")               // C0301
+	assert.NotContains(t, rcContent, "max-doc-length=80")              //C0111- should not be there since it's not mapped to any section
+	assert.Contains(t, rcContent, "max-branches=15")                   // R0912
+	assert.NotContains(t, rcContent, "method-naming-style=snake_case") // C0103- should not be there since it's not mapped to any section
+	assert.Contains(t, rcContent, "docstring-min-length=20")           // C0114
+	assert.Contains(t, rcContent, "max-module-lines=2000")             // C0302
 
 	// Verify parameters for patterns with only default values
-	assert.Contains(t, rcContent, "max-args=5")            // R0903
-	assert.Contains(t, rcContent, "trailing-whitespace=0") // C0303
+	assert.Contains(t, rcContent, "max-args=5")               // R0903
+	assert.NotContains(t, rcContent, "trailing-whitespace=0") // C0303- should not be there since it's not mapped to any section
 
 	// Verify patterns without parameters don't have any parameter settings
 	assert.NotContains(t, rcContent, "C0209=")
