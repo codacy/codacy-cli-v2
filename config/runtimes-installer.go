@@ -57,7 +57,7 @@ func isRuntimeInstalled(runtimeInfo *plugins.RuntimeInfo) bool {
 	return false
 }
 
-// downloadAndExtractRuntime downloads and extracts a runtime 
+// downloadAndExtractRuntime downloads and extracts a runtime
 func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 	// Create a file name for the downloaded archive
 	fileName := filepath.Base(runtimeInfo.DownloadURL)
@@ -67,7 +67,7 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 	_, err := os.Stat(downloadPath)
 	if os.IsNotExist(err) {
 		// Download the file
-		log.Printf("Downloading %s v%s...\n", runtimeInfo.Name, runtimeInfo.Version)
+		// log.Printf("Downloading %s v%s...\n", runtimeInfo.Name, runtimeInfo.Version)
 		downloadPath, err = utils.DownloadFile(runtimeInfo.DownloadURL, Config.RuntimesDirectory())
 		if err != nil {
 			return fmt.Errorf("failed to download runtime: %w", err)
@@ -86,7 +86,7 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 	defer file.Close()
 
 	// Extract based on file extension
-	log.Printf("Extracting %s v%s...\n", runtimeInfo.Name, runtimeInfo.Version)
+	// log.Printf("Extracting %s v%s...\n", runtimeInfo.Name, runtimeInfo.Version)
 	if strings.HasSuffix(fileName, ".zip") {
 		err = utils.ExtractZip(file.Name(), Config.RuntimesDirectory())
 	} else {

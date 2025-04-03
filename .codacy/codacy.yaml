@@ -4,5 +4,5 @@ runtimes:
 tools:
     - eslint@9.3.0
     - trivy@0.59.1
-    - pmd@7.12.0
     - pylint@3.3.6
+    - pmd@7.12.0
