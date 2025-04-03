@@ -32,11 +32,13 @@ var initCmd = &cobra.Command{
 
 		config.Config.CreateLocalCodacyDir()
 
-		if len(codacyRepositoryToken) == 0 {
+		cliLocalMode := len(codacyRepositoryToken) == 0
+
+		if cliLocalMode {
 			fmt.Println()
 			fmt.Println("ℹ️  No project token was specified, skipping fetch configurations")
 			noTools := []tools.Tool{}
-			err := createConfigurationFile(noTools)
+			err := createConfigurationFiles(noTools, cliLocalMode)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -45,7 +47,7 @@ var initCmd = &cobra.Command{
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = createConfigurationFile(apiTools)
+			err = createConfigurationFiles(apiTools, cliLocalMode)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -64,7 +66,7 @@ var initCmd = &cobra.Command{
 	},
 }
 
-func createConfigurationFile(tools []tools.Tool) error {
+func createConfigurationFiles(tools []tools.Tool, cliLocalMode bool) error {
 	configFile, err := os.Create(config.Config.ProjectConfigFile())
 	defer configFile.Close()
 	if err != nil {
@@ -72,6 +74,17 @@ func createConfigurationFile(tools []tools.Tool) error {
 	}
 
 	_, err = configFile.WriteString(configFileTemplate(tools))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cliConfigFile, err := os.Create(config.Config.CliConfigFile())
+	defer cliConfigFile.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = cliConfigFile.WriteString(cliConfigFileTemplate(cliLocalMode))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -113,9 +126,21 @@ tools:
 `, eslintVersion, trivyVersion, pylintVersion, pmdVersion)
 }
 
+func cliConfigFileTemplate(cliLocalMode bool) string {
+	var cliModeString string
+
+	if cliLocalMode {
+		cliModeString = "local"
+	} else {
+		cliModeString = "remote"
+	}
+
+	return fmt.Sprintf(`mode: %s`, cliModeString)
+}
+
 func buildRepositoryConfigurationFiles(token string) error {
-	fmt.Println("Building project configuration files ...")
-	fmt.Println("Fetching project configuration from codacy ...")
+	fmt.Println("Building repository configuration files ...")
+	fmt.Println("Fetching repository configuration from codacy ...")
 
 	// API call to fetch settings
 	url := CodacyApiBase + "/2.0/project/analysis/configuration"
