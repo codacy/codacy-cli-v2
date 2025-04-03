@@ -11,8 +11,8 @@ import (
 )
 
 // InstallRuntimes installs all runtimes defined in the configuration
-func InstallRuntimes() error {
-	for name, runtimeInfo := range Config.Runtimes() {
+func InstallRuntimes(config *ConfigType) error {
+	for name, runtimeInfo := range config.Runtimes() {
 		err := InstallRuntime(name, runtimeInfo)
 		if err != nil {
 			return fmt.Errorf("failed to install runtime %s: %w", name, err)
