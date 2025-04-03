@@ -11,14 +11,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "codacy-cli",
 	Short: "Codacy CLI - A command line interface for Codacy",
-	Long: `Codacy CLI is a command line tool that helps you interact with Codacy.
-It provides functionality for code analysis, configuration management,
-and integration with Codacy's services.
-
-To get started, try running one of these commands:
-  codacy-cli init      - Initialize a new project
-  codacy-cli install   - Install required tools
-  codacy-cli analyze   - Run code analysis`,
+	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Check if .codacy directory exists
 		if _, err := os.Stat(".codacy"); os.IsNotExist(err) {
