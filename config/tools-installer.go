@@ -16,10 +16,12 @@ import (
 // InstallTools installs all tools defined in the configuration
 func InstallTools() error {
 	for name, toolInfo := range Config.Tools() {
+		fmt.Printf("Installing tool: %s v%s...\n", name, toolInfo.Version)
 		err := InstallTool(name, toolInfo)
 		if err != nil {
 			return fmt.Errorf("failed to install tool %s: %w", name, err)
 		}
+		fmt.Printf("Successfully installed %s v%s\n", name, toolInfo.Version)
 	}
 	return nil
 }
@@ -41,15 +43,18 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo) error {
 	// Check if this is a download-based tool (like trivy) or a runtime-based tool (like eslint)
 	if toolInfo.DownloadURL != "" {
 		// This is a download-based tool
+		fmt.Printf("Downloading %s...\n", name)
 		return installDownloadBasedTool(toolInfo)
 	}
 
 	// Handle Python tools differently
 	if toolInfo.Runtime == "python" {
+		fmt.Printf("Installing Python tool %s...\n", name)
 		return installPythonTool(name, toolInfo)
 	}
 
-	// Handle other runtime-based tools
+	// For runtime-based tools
+	fmt.Printf("Installing %s using %s runtime...\n", name, toolInfo.Runtime)
 	return installRuntimeTool(name, toolInfo)
 }
 
