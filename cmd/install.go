@@ -16,11 +16,9 @@ import (
 )
 
 var registry string
-var codacyRepositoryToken string
 
 func init() {
 	installCmd.Flags().StringVarP(&registry, "registry", "r", "", "Registry to use for installing tools")
-	installCmd.Flags().StringVar(&codacyRepositoryToken, "repository-token", "", "Codacy repository token for fetching tool configurations")
 	rootCmd.AddCommand(installCmd)
 }
 

@@ -17,6 +17,8 @@ import (
 
 const CodacyApiBase = "https://app.codacy.com"
 
+var codacyRepositoryToken string
+
 func init() {
 	initCmd.Flags().StringVar(&codacyRepositoryToken, "repository-token", "", "optional codacy repository token, if defined configurations will be fetched from codacy")
 	rootCmd.AddCommand(initCmd)
@@ -27,8 +29,7 @@ var initCmd = &cobra.Command{
 	Short: "Bootstraps project configuration",
 	Long:  "Bootstraps project configuration, creates codacy configuration file",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Initialize configuration without creating directories
-		config.Init()
+
 		config.Config.CreateLocalCodacyDir()
 
 		if len(codacyRepositoryToken) == 0 {
@@ -44,6 +45,10 @@ var initCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 			err = createConfigurationFile(apiTools)
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = buildRepositoryConfigurationFiles(codacyRepositoryToken)
 			if err != nil {
 				log.Fatal(err)
 			}
