@@ -35,7 +35,7 @@ func CreateEslintConfig(configuration ToolConfiguration) string {
 
 		parametersString := ""
 
-		for _, parameter := range patternConfiguration.ParamenterConfigurations {
+		for _, parameter := range patternConfiguration.ParameterConfigurations {
 			if parameter.Name == "unnamedParam" {
 				parametersString += quoteWhenIsNotJson(parameter.Value)
 			}
@@ -43,7 +43,7 @@ func CreateEslintConfig(configuration ToolConfiguration) string {
 
 		// build named parameters json object
 		namedParametersString := ""
-		for _, parameter := range patternConfiguration.ParamenterConfigurations {
+		for _, parameter := range patternConfiguration.ParameterConfigurations {
 
 			if parameter.Name != "unnamedParam" {
 				if len(namedParametersString) == 0 {

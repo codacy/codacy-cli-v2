@@ -6,8 +6,8 @@ type PatternParameterConfiguration struct {
 }
 
 type PatternConfiguration struct {
-	PatternId                string
-	ParamenterConfigurations []PatternParameterConfiguration
+	PatternId               string
+	ParameterConfigurations []PatternParameterConfiguration
 }
 
 type ToolConfiguration struct {
