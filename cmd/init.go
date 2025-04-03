@@ -33,7 +33,8 @@ var initCmd = &cobra.Command{
 		config.Config.CreateLocalCodacyDir()
 
 		if len(codacyRepositoryToken) == 0 {
-			fmt.Println("No project token was specified, skipping fetch configurations ")
+			fmt.Println()
+			fmt.Println("ℹ️  No project token was specified, skipping fetch configurations")
 			noTools := []tools.Tool{}
 			err := createConfigurationFile(noTools)
 			if err != nil {
@@ -53,7 +54,13 @@ var initCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 		}
-		fmt.Println("Run install command to install dependencies.")
+		fmt.Println()
+		fmt.Println("✅ Successfully initialized Codacy configuration!")
+		fmt.Println()
+		fmt.Println("🔧 Next steps:")
+		fmt.Println("  1. Run 'codacy-cli install' to install all dependencies")
+		fmt.Println("  2. Run 'codacy-cli analyze' to start analyzing your code")
+		fmt.Println()
 	},
 }
 
