@@ -41,7 +41,7 @@ func TestCreatePmdConfig(t *testing.T) {
 		PatternsConfiguration: []PatternConfiguration{
 			{
 				PatternId: "java/codestyle/AtLeastOneConstructor",
-				ParamenterConfigurations: []PatternParameterConfiguration{
+				ParameterConfigurations: []PatternParameterConfiguration{
 					{
 						Name:  "enabled",
 						Value: "true",
@@ -50,7 +50,7 @@ func TestCreatePmdConfig(t *testing.T) {
 			},
 			{
 				PatternId: "java/design/UnusedPrivateField",
-				ParamenterConfigurations: []PatternParameterConfiguration{
+				ParameterConfigurations: []PatternParameterConfiguration{
 					{
 						Name:  "enabled",
 						Value: "true",
@@ -59,7 +59,7 @@ func TestCreatePmdConfig(t *testing.T) {
 			},
 			{
 				PatternId: "java/design/LoosePackageCoupling",
-				ParamenterConfigurations: []PatternParameterConfiguration{
+				ParameterConfigurations: []PatternParameterConfiguration{
 					{
 						Name:  "enabled",
 						Value: "true",
@@ -109,7 +109,7 @@ func TestCreatePmdConfigWithDisabledRules(t *testing.T) {
 		PatternsConfiguration: []PatternConfiguration{
 			{
 				PatternId: "java/codestyle/AtLeastOneConstructor",
-				ParamenterConfigurations: []PatternParameterConfiguration{
+				ParameterConfigurations: []PatternParameterConfiguration{
 					{
 						Name:  "enabled",
 						Value: "false",

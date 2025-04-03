@@ -33,7 +33,7 @@ func TestCreateTrivyConfigAllEnabled(t *testing.T) {
 			PatternsConfiguration: []PatternConfiguration{
 				{
 					PatternId: "Trivy_vulnerability_minor",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "true",
@@ -42,7 +42,7 @@ func TestCreateTrivyConfigAllEnabled(t *testing.T) {
 				},
 				{
 					PatternId: "Trivy_vulnerability_medium",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "true",
@@ -51,7 +51,7 @@ func TestCreateTrivyConfigAllEnabled(t *testing.T) {
 				},
 				{
 					PatternId: "Trivy_vulnerability",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "true",
@@ -60,7 +60,7 @@ func TestCreateTrivyConfigAllEnabled(t *testing.T) {
 				},
 				{
 					PatternId: "Trivy_secret",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "true",
@@ -88,7 +88,7 @@ func TestCreateTrivyConfigNoLow(t *testing.T) {
 			PatternsConfiguration: []PatternConfiguration{
 				{
 					PatternId: "Trivy_vulnerability_minor",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "false",
@@ -115,7 +115,7 @@ func TestCreateTrivyConfigOnlyHigh(t *testing.T) {
 			PatternsConfiguration: []PatternConfiguration{
 				{
 					PatternId: "Trivy_vulnerability_minor",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "false",
@@ -124,7 +124,7 @@ func TestCreateTrivyConfigOnlyHigh(t *testing.T) {
 				},
 				{
 					PatternId: "Trivy_vulnerability_medium",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "false",
@@ -133,7 +133,7 @@ func TestCreateTrivyConfigOnlyHigh(t *testing.T) {
 				},
 				{
 					PatternId: "Trivy_secret",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "false",
@@ -158,7 +158,7 @@ func TestCreateTrivyConfigNoVulnerabilities(t *testing.T) {
 			PatternsConfiguration: []PatternConfiguration{
 				{
 					PatternId: "Trivy_vulnerability_minor",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "false",
@@ -167,7 +167,7 @@ func TestCreateTrivyConfigNoVulnerabilities(t *testing.T) {
 				},
 				{
 					PatternId: "Trivy_vulnerability_medium",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "false",
@@ -176,7 +176,7 @@ func TestCreateTrivyConfigNoVulnerabilities(t *testing.T) {
 				},
 				{
 					PatternId: "Trivy_vulnerability",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "false",
@@ -200,7 +200,7 @@ func TestCreateTrivyConfigOnlySecretsLow(t *testing.T) {
 			PatternsConfiguration: []PatternConfiguration{
 				{
 					PatternId: "Trivy_vulnerability_minor",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "true",
@@ -209,7 +209,7 @@ func TestCreateTrivyConfigOnlySecretsLow(t *testing.T) {
 				},
 				{
 					PatternId: "Trivy_vulnerability_medium",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "false",
@@ -218,7 +218,7 @@ func TestCreateTrivyConfigOnlySecretsLow(t *testing.T) {
 				},
 				{
 					PatternId: "Trivy_vulnerability",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "enabled",
 							Value: "false",

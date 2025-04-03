@@ -227,8 +227,8 @@ func convertAPIToolConfigurationToDomain(config CodacyToolConfiguration) tools.T
 		patterns = append(
 			patterns,
 			tools.PatternConfiguration{
-				PatternId:                pattern.InternalId,
-				ParamenterConfigurations: parameters,
+				PatternId:               pattern.InternalId,
+				ParameterConfigurations: parameters,
 			},
 		)
 	}
@@ -345,8 +345,8 @@ func convertAPIToolConfigurationForTrivy(config CodacyToolConfiguration) tools.T
 			patterns = append(
 				patterns,
 				tools.PatternConfiguration{
-					PatternId:                pattern.InternalId,
-					ParamenterConfigurations: parameters,
+					PatternId:               pattern.InternalId,
+					ParameterConfigurations: parameters,
 				},
 			)
 		}

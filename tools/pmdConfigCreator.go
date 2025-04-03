@@ -30,7 +30,7 @@ func CreatePmdConfig(configuration ToolConfiguration) string {
 		patternEnabled := true
 		var properties []string
 
-		for _, param := range pattern.ParamenterConfigurations {
+		for _, param := range pattern.ParameterConfigurations {
 			if param.Name == "enabled" && param.Value == "false" {
 				patternEnabled = false
 				break
