@@ -86,7 +86,7 @@ func configFileTemplate(tools []tools.Tool) string {
 	trivyVersion := "0.59.1" // Latest stable version
 	pylintVersion := "3.3.6"
 	pmdVersion := "6.55.0"
-  
+
 	for _, tool := range tools {
 		if tool.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
 			eslintVersion = tool.Version
@@ -154,26 +154,42 @@ func buildRepositoryConfigurationFiles(token string) error {
 	}
 
 	var objmap map[string]json.RawMessage
-	_ = json.Unmarshal(body, &objmap)
+	err = json.Unmarshal(body, &objmap)
+	if err != nil {
+		fmt.Println("Error unmarshaling response:", err)
+		return err
+	}
 
 	var apiToolConfigurations []CodacyToolConfiguration
 	err = json.Unmarshal(objmap["toolConfiguration"], &apiToolConfigurations)
-
-	eslintApiConfiguration := extractESLintConfiguration(apiToolConfigurations)
-
-	eslintDomainConfiguration := convertAPIToolConfigurationToDomain(*eslintApiConfiguration)
-
-	eslintConfigurationString := tools.CreateEslintConfig(eslintDomainConfiguration)
-
-	eslintConfigFile, err := os.Create("eslint.config.mjs")
-	defer eslintConfigFile.Close()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Error unmarshaling tool configurations:", err)
+		return err
 	}
 
-	_, err = eslintConfigFile.WriteString(eslintConfigurationString)
-	if err != nil {
-		log.Fatal(err)
+	// ESLint configuration
+	eslintApiConfiguration := extractESLintConfiguration(apiToolConfigurations)
+	if eslintApiConfiguration != nil {
+		eslintDomainConfiguration := convertAPIToolConfigurationToDomain(*eslintApiConfiguration)
+		eslintConfigurationString := tools.CreateEslintConfig(eslintDomainConfiguration)
+
+		eslintConfigFile, err := os.Create("eslint.config.mjs")
+		if err != nil {
+			return fmt.Errorf("failed to create eslint config file: %v", err)
+		}
+		defer eslintConfigFile.Close()
+
+		_, err = eslintConfigFile.WriteString(eslintConfigurationString)
+		if err != nil {
+			return fmt.Errorf("failed to write eslint config: %v", err)
+		}
+		fmt.Println("ESLint configuration created based on Codacy settings")
+	} else {
+		err = createDefaultEslintConfigFile()
+		if err != nil {
+			return fmt.Errorf("failed to create default ESLint config: %v", err)
+		}
+		fmt.Println("Default ESLint configuration created")
 	}
 
 	// Trivy configuration
@@ -181,13 +197,13 @@ func buildRepositoryConfigurationFiles(token string) error {
 	if trivyApiConfiguration != nil {
 		err = createTrivyConfigFile(*trivyApiConfiguration)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to create Trivy config: %v", err)
 		}
 		fmt.Println("Trivy configuration created based on Codacy settings")
 	} else {
 		err = createDefaultTrivyConfigFile()
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to create default Trivy config: %v", err)
 		}
 		fmt.Println("Default Trivy configuration created")
 	}
@@ -197,13 +213,13 @@ func buildRepositoryConfigurationFiles(token string) error {
 	if pmdApiConfiguration != nil {
 		err = createPMDConfigFile(*pmdApiConfiguration)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to create PMD config: %v", err)
 		}
 		fmt.Println("PMD configuration created based on Codacy settings")
 	} else {
 		err = createDefaultPMDConfigFile()
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to create default PMD config: %v", err)
 		}
 		fmt.Println("Default PMD configuration created")
 	}
@@ -219,8 +235,8 @@ func convertAPIToolConfigurationToDomain(config CodacyToolConfiguration) tools.T
 
 		for _, parameter := range pattern.Parameters {
 			parameters = append(parameters, tools.PatternParameterConfiguration{
-				Name:  parameter.name,
-				Value: parameter.value,
+				Name:  parameter.Name,
+				Value: parameter.Value,
 			})
 		}
 
@@ -301,8 +317,8 @@ type PatternConfiguration struct {
 }
 
 type ParameterConfiguration struct {
-	name  string `json:"name"`
-	value string `json:"value"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 // createTrivyConfigFile creates a trivy.yaml configuration file based on the API configuration
@@ -331,7 +347,7 @@ func convertAPIToolConfigurationForTrivy(config CodacyToolConfiguration) tools.T
 
 			// Check if there's an explicit enabled parameter
 			for _, param := range pattern.Parameters {
-				if param.name == "enabled" && param.value == "false" {
+				if param.Name == "enabled" && param.Value == "false" {
 					patternEnabled = false
 				}
 			}
@@ -365,4 +381,14 @@ func createDefaultTrivyConfigFile() error {
 
 	// Write to file
 	return os.WriteFile("trivy.yaml", []byte(content), 0644)
+}
+
+// createDefaultEslintConfigFile creates a default eslint.config.mjs configuration file
+func createDefaultEslintConfigFile() error {
+	// Use empty tool configuration to get default settings
+	emptyConfig := tools.ToolConfiguration{}
+	content := tools.CreateEslintConfig(emptyConfig)
+
+	// Write to file
+	return os.WriteFile("eslint.config.mjs", []byte(content), 0644)
 }
