@@ -7,113 +7,126 @@ import (
 	"strings"
 )
 
-// GeneratePylintRC generates a pylintrc file content with the specified patterns enabled
-func GeneratePylintRC(config types.ToolConfiguration) string {
-	var rcContent strings.Builder
+// getDefaultParametersForPatterns returns a map of pattern IDs to their default parameters
+func getDefaultParametersForPatterns(patternIDs []string) map[string][]types.ParameterConfiguration {
+	defaultParams := make(map[string][]types.ParameterConfiguration)
 
-	// Write header
+	for _, patternID := range patternIDs {
+		if params, exists := PatternDefaultParameters[patternID]; exists {
+			defaultParams[patternID] = params
+		}
+	}
+
+	return defaultParams
+}
+
+// writePylintRCHeader writes the common header sections to the RC content
+func writePylintRCHeader(rcContent *strings.Builder) {
 	rcContent.WriteString("[MASTER]\n")
 	rcContent.WriteString("ignore=CVS\n")
 	rcContent.WriteString("persistent=yes\n")
 	rcContent.WriteString("load-plugins=\n\n")
-
-	// Disable all patterns by default
 	rcContent.WriteString("[MESSAGES CONTROL]\n")
 	rcContent.WriteString("disable=all\n")
+}
 
-	// Collect all enabled pattern IDs and their parameters
-	var enabledPatternsIds []string
-	patternParams := make(map[string]map[string]string)
-
-	// Only process patterns if the tool is enabled
-	if config.IsEnabled {
-		for _, pattern := range config.Patterns {
-			patternID := extractPatternId(pattern.InternalId)
-			enabledPatternsIds = append(enabledPatternsIds, patternID)
-
-			// Store parameters for this pattern
-			params := make(map[string]string)
-			for _, param := range pattern.Parameters {
-				params[param.Name] = param.Value
-			}
-			patternParams[patternID] = params
-		}
-	}
-
-	// Write all enabled patterns in a single line
-	if len(enabledPatternsIds) > 0 {
-		rcContent.WriteString(fmt.Sprintf("enable=%s\n", strings.Join(enabledPatternsIds, ",")))
+// writeEnabledPatterns writes the enabled patterns section to the RC content
+func writeEnabledPatterns(rcContent *strings.Builder, patternIDs []string) {
+	if len(patternIDs) > 0 {
+		rcContent.WriteString(fmt.Sprintf("enable=%s\n", strings.Join(patternIDs, ",")))
 	}
 	rcContent.WriteString("\n")
+}
 
-	// Group parameters by section
-	groupedParams := groupParametersBySection(config)
-
-	// Write parameters for each section
+// writeParametersBySection writes the parameters grouped by section to the RC content
+func writeParametersBySection(rcContent *strings.Builder, groupedParams map[string][]types.PylintPatternParameterConfiguration) {
 	for sectionName, params := range groupedParams {
 		rcContent.WriteString(fmt.Sprintf("[%s]\n", sectionName))
 		for _, param := range params {
-			value := param.Value
-			if value == "" {
-				// If no value is set, use default from PatternDefaultParameters
-				if defaultParams, ok := PatternDefaultParameters[extractPatternId(param.Name)]; ok {
-					for _, defaultParam := range defaultParams {
-						if defaultParam.Name == param.Name {
-							value = defaultParam.Value
-							break
-						}
-					}
-				}
-			}
-			rcContent.WriteString(fmt.Sprintf("%s=%s\n", param.Name, value))
+			rcContent.WriteString(fmt.Sprintf("%s=%s\n", param.Name, param.Value))
 		}
 		rcContent.WriteString("\n")
 	}
-
-	return rcContent.String()
 }
 
-// groupParametersBySection groups parameters by their section name
-func groupParametersBySection(config types.ToolConfiguration) map[string][]types.PylintPatternParameterConfiguration {
-	// Initialize the result map
+// groupParametersByPatterns groups parameters from patterns into sections
+func groupParametersByPatterns(patterns []types.PatternConfiguration) map[string][]types.PylintPatternParameterConfiguration {
 	groupedParams := make(map[string][]types.PylintPatternParameterConfiguration)
 
-	// Iterate through each pattern
-	for _, pattern := range config.Patterns {
-		// Get parameters to process - either from the pattern or from defaults
-		if len(pattern.Parameters) == 0 {
-			// If no parameters, check defaults
-			patternID := extractPatternId(pattern.InternalId)
-			pattern.Parameters = PatternDefaultParameters[patternID]
+	for _, pattern := range patterns {
+		patternID := extractPatternId(pattern.InternalId)
+		params := pattern.Parameters
+
+		// If no parameters, check defaults
+		if len(params) == 0 {
+			params = PatternDefaultParameters[patternID]
 		}
 
-		// Convert pattern parameters to PylintPatternParameterConfiguration
-		parameters := make([]types.PylintPatternParameterConfiguration, len(pattern.Parameters))
-		for i, param := range pattern.Parameters {
-			parameters[i] = types.PylintPatternParameterConfiguration{
-				Name:        param.Name,
-				Value:       param.Value,
-				SectionName: GetParameterSection(param.Name),
-			}
-		}
-
-		// Process all parameters (either from pattern or defaults)
-		for _, param := range parameters {
-			// Skip parameters without a section name
-			if param.SectionName == nil {
+		for _, param := range params {
+			sectionName := GetParameterSection(param.Name)
+			if sectionName == nil {
 				log.Printf("Parameter %s has no section name", param.Name)
 				continue
 			}
 
-			// Get the section name
-			sectionName := *param.SectionName
-
-			// Add the parameter to the appropriate section
-			groupedParams[sectionName] = append(groupedParams[sectionName], param)
+			groupedParams[*sectionName] = append(groupedParams[*sectionName], types.PylintPatternParameterConfiguration{
+				Name:        param.Name,
+				Value:       param.Value,
+				SectionName: sectionName,
+			})
 		}
 	}
 
 	return groupedParams
+}
+
+func GeneratePylintRCDefault() string {
+	var rcContent strings.Builder
+
+	writePylintRCHeader(&rcContent)
+	writeEnabledPatterns(&rcContent, DefaultPatterns)
+
+	// Get default parameters for enabled patterns
+	defaultParams := getDefaultParametersForPatterns(DefaultPatterns)
+
+	// Convert default parameters to pattern configurations
+	var patterns []types.PatternConfiguration
+	for patternID, params := range defaultParams {
+		patterns = append(patterns, types.PatternConfiguration{
+			InternalId: "PyLintPython3_" + patternID,
+			Parameters: params,
+		})
+	}
+
+	// Group and write parameters
+	groupedParams := groupParametersByPatterns(patterns)
+	writeParametersBySection(&rcContent, groupedParams)
+
+	return rcContent.String()
+}
+
+// GeneratePylintRC generates a pylintrc file content with the specified patterns enabled
+func GeneratePylintRC(config types.ToolConfiguration) string {
+	var rcContent strings.Builder
+
+	writePylintRCHeader(&rcContent)
+
+	// Collect enabled pattern IDs
+	var enabledPatternsIds []string
+	if config.IsEnabled {
+		for _, pattern := range config.Patterns {
+			patternID := extractPatternId(pattern.InternalId)
+			enabledPatternsIds = append(enabledPatternsIds, patternID)
+		}
+	}
+
+	writeEnabledPatterns(&rcContent, enabledPatternsIds)
+
+	// Group and write parameters
+	groupedParams := groupParametersByPatterns(config.Patterns)
+	writeParametersBySection(&rcContent, groupedParams)
+
+	return rcContent.String()
 }
 
 // extractPatternId returns the part of the pattern ID after the underscore

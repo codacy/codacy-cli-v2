@@ -202,6 +202,12 @@ func buildRepositoryConfigurationFiles(token string) error {
 			log.Fatal(err)
 		}
 		fmt.Println("Pylint configuration created based on Codacy settings")
+	} else {
+		err = createDefaultPylintConfigFile()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Default Pylint configuration created")
 	}
 
 	return nil
@@ -279,6 +285,11 @@ func createPylintConfigFile(config types.ToolConfiguration) error {
 		return os.WriteFile(".pylintrc", []byte(pylintConfigurationString), 0644)
 	}
 	return nil
+}
+
+func createDefaultPylintConfigFile() error {
+	pylintConfigurationString := pylint.GeneratePylintRCDefault()
+	return os.WriteFile(".pylintrc", []byte(pylintConfigurationString), 0644)
 }
 
 // createTrivyConfigFile creates a trivy.yaml configuration file based on the API configuration

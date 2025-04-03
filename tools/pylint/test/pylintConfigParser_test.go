@@ -4,6 +4,8 @@ import (
 	"codacy/cli-v2/tools/pylint"
 	"codacy/cli-v2/tools/types"
 	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -294,4 +296,35 @@ func TestGeneratePylintRCFromTestData(t *testing.T) {
 
 	// Verify specific pattern with parameters
 	assert.Contains(t, rcContent, "max-line-length=125")
+}
+
+func TestGeneratePylintRCDefault(t *testing.T) {
+	rcContent := pylint.GeneratePylintRCDefault()
+
+	// Print the generated content for inspection
+	fmt.Println("Generated Pylint RC Content:")
+	fmt.Println(rcContent)
+
+	// Basic validation
+	if rcContent == "" {
+		t.Error("Generated RC content is empty")
+	}
+
+	// Check for required sections
+	requiredSections := []string{"[MASTER]", "[MESSAGES CONTROL]"}
+	for _, section := range requiredSections {
+		if !strings.Contains(rcContent, section) {
+			t.Errorf("Missing required section: %s", section)
+		}
+	}
+
+	// Check if default patterns are enabled
+	if !strings.Contains(rcContent, "enable=") {
+		t.Error("Missing enable line")
+	}
+
+	// Check if any parameters are present
+	if !strings.Contains(rcContent, "=") {
+		t.Error("No parameters found in the configuration")
+	}
 }
