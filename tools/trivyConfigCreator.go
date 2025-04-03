@@ -18,7 +18,7 @@ func CreateTrivyConfig(config ToolConfiguration) string {
 	for _, pattern := range config.PatternsConfiguration {
 		// Check if pattern is enabled
 		patternEnabled := true
-		for _, param := range pattern.ParamenterConfigurations {
+		for _, param := range pattern.ParameterConfigurations {
 			if param.Name == "enabled" && param.Value == "false" {
 				patternEnabled = false
 			}

@@ -46,7 +46,7 @@ func TestCreateEslintConfigUnnamedParam(t *testing.T) {
 			PatternsConfiguration: []PatternConfiguration{
 				{
 					PatternId: "ESLint8_semi",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "unnamedParam",
 							Value: "never",
@@ -70,7 +70,7 @@ func TestCreateEslintConfigNamedParam(t *testing.T) {
 			PatternsConfiguration: []PatternConfiguration{
 				{
 					PatternId: "consistent-return",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "treatUndefinedAsUnspecified",
 							Value: "false",
@@ -94,7 +94,7 @@ func TestCreateEslintConfigUnnamedAndNamedParam(t *testing.T) {
 			PatternsConfiguration: []PatternConfiguration{
 				{
 					PatternId: "consistent-return",
-					ParamenterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []PatternParameterConfiguration{
 						{
 							Name:  "treatUndefinedAsUnspecified",
 							Value: "false",
