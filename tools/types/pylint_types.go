@@ -2,10 +2,8 @@ package types
 
 // PylintPatternConfiguration represents a Pylint pattern configuration
 type PylintPatternConfiguration struct {
-	Id                string
-	Enabled           bool
-	Parameters        []PylintPatternParameterConfiguration
-	DefaultParameters []PylintPatternParameterConfiguration
+	Id         string
+	Parameters []PylintPatternParameterConfiguration
 }
 
 // PatternParameterConfiguration represents a parameter configuration for a Pylint pattern

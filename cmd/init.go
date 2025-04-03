@@ -3,6 +3,8 @@ package cmd
 import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/pylint"
+	"codacy/cli-v2/tools/types"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -154,7 +156,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 	var objmap map[string]json.RawMessage
 	_ = json.Unmarshal(body, &objmap)
 
-	var apiToolConfigurations []CodacyToolConfiguration
+	var apiToolConfigurations []types.ToolConfiguration
 	err = json.Unmarshal(objmap["toolConfiguration"], &apiToolConfigurations)
 
 	eslintApiConfiguration := extractESLintConfiguration(apiToolConfigurations)
@@ -192,10 +194,20 @@ func buildRepositoryConfigurationFiles(token string) error {
 		fmt.Println("Default Trivy configuration created")
 	}
 
+	pylintApiConfiguration := extractPylintConfiguration(apiToolConfigurations)
+
+	if pylintApiConfiguration != nil {
+		err = createPylintConfigFile(*pylintApiConfiguration)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Pylint configuration created based on Codacy settings")
+	}
+
 	return nil
 }
 
-func convertAPIToolConfigurationToDomain(config CodacyToolConfiguration) tools.ToolConfiguration {
+func convertAPIToolConfigurationToDomain(config types.ToolConfiguration) tools.ToolConfiguration {
 	var patterns []tools.PatternConfiguration
 
 	for _, pattern := range config.Patterns {
@@ -203,8 +215,8 @@ func convertAPIToolConfigurationToDomain(config CodacyToolConfiguration) tools.T
 
 		for _, parameter := range pattern.Parameters {
 			parameters = append(parameters, tools.PatternParameterConfiguration{
-				Name:  parameter.name,
-				Value: parameter.value,
+				Name:  parameter.Name,
+				Value: parameter.Value,
 			})
 		}
 
@@ -222,13 +234,13 @@ func convertAPIToolConfigurationToDomain(config CodacyToolConfiguration) tools.T
 	}
 }
 
-func extractESLintConfiguration(toolConfigurations []CodacyToolConfiguration) *CodacyToolConfiguration {
+func extractESLintConfiguration(toolConfigurations []types.ToolConfiguration) *types.ToolConfiguration {
 
 	//ESLInt internal codacy uuid, to filter ot not ESLint tools
-	//"f8b29663-2cb2-498d-b923-a10c6a8c05cd"
+	const ESLintUUID = "f8b29663-2cb2-498d-b923-a10c6a8c05cd"
 
 	for _, toolConfiguration := range toolConfigurations {
-		if toolConfiguration.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
+		if toolConfiguration.Uuid == ESLintUUID {
 			return &toolConfiguration
 		}
 	}
@@ -237,7 +249,7 @@ func extractESLintConfiguration(toolConfigurations []CodacyToolConfiguration) *C
 }
 
 // extractTrivyConfiguration extracts Trivy configuration from the Codacy API response
-func extractTrivyConfiguration(toolConfigurations []CodacyToolConfiguration) *CodacyToolConfiguration {
+func extractTrivyConfiguration(toolConfigurations []types.ToolConfiguration) *types.ToolConfiguration {
 	// Trivy internal codacy uuid
 	const TrivyUUID = "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb"
 
@@ -250,25 +262,28 @@ func extractTrivyConfiguration(toolConfigurations []CodacyToolConfiguration) *Co
 	return nil
 }
 
-type CodacyToolConfiguration struct {
-	Uuid      string                 `json:"uuid"`
-	IsEnabled bool                   `json:"isEnabled"`
-	Patterns  []PatternConfiguration `json:"patterns"`
+func extractPylintConfiguration(toolConfigurations []types.ToolConfiguration) *types.ToolConfiguration {
+	const PylintUUID = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
+
+	for _, toolConfiguration := range toolConfigurations {
+		if toolConfiguration.Uuid == PylintUUID {
+			return &toolConfiguration
+		}
+	}
+	return nil
 }
 
-type PatternConfiguration struct {
-	InternalId string                   `json:"internalId"`
-	Parameters []ParameterConfiguration `json:"parameters"`
-}
-
-type ParameterConfiguration struct {
-	name  string `json:"name"`
-	value string `json:"value"`
+func createPylintConfigFile(config types.ToolConfiguration) error {
+	if config.IsEnabled {
+		pylintConfigurationString := pylint.GeneratePylintRC(config)
+		return os.WriteFile(".pylintrc", []byte(pylintConfigurationString), 0644)
+	}
+	return nil
 }
 
 // createTrivyConfigFile creates a trivy.yaml configuration file based on the API configuration
-func createTrivyConfigFile(config CodacyToolConfiguration) error {
-	// Convert CodacyToolConfiguration to tools.ToolConfiguration
+func createTrivyConfigFile(config types.ToolConfiguration) error {
+	// Convert ToolConfiguration to tools.ToolConfiguration
 	trivyDomainConfiguration := convertAPIToolConfigurationForTrivy(config)
 
 	// Use the shared CreateTrivyConfig function to generate the config content
@@ -279,7 +294,7 @@ func createTrivyConfigFile(config CodacyToolConfiguration) error {
 }
 
 // convertAPIToolConfigurationForTrivy converts API tool configuration to domain model for Trivy
-func convertAPIToolConfigurationForTrivy(config CodacyToolConfiguration) tools.ToolConfiguration {
+func convertAPIToolConfigurationForTrivy(config types.ToolConfiguration) tools.ToolConfiguration {
 	var patterns []tools.PatternConfiguration
 
 	// Only process if tool is enabled
@@ -292,7 +307,7 @@ func convertAPIToolConfigurationForTrivy(config CodacyToolConfiguration) tools.T
 
 			// Check if there's an explicit enabled parameter
 			for _, param := range pattern.Parameters {
-				if param.name == "enabled" && param.value == "false" {
+				if param.Name == "enabled" && param.Value == "false" {
 					patternEnabled = false
 				}
 			}
