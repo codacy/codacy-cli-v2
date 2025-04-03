@@ -29,8 +29,12 @@ var initCmd = &cobra.Command{
 	Short: "Bootstraps project configuration",
 	Long:  "Bootstraps project configuration, creates codacy configuration file",
 	Run: func(cmd *cobra.Command, args []string) {
+
+		config.Config.CreateLocalCodacyDir()
+
 		if len(codacyRepositoryToken) == 0 {
-			fmt.Println("No project token was specified, skipping fetch configurations ")
+			fmt.Println()
+			fmt.Println("ℹ️  No project token was specified, skipping fetch configurations")
 			noTools := []tools.Tool{}
 			err := createConfigurationFile(noTools)
 			if err != nil {
@@ -50,7 +54,13 @@ var initCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 		}
-		fmt.Println("Run install command to install dependencies.")
+		fmt.Println()
+		fmt.Println("✅ Successfully initialized Codacy configuration!")
+		fmt.Println()
+		fmt.Println("🔧 Next steps:")
+		fmt.Println("  1. Run 'codacy-cli install' to install all dependencies")
+		fmt.Println("  2. Run 'codacy-cli analyze' to start analyzing your code")
+		fmt.Println()
 	},
 }
 
@@ -76,7 +86,7 @@ func configFileTemplate(tools []tools.Tool) string {
 	trivyVersion := "0.59.1" // Latest stable version
 	pylintVersion := "3.3.6"
 	pmdVersion := "6.55.0"
-
+  
 	for _, tool := range tools {
 		if tool.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
 			eslintVersion = tool.Version
