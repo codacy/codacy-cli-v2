@@ -31,6 +31,10 @@ func main() {
 
 	// All other commands require a configuration file
 	if configErr != nil && len(os.Args) > 1 {
+<<<<<<< HEAD
+=======
+		fmt.Println(configErr)
+>>>>>>> eb43f2e (Feature/improve ux (#50))
 		fmt.Println("No configuration file was found, execute init command first.")
 		return
 	}
