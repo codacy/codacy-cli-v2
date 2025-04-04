@@ -69,7 +69,7 @@ func (c *ConfigType) Tools() map[string]*plugins.ToolInfo {
 
 func (c *ConfigType) AddTools(configs []plugins.ToolConfig) error {
 	// Process the tool configurations using the plugins.ProcessTools function
-	toolInfoMap, err := plugins.ProcessTools(configs, c.toolsDirectory)
+	toolInfoMap, err := plugins.ProcessTools(configs, c.toolsDirectory, c.runtimes)
 	if err != nil {
 		return err
 	}

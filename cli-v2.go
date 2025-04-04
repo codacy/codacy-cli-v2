@@ -16,6 +16,7 @@ func main() {
 	configErr := cfg.ReadConfigFile(config.Config.ProjectConfigFile())
 	// whenever there is no configuration file, the only command allowed to run is the 'init'
 	if configErr != nil && len(os.Args) > 1 && os.Args[1] != "init" {
+		fmt.Println(configErr)
 		fmt.Println("No configuration file was found, execute init command first.")
 		return
 	}

@@ -26,6 +26,7 @@ func InstallTools() error {
 
 // InstallTool installs a specific tool
 func InstallTool(name string, toolInfo *plugins.ToolInfo) error {
+	fmt.Println("Installing tool", name, "in", toolInfo.InstallDir)
 	// Check if the tool is already installed
 	if isToolInstalled(toolInfo) {
 		fmt.Printf("Tool %s v%s is already installed\n", name, toolInfo.Version)
@@ -33,6 +34,7 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo) error {
 	}
 
 	// Make sure the installation directory exists
+
 	err := os.MkdirAll(toolInfo.InstallDir, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create installation directory: %w", err)

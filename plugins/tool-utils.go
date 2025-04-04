@@ -110,7 +110,7 @@ type ToolInfo struct {
 }
 
 // ProcessTools processes a list of tool configurations and returns a map of tool information
-func ProcessTools(configs []ToolConfig, toolDir string) (map[string]*ToolInfo, error) {
+func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*RuntimeInfo) (map[string]*ToolInfo, error) {
 	result := make(map[string]*ToolInfo)
 
 	for _, config := range configs {
@@ -122,21 +122,32 @@ func ProcessTools(configs []ToolConfig, toolDir string) (map[string]*ToolInfo, e
 		if err != nil {
 			return nil, fmt.Errorf("error reading plugin.yaml for %s: %w", config.Name, err)
 		}
-
+		fmt.Println("Plugin path", pluginPath)
 		var pluginConfig ToolPluginConfig
 		err = yaml.Unmarshal(data, &pluginConfig)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing plugin.yaml for %s: %w", config.Name, err)
 		}
-
+		fmt.Println("EOD")
 		// Create the install directory path
 		installDir := path.Join(toolDir, fmt.Sprintf("%s@%s", config.Name, config.Version))
 
+		// Handle special case for dartanalyzer since it can be used with either dart or flutter
+		toolRuntime := pluginConfig.Runtime
+		if config.Name == "dartanalyzer" {
+			if runtimes["flutter"] != nil {
+				installDir = runtimes["flutter"].InstallDir
+				toolRuntime = "flutter"
+			} else {
+				installDir = runtimes["dart"].InstallDir
+				toolRuntime = "dart"
+			}
+		}
 		// Create ToolInfo with basic information
 		info := &ToolInfo{
 			Name:        config.Name,
 			Version:     config.Version,
-			Runtime:     pluginConfig.Runtime,
+			Runtime:     toolRuntime,
 			InstallDir:  installDir,
 			Binaries:    make(map[string]string),
 			Formatters:  make(map[string]string),
