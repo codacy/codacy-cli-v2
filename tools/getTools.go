@@ -50,7 +50,16 @@ type ToolsResponse struct {
 }
 
 type Tool struct {
-	Uuid    string `json:"uuid"`
-	Name    string `json:"name"`
-	Version string `json:"version"`
+	Uuid         string `json:"uuid"`
+	Name         string `json:"name"`
+	Version      string `json:"version"`
+	IsClientSide bool   `json:"isClientSide"`
+	Settings     struct {
+		Name                  string `json:"name"`
+		IsEnabled             bool   `json:"isEnabled"`
+		FollowsStandard       bool   `json:"followsStandard"`
+		IsCustom              bool   `json:"isCustom"`
+		HasConfigurationFile  bool   `json:"hasConfigurationFile"`
+		UsesConfigurationFile bool   `json:"usesConfigurationFile"`
+	} `json:"settings"`
 }

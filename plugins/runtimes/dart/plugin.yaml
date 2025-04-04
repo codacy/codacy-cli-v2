@@ -1,0 +1,19 @@
+name: dart
+description: Dart runtime
+download:
+  url_template: "https://storage.googleapis.com/dart-archive/channels/stable/release/{{.Version}}/sdk/dartsdk-{{.OS}}-{{.Arch}}-release.{{.Extension}}"
+  file_name_template: "dart-sdk"
+  extension:
+    default: "zip"
+  arch_mapping:
+    "386": "ia32"
+    "amd64": "x64"
+    "arm": "arm"
+    "arm64": "arm64"
+  os_mapping:
+    "darwin": "macos"
+    "linux": "linux"
+    "windows": "windows"
+binaries:
+  - name: dart
+    path: "bin/dart"

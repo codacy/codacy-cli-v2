@@ -3,8 +3,9 @@ package config_file
 import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/plugins"
-	"gopkg.in/yaml.v3"
 	"os"
+
+	"gopkg.in/yaml.v3"
 )
 
 type configFile struct {

@@ -1,0 +1,9 @@
+name: dartanalyzer
+description: Dart Analyzer
+runtime: "{{.Runtime}}"
+runtime_binaries:
+  package_manager: dart
+  execution: dart
+installation:
+  command: "pub add --dev flutter_lints"
+

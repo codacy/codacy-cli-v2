@@ -21,7 +21,7 @@ func TestProcessTools(t *testing.T) {
 	toolDir := "/test/tools"
 
 	// Process the tools
-	toolInfos, err := ProcessTools(configs, toolDir)
+	toolInfos, err := ProcessTools(configs, toolDir, nil)
 
 	// Assert no errors occurred
 	assert.NoError(t, err, "ProcessTools should not return an error")
@@ -81,7 +81,7 @@ func TestProcessToolsWithDownload(t *testing.T) {
 	toolDir := "/test/tools"
 
 	// Process the tools
-	toolInfos, err := ProcessTools(configs, toolDir)
+	toolInfos, err := ProcessTools(configs, toolDir, nil)
 
 	// Assert no errors occurred
 	assert.NoError(t, err, "ProcessTools should not return an error")

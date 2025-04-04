@@ -97,6 +97,10 @@ func init() {
 	analyzeCmd.Flags().StringVar(&outputFormat, "format", "", "Output format (use 'sarif' for SARIF format)")
 	analyzeCmd.Flags().BoolVar(&autoFix, "fix", false, "Apply auto fix to your issues when available")
 	analyzeCmd.Flags().StringVar(&pmdRulesetFile, "rulesets", "", "Path to PMD ruleset file")
+	analyzeCmd.Flags().StringVarP(&apiToken, "api-token", "a", "", "API token for Codacy API")
+	analyzeCmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider (gh, gl, bb)")
+	analyzeCmd.Flags().StringVar(&owner, "owner", "", "Owner/Organization")
+	analyzeCmd.Flags().StringVarP(&repository, "repository", "r", "", "Repository")
 	rootCmd.AddCommand(analyzeCmd)
 }
 
@@ -224,6 +228,11 @@ func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 	}
 }
 
+func runDartAnalyzer(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
+	dartanalyzer := config.Config.Tools()["dartanalyzer"]
+	tools.RunDartAnalyzer(workDirectory, dartanalyzer, pathsToCheck, outputFile, outputFormat, apiToken, provider, owner, repository)
+}
+
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Runs all linters.",
@@ -251,6 +260,8 @@ var analyzeCmd = &cobra.Command{
 			runPmdAnalysis(workDirectory, args, outputFile, outputFormat)
 		case "pylint":
 			runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
+		case "dartanalyzer":
+			runDartAnalyzer(workDirectory, args, outputFile, outputFormat)
 		case "":
 			log.Fatal("You need to specify a tool to run analysis with, e.g., '--tool eslint'")
 		default:
