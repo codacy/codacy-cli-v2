@@ -84,8 +84,8 @@ func configFileTemplate(tools []tools.Tool) string {
 	// Default versions
 	eslintVersion := "9.3.0"
 	trivyVersion := "0.59.1" // Latest stable version
-	pylintVersion := "3.3.6"
-	pmdVersion := "6.55.0"
+	// pylintVersion := "3.3.6"
+	// pmdVersion := "6.55.0"
 
 	for _, tool := range tools {
 		if tool.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
@@ -94,23 +94,22 @@ func configFileTemplate(tools []tools.Tool) string {
 		if tool.Uuid == "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb" {
 			trivyVersion = tool.Version
 		}
-		if tool.Uuid == "31677b6d-4ae0-4f56-8041-606a8d7a8e61" {
-			pylintVersion = tool.Version
-		}
-		if tool.Uuid == "9ed24812-b6ee-4a58-9004-0ed183c45b8f" {
-			pmdVersion = tool.Version
-		}
+		// if tool.Uuid == "31677b6d-4ae0-4f56-8041-606a8d7a8e61" {
+		// 	pylintVersion = tool.Version
+		// }
+		// if tool.Uuid == "9ed24812-b6ee-4a58-9004-0ed183c45b8f" {
+		// 	pmdVersion = tool.Version
+		// }
 	}
+
+	//TODO: Don't merge this
 
 	return fmt.Sprintf(`runtimes:
     - node@22.2.0
-    - python@3.11.11
 tools:
     - eslint@%s
     - trivy@%s
-    - pylint@%s
-    - pmd@%s
-`, eslintVersion, trivyVersion, pylintVersion, pmdVersion)
+`, eslintVersion, trivyVersion)
 }
 
 func buildRepositoryConfigurationFiles(token string) error {
@@ -170,19 +169,19 @@ func buildRepositoryConfigurationFiles(token string) error {
 	// ESLint configuration
 	eslintApiConfiguration := extractESLintConfiguration(apiToolConfigurations)
 	if eslintApiConfiguration != nil {
-		eslintDomainConfiguration := convertAPIToolConfigurationToDomain(*eslintApiConfiguration)
-		eslintConfigurationString := tools.CreateEslintConfig(eslintDomainConfiguration)
+		// eslintDomainConfiguration := convertAPIToolConfigurationToDomain(*eslintApiConfiguration)
+		//eslintConfigurationString := tools.CreateEslintConfig(eslintDomainConfiguration)
 
-		eslintConfigFile, err := os.Create("eslint.config.mjs")
-		if err != nil {
-			return fmt.Errorf("failed to create eslint config file: %v", err)
-		}
-		defer eslintConfigFile.Close()
+		// eslintConfigFile, err := os.Create("eslint.config.mjs")
+		// if err != nil {
+		// 	return fmt.Errorf("failed to create eslint config file: %v", err)
+		// }
+		// defer eslintConfigFile.Close()
 
-		_, err = eslintConfigFile.WriteString(eslintConfigurationString)
-		if err != nil {
-			return fmt.Errorf("failed to write eslint config: %v", err)
-		}
+		// _, err = eslintConfigFile.WriteString(eslintConfigurationString)
+		// if err != nil {
+		// 	return fmt.Errorf("failed to write eslint config: %v", err)
+		// }
 		fmt.Println("ESLint configuration created based on Codacy settings")
 	} else {
 		err = createDefaultEslintConfigFile()
@@ -208,21 +207,21 @@ func buildRepositoryConfigurationFiles(token string) error {
 		fmt.Println("Default Trivy configuration created")
 	}
 
-	// PMD configuration
-	pmdApiConfiguration := extractPMDConfiguration(apiToolConfigurations)
-	if pmdApiConfiguration != nil {
-		err = createPMDConfigFile(*pmdApiConfiguration)
-		if err != nil {
-			return fmt.Errorf("failed to create PMD config: %v", err)
-		}
-		fmt.Println("PMD configuration created based on Codacy settings")
-	} else {
-		err = createDefaultPMDConfigFile()
-		if err != nil {
-			return fmt.Errorf("failed to create default PMD config: %v", err)
-		}
-		fmt.Println("Default PMD configuration created")
-	}
+	// // PMD configuration
+	// pmdApiConfiguration := extractPMDConfiguration(apiToolConfigurations)
+	// if pmdApiConfiguration != nil {
+	// 	err = createPMDConfigFile(*pmdApiConfiguration)
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed to create PMD config: %v", err)
+	// 	}
+	// 	fmt.Println("PMD configuration created based on Codacy settings")
+	// } else {
+	// 	err = createDefaultPMDConfigFile()
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed to create default PMD config: %v", err)
+	// 	}
+	// 	fmt.Println("Default PMD configuration created")
+	// }
 
 	return nil
 }
