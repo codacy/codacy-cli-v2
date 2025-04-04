@@ -16,6 +16,7 @@ type ConfigType struct {
 	toolsDirectory       string
 	localCodacyDirectory string
 	projectConfigFile    string
+	cliConfigFile        string
 
 	runtimes map[string]*plugins.RuntimeInfo
 	tools    map[string]*plugins.ToolInfo
@@ -43,6 +44,10 @@ func (c *ConfigType) LocalCodacyDirectory() string {
 
 func (c *ConfigType) ProjectConfigFile() string {
 	return c.projectConfigFile
+}
+
+func (c *ConfigType) CliConfigFile() string {
+	return c.cliConfigFile
 }
 
 func (c *ConfigType) Runtimes() map[string]*plugins.RuntimeInfo {
@@ -89,14 +94,8 @@ func (c *ConfigType) setupCodacyPaths() {
 	c.toolsDirectory = filepath.Join(c.globalCacheDirectory, "tools")
 	c.localCodacyDirectory = ".codacy"
 
-	yamlPath := filepath.Join(c.localCodacyDirectory, "codacy.yaml")
-	ymlPath := filepath.Join(c.localCodacyDirectory, "codacy.yml")
-
-	if _, err := os.Stat(ymlPath); err == nil {
-		c.projectConfigFile = ymlPath
-	} else {
-		c.projectConfigFile = yamlPath
-	}
+	c.projectConfigFile = filepath.Join(c.localCodacyDirectory, "codacy.yaml")
+	c.cliConfigFile = filepath.Join(c.localCodacyDirectory, "cli-config.yaml")
 }
 
 func (c *ConfigType) CreateCodacyDirs() error {
