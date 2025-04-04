@@ -28,7 +28,6 @@ func InstallTools(config *ConfigType, registry string) error {
 
 // InstallTool installs a specific tool
 func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error {
-	fmt.Println("Installing tool", name, "in", toolInfo.InstallDir)
 	// Check if the tool is already installed
 	if isToolInstalled(toolInfo) {
 		fmt.Printf("Tool %s v%s is already installed\n", name, toolInfo.Version)

@@ -31,7 +31,6 @@ func main() {
 
 	// All other commands require a configuration file
 	if configErr != nil && len(os.Args) > 1 {
-		fmt.Println(configErr)
 		fmt.Println("No configuration file was found, execute init command first.")
 		return
 	}

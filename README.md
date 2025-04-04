@@ -54,7 +54,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/codacy/codacy-cli-v2/main/coda
 You can either put the downloaded script in a specific file or create an alias that will download the script and look for changes:
 
 ```bash
-alias codacy-cli-v2="bash <(curl -Ls https://raw.githubusercontent.com/codacy/codacy-cli-v2/main/codacy-cli.sh)"
+alias codacy-cli="bash <(curl -Ls https://raw.githubusercontent.com/codacy/codacy-cli-v2/main/codacy-cli.sh)"
 ```
 
 ## Installation
