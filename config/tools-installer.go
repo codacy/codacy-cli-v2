@@ -35,6 +35,7 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error
 	}
 
 	// Make sure the installation directory exists
+
 	err := os.MkdirAll(toolInfo.InstallDir, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create installation directory: %w", err)
