@@ -1,6 +1,7 @@
 package eslint
 
 import (
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,7 +30,7 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 
 	// Add config file flag if provided
 	if configFile != "" {
-		cmd.Args = append(cmd.Args, "-c", configFile)
+		cmd.Args = append(cmd.Args, "--config", configFile)
 	}
 
 	if len(pathsToCheck) > 0 {
