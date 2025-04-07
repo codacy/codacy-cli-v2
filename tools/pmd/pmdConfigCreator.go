@@ -1,13 +1,14 @@
-package tools
+package pmd
 
 import (
+	"codacy/cli-v2/tools"
 	_ "embed"
 	"encoding/xml"
 	"fmt"
 	"strings"
 )
 
-//go:embed pmd/default-ruleset.xml
+//go:embed default-ruleset.xml
 var defaultPMDRuleset string
 
 // Parameter represents a rule parameter
@@ -171,7 +172,7 @@ func ConvertToPMDRuleset(rules []Rule) (string, error) {
 }
 
 // CreatePmdConfig creates a PMD configuration from the provided tool configuration
-func CreatePmdConfig(configuration ToolConfiguration) string {
+func CreatePmdConfig(configuration tools.ToolConfiguration) string {
 	// If no patterns provided, return the default ruleset
 	if len(configuration.PatternsConfiguration) == 0 {
 		return defaultPMDRuleset

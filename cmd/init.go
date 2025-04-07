@@ -3,6 +3,7 @@ package cmd
 import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/pmd"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -295,13 +296,13 @@ func extractPMDConfiguration(toolConfigurations []CodacyToolConfiguration) *Coda
 
 func createPMDConfigFile(config CodacyToolConfiguration) error {
 	pmdDomainConfiguration := convertAPIToolConfigurationToDomain(config)
-	pmdConfigurationString := tools.CreatePmdConfig(pmdDomainConfiguration)
+	pmdConfigurationString := pmd.CreatePmdConfig(pmdDomainConfiguration)
 	return os.WriteFile("pmd-ruleset.xml", []byte(pmdConfigurationString), 0644)
 }
 
 func createDefaultPMDConfigFile() error {
 	emptyConfig := tools.ToolConfiguration{}
-	content := tools.CreatePmdConfig(emptyConfig)
+	content := pmd.CreatePmdConfig(emptyConfig)
 	return os.WriteFile("pmd-ruleset.xml", []byte(content), 0644)
 }
 

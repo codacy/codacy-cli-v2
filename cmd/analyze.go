@@ -3,6 +3,7 @@ package cmd
 import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/pmd"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -206,10 +207,10 @@ func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile st
 }
 
 func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
-	pmd := config.Config.Tools()["pmd"]
-	pmdBinary := pmd.Binaries["pmd"]
+	tool := config.Config.Tools()["pmd"]
+	pmdBinary := tool.Binaries["pmd"]
 
-	err := tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, pmdRulesetFile)
+	err := pmd.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, pmdRulesetFile)
 	if err != nil {
 		log.Fatalf("Error running PMD: %v", err)
 	}
