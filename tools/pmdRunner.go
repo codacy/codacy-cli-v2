@@ -25,6 +25,7 @@ func RunPmd(repositoryToAnalyseDirectory string, pmdBinary string, pathsToCheck 
 
 	// Add config file from tools-configs directory if not specified
 	if rulesetFile == "" {
+		// TODO: Check if the config file exists before using it
 		configFile := filepath.Join(config.Config.ToolsConfigDirectory(), "pmd-ruleset.xml")
 		cmd.Args = append(cmd.Args, "-R", configFile)
 	} else {

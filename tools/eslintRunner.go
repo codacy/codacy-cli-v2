@@ -1,7 +1,6 @@
 package tools
 
 import (
-	"codacy/cli-v2/config"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,9 +19,10 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 	// https://eslint.org/docs/v8.x/use/configure/configuration-files-new
 	cmd.Env = append(cmd.Env, "ESLINT_USE_FLAT_CONFIG=true")
 
-	// Add config file from tools-configs directory
-	configFile := filepath.Join(config.Config.ToolsConfigDirectory(), "eslint.config.mjs")
-	cmd.Args = append(cmd.Args, "-c", configFile)
+	// Add config file from tools-configs directory if it exists
+	if configFile, exists := ConfigFileExists(repositoryToAnalyseDirectory, "eslint.config.mjs"); exists {
+		cmd.Args = append(cmd.Args, "-c", configFile)
+	}
 
 	if autoFix {
 		cmd.Args = append(cmd.Args, "--fix")
