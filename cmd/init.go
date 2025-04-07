@@ -4,6 +4,7 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/tools/eslint"
+	"codacy/cli-v2/tools/trivy"
 	"codacy/cli-v2/utils"
 	"encoding/json"
 	"errors"
@@ -383,7 +384,7 @@ func createTrivyConfigFile(config CodacyToolConfiguration, toolsConfigDir string
 	trivyDomainConfiguration := convertAPIToolConfigurationForTrivy(config)
 
 	// Use the shared CreateTrivyConfig function to generate the config content
-	trivyConfigurationString := tools.CreateTrivyConfig(trivyDomainConfiguration)
+	trivyConfigurationString := trivy.CreateTrivyConfig(trivyDomainConfiguration)
 
 	// Write to file
 	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(trivyConfigurationString), utils.DefaultRW)
@@ -433,7 +434,7 @@ func convertAPIToolConfigurationForTrivy(config CodacyToolConfiguration) tools.T
 func createDefaultTrivyConfigFile(toolsConfigDir string) error {
 	// Use empty tool configuration to get default settings
 	emptyConfig := tools.ToolConfiguration{}
-	content := tools.CreateTrivyConfig(emptyConfig)
+	content := trivy.CreateTrivyConfig(emptyConfig)
 
 	// Write to file
 	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(content), utils.DefaultRW)

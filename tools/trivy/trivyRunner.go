@@ -1,4 +1,4 @@
-package tools
+package trivy
 
 import (
 	"codacy/cli-v2/config"

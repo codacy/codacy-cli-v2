@@ -4,6 +4,7 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/tools/eslint"
+	"codacy/cli-v2/tools/trivy"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -196,10 +197,10 @@ func runEslintAnalysis(workDirectory string, pathsToCheck []string, autoFix bool
 }
 
 func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
-	trivy := config.Config.Tools()["trivy"]
-	trivyBinary := trivy.Binaries["trivy"]
+	tool := config.Config.Tools()["trivy"]
+	trivyBinary := tool.Binaries["trivy"]
 
-	err := tools.RunTrivy(workDirectory, trivyBinary, pathsToCheck, outputFile, outputFormat)
+	err := trivy.RunTrivy(workDirectory, trivyBinary, pathsToCheck, outputFile, outputFormat)
 	if err != nil {
 		log.Fatalf("Error running Trivy: %v", err)
 	}
