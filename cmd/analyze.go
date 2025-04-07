@@ -3,6 +3,7 @@ package cmd
 import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/eslint"
 	"codacy/cli-v2/tools/pmd"
 	"encoding/json"
 	"fmt"
@@ -188,12 +189,13 @@ func getToolName(toolName string, version string) string {
 }
 
 func runEslintAnalysis(workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string) {
-	eslint := config.Config.Tools()["eslint"]
-	eslintInstallationDirectory := eslint.InstallDir
+	tool := config.Config.Tools()["eslint"]
+	eslintInstallationDirectory := tool.InstallDir
 	nodeRuntime := config.Config.Runtimes()["node"]
 	nodeBinary := nodeRuntime.Binaries["node"]
 
-	tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, pathsToCheck, autoFix, outputFile, outputFormat)
+	//todo pass config file
+	eslint.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, pathsToCheck, autoFix, outputFile, outputFormat, "")
 }
 
 func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {

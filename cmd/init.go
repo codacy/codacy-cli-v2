@@ -3,6 +3,7 @@ package cmd
 import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/eslint"
 	"codacy/cli-v2/tools/pmd"
 	"encoding/json"
 	"errors"
@@ -172,7 +173,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 	eslintApiConfiguration := extractESLintConfiguration(apiToolConfigurations)
 	if eslintApiConfiguration != nil {
 		eslintDomainConfiguration := convertAPIToolConfigurationToDomain(*eslintApiConfiguration)
-		eslintConfigurationString := tools.CreateEslintConfig(eslintDomainConfiguration)
+		eslintConfigurationString := eslint.CreateEslintConfig(eslintDomainConfiguration)
 
 		eslintConfigFile, err := os.Create("eslint.config.mjs")
 		if err != nil {
@@ -388,7 +389,7 @@ func createDefaultTrivyConfigFile() error {
 func createDefaultEslintConfigFile() error {
 	// Use empty tool configuration to get default settings
 	emptyConfig := tools.ToolConfiguration{}
-	content := tools.CreateEslintConfig(emptyConfig)
+	content := eslint.CreateEslintConfig(emptyConfig)
 
 	// Write to file
 	return os.WriteFile("eslint.config.mjs", []byte(content), 0644)
