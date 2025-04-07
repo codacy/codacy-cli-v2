@@ -204,8 +204,8 @@ func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile st
 }
 
 func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
-	pmd := config.Config.Tools()["pmd"]
-	pmdBinary := pmd.Binaries["pmd"]
+	tool := config.Config.Tools()["pmd"]
+	pmdBinary := tool.Binaries["pmd"]
 
 	err := tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, "")
 	if err != nil {
