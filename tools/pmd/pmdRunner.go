@@ -1,4 +1,4 @@
-package tools
+package pmd
 
 import (
 	"os"
@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// RunPmd executes PMD static code analyzer with the specified options
 func RunPmd(repositoryToAnalyseDirectory string, pmdBinary string, pathsToCheck []string, outputFile string, outputFormat string, rulesetFile string) error {
 	cmdArgs := []string{"pmd"}
 

@@ -1,0 +1,18 @@
+{
+  "env": {},
+  "globals": {},
+  "parser": null,
+  "parserOptions": {},
+  "plugins": [],
+  "rules": {
+    "prefer-const": [
+      "error"
+    ],
+    "semi": [
+      "error",
+      "always"
+    ]
+  },
+  "settings": {},
+  "ignorePatterns": []
+}

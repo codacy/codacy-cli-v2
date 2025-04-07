@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"codacy/cli-v2/tools/trivy"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +23,7 @@ func TestRunTrivyToFile(t *testing.T) {
 		log.Fatal(err.Error())
 	}
 
-	testDirectory := "testdata/repositories/trivy"
+	testDirectory := currentDirectory
 	tempResultFile := filepath.Join(os.TempDir(), "trivy.sarif")
 	defer os.Remove(tempResultFile)
 
@@ -29,7 +31,7 @@ func TestRunTrivyToFile(t *testing.T) {
 
 	trivyBinary := filepath.Join(homeDirectory, ".cache/codacy/tools/trivy@0.59.1/trivy")
 
-	err = RunTrivy(repositoryToAnalyze, trivyBinary, nil, tempResultFile, "sarif")
+	err = trivy.RunTrivy(repositoryToAnalyze, trivyBinary, nil, tempResultFile, "sarif")
 	if err != nil {
 		t.Fatalf("Failed to run trivy: %v", err)
 	}
@@ -43,6 +45,9 @@ func TestRunTrivyToFile(t *testing.T) {
 	filePrefix := "file://" + currentDirectory + "/"
 	fmt.Println(filePrefix)
 	actualSarif := strings.ReplaceAll(obtainedSarif, filePrefix, "")
+
+	// Normalize paths in the SARIF output
+	actualSarif = strings.ReplaceAll(actualSarif, `"uri": "src/"`, `"uri": "testdata/repositories/trivy/src/"`)
 
 	// Read the expected SARIF
 	expectedSarifFile := filepath.Join(testDirectory, "expected.sarif")

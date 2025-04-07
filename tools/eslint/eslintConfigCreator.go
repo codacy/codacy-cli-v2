@@ -1,9 +1,11 @@
-package tools
+package eslint
 
 import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"codacy/cli-v2/tools"
 )
 
 func quoteWhenIsNotJson(value string) string {
@@ -18,7 +20,7 @@ func quoteWhenIsNotJson(value string) string {
 	}
 }
 
-func CreateEslintConfig(configuration ToolConfiguration) string {
+func CreateEslintConfig(configuration tools.ToolConfiguration) string {
 	result := `export default [
     {
         rules: {

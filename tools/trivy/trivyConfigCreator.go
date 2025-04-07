@@ -1,12 +1,13 @@
-package tools
+package trivy
 
 import (
+	"codacy/cli-v2/tools"
 	"fmt"
 	"strings"
 )
 
 // CreateTrivyConfig generates a Trivy configuration based on the tool configuration
-func CreateTrivyConfig(config ToolConfiguration) string {
+func CreateTrivyConfig(config tools.ToolConfiguration) string {
 	// Default settings - include all severities and scanners
 	includeLow := true
 	includeMedium := true

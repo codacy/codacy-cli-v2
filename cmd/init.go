@@ -3,6 +3,9 @@ package cmd
 import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/eslint"
+	"codacy/cli-v2/tools/pmd"
+	"codacy/cli-v2/tools/trivy"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -196,7 +199,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 	eslintApiConfiguration := extractESLintConfiguration(apiToolConfigurations)
 	if eslintApiConfiguration != nil {
 		eslintDomainConfiguration := convertAPIToolConfigurationToDomain(*eslintApiConfiguration)
-		eslintConfigurationString := tools.CreateEslintConfig(eslintDomainConfiguration)
+		eslintConfigurationString := eslint.CreateEslintConfig(eslintDomainConfiguration)
 
 		eslintConfigFile, err := os.Create("eslint.config.mjs")
 		if err != nil {
@@ -320,13 +323,13 @@ func extractPMDConfiguration(toolConfigurations []CodacyToolConfiguration) *Coda
 
 func createPMDConfigFile(config CodacyToolConfiguration) error {
 	pmdDomainConfiguration := convertAPIToolConfigurationToDomain(config)
-	pmdConfigurationString := tools.CreatePmdConfig(pmdDomainConfiguration)
+	pmdConfigurationString := pmd.CreatePmdConfig(pmdDomainConfiguration)
 	return os.WriteFile("pmd-ruleset.xml", []byte(pmdConfigurationString), 0644)
 }
 
 func createDefaultPMDConfigFile() error {
 	emptyConfig := tools.ToolConfiguration{}
-	content := tools.CreatePmdConfig(emptyConfig)
+	content := pmd.CreatePmdConfig(emptyConfig)
 	return os.WriteFile("pmd-ruleset.xml", []byte(content), 0644)
 }
 
@@ -352,7 +355,7 @@ func createTrivyConfigFile(config CodacyToolConfiguration) error {
 	trivyDomainConfiguration := convertAPIToolConfigurationForTrivy(config)
 
 	// Use the shared CreateTrivyConfig function to generate the config content
-	trivyConfigurationString := tools.CreateTrivyConfig(trivyDomainConfiguration)
+	trivyConfigurationString := trivy.CreateTrivyConfig(trivyDomainConfiguration)
 
 	// Write to file
 	return os.WriteFile("trivy.yaml", []byte(trivyConfigurationString), 0644)
@@ -402,7 +405,7 @@ func convertAPIToolConfigurationForTrivy(config CodacyToolConfiguration) tools.T
 func createDefaultTrivyConfigFile() error {
 	// Use empty tool configuration to get default settings
 	emptyConfig := tools.ToolConfiguration{}
-	content := tools.CreateTrivyConfig(emptyConfig)
+	content := trivy.CreateTrivyConfig(emptyConfig)
 
 	// Write to file
 	return os.WriteFile("trivy.yaml", []byte(content), 0644)
@@ -412,7 +415,7 @@ func createDefaultTrivyConfigFile() error {
 func createDefaultEslintConfigFile() error {
 	// Use empty tool configuration to get default settings
 	emptyConfig := tools.ToolConfiguration{}
-	content := tools.CreateEslintConfig(emptyConfig)
+	content := eslint.CreateEslintConfig(emptyConfig)
 
 	// Write to file
 	return os.WriteFile("eslint.config.mjs", []byte(content), 0644)

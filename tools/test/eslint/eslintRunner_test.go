@@ -1,12 +1,15 @@
-package tools
+package eslint
 
 import (
 	"encoding/json"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"codacy/cli-v2/tools/eslint"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -39,7 +42,7 @@ type SarifReport struct {
 	} `json:"runs"`
 }
 
-func TestRunPmdToFile(t *testing.T) {
+func TestRunEslintToFile(t *testing.T) {
 	homeDirectory, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatal(err.Error())
@@ -49,24 +52,36 @@ func TestRunPmdToFile(t *testing.T) {
 		log.Fatal(err.Error())
 	}
 
-	// Use the correct path relative to tools directory
-	testDirectory := filepath.Join(currentDirectory, "testdata", "repositories", "pmd")
-	tempResultFile := filepath.Join(os.TempDir(), "pmd.sarif")
+	// Find node binary
+	nodeBinary, err := exec.LookPath("node")
+	if err != nil {
+		t.Fatalf("Node.js is not installed: %v", err)
+	}
+
+	// Use the current directory since files are in flat structure
+	testDirectory := currentDirectory
+	tempResultFile := filepath.Join(os.TempDir(), "eslint.sarif")
 	defer os.Remove(tempResultFile)
 
 	// Use absolute paths
 	repositoryToAnalyze := testDirectory
-	// Use the standard ruleset file for testing the PMD runner functionality
-	rulesetFile := filepath.Join(testDirectory, "pmd-ruleset.xml")
+	eslintInstallDir := filepath.Join(homeDirectory, ".cache/codacy/tools/eslint@9.3.0")
 
-	// Use the same path as defined in plugin.yaml
-	pmdBinary := filepath.Join(homeDirectory, ".cache/codacy/tools/pmd@6.55.0/pmd-bin-6.55.0/bin/run.sh")
+	// Debug logging
+	log.Printf("Test directory: %s", testDirectory)
+	log.Printf("ESLint install dir: %s", eslintInstallDir)
+	log.Printf("Node binary: %s", nodeBinary)
+	log.Printf("Temp result file: %s", tempResultFile)
 
-	// Run PMD
-	err = RunPmd(repositoryToAnalyze, pmdBinary, nil, tempResultFile, "sarif", rulesetFile)
-	if err != nil {
-		t.Fatalf("Failed to run pmd: %v", err)
+	// Check if ESLint is installed
+	if _, err := os.Stat(eslintInstallDir); os.IsNotExist(err) {
+		t.Fatalf("ESLint is not installed at %s", eslintInstallDir)
 	}
+
+	// Run ESLint on test.js
+	configFile := filepath.Join(testDirectory, "eslint.config.js")
+	log.Printf("Using ESLint config file: %s", configFile)
+	eslint.RunEslint(repositoryToAnalyze, eslintInstallDir, nodeBinary, []string{"test.js"}, false, tempResultFile, "sarif", configFile)
 
 	// Check if the output file was created
 	obtainedSarifBytes, err := os.ReadFile(tempResultFile)
@@ -91,10 +106,7 @@ func TestRunPmdToFile(t *testing.T) {
 
 	// Define expected violations
 	expectedViolations := map[string]bool{
-		"UnusedPrivateField":    false,
-		"ShortVariable":         false,
-		"AtLeastOneConstructor": false,
-		"CommentRequired":       false,
+		"semi": false,
 	}
 
 	// Check each result
@@ -103,13 +115,13 @@ func TestRunPmdToFile(t *testing.T) {
 		expectedViolations[result.RuleID] = true
 
 		// Verify the file path is correct
-		assert.Contains(t, result.Locations[0].PhysicalLocation.ArtifactLocation.URI, "RulesBreaker.java",
-			"Violation should be in RulesBreaker.java")
+		assert.Contains(t, result.Locations[0].PhysicalLocation.ArtifactLocation.URI, "test.js",
+			"Violation should be in test.js")
 
 		// Verify line numbers are reasonable
 		assert.Greater(t, result.Locations[0].PhysicalLocation.Region.StartLine, 0,
 			"Start line should be positive")
-		assert.Less(t, result.Locations[0].PhysicalLocation.Region.StartLine, 30,
+		assert.Less(t, result.Locations[0].PhysicalLocation.Region.StartLine, 10,
 			"Start line should be within the file")
 	}
 

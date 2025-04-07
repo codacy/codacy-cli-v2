@@ -1,19 +1,22 @@
-package tools
+package eslint
 
 import (
 	"testing"
 
+	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/eslint"
+
 	"github.com/stretchr/testify/assert"
 )
 
-func testConfig(t *testing.T, configuration ToolConfiguration, expected string) {
-	actual := CreateEslintConfig(configuration)
+func testConfig(t *testing.T, configuration tools.ToolConfiguration, expected string) {
+	actual := eslint.CreateEslintConfig(configuration)
 	assert.Equal(t, expected, actual)
 }
 
 func TestCreateEslintConfigEmptyConfig(t *testing.T) {
 	testConfig(t,
-		ToolConfiguration{},
+		tools.ToolConfiguration{},
 		`export default [
     {
         rules: {
@@ -24,8 +27,8 @@ func TestCreateEslintConfigEmptyConfig(t *testing.T) {
 
 func TestCreateEslintConfigConfig1(t *testing.T) {
 	testConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
+		tools.ToolConfiguration{
+			PatternsConfiguration: []tools.PatternConfiguration{
 				{
 					PatternId: "ESLint8_semi",
 				},
@@ -42,11 +45,11 @@ func TestCreateEslintConfigConfig1(t *testing.T) {
 
 func TestCreateEslintConfigUnnamedParam(t *testing.T) {
 	testConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
+		tools.ToolConfiguration{
+			PatternsConfiguration: []tools.PatternConfiguration{
 				{
 					PatternId: "ESLint8_semi",
-					ParameterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []tools.PatternParameterConfiguration{
 						{
 							Name:  "unnamedParam",
 							Value: "never",
@@ -66,11 +69,11 @@ func TestCreateEslintConfigUnnamedParam(t *testing.T) {
 
 func TestCreateEslintConfigNamedParam(t *testing.T) {
 	testConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
+		tools.ToolConfiguration{
+			PatternsConfiguration: []tools.PatternConfiguration{
 				{
 					PatternId: "consistent-return",
-					ParameterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []tools.PatternParameterConfiguration{
 						{
 							Name:  "treatUndefinedAsUnspecified",
 							Value: "false",
@@ -90,11 +93,11 @@ func TestCreateEslintConfigNamedParam(t *testing.T) {
 
 func TestCreateEslintConfigUnnamedAndNamedParam(t *testing.T) {
 	testConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
+		tools.ToolConfiguration{
+			PatternsConfiguration: []tools.PatternConfiguration{
 				{
 					PatternId: "consistent-return",
-					ParameterConfigurations: []PatternParameterConfiguration{
+					ParameterConfigurations: []tools.PatternParameterConfiguration{
 						{
 							Name:  "treatUndefinedAsUnspecified",
 							Value: "false",
@@ -118,8 +121,8 @@ func TestCreateEslintConfigUnnamedAndNamedParam(t *testing.T) {
 
 func TestCreateEslintConfigSupportPlugins(t *testing.T) {
 	testConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
+		tools.ToolConfiguration{
+			PatternsConfiguration: []tools.PatternConfiguration{
 				{
 					PatternId: "plugin/consistent-return",
 				},

@@ -3,6 +3,9 @@ package cmd
 import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/eslint"
+	"codacy/cli-v2/tools/pmd"
+	"codacy/cli-v2/tools/trivy"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -187,29 +190,30 @@ func getToolName(toolName string, version string) string {
 }
 
 func runEslintAnalysis(workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string) {
-	eslint := config.Config.Tools()["eslint"]
-	eslintInstallationDirectory := eslint.InstallDir
+	tool := config.Config.Tools()["eslint"]
+	eslintInstallationDirectory := tool.InstallDir
 	nodeRuntime := config.Config.Runtimes()["node"]
 	nodeBinary := nodeRuntime.Binaries["node"]
 
-	tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, pathsToCheck, autoFix, outputFile, outputFormat)
+	//todo pass config file
+	eslint.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, pathsToCheck, autoFix, outputFile, outputFormat, "")
 }
 
 func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
-	trivy := config.Config.Tools()["trivy"]
-	trivyBinary := trivy.Binaries["trivy"]
+	tool := config.Config.Tools()["trivy"]
+	trivyBinary := tool.Binaries["trivy"]
 
-	err := tools.RunTrivy(workDirectory, trivyBinary, pathsToCheck, outputFile, outputFormat)
+	err := trivy.RunTrivy(workDirectory, trivyBinary, pathsToCheck, outputFile, outputFormat)
 	if err != nil {
 		log.Fatalf("Error running Trivy: %v", err)
 	}
 }
 
 func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
-	pmd := config.Config.Tools()["pmd"]
-	pmdBinary := pmd.Binaries["pmd"]
+	tool := config.Config.Tools()["pmd"]
+	pmdBinary := tool.Binaries["pmd"]
 
-	err := tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, pmdRulesetFile)
+	err := pmd.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, pmdRulesetFile)
 	if err != nil {
 		log.Fatalf("Error running PMD: %v", err)
 	}
