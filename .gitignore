@@ -26,4 +26,4 @@ go.work.sum
 
 # Codacy CLI 
 cli-v2
-cli-config.yaml
+.codacy/tools-configs
