@@ -143,8 +143,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 	fmt.Println("Building repository configuration files ...")
 	fmt.Println("Fetching repository configuration from codacy ...")
 
-	localCodacyDir := config.Config.LocalCodacyDirectory()
-	toolsConfigDir := filepath.Join(localCodacyDir, "tools-configs")
+	toolsConfigDir := config.Config.ToolsConfigDirectory()
 
 	// Create tools-configs directory if it doesn't exist
 	if err := os.MkdirAll(toolsConfigDir, 0777); err != nil {

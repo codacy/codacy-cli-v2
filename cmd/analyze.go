@@ -20,7 +20,6 @@ var outputFormat string
 var sarifPath string
 var commitUuid string
 var projectToken string
-var pmdRulesetFile string
 
 type Sarif struct {
 	Runs []struct {
@@ -96,7 +95,6 @@ func init() {
 	analyzeCmd.Flags().StringVarP(&toolToAnalyze, "tool", "t", "", "Which tool to run analysis with")
 	analyzeCmd.Flags().StringVar(&outputFormat, "format", "", "Output format (use 'sarif' for SARIF format)")
 	analyzeCmd.Flags().BoolVar(&autoFix, "fix", false, "Apply auto fix to your issues when available")
-	analyzeCmd.Flags().StringVar(&pmdRulesetFile, "rulesets", "", "Path to PMD ruleset file")
 	rootCmd.AddCommand(analyzeCmd)
 }
 
@@ -209,7 +207,7 @@ func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile stri
 	pmd := config.Config.Tools()["pmd"]
 	pmdBinary := pmd.Binaries["pmd"]
 
-	err := tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, pmdRulesetFile)
+	err := tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, "")
 	if err != nil {
 		log.Fatalf("Error running PMD: %v", err)
 	}

@@ -14,7 +14,7 @@
       "artifacts": [
         {
           "location": {
-            "uri": "testdata/repositories/test1/src/eslint.config.mjs"
+            "uri": "testdata/repositories/test1/src/.codacy/tools-configs/eslint.config.mjs"
           }
         },
         {

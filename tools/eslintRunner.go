@@ -14,6 +14,15 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 	eslintJsPath := filepath.Join(eslintInstallationNodeModules, ".bin", "eslint")
 
 	cmd := exec.Command(nodeBinary, eslintJsPath)
+
+	// For Eslint compatibility with version 8.
+	// https://eslint.org/docs/v8.x/use/configure/configuration-files-new
+	cmd.Env = append(cmd.Env, "ESLINT_USE_FLAT_CONFIG=true")
+
+	// Add config file from tools-configs directory
+	configFile := filepath.Join(".codacy", "tools-configs", "eslint.config.mjs")
+	cmd.Args = append(cmd.Args, "-c", configFile)
+
 	if autoFix {
 		cmd.Args = append(cmd.Args, "--fix")
 	}
