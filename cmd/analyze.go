@@ -97,7 +97,7 @@ func init() {
 	analyzeCmd.Flags().StringVar(&outputFormat, "format", "", "Output format (use 'sarif' for SARIF format)")
 	analyzeCmd.Flags().BoolVar(&autoFix, "fix", false, "Apply auto fix to your issues when available")
 	analyzeCmd.Flags().StringVar(&pmdRulesetFile, "rulesets", "", "Path to PMD ruleset file")
-	analyzeCmd.Flags().StringVarP(&apiToken, "api-token", "a", "", "API token for Codacy API")
+	analyzeCmd.Flags().StringVar(&apiToken, "api-token", "", "API token for Codacy API")
 	analyzeCmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider (gh, gl, bb)")
 	analyzeCmd.Flags().StringVar(&owner, "owner", "", "Owner/Organization")
 	analyzeCmd.Flags().StringVarP(&repository, "repository", "r", "", "Repository")
