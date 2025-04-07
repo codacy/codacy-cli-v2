@@ -1,4 +1,4 @@
-package tools
+package pmd
 
 import (
 	"encoding/xml"
@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/pmd"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -35,13 +38,18 @@ type PMDProperty struct {
 	Value string `xml:"value,attr"`
 }
 
+// CreatePmdConfig is a wrapper around the actual implementation to make it testable
+func CreatePmdConfig(config tools.ToolConfiguration) string {
+	return pmd.CreatePmdConfig(config)
+}
+
 func TestCreatePmdConfig(t *testing.T) {
 	// Setup test configuration with patterns
-	config := ToolConfiguration{
-		PatternsConfiguration: []PatternConfiguration{
+	config := tools.ToolConfiguration{
+		PatternsConfiguration: []tools.PatternConfiguration{
 			{
 				PatternId: "java/codestyle/AtLeastOneConstructor",
-				ParameterConfigurations: []PatternParameterConfiguration{
+				ParameterConfigurations: []tools.PatternParameterConfiguration{
 					{
 						Name:  "enabled",
 						Value: "true",
@@ -50,7 +58,7 @@ func TestCreatePmdConfig(t *testing.T) {
 			},
 			{
 				PatternId: "java/design/UnusedPrivateField",
-				ParameterConfigurations: []PatternParameterConfiguration{
+				ParameterConfigurations: []tools.PatternParameterConfiguration{
 					{
 						Name:  "enabled",
 						Value: "true",
@@ -59,7 +67,7 @@ func TestCreatePmdConfig(t *testing.T) {
 			},
 			{
 				PatternId: "java/design/LoosePackageCoupling",
-				ParameterConfigurations: []PatternParameterConfiguration{
+				ParameterConfigurations: []tools.PatternParameterConfiguration{
 					{
 						Name:  "enabled",
 						Value: "true",
@@ -77,7 +85,7 @@ func TestCreatePmdConfig(t *testing.T) {
 	generatedConfig := CreatePmdConfig(config)
 
 	// Read expected ruleset
-	expectedRulesetPath := filepath.Join("testdata", "repositories", "pmd", "expected-ruleset.xml")
+	expectedRulesetPath := "expected-ruleset.xml"
 	expectedRulesetBytes, err := os.ReadFile(expectedRulesetPath)
 	if err != nil {
 		t.Fatalf("Failed to read expected ruleset: %v", err)
@@ -105,11 +113,11 @@ func TestCreatePmdConfig(t *testing.T) {
 }
 
 func TestCreatePmdConfigWithDisabledRules(t *testing.T) {
-	config := ToolConfiguration{
-		PatternsConfiguration: []PatternConfiguration{
+	config := tools.ToolConfiguration{
+		PatternsConfiguration: []tools.PatternConfiguration{
 			{
 				PatternId: "java/codestyle/AtLeastOneConstructor",
-				ParameterConfigurations: []PatternParameterConfiguration{
+				ParameterConfigurations: []tools.PatternParameterConfiguration{
 					{
 						Name:  "enabled",
 						Value: "false",
@@ -163,8 +171,8 @@ func TestCreatePmdConfigEmpty(t *testing.T) {
 	}
 	defer os.Chdir(cwd)
 
-	config := ToolConfiguration{
-		PatternsConfiguration: []PatternConfiguration{},
+	config := tools.ToolConfiguration{
+		PatternsConfiguration: []tools.PatternConfiguration{},
 	}
 
 	obtainedConfig := CreatePmdConfig(config)
