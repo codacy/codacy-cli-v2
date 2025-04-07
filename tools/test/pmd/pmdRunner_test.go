@@ -1,4 +1,4 @@
-package tools
+package pmd
 
 import (
 	"encoding/json"
@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"codacy/cli-v2/tools/pmd"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -50,20 +52,20 @@ func TestRunPmdToFile(t *testing.T) {
 	}
 
 	// Use the correct path relative to tools directory
-	testDirectory := filepath.Join(currentDirectory, "testdata", "repositories", "pmd")
+	testDirectory := "."
 	tempResultFile := filepath.Join(os.TempDir(), "pmd.sarif")
 	defer os.Remove(tempResultFile)
 
 	// Use absolute paths
 	repositoryToAnalyze := testDirectory
 	// Use the standard ruleset file for testing the PMD runner functionality
-	rulesetFile := filepath.Join(testDirectory, "pmd-ruleset.xml")
+	rulesetFile := "pmd-ruleset.xml"
 
 	// Use the same path as defined in plugin.yaml
 	pmdBinary := filepath.Join(homeDirectory, ".cache/codacy/tools/pmd@6.55.0/pmd-bin-6.55.0/bin/run.sh")
 
 	// Run PMD
-	err = RunPmd(repositoryToAnalyze, pmdBinary, nil, tempResultFile, "sarif", rulesetFile)
+	err = pmd.RunPmd(repositoryToAnalyze, pmdBinary, nil, tempResultFile, "sarif", rulesetFile)
 	if err != nil {
 		t.Fatalf("Failed to run pmd: %v", err)
 	}
