@@ -18,9 +18,11 @@ import (
 const CodacyApiBase = "https://app.codacy.com"
 
 var codacyRepositoryToken string
+var codacyApiToken string
 
 func init() {
 	initCmd.Flags().StringVar(&codacyRepositoryToken, "repository-token", "", "optional codacy repository token, if defined configurations will be fetched from codacy")
+	initCmd.Flags().StringVar(&codacyApiToken, "codacy-api-token", "", "optional codacy api token, if defined configurations will be fetched from codacy")
 	rootCmd.AddCommand(initCmd)
 }
 
@@ -29,10 +31,9 @@ var initCmd = &cobra.Command{
 	Short: "Bootstraps project configuration",
 	Long:  "Bootstraps project configuration, creates codacy configuration file",
 	Run: func(cmd *cobra.Command, args []string) {
-
 		config.Config.CreateLocalCodacyDir()
 
-		cliLocalMode := len(codacyRepositoryToken) == 0
+		cliLocalMode := len(codacyRepositoryToken) == 0 && len(codacyApiToken) == 0
 
 		if cliLocalMode {
 			fmt.Println()
@@ -51,7 +52,15 @@ var initCmd = &cobra.Command{
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = buildRepositoryConfigurationFiles(codacyRepositoryToken)
+
+			var token Token
+			if len(codacyApiToken) > 0 {
+				token = ApiToken{value: codacyApiToken}
+			} else {
+				token = ProjectToken{value: codacyRepositoryToken}
+			}
+
+			err = buildRepositoryConfigurationFiles(token)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -138,9 +147,112 @@ func cliConfigFileTemplate(cliLocalMode bool) string {
 	return fmt.Sprintf(`mode: %s`, cliModeString)
 }
 
-func buildRepositoryConfigurationFiles(token string) error {
+func buildRepositoryConfigurationFiles(token Token) error {
 	fmt.Println("Building repository configuration files ...")
-	fmt.Println("Fetching repository configuration from codacy ...")
+	switch token := token.(type) {
+	case ProjectToken:
+		return buildRepositoryConfigurationFilesFromRepositoryToken(token)
+	case ApiToken:
+		return buildRepositoryConfigurationFilesFromApiToken(token)
+	default:
+		return fmt.Errorf("unknown token type: %T", token)
+	}
+}
+
+func buildRepositoryConfigurationFilesFromApiToken(token ApiToken) error {
+	fmt.Println("Fetching repository configuration from codacy using api token ...")
+
+	// Ask for provider
+	var provider string
+	for {
+		fmt.Print("Enter provider (gh/bb/gl): ")
+		fmt.Scanln(&provider)
+		if provider == "gh" || provider == "bb" || provider == "gl" {
+			break
+		}
+		fmt.Println("Invalid provider. Please enter 'gh', 'bb', or 'gl'")
+	}
+
+	// Ask for organization name
+	var organizationName string
+	fmt.Print("Enter remote organization name: ")
+	fmt.Scanln(&organizationName)
+
+	// Ask for repository name
+	var repositoryName string
+	fmt.Print("Enter remote repository name: ")
+	fmt.Scanln(&repositoryName)
+
+	var supportedTools = []string{
+		"f8b29663-2cb2-498d-b923-a10c6a8c05cd", // ESLint
+		"2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb", // Trivy
+		"31677b6d-4ae0-4f56-8041-606a8d7a8e61", // Pylint
+		"9ed24812-b6ee-4a58-9004-0ed183c45b8f", // PMD
+	}
+
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	for _, toolUuid := range supportedTools {
+		url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns",
+			CodacyApiBase,
+			provider,
+			organizationName,
+			repositoryName,
+			toolUuid)
+
+		// Create a new GET request
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return err
+		}
+
+		// Set the headers
+		req.Header.Set("api-token", token.Value())
+
+		// Send the request
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode >= 400 {
+			return errors.New("failed to get repository's configuration from Codacy API")
+		}
+
+		// Read the response body
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return err
+		}
+
+		var objmap map[string]json.RawMessage
+		err = json.Unmarshal(body, &objmap)
+		if err != nil {
+			fmt.Println("Error unmarshaling response:", err)
+			return err
+		}
+
+		var apiToolConfigurations []CodacyToolConfiguration
+		err = json.Unmarshal(objmap["toolConfiguration"], &apiToolConfigurations)
+		if err != nil {
+			fmt.Println("Error unmarshaling tool configurations:", err)
+			return err
+		}
+
+		// TODO: Process the response and create configuration files for each tool
+	}
+
+	return nil
+}
+
+func buildRepositoryConfigurationFilesFromRepositoryToken(token ProjectToken) error {
+	fmt.Println("Fetching repository configuration from codacy using repository token ...")
 
 	// API call to fetch settings
 	url := CodacyApiBase + "/2.0/project/analysis/configuration"
@@ -157,7 +269,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 	}
 
 	// Set the headers
-	req.Header.Set("project-token", token)
+	req.Header.Set("project-token", token.Value())
 
 	// Send the request
 	resp, err := client.Do(req)

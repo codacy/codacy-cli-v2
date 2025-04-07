@@ -48,6 +48,7 @@ func showWelcomeMessage() {
 	fmt.Println()
 	cyan.Println("Initialize your project with:")
 	fmt.Println("  codacy-cli init --repository-token YOUR_TOKEN")
+	fmt.Println("  codacy-cli init --codacy-api-token YOUR_TOKEN")
 	fmt.Println()
 	fmt.Println("Or run without a token to use local configuration:")
 	fmt.Println("  codacy-cli init")
