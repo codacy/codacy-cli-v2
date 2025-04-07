@@ -24,4 +24,6 @@ go.work.sum
 .idea/
 .vscode/
 
+# Codacy CLI 
 cli-v2
+cli-config.yaml

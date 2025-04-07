@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -142,6 +143,8 @@ func buildRepositoryConfigurationFiles(token string) error {
 	fmt.Println("Building repository configuration files ...")
 	fmt.Println("Fetching repository configuration from codacy ...")
 
+	localCodacyDir := config.Config.LocalCodacyDirectory()
+
 	// API call to fetch settings
 	url := CodacyApiBase + "/2.0/project/analysis/configuration"
 
@@ -198,7 +201,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 		eslintDomainConfiguration := convertAPIToolConfigurationToDomain(*eslintApiConfiguration)
 		eslintConfigurationString := tools.CreateEslintConfig(eslintDomainConfiguration)
 
-		eslintConfigFile, err := os.Create("eslint.config.mjs")
+		eslintConfigFile, err := os.Create(filepath.Join(localCodacyDir, "eslint.config.mjs"))
 		if err != nil {
 			return fmt.Errorf("failed to create eslint config file: %v", err)
 		}
@@ -210,7 +213,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 		}
 		fmt.Println("ESLint configuration created based on Codacy settings")
 	} else {
-		err = createDefaultEslintConfigFile()
+		err = createDefaultEslintConfigFile(localCodacyDir)
 		if err != nil {
 			return fmt.Errorf("failed to create default ESLint config: %v", err)
 		}
@@ -220,13 +223,13 @@ func buildRepositoryConfigurationFiles(token string) error {
 	// Trivy configuration
 	trivyApiConfiguration := extractTrivyConfiguration(apiToolConfigurations)
 	if trivyApiConfiguration != nil {
-		err = createTrivyConfigFile(*trivyApiConfiguration)
+		err = createTrivyConfigFile(*trivyApiConfiguration, localCodacyDir)
 		if err != nil {
 			return fmt.Errorf("failed to create Trivy config: %v", err)
 		}
 		fmt.Println("Trivy configuration created based on Codacy settings")
 	} else {
-		err = createDefaultTrivyConfigFile()
+		err = createDefaultTrivyConfigFile(localCodacyDir)
 		if err != nil {
 			return fmt.Errorf("failed to create default Trivy config: %v", err)
 		}
@@ -236,13 +239,13 @@ func buildRepositoryConfigurationFiles(token string) error {
 	// PMD configuration
 	pmdApiConfiguration := extractPMDConfiguration(apiToolConfigurations)
 	if pmdApiConfiguration != nil {
-		err = createPMDConfigFile(*pmdApiConfiguration)
+		err = createPMDConfigFile(*pmdApiConfiguration, localCodacyDir)
 		if err != nil {
 			return fmt.Errorf("failed to create PMD config: %v", err)
 		}
 		fmt.Println("PMD configuration created based on Codacy settings")
 	} else {
-		err = createDefaultPMDConfigFile()
+		err = createDefaultPMDConfigFile(localCodacyDir)
 		if err != nil {
 			return fmt.Errorf("failed to create default PMD config: %v", err)
 		}
@@ -318,16 +321,16 @@ func extractPMDConfiguration(toolConfigurations []CodacyToolConfiguration) *Coda
 	return nil
 }
 
-func createPMDConfigFile(config CodacyToolConfiguration) error {
+func createPMDConfigFile(config CodacyToolConfiguration, localCodacyDir string) error {
 	pmdDomainConfiguration := convertAPIToolConfigurationToDomain(config)
 	pmdConfigurationString := tools.CreatePmdConfig(pmdDomainConfiguration)
-	return os.WriteFile("pmd-ruleset.xml", []byte(pmdConfigurationString), 0644)
+	return os.WriteFile(filepath.Join(localCodacyDir, "pmd-ruleset.xml"), []byte(pmdConfigurationString), 0644)
 }
 
-func createDefaultPMDConfigFile() error {
+func createDefaultPMDConfigFile(localCodacyDir string) error {
 	emptyConfig := tools.ToolConfiguration{}
 	content := tools.CreatePmdConfig(emptyConfig)
-	return os.WriteFile("pmd-ruleset.xml", []byte(content), 0644)
+	return os.WriteFile(filepath.Join(localCodacyDir, "pmd-ruleset.xml"), []byte(content), 0644)
 }
 
 type CodacyToolConfiguration struct {
@@ -347,7 +350,7 @@ type ParameterConfiguration struct {
 }
 
 // createTrivyConfigFile creates a trivy.yaml configuration file based on the API configuration
-func createTrivyConfigFile(config CodacyToolConfiguration) error {
+func createTrivyConfigFile(config CodacyToolConfiguration, localCodacyDir string) error {
 	// Convert CodacyToolConfiguration to tools.ToolConfiguration
 	trivyDomainConfiguration := convertAPIToolConfigurationForTrivy(config)
 
@@ -355,7 +358,7 @@ func createTrivyConfigFile(config CodacyToolConfiguration) error {
 	trivyConfigurationString := tools.CreateTrivyConfig(trivyDomainConfiguration)
 
 	// Write to file
-	return os.WriteFile("trivy.yaml", []byte(trivyConfigurationString), 0644)
+	return os.WriteFile(filepath.Join(localCodacyDir, "trivy.yaml"), []byte(trivyConfigurationString), 0644)
 }
 
 // convertAPIToolConfigurationForTrivy converts API tool configuration to domain model for Trivy
@@ -399,21 +402,21 @@ func convertAPIToolConfigurationForTrivy(config CodacyToolConfiguration) tools.T
 }
 
 // createDefaultTrivyConfigFile creates a default trivy.yaml configuration file
-func createDefaultTrivyConfigFile() error {
+func createDefaultTrivyConfigFile(localCodacyDir string) error {
 	// Use empty tool configuration to get default settings
 	emptyConfig := tools.ToolConfiguration{}
 	content := tools.CreateTrivyConfig(emptyConfig)
 
 	// Write to file
-	return os.WriteFile("trivy.yaml", []byte(content), 0644)
+	return os.WriteFile(filepath.Join(localCodacyDir, "trivy.yaml"), []byte(content), 0644)
 }
 
 // createDefaultEslintConfigFile creates a default eslint.config.mjs configuration file
-func createDefaultEslintConfigFile() error {
+func createDefaultEslintConfigFile(localCodacyDir string) error {
 	// Use empty tool configuration to get default settings
 	emptyConfig := tools.ToolConfiguration{}
 	content := tools.CreateEslintConfig(emptyConfig)
 
 	// Write to file
-	return os.WriteFile("eslint.config.mjs", []byte(content), 0644)
+	return os.WriteFile(filepath.Join(localCodacyDir, "eslint.config.mjs"), []byte(content), 0644)
 }
