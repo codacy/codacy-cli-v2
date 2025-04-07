@@ -65,7 +65,7 @@ func TestRunEslintToFile(t *testing.T) {
 
 	// Use absolute paths
 	repositoryToAnalyze := testDirectory
-	eslintInstallDir := filepath.Join(homeDirectory, ".cache/codacy/tools/eslint@8.38.0")
+	eslintInstallDir := filepath.Join(homeDirectory, ".cache/codacy/tools/eslint@9.3.0")
 
 	// Debug logging
 	log.Printf("Test directory: %s", testDirectory)
@@ -79,7 +79,9 @@ func TestRunEslintToFile(t *testing.T) {
 	}
 
 	// Run ESLint on test.js
-	eslint.RunEslint(repositoryToAnalyze, eslintInstallDir, nodeBinary, []string{"test.js"}, false, tempResultFile, "sarif", "")
+	configFile := filepath.Join(testDirectory, "eslint.config.js")
+	log.Printf("Using ESLint config file: %s", configFile)
+	eslint.RunEslint(repositoryToAnalyze, eslintInstallDir, nodeBinary, []string{"test.js"}, false, tempResultFile, "sarif", configFile)
 
 	// Check if the output file was created
 	obtainedSarifBytes, err := os.ReadFile(tempResultFile)
