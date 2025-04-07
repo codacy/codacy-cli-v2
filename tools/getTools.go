@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"codacy/cli-v2/domain"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,17 +10,26 @@ import (
 	"time"
 )
 
-func GetTools() ([]Tool, error) {
+func GetRepositoryTools(apiToken domain.ApiToken, provider string, organization string, repository string) ([]Tool, error) {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
 
+	url := fmt.Sprintf("https://api.codacy.com/api/v3/analysis/organizations/%s/%s/repositories/%s/tools",
+		provider,
+		organization,
+		repository)
+
+	fmt.Println("url", url)
 	// Create a new GET request
-	req, err := http.NewRequest("GET", "https://api.codacy.com/api/v3/tools", nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return nil, err
 	}
+
+	// Set the headers
+	req.Header.Set("api-token", apiToken.Value())
 
 	// Send the request
 	resp, err := client.Do(req)
@@ -27,22 +37,35 @@ func GetTools() ([]Tool, error) {
 		fmt.Println("Error:", err)
 		return nil, err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
-		return nil, errors.New("failed to get tools from Codacy API")
+		return nil, errors.New("failed to get repository tools from Codacy API")
 	}
 
 	// Read the response body
 	body, err := io.ReadAll(resp.Body)
-	defer resp.Body.Close()
 	if err != nil {
 		fmt.Println("Error:", err)
 		return nil, err
 	}
 
 	var response ToolsResponse
-	_ = json.Unmarshal(body, &response)
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		fmt.Println("Error unmarshaling response:", err)
+		return nil, err
+	}
 
-	return response.Data, nil
+	// Filter enabled tools
+	var enabledTools []Tool
+	for _, tool := range response.Data {
+		if tool.Settings.Enabled {
+			enabledTools = append(enabledTools, tool)
+		}
+	}
+
+	return enabledTools, nil
 }
 
 type ToolsResponse struct {
@@ -50,7 +73,11 @@ type ToolsResponse struct {
 }
 
 type Tool struct {
-	Uuid    string `json:"uuid"`
-	Name    string `json:"name"`
-	Version string `json:"version"`
+	Uuid     string `json:"uuid"`
+	Name     string `json:"name"`
+	Version  string `json:"version"`
+	Settings struct {
+		Enabled        bool `json:"isEnabled"`
+		UsesConfigFile bool `json:"hasConfigurationFile"`
+	} `json:"settings"`
 }

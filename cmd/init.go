@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/domain"
 	"codacy/cli-v2/tools"
 	"encoding/json"
 	"errors"
@@ -19,10 +20,15 @@ const CodacyApiBase = "https://app.codacy.com"
 
 var codacyRepositoryToken string
 var codacyApiToken string
+var remoteProvider string
+var remoteOrganizationName string
+var remoteRepositoryName string
 
 func init() {
-	initCmd.Flags().StringVar(&codacyRepositoryToken, "repository-token", "", "optional codacy repository token, if defined configurations will be fetched from codacy")
 	initCmd.Flags().StringVar(&codacyApiToken, "codacy-api-token", "", "optional codacy api token, if defined configurations will be fetched from codacy")
+	initCmd.Flags().StringVar(&remoteProvider, "provider", "", "optional provider (gh/bb/gl), if defined configurations will be fetched from codacy")
+	initCmd.Flags().StringVar(&remoteOrganizationName, "organization", "", "optional remote organization name, if defined configurations will be fetched from codacy")
+	initCmd.Flags().StringVar(&remoteRepositoryName, "repository", "", "optional remote repository name, if defined configurations will be fetched from codacy")
 	rootCmd.AddCommand(initCmd)
 }
 
@@ -33,7 +39,7 @@ var initCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Config.CreateLocalCodacyDir()
 
-		cliLocalMode := len(codacyRepositoryToken) == 0 && len(codacyApiToken) == 0
+		cliLocalMode := len(codacyApiToken) == 0
 
 		if cliLocalMode {
 			fmt.Println()
@@ -44,23 +50,8 @@ var initCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 		} else {
-			apiTools, err := tools.GetTools()
-			if err != nil {
-				log.Fatal(err)
-			}
-			err = createConfigurationFiles(apiTools, cliLocalMode)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			var token Token
-			if len(codacyApiToken) > 0 {
-				token = ApiToken{value: codacyApiToken}
-			} else {
-				token = ProjectToken{value: codacyRepositoryToken}
-			}
-
-			err = buildRepositoryConfigurationFiles(token)
+			token := domain.NewApiToken(codacyApiToken)
+			err := buildRepositoryConfigurationFiles(token)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -110,16 +101,14 @@ func configFileTemplate(tools []tools.Tool) string {
 	pmdVersion := "6.55.0"
 
 	for _, tool := range tools {
-		if tool.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
+		switch tool.Uuid {
+		case string(ESLint):
 			eslintVersion = tool.Version
-		}
-		if tool.Uuid == "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb" {
+		case string(Trivy):
 			trivyVersion = tool.Version
-		}
-		if tool.Uuid == "31677b6d-4ae0-4f56-8041-606a8d7a8e61" {
+		case string(PyLint):
 			pylintVersion = tool.Version
-		}
-		if tool.Uuid == "9ed24812-b6ee-4a58-9004-0ed183c45b8f" {
+		case string(PMD):
 			pmdVersion = tool.Version
 		}
 	}
@@ -147,61 +136,42 @@ func cliConfigFileTemplate(cliLocalMode bool) string {
 	return fmt.Sprintf(`mode: %s`, cliModeString)
 }
 
-func buildRepositoryConfigurationFiles(token Token) error {
+func buildRepositoryConfigurationFiles(token domain.Token) error {
 	fmt.Println("Building repository configuration files ...")
 	switch token := token.(type) {
-	case ProjectToken:
-		return buildRepositoryConfigurationFilesFromRepositoryToken(token)
-	case ApiToken:
+	case domain.ApiToken:
 		return buildRepositoryConfigurationFilesFromApiToken(token)
 	default:
 		return fmt.Errorf("unknown token type: %T", token)
 	}
 }
 
-func buildRepositoryConfigurationFilesFromApiToken(token ApiToken) error {
+func buildRepositoryConfigurationFilesFromApiToken(token domain.ApiToken) error {
 	fmt.Println("Fetching repository configuration from codacy using api token ...")
-
-	// Ask for provider
-	var provider string
-	for {
-		fmt.Print("Enter provider (gh/bb/gl): ")
-		fmt.Scanln(&provider)
-		if provider == "gh" || provider == "bb" || provider == "gl" {
-			break
-		}
-		fmt.Println("Invalid provider. Please enter 'gh', 'bb', or 'gl'")
-	}
-
-	// Ask for organization name
-	var organizationName string
-	fmt.Print("Enter remote organization name: ")
-	fmt.Scanln(&organizationName)
-
-	// Ask for repository name
-	var repositoryName string
-	fmt.Print("Enter remote repository name: ")
-	fmt.Scanln(&repositoryName)
-
-	var supportedTools = []string{
-		"f8b29663-2cb2-498d-b923-a10c6a8c05cd", // ESLint
-		"2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb", // Trivy
-		"31677b6d-4ae0-4f56-8041-606a8d7a8e61", // Pylint
-		"9ed24812-b6ee-4a58-9004-0ed183c45b8f", // PMD
-	}
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
 
-	for _, toolUuid := range supportedTools {
-		url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns",
-			CodacyApiBase,
-			provider,
-			organizationName,
-			repositoryName,
-			toolUuid)
+	apiTools, err := tools.GetRepositoryTools(token, remoteProvider, remoteOrganizationName, remoteRepositoryName)
+	if err != nil {
+		return err
+	}
 
+	err = createConfigurationFiles(apiTools, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, tool := range apiTools {
+		url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns?enabled=true",
+			CodacyApiBase,
+			remoteProvider,
+			remoteOrganizationName,
+			remoteRepositoryName,
+			tool.Uuid)
+
+		fmt.Printf("url: %q\n", url)
 		// Create a new GET request
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
@@ -233,287 +203,97 @@ func buildRepositoryConfigurationFilesFromApiToken(token ApiToken) error {
 
 		var objmap map[string]json.RawMessage
 		err = json.Unmarshal(body, &objmap)
+
 		if err != nil {
 			fmt.Println("Error unmarshaling response:", err)
 			return err
 		}
 
-		var apiToolConfigurations []CodacyToolConfiguration
-		err = json.Unmarshal(objmap["toolConfiguration"], &apiToolConfigurations)
+		var apiToolConfigurations []domain.PatternConfiguration
+		err = json.Unmarshal(objmap["data"], &apiToolConfigurations)
+
+		for _, toolConfiguration := range apiToolConfigurations {
+			fmt.Println("tool configuration", toolConfiguration)
+		}
+
 		if err != nil {
 			fmt.Println("Error unmarshaling tool configurations:", err)
 			return err
 		}
 
+		createToolFileConfigurations(tool, apiToolConfigurations)
 		// TODO: Process the response and create configuration files for each tool
 	}
 
 	return nil
 }
 
-func buildRepositoryConfigurationFilesFromRepositoryToken(token ProjectToken) error {
-	fmt.Println("Fetching repository configuration from codacy using repository token ...")
+// map tool uuid to tool name
+func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain.PatternConfiguration) error {
+	switch tool.Uuid {
+	case string(ESLint):
+		if len(patternConfiguration) > 0 {
+			eslintConfigurationString := tools.CreateEslintConfig(patternConfiguration)
 
-	// API call to fetch settings
-	url := CodacyApiBase + "/2.0/project/analysis/configuration"
+			eslintConfigFile, err := os.Create("eslint.config.mjs")
+			if err != nil {
+				return fmt.Errorf("failed to create eslint config file: %v", err)
+			}
+			defer eslintConfigFile.Close()
 
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	// Create a new GET request
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return err
-	}
-
-	// Set the headers
-	req.Header.Set("project-token", token.Value())
-
-	// Send the request
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		return errors.New("failed to get repository's configuration from Codacy API")
-	}
-
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return err
-	}
-
-	var objmap map[string]json.RawMessage
-	err = json.Unmarshal(body, &objmap)
-	if err != nil {
-		fmt.Println("Error unmarshaling response:", err)
-		return err
-	}
-
-	var apiToolConfigurations []CodacyToolConfiguration
-	err = json.Unmarshal(objmap["toolConfiguration"], &apiToolConfigurations)
-	if err != nil {
-		fmt.Println("Error unmarshaling tool configurations:", err)
-		return err
-	}
-
-	// ESLint configuration
-	eslintApiConfiguration := extractESLintConfiguration(apiToolConfigurations)
-	if eslintApiConfiguration != nil {
-		eslintDomainConfiguration := convertAPIToolConfigurationToDomain(*eslintApiConfiguration)
-		eslintConfigurationString := tools.CreateEslintConfig(eslintDomainConfiguration)
-
-		eslintConfigFile, err := os.Create("eslint.config.mjs")
-		if err != nil {
-			return fmt.Errorf("failed to create eslint config file: %v", err)
+			_, err = eslintConfigFile.WriteString(eslintConfigurationString)
+			if err != nil {
+				return fmt.Errorf("failed to write eslint config: %v", err)
+			}
+			fmt.Println("ESLint configuration created based on Codacy settings")
+		} else {
+			err := createDefaultEslintConfigFile()
+			if err != nil {
+				return fmt.Errorf("failed to create default ESLint config: %v", err)
+			}
+			fmt.Println("Default ESLint configuration created")
 		}
-		defer eslintConfigFile.Close()
-
-		_, err = eslintConfigFile.WriteString(eslintConfigurationString)
-		if err != nil {
-			return fmt.Errorf("failed to write eslint config: %v", err)
-		}
-		fmt.Println("ESLint configuration created based on Codacy settings")
-	} else {
-		err = createDefaultEslintConfigFile()
-		if err != nil {
-			return fmt.Errorf("failed to create default ESLint config: %v", err)
-		}
-		fmt.Println("Default ESLint configuration created")
-	}
-
-	// Trivy configuration
-	trivyApiConfiguration := extractTrivyConfiguration(apiToolConfigurations)
-	if trivyApiConfiguration != nil {
-		err = createTrivyConfigFile(*trivyApiConfiguration)
-		if err != nil {
-			return fmt.Errorf("failed to create Trivy config: %v", err)
-		}
-		fmt.Println("Trivy configuration created based on Codacy settings")
-	} else {
-		err = createDefaultTrivyConfigFile()
-		if err != nil {
-			return fmt.Errorf("failed to create default Trivy config: %v", err)
-		}
-		fmt.Println("Default Trivy configuration created")
-	}
-
-	// PMD configuration
-	pmdApiConfiguration := extractPMDConfiguration(apiToolConfigurations)
-	if pmdApiConfiguration != nil {
-		err = createPMDConfigFile(*pmdApiConfiguration)
-		if err != nil {
-			return fmt.Errorf("failed to create PMD config: %v", err)
-		}
-		fmt.Println("PMD configuration created based on Codacy settings")
-	} else {
-		err = createDefaultPMDConfigFile()
-		if err != nil {
-			return fmt.Errorf("failed to create default PMD config: %v", err)
-		}
-		fmt.Println("Default PMD configuration created")
-	}
-
-	return nil
-}
-
-func convertAPIToolConfigurationToDomain(config CodacyToolConfiguration) tools.ToolConfiguration {
-	var patterns []tools.PatternConfiguration
-
-	for _, pattern := range config.Patterns {
-		var parameters []tools.PatternParameterConfiguration
-
-		for _, parameter := range pattern.Parameters {
-			parameters = append(parameters, tools.PatternParameterConfiguration{
-				Name:  parameter.Name,
-				Value: parameter.Value,
-			})
+	case string(Trivy):
+		if len(patternConfiguration) > 0 {
+			return createTrivyConfigFile(patternConfiguration)
+		} else {
+			return createDefaultTrivyConfigFile()
 		}
 
-		patterns = append(
-			patterns,
-			tools.PatternConfiguration{
-				PatternId:               pattern.InternalId,
-				ParameterConfigurations: parameters,
-			},
-		)
-	}
-
-	return tools.ToolConfiguration{
-		PatternsConfiguration: patterns,
-	}
-}
-
-func extractESLintConfiguration(toolConfigurations []CodacyToolConfiguration) *CodacyToolConfiguration {
-
-	//ESLInt internal codacy uuid, to filter ot not ESLint tools
-	//"f8b29663-2cb2-498d-b923-a10c6a8c05cd"
-
-	for _, toolConfiguration := range toolConfigurations {
-		if toolConfiguration.Uuid == "f8b29663-2cb2-498d-b923-a10c6a8c05cd" {
-			return &toolConfiguration
+	case string(PMD):
+		if len(patternConfiguration) > 0 {
+			return createPMDConfigFile(patternConfiguration)
+		} else {
+			return createDefaultPMDConfigFile()
 		}
-	}
 
-	return nil
-}
-
-// extractTrivyConfiguration extracts Trivy configuration from the Codacy API response
-func extractTrivyConfiguration(toolConfigurations []CodacyToolConfiguration) *CodacyToolConfiguration {
-	// Trivy internal codacy uuid
-	const TrivyUUID = "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb"
-
-	for _, toolConfiguration := range toolConfigurations {
-		if toolConfiguration.Uuid == TrivyUUID {
-			return &toolConfiguration
-		}
-	}
-
-	return nil
-}
-
-// Add PMD-specific functions
-func extractPMDConfiguration(toolConfigurations []CodacyToolConfiguration) *CodacyToolConfiguration {
-	const PMDUUID = "9ed24812-b6ee-4a58-9004-0ed183c45b8f"
-	for _, toolConfiguration := range toolConfigurations {
-		if toolConfiguration.Uuid == PMDUUID {
-			return &toolConfiguration
-		}
 	}
 	return nil
 }
 
-func createPMDConfigFile(config CodacyToolConfiguration) error {
-	pmdDomainConfiguration := convertAPIToolConfigurationToDomain(config)
-	pmdConfigurationString := tools.CreatePmdConfig(pmdDomainConfiguration)
+func createPMDConfigFile(config []domain.PatternConfiguration) error {
+	pmdConfigurationString := tools.CreatePmdConfig(config)
 	return os.WriteFile("pmd-ruleset.xml", []byte(pmdConfigurationString), 0644)
 }
 
 func createDefaultPMDConfigFile() error {
-	emptyConfig := tools.ToolConfiguration{}
-	content := tools.CreatePmdConfig(emptyConfig)
+	content := tools.CreatePmdConfig([]domain.PatternConfiguration{})
 	return os.WriteFile("pmd-ruleset.xml", []byte(content), 0644)
 }
 
-type CodacyToolConfiguration struct {
-	Uuid      string                 `json:"uuid"`
-	IsEnabled bool                   `json:"isEnabled"`
-	Patterns  []PatternConfiguration `json:"patterns"`
-}
-
-type PatternConfiguration struct {
-	InternalId string                   `json:"internalId"`
-	Parameters []ParameterConfiguration `json:"parameters"`
-}
-
-type ParameterConfiguration struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
 // createTrivyConfigFile creates a trivy.yaml configuration file based on the API configuration
-func createTrivyConfigFile(config CodacyToolConfiguration) error {
-	// Convert CodacyToolConfiguration to tools.ToolConfiguration
-	trivyDomainConfiguration := convertAPIToolConfigurationForTrivy(config)
+func createTrivyConfigFile(config []domain.PatternConfiguration) error {
 
-	// Use the shared CreateTrivyConfig function to generate the config content
-	trivyConfigurationString := tools.CreateTrivyConfig(trivyDomainConfiguration)
+	trivyConfigurationString := tools.CreateTrivyConfig(config)
 
 	// Write to file
 	return os.WriteFile("trivy.yaml", []byte(trivyConfigurationString), 0644)
 }
 
-// convertAPIToolConfigurationForTrivy converts API tool configuration to domain model for Trivy
-func convertAPIToolConfigurationForTrivy(config CodacyToolConfiguration) tools.ToolConfiguration {
-	var patterns []tools.PatternConfiguration
-
-	// Only process if tool is enabled
-	if config.IsEnabled {
-		for _, pattern := range config.Patterns {
-			var parameters []tools.PatternParameterConfiguration
-
-			// By default patterns are enabled
-			patternEnabled := true
-
-			// Check if there's an explicit enabled parameter
-			for _, param := range pattern.Parameters {
-				if param.Name == "enabled" && param.Value == "false" {
-					patternEnabled = false
-				}
-			}
-
-			// Add enabled parameter
-			parameters = append(parameters, tools.PatternParameterConfiguration{
-				Name:  "enabled",
-				Value: fmt.Sprintf("%t", patternEnabled),
-			})
-
-			patterns = append(
-				patterns,
-				tools.PatternConfiguration{
-					PatternId:               pattern.InternalId,
-					ParameterConfigurations: parameters,
-				},
-			)
-		}
-	}
-
-	return tools.ToolConfiguration{
-		PatternsConfiguration: patterns,
-	}
-}
-
 // createDefaultTrivyConfigFile creates a default trivy.yaml configuration file
 func createDefaultTrivyConfigFile() error {
 	// Use empty tool configuration to get default settings
-	emptyConfig := tools.ToolConfiguration{}
+	emptyConfig := []domain.PatternConfiguration{}
 	content := tools.CreateTrivyConfig(emptyConfig)
 
 	// Write to file
@@ -523,9 +303,18 @@ func createDefaultTrivyConfigFile() error {
 // createDefaultEslintConfigFile creates a default eslint.config.mjs configuration file
 func createDefaultEslintConfigFile() error {
 	// Use empty tool configuration to get default settings
-	emptyConfig := tools.ToolConfiguration{}
+	emptyConfig := []domain.PatternConfiguration{}
 	content := tools.CreateEslintConfig(emptyConfig)
 
 	// Write to file
 	return os.WriteFile("eslint.config.mjs", []byte(content), 0644)
 }
+
+type ToolUiid string
+
+const (
+	ESLint ToolUiid = "f8b29663-2cb2-498d-b923-a10c6a8c05cd"
+	Trivy  ToolUiid = "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb"
+	PMD    ToolUiid = "9ed24812-b6ee-4a58-9004-0ed183c45b8f"
+	PyLint ToolUiid = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
+)

@@ -1,12 +1,13 @@
 package tools
 
 import (
+	"codacy/cli-v2/domain"
 	"fmt"
 	"strings"
 )
 
 // CreateTrivyConfig generates a Trivy configuration based on the tool configuration
-func CreateTrivyConfig(config ToolConfiguration) string {
+func CreateTrivyConfig(config []domain.PatternConfiguration) string {
 	// Default settings - include all severities and scanners
 	includeLow := true
 	includeMedium := true
@@ -15,28 +16,28 @@ func CreateTrivyConfig(config ToolConfiguration) string {
 	includeSecret := true
 
 	// Process patterns from Codacy API
-	for _, pattern := range config.PatternsConfiguration {
+	for _, pattern := range config {
 		// Check if pattern is enabled
 		patternEnabled := true
-		for _, param := range pattern.ParameterConfigurations {
+		for _, param := range pattern.Parameters {
 			if param.Name == "enabled" && param.Value == "false" {
 				patternEnabled = false
 			}
 		}
 
 		// Map patterns to configurations
-		if pattern.PatternId == "Trivy_vulnerability_minor" {
+		if pattern.PatternDefinition.Id == "Trivy_vulnerability_minor" {
 			includeLow = patternEnabled
 		}
-		if pattern.PatternId == "Trivy_vulnerability_medium" {
+		if pattern.PatternDefinition.Id == "Trivy_vulnerability_medium" {
 			includeMedium = patternEnabled
 		}
-		if pattern.PatternId == "Trivy_vulnerability" {
+		if pattern.PatternDefinition.Id == "Trivy_vulnerability" {
 			// This covers HIGH and CRITICAL
 			includeHigh = patternEnabled
 			includeCritical = patternEnabled
 		}
-		if pattern.PatternId == "Trivy_secret" {
+		if pattern.PatternDefinition.Id == "Trivy_secret" {
 			includeSecret = patternEnabled
 		}
 	}

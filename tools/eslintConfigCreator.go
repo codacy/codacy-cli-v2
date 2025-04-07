@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"codacy/cli-v2/domain"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -18,14 +19,14 @@ func quoteWhenIsNotJson(value string) string {
 	}
 }
 
-func CreateEslintConfig(configuration ToolConfiguration) string {
+func CreateEslintConfig(configuration []domain.PatternConfiguration) string {
 	result := `export default [
     {
         rules: {
 `
 
-	for _, patternConfiguration := range configuration.PatternsConfiguration {
-		rule := strings.TrimPrefix(patternConfiguration.PatternId, "ESLint8_")
+	for _, patternConfiguration := range configuration {
+		rule := strings.TrimPrefix(patternConfiguration.PatternDefinition.Id, "ESLint8_")
 		fmt.Println("Rule:", rule)
 
 		const tempstring = "TEMPORARYSTRING"
@@ -35,7 +36,7 @@ func CreateEslintConfig(configuration ToolConfiguration) string {
 
 		parametersString := ""
 
-		for _, parameter := range patternConfiguration.ParameterConfigurations {
+		for _, parameter := range patternConfiguration.Parameters {
 			if parameter.Name == "unnamedParam" {
 				parametersString += quoteWhenIsNotJson(parameter.Value)
 			}
@@ -43,7 +44,7 @@ func CreateEslintConfig(configuration ToolConfiguration) string {
 
 		// build named parameters json object
 		namedParametersString := ""
-		for _, parameter := range patternConfiguration.ParameterConfigurations {
+		for _, parameter := range patternConfiguration.Parameters {
 
 			if parameter.Name != "unnamedParam" {
 				if len(namedParametersString) == 0 {
