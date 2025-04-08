@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"codacy/cli-v2/utils"
+
 	"github.com/spf13/cobra"
 )
 
@@ -265,7 +267,7 @@ var analyzeCmd = &cobra.Command{
 			}
 
 			// Merge all SARIF outputs
-			if err := mergeSarifOutputs(sarifOutputs, outputFile); err != nil {
+			if err := utils.MergeSarifOutputs(sarifOutputs, outputFile); err != nil {
 				log.Fatalf("Failed to merge SARIF outputs: %v", err)
 			}
 		} else {
@@ -291,83 +293,4 @@ func runTool(workDirectory string, toolName string, args []string, outputFile st
 	default:
 		log.Printf("Warning: Unsupported tool: %s\n", toolName)
 	}
-}
-
-func mergeSarifOutputs(inputFiles []string, outputFile string) error {
-	var mergedSarif Sarif
-	mergedSarif.Runs = make([]struct {
-		Tool struct {
-			Driver struct {
-				Name    string `json:"name"`
-				Version string `json:"version"`
-				Rules   []struct {
-					ID               string `json:"id"`
-					HelpURI          string `json:"helpUri"`
-					ShortDescription struct {
-						Text string `json:"text"`
-					} `json:"shortDescription"`
-				} `json:"rules"`
-			} `json:"driver"`
-		} `json:"tool"`
-		Artifacts []struct {
-			Location struct {
-				URI string `json:"uri"`
-			} `json:"location"`
-		} `json:"artifacts"`
-		Results []struct {
-			Level   string `json:"level"`
-			Message struct {
-				Text string `json:"text"`
-			} `json:"message"`
-			Locations []struct {
-				PhysicalLocation struct {
-					ArtifactLocation struct {
-						URI   string `json:"uri"`
-						Index int    `json:"index"`
-					} `json:"artifactLocation"`
-					Region struct {
-						StartLine   int `json:"startLine"`
-						StartColumn int `json:"startColumn"`
-						EndLine     int `json:"endLine"`
-						EndColumn   int `json:"endColumn"`
-					} `json:"region"`
-				} `json:"physicalLocation"`
-			} `json:"locations"`
-			RuleID    string `json:"ruleId"`
-			RuleIndex int    `json:"ruleIndex"`
-		} `json:"results"`
-	}, 0)
-
-	for _, file := range inputFiles {
-		data, err := os.ReadFile(file)
-		if err != nil {
-			if os.IsNotExist(err) {
-				// Skip if file doesn't exist (tool might have failed)
-				continue
-			}
-			return fmt.Errorf("failed to read SARIF file %s: %w", file, err)
-		}
-
-		var sarif Sarif
-		if err := json.Unmarshal(data, &sarif); err != nil {
-			return fmt.Errorf("failed to parse SARIF file %s: %w", file, err)
-		}
-
-		mergedSarif.Runs = append(mergedSarif.Runs, sarif.Runs...)
-	}
-
-	// Create output file
-	out, err := os.Create(outputFile)
-	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
-	}
-	defer out.Close()
-
-	encoder := json.NewEncoder(out)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(mergedSarif); err != nil {
-		return fmt.Errorf("failed to write merged SARIF: %w", err)
-	}
-
-	return nil
 }

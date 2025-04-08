@@ -2,6 +2,8 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 )
 
 // PylintIssue represents a single issue in Pylint's JSON output
@@ -41,9 +43,9 @@ type Driver struct {
 }
 
 type Rule struct {
-	ID               string            `json:"id"`
-	ShortDescription MessageText       `json:"shortDescription"`
-	Properties       map[string]string `json:"properties"`
+	ID               string                 `json:"id"`
+	ShortDescription MessageText            `json:"shortDescription"`
+	Properties       map[string]interface{} `json:"properties"`
 }
 
 type Result struct {
@@ -168,4 +170,45 @@ func createEmptySarifReport() []byte {
 	}
 	sarifData, _ := json.MarshalIndent(emptyReport, "", "  ")
 	return sarifData
+}
+
+// MergeSarifOutputs combines multiple SARIF files into a single output file
+func MergeSarifOutputs(inputFiles []string, outputFile string) error {
+	var mergedSarif SarifReport
+	mergedSarif.Version = "2.1.0"
+	mergedSarif.Schema = "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
+	mergedSarif.Runs = make([]Run, 0)
+
+	for _, file := range inputFiles {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			if os.IsNotExist(err) {
+				// Skip if file doesn't exist (tool might have failed)
+				continue
+			}
+			return fmt.Errorf("failed to read SARIF file %s: %w", file, err)
+		}
+
+		var sarif SarifReport
+		if err := json.Unmarshal(data, &sarif); err != nil {
+			return fmt.Errorf("failed to parse SARIF file %s: %w", file, err)
+		}
+
+		mergedSarif.Runs = append(mergedSarif.Runs, sarif.Runs...)
+	}
+
+	// Create output file
+	out, err := os.Create(outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer out.Close()
+
+	encoder := json.NewEncoder(out)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(mergedSarif); err != nil {
+		return fmt.Errorf("failed to write merged SARIF: %w", err)
+	}
+
+	return nil
 }
