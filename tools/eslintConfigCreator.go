@@ -26,7 +26,6 @@ func CreateEslintConfig(configuration ToolConfiguration) string {
 
 	for _, patternConfiguration := range configuration.PatternsConfiguration {
 		rule := strings.TrimPrefix(patternConfiguration.PatternId, "ESLint8_")
-		fmt.Println("Rule:", rule)
 
 		const tempstring = "TEMPORARYSTRING"
 		rule = strings.ReplaceAll(rule, "__", tempstring)

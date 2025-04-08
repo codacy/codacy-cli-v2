@@ -15,6 +15,7 @@ type ConfigType struct {
 	runtimesDirectory    string
 	toolsDirectory       string
 	localCodacyDirectory string
+	toolsConfigDirectory string
 	projectConfigFile    string
 	cliConfigFile        string
 
@@ -40,6 +41,10 @@ func (c *ConfigType) ToolsDirectory() string {
 
 func (c *ConfigType) LocalCodacyDirectory() string {
 	return c.localCodacyDirectory
+}
+
+func (c *ConfigType) ToolsConfigsDirectory() string {
+	return c.toolsConfigDirectory
 }
 
 func (c *ConfigType) ProjectConfigFile() string {
@@ -88,11 +93,16 @@ func (c *ConfigType) AddTools(configs []plugins.ToolConfig) error {
 	return nil
 }
 
+func (c *ConfigType) ToolsConfigDirectory() string {
+	return c.toolsConfigDirectory
+}
+
 func (c *ConfigType) setupCodacyPaths() {
 	c.globalCacheDirectory = filepath.Join(c.homePath, ".cache", "codacy")
 	c.runtimesDirectory = filepath.Join(c.globalCacheDirectory, "runtimes")
 	c.toolsDirectory = filepath.Join(c.globalCacheDirectory, "tools")
 	c.localCodacyDirectory = ".codacy"
+	c.toolsConfigDirectory = filepath.Join(c.localCodacyDirectory, "tools-configs")
 
 	c.projectConfigFile = filepath.Join(c.localCodacyDirectory, "codacy.yaml")
 	c.cliConfigFile = filepath.Join(c.localCodacyDirectory, "cli-config.yaml")
