@@ -81,6 +81,7 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           ./cli-v2 install
+          ./cli-v2 analyze --format sarif --output results.sarif
       # Disable windows it test for now.    
       # - name: Install dependencies from .codacy/codacy.yaml (Windows)
       #   if: matrix.os == 'windows-latest' 
