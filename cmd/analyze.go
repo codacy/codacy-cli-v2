@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -92,7 +93,7 @@ type Pattern struct {
 
 func init() {
 	analyzeCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for analysis results")
-	analyzeCmd.Flags().StringVarP(&toolToAnalyze, "tool", "t", "", "Which tool to run analysis with")
+	analyzeCmd.Flags().StringVarP(&toolToAnalyze, "tool", "t", "", "Optional: Specific tool to run analysis with. If not specified, all configured tools will be run")
 	analyzeCmd.Flags().StringVar(&outputFormat, "format", "", "Output format (use 'sarif' for SARIF format)")
 	analyzeCmd.Flags().BoolVar(&autoFix, "fix", false, "Apply auto fix to your issues when available")
 	rootCmd.AddCommand(analyzeCmd)
@@ -224,35 +225,149 @@ func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
-	Short: "Runs all linters.",
-	Long:  "Runs all tools for all runtimes.",
+	Short: "Runs all configured linters.",
+	Long:  "Runs all configured tools for code analysis. Use --tool flag to run a specific tool.",
 	Run: func(cmd *cobra.Command, args []string) {
 		workDirectory, err := os.Getwd()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		log.Printf("Running %s...\n", toolToAnalyze)
-		if outputFormat == "sarif" {
-			log.Println("Output will be in SARIF format")
-		}
-		if outputFile != "" {
-			log.Println("Output will be available at", outputFile)
+		// If a specific tool is specified, only run that tool
+		if toolToAnalyze != "" {
+			log.Printf("Running %s...\n", toolToAnalyze)
+			runTool(workDirectory, toolToAnalyze, args, outputFile)
+			return
 		}
 
-		switch toolToAnalyze {
-		case "eslint":
-			runEslintAnalysis(workDirectory, args, autoFix, outputFile, outputFormat)
-		case "trivy":
-			runTrivyAnalysis(workDirectory, args, outputFile, outputFormat)
-		case "pmd":
-			runPmdAnalysis(workDirectory, args, outputFile, outputFormat)
-		case "pylint":
-			runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
-		case "":
-			log.Fatal("You need to specify a tool to run analysis with, e.g., '--tool eslint'")
-		default:
-			log.Fatal("Trying to run unsupported tool: ", toolToAnalyze)
+		// Run all configured tools
+		tools := config.Config.Tools()
+		if len(tools) == 0 {
+			log.Fatal("No tools configured. Please run 'codacy-cli init' and 'codacy-cli install' first")
+		}
+
+		log.Println("Running all configured tools...")
+
+		if outputFormat == "sarif" {
+			// Create temporary directory for individual tool outputs
+			tmpDir, err := os.MkdirTemp("", "codacy-analysis-*")
+			if err != nil {
+				log.Fatalf("Failed to create temporary directory: %v", err)
+			}
+			defer os.RemoveAll(tmpDir)
+
+			var sarifOutputs []string
+			for toolName := range tools {
+				log.Printf("Running %s...\n", toolName)
+				tmpFile := filepath.Join(tmpDir, fmt.Sprintf("%s.sarif", toolName))
+				runTool(workDirectory, toolName, args, tmpFile)
+				sarifOutputs = append(sarifOutputs, tmpFile)
+			}
+
+			// Merge all SARIF outputs
+			if err := mergeSarifOutputs(sarifOutputs, outputFile); err != nil {
+				log.Fatalf("Failed to merge SARIF outputs: %v", err)
+			}
+		} else {
+			// Run tools without merging outputs
+			for toolName := range tools {
+				log.Printf("Running %s...\n", toolName)
+				runTool(workDirectory, toolName, args, outputFile)
+			}
 		}
 	},
+}
+
+func runTool(workDirectory string, toolName string, args []string, outputFile string) {
+	switch toolName {
+	case "eslint":
+		runEslintAnalysis(workDirectory, args, autoFix, outputFile, outputFormat)
+	case "trivy":
+		runTrivyAnalysis(workDirectory, args, outputFile, outputFormat)
+	case "pmd":
+		runPmdAnalysis(workDirectory, args, outputFile, outputFormat)
+	case "pylint":
+		runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
+	default:
+		log.Printf("Warning: Unsupported tool: %s\n", toolName)
+	}
+}
+
+func mergeSarifOutputs(inputFiles []string, outputFile string) error {
+	var mergedSarif Sarif
+	mergedSarif.Runs = make([]struct {
+		Tool struct {
+			Driver struct {
+				Name    string `json:"name"`
+				Version string `json:"version"`
+				Rules   []struct {
+					ID               string `json:"id"`
+					HelpURI          string `json:"helpUri"`
+					ShortDescription struct {
+						Text string `json:"text"`
+					} `json:"shortDescription"`
+				} `json:"rules"`
+			} `json:"driver"`
+		} `json:"tool"`
+		Artifacts []struct {
+			Location struct {
+				URI string `json:"uri"`
+			} `json:"location"`
+		} `json:"artifacts"`
+		Results []struct {
+			Level   string `json:"level"`
+			Message struct {
+				Text string `json:"text"`
+			} `json:"message"`
+			Locations []struct {
+				PhysicalLocation struct {
+					ArtifactLocation struct {
+						URI   string `json:"uri"`
+						Index int    `json:"index"`
+					} `json:"artifactLocation"`
+					Region struct {
+						StartLine   int `json:"startLine"`
+						StartColumn int `json:"startColumn"`
+						EndLine     int `json:"endLine"`
+						EndColumn   int `json:"endColumn"`
+					} `json:"region"`
+				} `json:"physicalLocation"`
+			} `json:"locations"`
+			RuleID    string `json:"ruleId"`
+			RuleIndex int    `json:"ruleIndex"`
+		} `json:"results"`
+	}, 0)
+
+	for _, file := range inputFiles {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			if os.IsNotExist(err) {
+				// Skip if file doesn't exist (tool might have failed)
+				continue
+			}
+			return fmt.Errorf("failed to read SARIF file %s: %w", file, err)
+		}
+
+		var sarif Sarif
+		if err := json.Unmarshal(data, &sarif); err != nil {
+			return fmt.Errorf("failed to parse SARIF file %s: %w", file, err)
+		}
+
+		mergedSarif.Runs = append(mergedSarif.Runs, sarif.Runs...)
+	}
+
+	// Create output file
+	out, err := os.Create(outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer out.Close()
+
+	encoder := json.NewEncoder(out)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(mergedSarif); err != nil {
+		return fmt.Errorf("failed to write merged SARIF: %w", err)
+	}
+
+	return nil
 }
