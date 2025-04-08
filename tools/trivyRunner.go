@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"codacy/cli-v2/config"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,7 +12,7 @@ func RunTrivy(repositoryToAnalyseDirectory string, trivyBinary string, pathsToCh
 	cmd := exec.Command(trivyBinary, "fs")
 
 	// Add config file from tools-configs directory
-	configFile := filepath.Join(".codacy", "tools-configs", "trivy.yaml")
+	configFile := filepath.Join(config.Config.ToolsConfigDirectory(), "trivy.yaml")
 	cmd.Args = append(cmd.Args, "--config", configFile)
 
 	// Add format options

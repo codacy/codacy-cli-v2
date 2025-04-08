@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"codacy/cli-v2/config"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -24,7 +25,7 @@ func RunPmd(repositoryToAnalyseDirectory string, pmdBinary string, pathsToCheck 
 
 	// Add config file from tools-configs directory if not specified
 	if rulesetFile == "" {
-		configFile := filepath.Join(".codacy", "tools-configs", "pmd-ruleset.xml")
+		configFile := filepath.Join(config.Config.ToolsConfigDirectory(), "pmd-ruleset.xml")
 		cmd.Args = append(cmd.Args, "-R", configFile)
 	} else {
 		cmd.Args = append(cmd.Args, "-R", rulesetFile)

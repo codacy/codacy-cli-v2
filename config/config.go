@@ -43,6 +43,10 @@ func (c *ConfigType) LocalCodacyDirectory() string {
 	return c.localCodacyDirectory
 }
 
+func (c *ConfigType) ToolsConfigsDirectory() string {
+	return c.toolsConfigDirectory
+}
+
 func (c *ConfigType) ProjectConfigFile() string {
 	return c.projectConfigFile
 }
