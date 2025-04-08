@@ -4,6 +4,7 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/utils"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -53,6 +55,7 @@ var initCmd = &cobra.Command{
 			if err != nil {
 				log.Fatal(err)
 			}
+			createGitIgnoreFile()
 		}
 		fmt.Println()
 		fmt.Println("✅ Successfully initialized Codacy configuration!")
@@ -62,6 +65,26 @@ var initCmd = &cobra.Command{
 		fmt.Println("  2. Run 'codacy-cli analyze' to start analyzing your code")
 		fmt.Println()
 	},
+}
+
+func createGitIgnoreFile() error {
+	gitIgnorePath := filepath.Join(config.Config.LocalCodacyDirectory(), ".gitignore")
+	gitIgnoreFile, err := os.Create(gitIgnorePath)
+	if err != nil {
+		return fmt.Errorf("failed to create .gitignore file: %w", err)
+	}
+	defer gitIgnoreFile.Close()
+
+	content := `# Codacy CLI 
+tools-configs/
+.gitignore
+cli-config.yaml
+`
+	if _, err := gitIgnoreFile.WriteString(content); err != nil {
+		return fmt.Errorf("failed to write to .gitignore file: %w", err)
+	}
+
+	return nil
 }
 
 func createConfigurationFiles(tools []tools.Tool, cliLocalMode bool) error {
@@ -136,6 +159,13 @@ func cliConfigFileTemplate(cliLocalMode bool) string {
 
 func buildRepositoryConfigurationFiles(token string) error {
 	fmt.Println("Fetching repository configuration from codacy using api token ...")
+
+	toolsConfigDir := config.Config.ToolsConfigDirectory()
+
+	// Create tools-configs directory if it doesn't exist
+	if err := os.MkdirAll(toolsConfigDir, utils.DefaultDirPerms); err != nil {
+		return fmt.Errorf("failed to create tools-configs directory: %w", err)
+	}
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -212,12 +242,13 @@ func buildRepositoryConfigurationFiles(token string) error {
 
 // map tool uuid to tool name
 func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain.PatternConfiguration) error {
+	toolsConfigDir := config.Config.ToolsConfigDirectory()
 	switch tool.Uuid {
 	case ESLint:
 		if len(patternConfiguration) > 0 {
 			eslintConfigurationString := tools.CreateEslintConfig(patternConfiguration)
 
-			eslintConfigFile, err := os.Create("eslint.config.mjs")
+			eslintConfigFile, err := os.Create(filepath.Join(toolsConfigDir, "eslint.config.mjs"))
 			if err != nil {
 				return fmt.Errorf("failed to create eslint config file: %v", err)
 			}
@@ -229,7 +260,7 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 			}
 			fmt.Println("ESLint configuration created based on Codacy settings")
 		} else {
-			err := createDefaultEslintConfigFile()
+			err := createDefaultEslintConfigFile(toolsConfigDir)
 			if err != nil {
 				return fmt.Errorf("failed to create default ESLint config: %v", err)
 			}
@@ -237,59 +268,71 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 		}
 	case Trivy:
 		if len(patternConfiguration) > 0 {
-			createTrivyConfigFile(patternConfiguration)
+			err := createTrivyConfigFile(patternConfiguration, toolsConfigDir)
+			if err != nil {
+				return fmt.Errorf("failed to create Trivy config: %v", err)
+			}
 		} else {
-			createDefaultTrivyConfigFile()
+			err := createDefaultTrivyConfigFile(toolsConfigDir)
+			if err != nil {
+				return fmt.Errorf("failed to create default Trivy config: %v", err)
+			}
 		}
 		fmt.Println("Trivy configuration created based on Codacy settings")
 	case PMD:
 		if len(patternConfiguration) > 0 {
-			createPMDConfigFile(patternConfiguration)
+			err := createPMDConfigFile(patternConfiguration, toolsConfigDir)
+			if err != nil {
+				return fmt.Errorf("failed to create PMD config: %v", err)
+			}
 		} else {
-			createDefaultPMDConfigFile()
+			err := createDefaultPMDConfigFile(toolsConfigDir)
+			if err != nil {
+				return fmt.Errorf("failed to create default PMD config: %v", err)
+			}
 		}
 		fmt.Println("PMD configuration created based on Codacy settings")
 	}
 	return nil
 }
 
-func createPMDConfigFile(config []domain.PatternConfiguration) error {
+func createPMDConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
 	pmdConfigurationString := tools.CreatePmdConfig(config)
-	return os.WriteFile("pmd-ruleset.xml", []byte(pmdConfigurationString), 0644)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(pmdConfigurationString), utils.DefaultRW)
 }
 
-func createDefaultPMDConfigFile() error {
+func createDefaultPMDConfigFile(toolsConfigDir string) error {
 	content := tools.CreatePmdConfig([]domain.PatternConfiguration{})
-	return os.WriteFile("pmd-ruleset.xml", []byte(content), 0644)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(content), utils.DefaultRW)
 }
 
 // createTrivyConfigFile creates a trivy.yaml configuration file based on the API configuration
-func createTrivyConfigFile(config []domain.PatternConfiguration) error {
+func createTrivyConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
 
 	trivyConfigurationString := tools.CreateTrivyConfig(config)
 
 	// Write to file
-	return os.WriteFile("trivy.yaml", []byte(trivyConfigurationString), 0644)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(trivyConfigurationString), utils.DefaultRW)
 }
 
 // createDefaultTrivyConfigFile creates a default trivy.yaml configuration file
-func createDefaultTrivyConfigFile() error {
+func createDefaultTrivyConfigFile(toolsConfigDir string) error {
 	// Use empty tool configuration to get default settings
 	emptyConfig := []domain.PatternConfiguration{}
 	content := tools.CreateTrivyConfig(emptyConfig)
 
 	// Write to file
-	return os.WriteFile("trivy.yaml", []byte(content), 0644)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(content), utils.DefaultRW)
 }
 
 // createDefaultEslintConfigFile creates a default eslint.config.mjs configuration file
-func createDefaultEslintConfigFile() error {
+func createDefaultEslintConfigFile(toolsConfigDir string) error {
 	// Use empty tool configuration to get default settings
 	emptyConfig := []domain.PatternConfiguration{}
 	content := tools.CreateEslintConfig(emptyConfig)
 
 	// Write to file
-	return os.WriteFile("eslint.config.mjs", []byte(content), 0644)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "eslint.config.mjs"), []byte(content), utils.DefaultRW)
 }
 
 const (

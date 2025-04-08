@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"codacy/cli-v2/config"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +15,15 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 	eslintJsPath := filepath.Join(eslintInstallationNodeModules, ".bin", "eslint")
 
 	cmd := exec.Command(nodeBinary, eslintJsPath)
+
+	// For Eslint compatibility with version 8.
+	// https://eslint.org/docs/v8.x/use/configure/configuration-files-new
+	cmd.Env = append(cmd.Env, "ESLINT_USE_FLAT_CONFIG=true")
+
+	// Add config file from tools-configs directory
+	configFile := filepath.Join(config.Config.ToolsConfigDirectory(), "eslint.config.mjs")
+	cmd.Args = append(cmd.Args, "-c", configFile)
+
 	if autoFix {
 		cmd.Args = append(cmd.Args, "--fix")
 	}
@@ -39,9 +49,9 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 	nodePathEnv := "NODE_PATH=" + eslintInstallationNodeModules
 	cmd.Env = append(cmd.Env, nodePathEnv)
 
-	//DEBUG
-	//fmt.Println(cmd.Env)
-	//fmt.Println(cmd)
+	// DEBUG
+	// fmt.Println(cmd.Env)
+	// fmt.Println(cmd)
 
 	// TODO eslint returns 1 when it finds errors, so we're not propagating it
 	cmd.Run()
