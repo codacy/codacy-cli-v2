@@ -1,6 +1,7 @@
 # codacy-cli-v2
 
-The `codacy-cli-v2` is a command-line tool for Codacy that supports analyzing code using tools like ESLint and uploading the results in SARIF format to Codacy. It provides two main commands: `analyze` and `upload`.
+The Codacy CLI (version 2) is a command-line tool that supports analyzing code using tools like ESLint and uploading the results in SARIF format to Codacy. 
+The tool is invoked using the `codacy-cli` command, and provides two main commands: analyze and upload.
 
 ### Commands
 
@@ -32,13 +33,13 @@ The `codacy-cli-v2` is a command-line tool for Codacy that supports analyzing co
   tools:
       - eslint@9.3.0
   
-- **`codacy-cli-v2 install`**: Command to install the specified node and eslint versions before running analysis.
+- **`codacy-cli install`**: Command to install the specified node and eslint versions before running analysis.
 
 ## Download
 
 ### MacOS (brew)
 
-To install `codacy-cli-v2` using Homebrew:
+To install `codacy-cli` using Homebrew:
 
 ```bash
 brew install codacy/codacy-cli-v2/codacy-cli-v2
