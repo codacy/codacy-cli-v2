@@ -56,6 +56,7 @@ var initCmd = &cobra.Command{
 			if err != nil {
 				log.Fatal(err)
 			}
+			createGitIgnoreFile()
 		}
 		fmt.Println()
 		fmt.Println("✅ Successfully initialized Codacy configuration!")
@@ -65,6 +66,27 @@ var initCmd = &cobra.Command{
 		fmt.Println("  2. Run 'codacy-cli analyze' to start analyzing your code")
 		fmt.Println()
 	},
+}
+
+func createGitIgnoreFile() error {
+	gitIgnorePath := filepath.Join(config.Config.LocalCodacyDirectory(), ".gitignore")
+	gitIgnoreFile, err := os.Create(gitIgnorePath)
+	if err != nil {
+		return fmt.Errorf("failed to create .gitignore file: %w", err)
+	}
+	defer gitIgnoreFile.Close()
+
+	content := `# Codacy CLI 
+tools-configs
+tools-configs/*
+.gitignore
+cli-config.yaml
+`
+	if _, err := gitIgnoreFile.WriteString(content); err != nil {
+		return fmt.Errorf("failed to write to .gitignore file: %w", err)
+	}
+
+	return nil
 }
 
 func createConfigurationFiles(tools []tools.Tool, cliLocalMode bool) error {
