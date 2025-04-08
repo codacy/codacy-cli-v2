@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"codacy/cli-v2/domain"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,37 +39,41 @@ type PMDProperty struct {
 
 func TestCreatePmdConfig(t *testing.T) {
 	// Setup test configuration with patterns
-	config := ToolConfiguration{
-		PatternsConfiguration: []PatternConfiguration{
-			{
-				PatternId: "java/codestyle/AtLeastOneConstructor",
-				ParameterConfigurations: []PatternParameterConfiguration{
-					{
-						Name:  "enabled",
-						Value: "true",
-					},
+	config := []domain.PatternConfiguration{
+		{
+			PatternDefinition: domain.PatternDefinition{
+				Id: "java/codestyle/AtLeastOneConstructor",
+			},
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:  "enabled",
+					Value: "true",
 				},
 			},
-			{
-				PatternId: "java/design/UnusedPrivateField",
-				ParameterConfigurations: []PatternParameterConfiguration{
-					{
-						Name:  "enabled",
-						Value: "true",
-					},
+		},
+		{
+			PatternDefinition: domain.PatternDefinition{
+				Id: "java/design/UnusedPrivateField",
+			},
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:  "enabled",
+					Value: "true",
 				},
 			},
-			{
-				PatternId: "java/design/LoosePackageCoupling",
-				ParameterConfigurations: []PatternParameterConfiguration{
-					{
-						Name:  "enabled",
-						Value: "true",
-					},
-					{
-						Name:  "packages",
-						Value: "java.util,java.io",
-					},
+		},
+		{
+			PatternDefinition: domain.PatternDefinition{
+				Id: "java/design/LoosePackageCoupling",
+			},
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:  "enabled",
+					Value: "true",
+				},
+				{
+					Name:  "packages",
+					Value: "java.util,java.io",
 				},
 			},
 		},
@@ -105,15 +111,15 @@ func TestCreatePmdConfig(t *testing.T) {
 }
 
 func TestCreatePmdConfigWithDisabledRules(t *testing.T) {
-	config := ToolConfiguration{
-		PatternsConfiguration: []PatternConfiguration{
-			{
-				PatternId: "java/codestyle/AtLeastOneConstructor",
-				ParameterConfigurations: []PatternParameterConfiguration{
-					{
-						Name:  "enabled",
-						Value: "false",
-					},
+	config := []domain.PatternConfiguration{
+		{
+			PatternDefinition: domain.PatternDefinition{
+				Id: "java/codestyle/AtLeastOneConstructor",
+			},
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:  "enabled",
+					Value: "false",
 				},
 			},
 		},
@@ -163,9 +169,7 @@ func TestCreatePmdConfigEmpty(t *testing.T) {
 	}
 	defer os.Chdir(cwd)
 
-	config := ToolConfiguration{
-		PatternsConfiguration: []PatternConfiguration{},
-	}
+	config := []domain.PatternConfiguration{}
 
 	obtainedConfig := CreatePmdConfig(config)
 

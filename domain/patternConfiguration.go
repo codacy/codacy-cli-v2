@@ -6,8 +6,7 @@ type ParameterConfiguration struct {
 }
 
 type PatternDefinition struct {
-	Id         string                   `json:"id"`
-	Parameters []ParameterConfiguration `json:"parameters"`
+	Id string `json:"id"`
 }
 
 type PatternConfiguration struct {

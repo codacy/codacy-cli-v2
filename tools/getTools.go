@@ -1,26 +1,27 @@
 package tools
 
 import (
-	"codacy/cli-v2/domain"
+	"codacy/cli-v2/config"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
-func GetRepositoryTools(apiToken domain.ApiToken, provider string, organization string, repository string) ([]Tool, error) {
+func GetRepositoryTools(codacyBase string, apiToken string, provider string, organization string, repository string) ([]Tool, error) {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
 
-	url := fmt.Sprintf("https://api.codacy.com/api/v3/analysis/organizations/%s/%s/repositories/%s/tools",
+	url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools",
+		codacyBase,
 		provider,
 		organization,
 		repository)
 
-	fmt.Println("url", url)
 	// Create a new GET request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -29,7 +30,7 @@ func GetRepositoryTools(apiToken domain.ApiToken, provider string, organization 
 	}
 
 	// Set the headers
-	req.Header.Set("api-token", apiToken.Value())
+	req.Header.Set("api-token", apiToken)
 
 	// Send the request
 	resp, err := client.Do(req)
@@ -57,11 +58,15 @@ func GetRepositoryTools(apiToken domain.ApiToken, provider string, organization 
 		return nil, err
 	}
 
+	cliSupportedTools := config.Config.Tools()
+
 	// Filter enabled tools
 	var enabledTools []Tool
 	for _, tool := range response.Data {
 		if tool.Settings.Enabled {
-			enabledTools = append(enabledTools, tool)
+			if _, exists := cliSupportedTools[strings.ToLower(tool.Name)]; exists {
+				enabledTools = append(enabledTools, tool)
+			}
 		}
 	}
 

@@ -1,19 +1,20 @@
 package tools
 
 import (
+	"codacy/cli-v2/domain"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func testConfig(t *testing.T, configuration ToolConfiguration, expected string) {
+func testConfig(t *testing.T, configuration []domain.PatternConfiguration, expected string) {
 	actual := CreateEslintConfig(configuration)
 	assert.Equal(t, expected, actual)
 }
 
 func TestCreateEslintConfigEmptyConfig(t *testing.T) {
 	testConfig(t,
-		ToolConfiguration{},
+		[]domain.PatternConfiguration{},
 		`export default [
     {
         rules: {
@@ -24,10 +25,10 @@ func TestCreateEslintConfigEmptyConfig(t *testing.T) {
 
 func TestCreateEslintConfigConfig1(t *testing.T) {
 	testConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
-				{
-					PatternId: "ESLint8_semi",
+		[]domain.PatternConfiguration{
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "ESLint8_semi",
 				},
 			},
 		},
@@ -42,15 +43,15 @@ func TestCreateEslintConfigConfig1(t *testing.T) {
 
 func TestCreateEslintConfigUnnamedParam(t *testing.T) {
 	testConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
-				{
-					PatternId: "ESLint8_semi",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "unnamedParam",
-							Value: "never",
-						},
+		[]domain.PatternConfiguration{
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "ESLint8_semi",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "unnamedParam",
+						Value: "never",
 					},
 				},
 			},
@@ -66,15 +67,15 @@ func TestCreateEslintConfigUnnamedParam(t *testing.T) {
 
 func TestCreateEslintConfigNamedParam(t *testing.T) {
 	testConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
-				{
-					PatternId: "consistent-return",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "treatUndefinedAsUnspecified",
-							Value: "false",
-						},
+		[]domain.PatternConfiguration{
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "consistent-return",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "treatUndefinedAsUnspecified",
+						Value: "false",
 					},
 				},
 			},
@@ -90,19 +91,19 @@ func TestCreateEslintConfigNamedParam(t *testing.T) {
 
 func TestCreateEslintConfigUnnamedAndNamedParam(t *testing.T) {
 	testConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
-				{
-					PatternId: "consistent-return",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "treatUndefinedAsUnspecified",
-							Value: "false",
-						},
-						{
-							Name:  "unnamedParam",
-							Value: "foo",
-						},
+		[]domain.PatternConfiguration{
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "consistent-return",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "treatUndefinedAsUnspecified",
+						Value: "false",
+					},
+					{
+						Name:  "unnamedParam",
+						Value: "foo",
 					},
 				},
 			},
@@ -118,10 +119,10 @@ func TestCreateEslintConfigUnnamedAndNamedParam(t *testing.T) {
 
 func TestCreateEslintConfigSupportPlugins(t *testing.T) {
 	testConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
-				{
-					PatternId: "plugin/consistent-return",
+		[]domain.PatternConfiguration{
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "plugin/consistent-return",
 				},
 			},
 		},

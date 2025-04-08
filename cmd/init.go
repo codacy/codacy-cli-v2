@@ -18,17 +18,16 @@ import (
 
 const CodacyApiBase = "https://app.codacy.com"
 
-var codacyRepositoryToken string
 var codacyApiToken string
 var remoteProvider string
-var remoteOrganizationName string
-var remoteRepositoryName string
+var organization string
+var remoteRepo string
 
 func init() {
-	initCmd.Flags().StringVar(&codacyApiToken, "codacy-api-token", "", "optional codacy api token, if defined configurations will be fetched from codacy")
+	initCmd.Flags().StringVar(&codacyApiToken, "api-token", "", "optional codacy api token, if defined configurations will be fetched from codacy")
 	initCmd.Flags().StringVar(&remoteProvider, "provider", "", "optional provider (gh/bb/gl), if defined configurations will be fetched from codacy")
-	initCmd.Flags().StringVar(&remoteOrganizationName, "organization", "", "optional remote organization name, if defined configurations will be fetched from codacy")
-	initCmd.Flags().StringVar(&remoteRepositoryName, "repository", "", "optional remote repository name, if defined configurations will be fetched from codacy")
+	initCmd.Flags().StringVar(&organization, "organization", "", "optional remote organization name, if defined configurations will be fetched from codacy")
+	initCmd.Flags().StringVar(&remoteRepo, "repository", "", "optional remote repository name, if defined configurations will be fetched from codacy")
 	rootCmd.AddCommand(initCmd)
 }
 
@@ -50,8 +49,7 @@ var initCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 		} else {
-			token := domain.NewApiToken(codacyApiToken)
-			err := buildRepositoryConfigurationFiles(token)
+			err := buildRepositoryConfigurationFiles(codacyApiToken)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -102,13 +100,13 @@ func configFileTemplate(tools []tools.Tool) string {
 
 	for _, tool := range tools {
 		switch tool.Uuid {
-		case string(ESLint):
+		case ESLint:
 			eslintVersion = tool.Version
-		case string(Trivy):
+		case Trivy:
 			trivyVersion = tool.Version
-		case string(PyLint):
+		case PyLint:
 			pylintVersion = tool.Version
-		case string(PMD):
+		case PMD:
 			pmdVersion = tool.Version
 		}
 	}
@@ -136,24 +134,14 @@ func cliConfigFileTemplate(cliLocalMode bool) string {
 	return fmt.Sprintf(`mode: %s`, cliModeString)
 }
 
-func buildRepositoryConfigurationFiles(token domain.Token) error {
-	fmt.Println("Building repository configuration files ...")
-	switch token := token.(type) {
-	case domain.ApiToken:
-		return buildRepositoryConfigurationFilesFromApiToken(token)
-	default:
-		return fmt.Errorf("unknown token type: %T", token)
-	}
-}
-
-func buildRepositoryConfigurationFilesFromApiToken(token domain.ApiToken) error {
+func buildRepositoryConfigurationFiles(token string) error {
 	fmt.Println("Fetching repository configuration from codacy using api token ...")
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
 
-	apiTools, err := tools.GetRepositoryTools(token, remoteProvider, remoteOrganizationName, remoteRepositoryName)
+	apiTools, err := tools.GetRepositoryTools(CodacyApiBase, token, remoteProvider, organization, remoteRepo)
 	if err != nil {
 		return err
 	}
@@ -167,11 +155,10 @@ func buildRepositoryConfigurationFilesFromApiToken(token domain.ApiToken) error 
 		url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns?enabled=true",
 			CodacyApiBase,
 			remoteProvider,
-			remoteOrganizationName,
-			remoteRepositoryName,
+			organization,
+			remoteRepo,
 			tool.Uuid)
 
-		fmt.Printf("url: %q\n", url)
 		// Create a new GET request
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
@@ -180,7 +167,7 @@ func buildRepositoryConfigurationFilesFromApiToken(token domain.ApiToken) error 
 		}
 
 		// Set the headers
-		req.Header.Set("api-token", token.Value())
+		req.Header.Set("api-token", token)
 
 		// Send the request
 		resp, err := client.Do(req)
@@ -212,17 +199,12 @@ func buildRepositoryConfigurationFilesFromApiToken(token domain.ApiToken) error 
 		var apiToolConfigurations []domain.PatternConfiguration
 		err = json.Unmarshal(objmap["data"], &apiToolConfigurations)
 
-		for _, toolConfiguration := range apiToolConfigurations {
-			fmt.Println("tool configuration", toolConfiguration)
-		}
-
 		if err != nil {
 			fmt.Println("Error unmarshaling tool configurations:", err)
 			return err
 		}
 
 		createToolFileConfigurations(tool, apiToolConfigurations)
-		// TODO: Process the response and create configuration files for each tool
 	}
 
 	return nil
@@ -231,7 +213,7 @@ func buildRepositoryConfigurationFilesFromApiToken(token domain.ApiToken) error 
 // map tool uuid to tool name
 func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain.PatternConfiguration) error {
 	switch tool.Uuid {
-	case string(ESLint):
+	case ESLint:
 		if len(patternConfiguration) > 0 {
 			eslintConfigurationString := tools.CreateEslintConfig(patternConfiguration)
 
@@ -253,20 +235,20 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 			}
 			fmt.Println("Default ESLint configuration created")
 		}
-	case string(Trivy):
+	case Trivy:
 		if len(patternConfiguration) > 0 {
-			return createTrivyConfigFile(patternConfiguration)
+			createTrivyConfigFile(patternConfiguration)
 		} else {
-			return createDefaultTrivyConfigFile()
+			createDefaultTrivyConfigFile()
 		}
-
-	case string(PMD):
+		fmt.Println("Trivy configuration created based on Codacy settings")
+	case PMD:
 		if len(patternConfiguration) > 0 {
-			return createPMDConfigFile(patternConfiguration)
+			createPMDConfigFile(patternConfiguration)
 		} else {
-			return createDefaultPMDConfigFile()
+			createDefaultPMDConfigFile()
 		}
-
+		fmt.Println("PMD configuration created based on Codacy settings")
 	}
 	return nil
 }
@@ -310,11 +292,9 @@ func createDefaultEslintConfigFile() error {
 	return os.WriteFile("eslint.config.mjs", []byte(content), 0644)
 }
 
-type ToolUiid string
-
 const (
-	ESLint ToolUiid = "f8b29663-2cb2-498d-b923-a10c6a8c05cd"
-	Trivy  ToolUiid = "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb"
-	PMD    ToolUiid = "9ed24812-b6ee-4a58-9004-0ed183c45b8f"
-	PyLint ToolUiid = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
+	ESLint string = "f8b29663-2cb2-498d-b923-a10c6a8c05cd"
+	Trivy  string = "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb"
+	PMD    string = "9ed24812-b6ee-4a58-9004-0ed183c45b8f"
+	PyLint string = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
 )

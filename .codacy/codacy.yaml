@@ -1,0 +1,8 @@
+runtimes:
+    - node@22.2.0
+    - python@3.11.11
+tools:
+    - eslint@
+    - trivy@
+    - pylint@3.3.6
+    - pmd@
