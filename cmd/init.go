@@ -78,8 +78,7 @@ func createGitIgnoreFile() error {
 	defer gitIgnoreFile.Close()
 
 	content := `# Codacy CLI 
-tools-configs
-tools-configs/*
+tools-configs/
 .gitignore
 cli-config.yaml
 `
