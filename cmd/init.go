@@ -327,7 +327,7 @@ func createTrivyConfigFile(config []domain.PatternConfiguration, toolsConfigDir 
 	trivyConfigurationString := tools.CreateTrivyConfig(config)
 
 	// Write to file
-	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(trivyConfigurationString), utils.DefaultRW)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(trivyConfigurationString), utils.DefaultFilePerms)
 }
 
 // createDefaultTrivyConfigFile creates a default trivy.yaml configuration file
@@ -337,7 +337,7 @@ func createDefaultTrivyConfigFile(toolsConfigDir string) error {
 	content := tools.CreateTrivyConfig(emptyConfig)
 
 	// Write to file
-	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(content), utils.DefaultRW)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(content), utils.DefaultFilePerms)
 }
 
 // createDefaultEslintConfigFile creates a default eslint.config.mjs configuration file
@@ -347,7 +347,7 @@ func createDefaultEslintConfigFile(toolsConfigDir string) error {
 	content := tools.CreateEslintConfig(emptyConfig)
 
 	// Write to file
-	return os.WriteFile(filepath.Join(toolsConfigDir, "eslint.config.mjs"), []byte(content), utils.DefaultRW)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "eslint.config.mjs"), []byte(content), utils.DefaultFilePerms)
 }
 
 const (

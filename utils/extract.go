@@ -25,7 +25,7 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 		switch f.IsDir() {
 		case true:
 			// create a directory
-			err := os.MkdirAll(path, 0777)
+			err := os.MkdirAll(path, DefaultDirPerms)
 			if err != nil {
 				return err
 			}
@@ -37,9 +37,8 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 				return nil
 			}
 
-
 			// Ensure parent directory exists
-			err := os.MkdirAll(filepath.Dir(path), 0777)
+			err := os.MkdirAll(filepath.Dir(path), DefaultDirPerms)
 			if err != nil {
 				return err
 			}
@@ -74,7 +73,7 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 		os.Remove(path)
 
 		// Ensure parent directory exists
-		err := os.MkdirAll(filepath.Dir(path), 0777)
+		err := os.MkdirAll(filepath.Dir(path), DefaultDirPerms)
 		if err != nil {
 			return err
 		}
@@ -99,7 +98,7 @@ func ExtractZip(zipPath string, targetDir string) error {
 		switch f.IsDir() {
 		case true:
 			// create a directory
-			err := os.MkdirAll(path, 0777)
+			err := os.MkdirAll(path, DefaultDirPerms)
 			if err != nil {
 				return err
 			}
@@ -116,7 +115,7 @@ func ExtractZip(zipPath string, targetDir string) error {
 			}
 
 			// ensure parent directory exists
-			err := os.MkdirAll(filepath.Dir(path), 0777)
+			err := os.MkdirAll(filepath.Dir(path), DefaultDirPerms)
 			if err != nil {
 				return err
 			}
