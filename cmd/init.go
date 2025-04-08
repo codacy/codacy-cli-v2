@@ -3,6 +3,7 @@ package cmd
 import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/utils"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -168,7 +169,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
 
 	// Create tools-configs directory if it doesn't exist
-	if err := os.MkdirAll(toolsConfigDir, 0777); err != nil {
+	if err := os.MkdirAll(toolsConfigDir, utils.DefaultDirPerms); err != nil {
 		return fmt.Errorf("failed to create tools-configs directory: %w", err)
 	}
 
@@ -351,13 +352,13 @@ func extractPMDConfiguration(toolConfigurations []CodacyToolConfiguration) *Coda
 func createPMDConfigFile(config CodacyToolConfiguration, toolsConfigDir string) error {
 	pmdDomainConfiguration := convertAPIToolConfigurationToDomain(config)
 	pmdConfigurationString := tools.CreatePmdConfig(pmdDomainConfiguration)
-	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(pmdConfigurationString), 0644)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(pmdConfigurationString), utils.DefaultRW)
 }
 
 func createDefaultPMDConfigFile(toolsConfigDir string) error {
 	emptyConfig := tools.ToolConfiguration{}
 	content := tools.CreatePmdConfig(emptyConfig)
-	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(content), utils.DefaultRW)
 }
 
 type CodacyToolConfiguration struct {
@@ -385,7 +386,7 @@ func createTrivyConfigFile(config CodacyToolConfiguration, toolsConfigDir string
 	trivyConfigurationString := tools.CreateTrivyConfig(trivyDomainConfiguration)
 
 	// Write to file
-	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(trivyConfigurationString), 0644)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(trivyConfigurationString), utils.DefaultRW)
 }
 
 // convertAPIToolConfigurationForTrivy converts API tool configuration to domain model for Trivy
@@ -435,7 +436,7 @@ func createDefaultTrivyConfigFile(toolsConfigDir string) error {
 	content := tools.CreateTrivyConfig(emptyConfig)
 
 	// Write to file
-	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(content), utils.DefaultRW)
 }
 
 // createDefaultEslintConfigFile creates a default eslint.config.mjs configuration file
@@ -445,5 +446,5 @@ func createDefaultEslintConfigFile(toolsConfigDir string) error {
 	content := tools.CreateEslintConfig(emptyConfig)
 
 	// Write to file
-	return os.WriteFile(filepath.Join(toolsConfigDir, "eslint.config.mjs"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "eslint.config.mjs"), []byte(content), utils.DefaultRW)
 }
