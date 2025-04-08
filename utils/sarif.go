@@ -43,9 +43,18 @@ type Driver struct {
 }
 
 type Rule struct {
-	ID               string                 `json:"id"`
-	ShortDescription MessageText            `json:"shortDescription"`
-	Properties       map[string]interface{} `json:"properties"`
+	ID               string         `json:"id"`
+	ShortDescription MessageText    `json:"shortDescription"`
+	Properties       RuleProperties `json:"properties"`
+}
+
+type RuleProperties struct {
+	Priority int      `json:"priority,omitempty"`
+	Ruleset  string   `json:"ruleset,omitempty"`
+	Tags     []string `json:"tags,omitempty"`
+	// Add other common properties that might be present
+	Precision        string `json:"precision,omitempty"`
+	SecuritySeverity string `json:"security-severity,omitempty"`
 }
 
 type Result struct {

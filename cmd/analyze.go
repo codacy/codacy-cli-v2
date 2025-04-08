@@ -250,7 +250,7 @@ var analyzeCmd = &cobra.Command{
 
 		log.Println("Running all configured tools...")
 
-		if outputFormat == "sarif" {
+		if outputFormat == "sarif" && outputFile != "" {
 			// Create temporary directory for individual tool outputs
 			tmpDir, err := os.MkdirTemp("", "codacy-analysis-*")
 			if err != nil {
