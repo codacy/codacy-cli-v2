@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
 	"encoding/json"
 	"fmt"
@@ -17,7 +18,7 @@ import (
 )
 
 var outputFile string
-var toolToAnalyze string
+var toolsToAnalyzeParam string
 var autoFix bool
 var outputFormat string
 var sarifPath string
@@ -95,7 +96,7 @@ type Pattern struct {
 
 func init() {
 	analyzeCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for analysis results")
-	analyzeCmd.Flags().StringVarP(&toolToAnalyze, "tool", "t", "", "Optional: Specific tool to run analysis with. If not specified, all configured tools will be run")
+	analyzeCmd.Flags().StringVarP(&toolsToAnalyzeParam, "tool", "t", "", "Which tool to run analysis with. If not specified, all configured tools will be run")
 	analyzeCmd.Flags().StringVar(&outputFormat, "format", "", "Output format (use 'sarif' for SARIF format)")
 	analyzeCmd.Flags().BoolVar(&autoFix, "fix", false, "Apply auto fix to your issues when available")
 	rootCmd.AddCommand(analyzeCmd)
@@ -234,17 +235,19 @@ var analyzeCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+		var toolsToRun map[string]*plugins.ToolInfo
 
-		// If a specific tool is specified, only run that tool
-		if toolToAnalyze != "" {
-			log.Printf("Running %s...\n", toolToAnalyze)
-			runTool(workDirectory, toolToAnalyze, args, outputFile)
-			return
+		if toolsToAnalyzeParam != "" {
+			// If a specific tool is specified, only run that tool
+			toolsToRun = map[string]*plugins.ToolInfo{
+				toolsToAnalyzeParam: config.Config.Tools()[toolsToAnalyzeParam],
+			}
+		} else {
+			// Run all configured tools
+			toolsToRun = config.Config.Tools()
 		}
 
-		// Run all configured tools
-		tools := config.Config.Tools()
-		if len(tools) == 0 {
+		if len(toolsToRun) == 0 {
 			log.Fatal("No tools configured. Please run 'codacy-cli init' and 'codacy-cli install' first")
 		}
 
@@ -259,7 +262,7 @@ var analyzeCmd = &cobra.Command{
 			defer os.RemoveAll(tmpDir)
 
 			var sarifOutputs []string
-			for toolName := range tools {
+			for toolName := range toolsToRun {
 				log.Printf("Running %s...\n", toolName)
 				tmpFile := filepath.Join(tmpDir, fmt.Sprintf("%s.sarif", toolName))
 				runTool(workDirectory, toolName, args, tmpFile)
@@ -291,7 +294,7 @@ var analyzeCmd = &cobra.Command{
 			}
 		} else {
 			// Run tools without merging outputs
-			for toolName := range tools {
+			for toolName := range toolsToRun {
 				log.Printf("Running %s...\n", toolName)
 				runTool(workDirectory, toolName, args, outputFile)
 			}
