@@ -20,16 +20,20 @@ import (
 
 const CodacyApiBase = "https://app.codacy.com"
 
-var codacyApiToken string
-var remoteProvider string
-var organization string
-var remoteRepo string
+type InitFlags struct {
+	apiToken     string
+	provider     string
+	organization string
+	repository   string
+}
+
+var initFlags InitFlags
 
 func init() {
-	initCmd.Flags().StringVar(&codacyApiToken, "api-token", "", "optional codacy api token, if defined configurations will be fetched from codacy")
-	initCmd.Flags().StringVar(&remoteProvider, "provider", "", "optional provider (gh/bb/gl), if defined configurations will be fetched from codacy")
-	initCmd.Flags().StringVar(&organization, "organization", "", "optional remote organization name, if defined configurations will be fetched from codacy")
-	initCmd.Flags().StringVar(&remoteRepo, "repository", "", "optional remote repository name, if defined configurations will be fetched from codacy")
+	initCmd.Flags().StringVar(&initFlags.apiToken, "api-token", "", "optional codacy api token, if defined configurations will be fetched from codacy")
+	initCmd.Flags().StringVar(&initFlags.provider, "provider", "", "optional provider (gh/bb/gl), if defined configurations will be fetched from codacy")
+	initCmd.Flags().StringVar(&initFlags.organization, "organization", "", "optional remote organization name, if defined configurations will be fetched from codacy")
+	initCmd.Flags().StringVar(&initFlags.repository, "repository", "", "optional remote repository name, if defined configurations will be fetched from codacy")
 	rootCmd.AddCommand(initCmd)
 }
 
@@ -40,7 +44,7 @@ var initCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Config.CreateLocalCodacyDir()
 
-		cliLocalMode := len(codacyApiToken) == 0
+		cliLocalMode := len(initFlags.apiToken) == 0
 
 		if cliLocalMode {
 			fmt.Println()
@@ -51,7 +55,7 @@ var initCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 		} else {
-			err := buildRepositoryConfigurationFiles(codacyApiToken)
+			err := buildRepositoryConfigurationFiles(initFlags.apiToken)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -171,7 +175,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 		Timeout: 10 * time.Second,
 	}
 
-	apiTools, err := tools.GetRepositoryTools(CodacyApiBase, token, remoteProvider, organization, remoteRepo)
+	apiTools, err := tools.GetRepositoryTools(CodacyApiBase, token, initFlags.provider, initFlags.organization, initFlags.repository)
 	if err != nil {
 		return err
 	}
@@ -184,9 +188,9 @@ func buildRepositoryConfigurationFiles(token string) error {
 	for _, tool := range apiTools {
 		url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns?enabled=true",
 			CodacyApiBase,
-			remoteProvider,
-			organization,
-			remoteRepo,
+			initFlags.provider,
+			initFlags.organization,
+			initFlags.repository,
 			tool.Uuid)
 
 		// Create a new GET request
