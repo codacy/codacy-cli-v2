@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"codacy/cli-v2/plugins"
+	"codacy/cli-v2/utils"
 )
 
 type ConfigType struct {
@@ -109,22 +110,22 @@ func (c *ConfigType) setupCodacyPaths() {
 }
 
 func (c *ConfigType) CreateCodacyDirs() error {
-	if err := os.MkdirAll(c.globalCacheDirectory, 0777); err != nil {
+	if err := os.MkdirAll(c.globalCacheDirectory, utils.DefaultDirPerms); err != nil {
 		return fmt.Errorf("failed to create codacy directory: %w", err)
 	}
 
-	if err := os.MkdirAll(c.runtimesDirectory, 0777); err != nil {
+	if err := os.MkdirAll(c.runtimesDirectory, utils.DefaultDirPerms); err != nil {
 		return fmt.Errorf("failed to create runtimes directory: %w", err)
 	}
 
-	if err := os.MkdirAll(c.toolsDirectory, 0777); err != nil {
+	if err := os.MkdirAll(c.toolsDirectory, utils.DefaultDirPerms); err != nil {
 		return fmt.Errorf("failed to create tools directory: %w", err)
 	}
 	return nil
 }
 
 func (c *ConfigType) CreateLocalCodacyDir() error {
-	if err := os.MkdirAll(c.localCodacyDirectory, 0777); err != nil {
+	if err := os.MkdirAll(c.localCodacyDirectory, utils.DefaultDirPerms); err != nil {
 		return fmt.Errorf("failed to create local codacy directory: %w", err)
 	}
 	return nil

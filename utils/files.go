@@ -7,7 +7,7 @@ const (
 	// - read/write (rw-) permissions to the owner
 	// - read-only (r--) permissions to the group
 	// - read-only (r--) permissions to others
-	DefaultRW = 0644
+	DefaultFilePerms = 0644
 
 	// DefaultDirPerms represents the default directory permission (rwxr-xr-x)
 	// This permission gives:
