@@ -283,7 +283,7 @@ var analyzeCmd = &cobra.Command{
 				if err != nil {
 					log.Fatalf("Failed to read merged SARIF output: %v", err)
 				}
-				os.WriteFile(outputFile, content, utils.DefaultRW)
+				os.WriteFile(outputFile, content, utils.DefaultFilePerms)
 			} else {
 				// println the output file content
 				content, err := os.ReadFile(tmpOutputFile)
