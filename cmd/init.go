@@ -4,6 +4,7 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/pylint"
 	"codacy/cli-v2/utils"
 	"encoding/json"
 	"errors"
@@ -307,6 +308,19 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 			}
 		}
 		fmt.Println("PMD configuration created based on Codacy settings")
+	case PyLint:
+		if len(patternConfiguration) > 0 {
+			err := createPylintConfigFile(patternConfiguration, toolsConfigDir)
+			if err != nil {
+				return fmt.Errorf("failed to create Pylint config: %v", err)
+			}
+		} else {
+			err := createDefaultPylintConfigFile(toolsConfigDir)
+			if err != nil {
+				return fmt.Errorf("failed to create default Pylint config: %v", err)
+			}
+		}
+		fmt.Println("Pylint configuration created based on Codacy settings")
 	}
 	return nil
 }
@@ -319,6 +333,17 @@ func createPMDConfigFile(config []domain.PatternConfiguration, toolsConfigDir st
 func createDefaultPMDConfigFile(toolsConfigDir string) error {
 	content := tools.CreatePmdConfig([]domain.PatternConfiguration{})
 	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(content), utils.DefaultFilePerms)
+
+}
+
+func createPylintConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
+	pylintConfigurationString := pylint.GeneratePylintRC(config)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "pylint.rc"), []byte(pylintConfigurationString), utils.DefaultFilePerms)
+}
+
+func createDefaultPylintConfigFile(toolsConfigDir string) error {
+	pylintConfigurationString := pylint.GeneratePylintRCDefault()
+	return os.WriteFile(filepath.Join(toolsConfigDir, "pylint.rc"), []byte(pylintConfigurationString), utils.DefaultFilePerms)
 }
 
 // createTrivyConfigFile creates a trivy.yaml configuration file based on the API configuration

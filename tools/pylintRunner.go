@@ -19,6 +19,10 @@ func RunPylint(workDirectory string, toolInfo *plugins.ToolInfo, files []string,
 	// Always use JSON output format since we'll convert to SARIF if needed
 	args = append(args, "--output-format=json")
 
+	// Use the configuration file from .codacy/tools-configs/pylintrc
+	configPath := filepath.Join(workDirectory, ".codacy", "tools-configs", "pylint.rc")
+	args = append(args, fmt.Sprintf("--rcfile=%s", configPath))
+
 	// Create a temporary file for JSON output if we need to convert to SARIF
 	var tempFile string
 	if outputFormat == "sarif" {
