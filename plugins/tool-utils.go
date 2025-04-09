@@ -294,3 +294,34 @@ func getDownloadURL(urlTemplate string, fileName string, version string, mappedA
 
 	return buf.String()
 }
+
+// GetSupportedTools returns a map of supported tool names based on the tools folder
+func GetSupportedTools() (map[string]struct{}, error) {
+	supportedTools := make(map[string]struct{})
+
+	// Read all directories in the tools folder
+	entries, err := toolsFS.ReadDir("tools")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read tools directory: %w", err)
+	}
+
+	// For each directory, check if it has a plugin.yaml file
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		toolName := entry.Name()
+		pluginPath := filepath.Join("tools", toolName, "plugin.yaml")
+
+		// Check if plugin.yaml exists
+		_, err := toolsFS.ReadFile(pluginPath)
+		if err != nil {
+			continue // Skip if no plugin.yaml
+		}
+
+		supportedTools[toolName] = struct{}{}
+	}
+
+	return supportedTools, nil
+}

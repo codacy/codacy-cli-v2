@@ -1,19 +1,20 @@
 package tools
 
 import (
+	"codacy/cli-v2/domain"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func testTrivyConfig(t *testing.T, configuration ToolConfiguration, expected string) {
+func testTrivyConfig(t *testing.T, configuration []domain.PatternConfiguration, expected string) {
 	actual := CreateTrivyConfig(configuration)
 	assert.Equal(t, expected, actual)
 }
 
 func TestCreateTrivyConfigEmptyConfig(t *testing.T) {
 	testTrivyConfig(t,
-		ToolConfiguration{},
+		[]domain.PatternConfiguration{},
 		`severity:
   - LOW
   - MEDIUM
@@ -29,42 +30,48 @@ scan:
 
 func TestCreateTrivyConfigAllEnabled(t *testing.T) {
 	testTrivyConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
-				{
-					PatternId: "Trivy_vulnerability_minor",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "true",
-						},
+		[]domain.PatternConfiguration{
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_vulnerability_minor",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "true",
 					},
 				},
-				{
-					PatternId: "Trivy_vulnerability_medium",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "true",
-						},
+			},
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_vulnerability_medium",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "true",
 					},
 				},
-				{
-					PatternId: "Trivy_vulnerability",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "true",
-						},
+			},
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_vulnerability",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "true",
 					},
 				},
-				{
-					PatternId: "Trivy_secret",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "true",
-						},
+			},
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_secret",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "true",
 					},
 				},
 			},
@@ -84,15 +91,15 @@ scan:
 
 func TestCreateTrivyConfigNoLow(t *testing.T) {
 	testTrivyConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
-				{
-					PatternId: "Trivy_vulnerability_minor",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "false",
-						},
+		[]domain.PatternConfiguration{
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_vulnerability_minor",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "false",
 					},
 				},
 			},
@@ -111,33 +118,37 @@ scan:
 
 func TestCreateTrivyConfigOnlyHigh(t *testing.T) {
 	testTrivyConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
-				{
-					PatternId: "Trivy_vulnerability_minor",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "false",
-						},
+		[]domain.PatternConfiguration{
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_vulnerability_minor",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "false",
 					},
 				},
-				{
-					PatternId: "Trivy_vulnerability_medium",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "false",
-						},
+			},
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_vulnerability_medium",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "false",
 					},
 				},
-				{
-					PatternId: "Trivy_secret",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "false",
-						},
+			},
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_secret",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "false",
 					},
 				},
 			},
@@ -154,33 +165,37 @@ scan:
 
 func TestCreateTrivyConfigNoVulnerabilities(t *testing.T) {
 	testTrivyConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
-				{
-					PatternId: "Trivy_vulnerability_minor",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "false",
-						},
+		[]domain.PatternConfiguration{
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_vulnerability_minor",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "false",
 					},
 				},
-				{
-					PatternId: "Trivy_vulnerability_medium",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "false",
-						},
+			},
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_vulnerability_medium",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "false",
 					},
 				},
-				{
-					PatternId: "Trivy_vulnerability",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "false",
-						},
+			},
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_vulnerability",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "false",
 					},
 				},
 			},
@@ -196,33 +211,37 @@ scan:
 
 func TestCreateTrivyConfigOnlySecretsLow(t *testing.T) {
 	testTrivyConfig(t,
-		ToolConfiguration{
-			PatternsConfiguration: []PatternConfiguration{
-				{
-					PatternId: "Trivy_vulnerability_minor",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "true",
-						},
+		[]domain.PatternConfiguration{
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_vulnerability_minor",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "true",
 					},
 				},
-				{
-					PatternId: "Trivy_vulnerability_medium",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "false",
-						},
+			},
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_vulnerability_medium",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "false",
 					},
 				},
-				{
-					PatternId: "Trivy_vulnerability",
-					ParameterConfigurations: []PatternParameterConfiguration{
-						{
-							Name:  "enabled",
-							Value: "false",
-						},
+			},
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "Trivy_vulnerability",
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "enabled",
+						Value: "false",
 					},
 				},
 			},

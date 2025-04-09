@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"codacy/cli-v2/domain"
 	_ "embed"
 	"encoding/xml"
 	"fmt"
@@ -171,20 +172,20 @@ func ConvertToPMDRuleset(rules []Rule) (string, error) {
 }
 
 // CreatePmdConfig creates a PMD configuration from the provided tool configuration
-func CreatePmdConfig(configuration ToolConfiguration) string {
+func CreatePmdConfig(configuration []domain.PatternConfiguration) string {
 	// If no patterns provided, return the default ruleset
-	if len(configuration.PatternsConfiguration) == 0 {
+	if len(configuration) == 0 {
 		return defaultPMDRuleset
 	}
 
 	// Convert ToolConfiguration to our Rule format
 	var rules []Rule
-	for _, pattern := range configuration.PatternsConfiguration {
+	for _, pattern := range configuration {
 		// Check if pattern is enabled
 		patternEnabled := true
 		var parameters []Parameter
 
-		for _, param := range pattern.ParameterConfigurations {
+		for _, param := range pattern.Parameters {
 			if param.Name == "enabled" && param.Value == "false" {
 				patternEnabled = false
 				break
@@ -198,7 +199,7 @@ func CreatePmdConfig(configuration ToolConfiguration) string {
 		}
 
 		// Apply prefix to pattern ID if needed
-		patternID := pattern.PatternId
+		patternID := pattern.PatternDefinition.Id
 		if !strings.HasPrefix(patternID, "PMD_") && !strings.Contains(patternID, "/") {
 			patternID = prefixPatternID(patternID)
 		}
