@@ -250,7 +250,7 @@ var analyzeCmd = &cobra.Command{
 
 		log.Println("Running all configured tools...")
 
-		if outputFormat == "sarif" && outputFile != "" {
+		if outputFormat == "sarif" {
 			// Create temporary directory for individual tool outputs
 			tmpDir, err := os.MkdirTemp("", "codacy-analysis-*")
 			if err != nil {
@@ -266,9 +266,28 @@ var analyzeCmd = &cobra.Command{
 				sarifOutputs = append(sarifOutputs, tmpFile)
 			}
 
+			// create output file tmp file
+			tmpOutputFile := filepath.Join(tmpDir, "merged.sarif")
+
 			// Merge all SARIF outputs
-			if err := utils.MergeSarifOutputs(sarifOutputs, outputFile); err != nil {
+			if err := utils.MergeSarifOutputs(sarifOutputs, tmpOutputFile); err != nil {
 				log.Fatalf("Failed to merge SARIF outputs: %v", err)
+			}
+
+			if outputFile != "" {
+				// copy tmpOutputFile to outputFile
+				content, err := os.ReadFile(tmpOutputFile)
+				if err != nil {
+					log.Fatalf("Failed to read merged SARIF output: %v", err)
+				}
+				os.WriteFile(outputFile, content, utils.DefaultRW)
+			} else {
+				// println the output file content
+				content, err := os.ReadFile(tmpOutputFile)
+				if err != nil {
+					log.Fatalf("Failed to read merged SARIF output: %v", err)
+				}
+				fmt.Println(string(content))
 			}
 		} else {
 			// Run tools without merging outputs
