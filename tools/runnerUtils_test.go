@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"codacy/cli-v2/config"
 	"os"
 	"path/filepath"
 	"testing"
@@ -8,29 +9,100 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConfigFileExists(t *testing.T) {
+func TestConfigFileExistsInToolsConfigDirectory(t *testing.T) {
 	// Create a test directory structure
 	tempDir := t.TempDir()
+	repoDir := filepath.Join(tempDir, "src")
+	repositoryCache := filepath.Join(repoDir, ".codacy")
+
+	// Create configuration
+	config := *config.NewConfigType(repoDir, repositoryCache, "unused-global-cache")
 
 	// Create .codacy/tools-configs directory
-	configDir := filepath.Join(tempDir, ".codacy", "tools-configs")
-
+	configDir := filepath.Join(repoDir, ".codacy", "tools-configs")
 	err := os.MkdirAll(configDir, 0755)
 	assert.NoError(t, err, "Failed to create test directory structure")
 
-	// Create a test config file
-	testConfigFile := filepath.Join(configDir, "test-config.yaml")
-	err = os.WriteFile(testConfigFile, []byte("test content"), 0644)
+	// Create a test config file on the configDir
+	generatedConfigFile := filepath.Join(configDir, "generated-config.yaml")
+	err = os.WriteFile(generatedConfigFile, []byte("test content"), 0644)
 	assert.NoError(t, err, "Failed to create test config file")
 
-	// Test case 1: Config file exists
-	configPath, exists := ConfigFileExists(tempDir, "test-config.yaml")
-	assert.True(t, exists, "Config file should exist")
-	assert.Equal(t, filepath.Join(".codacy", "tools-configs", "test-config.yaml"), configPath,
+	// Test case: Config file exists in tools config directory
+	configPath, exists := ConfigFileExists(config, "generated-config.yaml")
+	assert.True(t, exists, "Config file should exist in tools config directory")
+	assert.Equal(t, filepath.Join(config.ToolsConfigDirectory(), "generated-config.yaml"), configPath,
 		"Config path should be correctly formed relative path")
+}
 
-	// Test case 2: Config file doesn't exist
-	configPath, exists = ConfigFileExists(tempDir, "non-existent-config.yaml")
+func TestConfigFileExistsInRepositoryDirectory(t *testing.T) {
+	// Create a test directory structure
+	tempDir := t.TempDir()
+	repoDir := filepath.Join(tempDir, "src")
+	repositoryCache := filepath.Join(repoDir, ".codacy")
+
+	// Create configuration
+	config := *config.NewConfigType(repoDir, repositoryCache, "unused-global-cache")
+
+	// Create .codacy/tools-configs directory
+	configDir := filepath.Join(repoDir, ".codacy", "tools-configs")
+	err := os.MkdirAll(configDir, 0755)
+	assert.NoError(t, err, "Failed to create test directory structure")
+
+	// Create a test config file on the repository directory
+	existingConfigFile := filepath.Join(repoDir, "existing-config.yaml")
+	err = os.WriteFile(existingConfigFile, []byte("test content"), 0644)
+	assert.NoError(t, err, "Failed to create test config file")
+
+	// Test case: The existing config file gets picked up
+	configPath, exists := ConfigFileExists(config, "existing-config.yaml")
+	assert.True(t, exists, "Config file should exist in tools config directory")
+	assert.Equal(t, filepath.Join(config.RepositoryDirectory(), "existing-config.yaml"), configPath,
+		"Config path should be correctly formed relative path")
+}
+
+func TestConfigFilePrefersToolsConfigDirectory(t *testing.T) {
+	// Create a test directory structure
+	tempDir := t.TempDir()
+	repoDir := filepath.Join(tempDir, "src")
+	repositoryCache := filepath.Join(repoDir, ".codacy")
+
+	// Create configuration
+	config := *config.NewConfigType(repoDir, repositoryCache, "unused-global-cache")
+
+	// Create .codacy/tools-configs directory
+	configDir := filepath.Join(repoDir, ".codacy", "tools-configs")
+	err := os.MkdirAll(configDir, 0755)
+	assert.NoError(t, err, "Failed to create test directory structure")
+
+	// Create a test config file in both locations
+	generatedConfigFile := filepath.Join(configDir, "some-config.yaml")
+	existingConfigFile := filepath.Join(repoDir, "some-config.yaml")
+
+	err = os.WriteFile(generatedConfigFile, []byte("tools config content"), 0644)
+	assert.NoError(t, err, "Failed to create test config file in tools config directory")
+
+	err = os.WriteFile(existingConfigFile, []byte("repository config content"), 0644)
+	assert.NoError(t, err, "Failed to create test config file in repository directory")
+
+	// Test case: Config file in tools config directory is preferred
+	configPath, exists := ConfigFileExists(config, "some-config.yaml")
+	assert.True(t, exists, "Config file should exist")
+	assert.Equal(t, filepath.Join(config.ToolsConfigDirectory(), "some-config.yaml"), configPath,
+		"Config path should prefer tools config directory")
+}
+
+func TestConfigFileDoesNotExist(t *testing.T) {
+	// Create a test directory structure
+	tempDir := t.TempDir()
+	repoDir := filepath.Join(tempDir, "src")
+	repositoryCache := filepath.Join(repoDir, ".codacy")
+
+	// Create configuration
+	config := *config.NewConfigType(repoDir, repositoryCache, "unused-global-cache")
+
+	// Test case: Config file does not exist
+	configPath, exists := ConfigFileExists(config, "non-existent-config.yaml")
 	assert.False(t, exists, "Config file should not exist")
 	assert.Equal(t, "", configPath, "Config path should be empty for non-existent file")
 }

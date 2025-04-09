@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"codacy/cli-v2/config"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,7 +21,7 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 	cmd.Env = append(cmd.Env, "ESLINT_USE_FLAT_CONFIG=true")
 
 	// Add config file from tools-configs directory if it exists
-	if configFile, exists := ConfigFileExists(repositoryToAnalyseDirectory, "eslint.config.mjs"); exists {
+	if configFile, exists := ConfigFileExists(config.Config, "eslint.config.mjs"); exists {
 		cmd.Args = append(cmd.Args, "-c", configFile)
 	}
 

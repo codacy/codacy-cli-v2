@@ -4,7 +4,6 @@ import (
 	"codacy/cli-v2/config"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
@@ -20,16 +19,12 @@ import (
 //
 // Returns:
 //   - error: nil if analysis succeeds or violations found, error otherwise
-func RunPmd(repositoryToAnalyseDirectory string, pmdBinary string, pathsToCheck []string, outputFile string, outputFormat string, rulesetFile string) error {
+func RunPmd(repositoryToAnalyseDirectory string, pmdBinary string, pathsToCheck []string, outputFile string, outputFormat string, config config.ConfigType) error {
 	cmd := exec.Command(pmdBinary, "pmd")
 
-	// Add config file from tools-configs directory if not specified
-	if rulesetFile == "" {
-		// TODO: Check if the config file exists before using it
-		configFile := filepath.Join(config.Config.ToolsConfigDirectory(), "pmd-ruleset.xml")
+	// Add config file from tools-configs directory if it exists
+	if configFile, exists := ConfigFileExists(config, "ruleset.xml"); exists {
 		cmd.Args = append(cmd.Args, "-R", configFile)
-	} else {
-		cmd.Args = append(cmd.Args, "-R", rulesetFile)
 	}
 
 	// Add source directories (comma-separated list for PMD)

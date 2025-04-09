@@ -327,12 +327,12 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 
 func createPMDConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
 	pmdConfigurationString := tools.CreatePmdConfig(config)
-	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(pmdConfigurationString), utils.DefaultFilePerms)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "ruleset.xml"), []byte(pmdConfigurationString), utils.DefaultFilePerms)
 }
 
 func createDefaultPMDConfigFile(toolsConfigDir string) error {
 	content := tools.CreatePmdConfig([]domain.PatternConfiguration{})
-	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(content), utils.DefaultFilePerms)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "ruleset.xml"), []byte(content), utils.DefaultFilePerms)
 
 }
 

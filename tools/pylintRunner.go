@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"codacy/cli-v2/config"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/utils"
 	"fmt"
@@ -20,7 +21,7 @@ func RunPylint(workDirectory string, toolInfo *plugins.ToolInfo, files []string,
 	args = append(args, "--output-format=json")
 
 	// Check if a config file exists in the expected location and use it if present
-	if configFile, exists := ConfigFileExists(workDirectory, "pylint.rc"); exists {
+	if configFile, exists := ConfigFileExists(config.Config, "pylint.rc"); exists {
 		args = append(args, fmt.Sprintf("--rcfile=%s", configFile))
 	}
 
