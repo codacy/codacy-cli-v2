@@ -4,6 +4,7 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/tools/eslint"
+	"codacy/cli-v2/tools/pmd"
 	"codacy/cli-v2/tools/trivy"
 	"encoding/json"
 	"fmt"
@@ -210,7 +211,7 @@ func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile stri
 	tool := config.Config.Tools()["pmd"]
 	pmdBinary := tool.Binaries["pmd"]
 
-	err := tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, "")
+	err := pmd.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, "")
 	if err != nil {
 		log.Fatalf("Error running PMD: %v", err)
 	}

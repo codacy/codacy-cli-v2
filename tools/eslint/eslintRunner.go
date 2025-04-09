@@ -21,8 +21,8 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 	cmd.Env = append(cmd.Env, "ESLINT_USE_FLAT_CONFIG=true")
 
 	// Add config file from tools-configs directory
-	configFile := filepath.Join(config.Config.ToolsConfigDirectory(), "eslint.config.mjs")
-	cmd.Args = append(cmd.Args, "-c", configFile)
+	defaultConfigFile := filepath.Join(config.Config.ToolsConfigDirectory(), "eslint.config.mjs")
+	cmd.Args = append(cmd.Args, "-c", defaultConfigFile)
 
 	if autoFix {
 		cmd.Args = append(cmd.Args, "--fix")
