@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
 	"encoding/json"
 	"fmt"
@@ -9,12 +10,15 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+
+	"codacy/cli-v2/utils"
 
 	"github.com/spf13/cobra"
 )
 
 var outputFile string
-var toolToAnalyze string
+var toolsToAnalyzeParam string
 var autoFix bool
 var outputFormat string
 var sarifPath string
@@ -92,7 +96,7 @@ type Pattern struct {
 
 func init() {
 	analyzeCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for analysis results")
-	analyzeCmd.Flags().StringVarP(&toolToAnalyze, "tool", "t", "", "Which tool to run analysis with")
+	analyzeCmd.Flags().StringVarP(&toolsToAnalyzeParam, "tool", "t", "", "Which tool to run analysis with. If not specified, all configured tools will be run")
 	analyzeCmd.Flags().StringVar(&outputFormat, "format", "", "Output format (use 'sarif' for SARIF format)")
 	analyzeCmd.Flags().BoolVar(&autoFix, "fix", false, "Apply auto fix to your issues when available")
 	rootCmd.AddCommand(analyzeCmd)
@@ -224,35 +228,91 @@ func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
-	Short: "Runs all linters.",
-	Long:  "Runs all tools for all runtimes.",
+	Short: "Runs all configured linters.",
+	Long:  "Runs all configured tools for code analysis. Use --tool flag to run a specific tool.",
 	Run: func(cmd *cobra.Command, args []string) {
 		workDirectory, err := os.Getwd()
 		if err != nil {
 			log.Fatal(err)
 		}
+		var toolsToRun map[string]*plugins.ToolInfo
 
-		log.Printf("Running %s...\n", toolToAnalyze)
+		if toolsToAnalyzeParam != "" {
+			// If a specific tool is specified, only run that tool
+			toolsToRun = map[string]*plugins.ToolInfo{
+				toolsToAnalyzeParam: config.Config.Tools()[toolsToAnalyzeParam],
+			}
+		} else {
+			// Run all configured tools
+			toolsToRun = config.Config.Tools()
+		}
+
+		if len(toolsToRun) == 0 {
+			log.Fatal("No tools configured. Please run 'codacy-cli init' and 'codacy-cli install' first")
+		}
+
+		log.Println("Running all configured tools...")
+
 		if outputFormat == "sarif" {
-			log.Println("Output will be in SARIF format")
-		}
-		if outputFile != "" {
-			log.Println("Output will be available at", outputFile)
-		}
+			// Create temporary directory for individual tool outputs
+			tmpDir, err := os.MkdirTemp("", "codacy-analysis-*")
+			if err != nil {
+				log.Fatalf("Failed to create temporary directory: %v", err)
+			}
+			defer os.RemoveAll(tmpDir)
 
-		switch toolToAnalyze {
-		case "eslint":
-			runEslintAnalysis(workDirectory, args, autoFix, outputFile, outputFormat)
-		case "trivy":
-			runTrivyAnalysis(workDirectory, args, outputFile, outputFormat)
-		case "pmd":
-			runPmdAnalysis(workDirectory, args, outputFile, outputFormat)
-		case "pylint":
-			runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
-		case "":
-			log.Fatal("You need to specify a tool to run analysis with, e.g., '--tool eslint'")
-		default:
-			log.Fatal("Trying to run unsupported tool: ", toolToAnalyze)
+			var sarifOutputs []string
+			for toolName := range toolsToRun {
+				log.Printf("Running %s...\n", toolName)
+				tmpFile := filepath.Join(tmpDir, fmt.Sprintf("%s.sarif", toolName))
+				runTool(workDirectory, toolName, args, tmpFile)
+				sarifOutputs = append(sarifOutputs, tmpFile)
+			}
+
+			// create output file tmp file
+			tmpOutputFile := filepath.Join(tmpDir, "merged.sarif")
+
+			// Merge all SARIF outputs
+			if err := utils.MergeSarifOutputs(sarifOutputs, tmpOutputFile); err != nil {
+				log.Fatalf("Failed to merge SARIF outputs: %v", err)
+			}
+
+			if outputFile != "" {
+				// copy tmpOutputFile to outputFile
+				content, err := os.ReadFile(tmpOutputFile)
+				if err != nil {
+					log.Fatalf("Failed to read merged SARIF output: %v", err)
+				}
+				os.WriteFile(outputFile, content, utils.DefaultRW)
+			} else {
+				// println the output file content
+				content, err := os.ReadFile(tmpOutputFile)
+				if err != nil {
+					log.Fatalf("Failed to read merged SARIF output: %v", err)
+				}
+				fmt.Println(string(content))
+			}
+		} else {
+			// Run tools without merging outputs
+			for toolName := range toolsToRun {
+				log.Printf("Running %s...\n", toolName)
+				runTool(workDirectory, toolName, args, outputFile)
+			}
 		}
 	},
+}
+
+func runTool(workDirectory string, toolName string, args []string, outputFile string) {
+	switch toolName {
+	case "eslint":
+		runEslintAnalysis(workDirectory, args, autoFix, outputFile, outputFormat)
+	case "trivy":
+		runTrivyAnalysis(workDirectory, args, outputFile, outputFormat)
+	case "pmd":
+		runPmdAnalysis(workDirectory, args, outputFile, outputFormat)
+	case "pylint":
+		runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
+	default:
+		log.Printf("Warning: Unsupported tool: %s\n", toolName)
+	}
 }
