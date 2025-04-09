@@ -1,9 +1,9 @@
 package pylint
 
-import "codacy/cli-v2/tools/types"
+import "codacy/cli-v2/domain"
 
 // PatternDefaultParameters contains the default parameters for Pylint patterns
-var PatternDefaultParameters = map[string][]types.ParameterConfiguration{
+var PatternDefaultParameters = map[string][]domain.ParameterConfiguration{
 	"R0914": {
 		{
 			Name:  "max-locals",

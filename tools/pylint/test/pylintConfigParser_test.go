@@ -1,10 +1,9 @@
 package pylint
 
 import (
+	"codacy/cli-v2/domain"
 	"codacy/cli-v2/tools/pylint"
-	"codacy/cli-v2/tools/types"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -12,228 +11,335 @@ import (
 )
 
 var testData = `{
-  "uuid": "31677b6d-4ae0-4f56-8041-606a8d7a8e61",
-  "isEnabled": true,
-  "notEdited": false,
   "patterns": [
     {
-      "internalId": "PyLintPython3_E0117",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0117"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1206",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1206"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1302",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1302"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0240",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0240"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1125",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1125"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0710",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0710"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0107",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0107"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1111",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1111"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1304",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1304"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1126",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1126"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1205",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1205"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1300",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1300"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0114",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0114"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0601",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0601"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0106",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0106"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0100",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0100"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0112",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0112"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1120",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1120"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0302",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0302"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_C0114",
+      "patternDefinition": {
+        "id": "PyLintPython3_C0114"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1127",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1127"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_C0105",
+      "patternDefinition": {
+        "id": "PyLintPython3_C0105"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1200",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1200"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0105",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0105"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0711",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0711"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_C0112",
+      "patternDefinition": {
+        "id": "PyLintPython3_C0112"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0202",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0202"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0101",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0101"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0104",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0104"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1132",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1132"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_C0103",
+      "patternDefinition": {
+        "id": "PyLintPython3_C0103"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1305",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1305"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0203",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0203"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1201",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1201"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0113",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0113"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1303",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1303"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1003",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1003"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_C0104",
+      "patternDefinition": {
+        "id": "PyLintPython3_C0104"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1301",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1301"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1102",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1102"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0116",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0116"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0712",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0712"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0238",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0238"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0702",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0702"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0704",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0704"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0236",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0236"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0102",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0102"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0301",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0301"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0603",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0603"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1124",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1124"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0604",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0604"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E0110",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0110"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1123",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1123"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_W0122",
+      "patternDefinition": {
+        "id": "PyLintPython3_W0122"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_C0301",
+      "patternDefinition": {
+        "id": "PyLintPython3_C0301"
+      },
       "parameters": [
         {
           "name": "max-line-length",
@@ -242,89 +348,58 @@ var testData = `{
       ]
     },
     {
-      "internalId": "PyLintPython3_E0701",
+      "patternDefinition": {
+        "id": "PyLintPython3_E0701"
+      },
       "parameters": []
     },
     {
-      "internalId": "PyLintPython3_E1306",
-      "parameters": []
-    },
-    {
-      "internalId": "PyLintPython3_E0108",
-      "parameters": []
-    },
-    {
-      "internalId": "PyLintPython3_E0239",
-      "parameters": []
-    },
-    {
-      "internalId": "PyLintPython3_E0103",
-      "parameters": []
-    },
-    {
-      "internalId": "PyLintPython3_E0241",
-      "parameters": []
-    },
-    {
-      "internalId": "PyLintPython3_E1121",
-      "parameters": []
-    },
-    {
-      "internalId": "PyLintPython3_E0211",
-      "parameters": []
-    },
-    {
-      "internalId": "PyLintPython3_E0115",
+      "patternDefinition": {
+        "id": "PyLintPython3_E1306"
+      },
       "parameters": []
     }
   ]
 }`
 
+type testDataWrapper struct {
+	Patterns []domain.PatternConfiguration `json:"patterns"`
+}
+
 func TestGeneratePylintRCFromTestData(t *testing.T) {
-	var config types.ToolConfiguration
-	err := json.Unmarshal([]byte(testData), &config)
+	var wrapper testDataWrapper
+	err := json.Unmarshal([]byte(testData), &wrapper)
 	assert.NoError(t, err)
 
-	rcContent := pylint.GeneratePylintRC(config)
-	t.Logf("Generated Pylint RC content:\n%s", rcContent)
+	rcContent := pylint.GeneratePylintRC(wrapper.Patterns)
 	assert.NotEmpty(t, rcContent)
 
-	// Verify basic structure
+	// Check if the content contains the expected sections
 	assert.Contains(t, rcContent, "[MASTER]")
 	assert.Contains(t, rcContent, "[MESSAGES CONTROL]")
-	assert.Contains(t, rcContent, "enable=")
+	assert.Contains(t, rcContent, "disable=all")
 
-	// Verify specific pattern with parameters
+	// Check if the patterns are enabled
+	for _, pattern := range wrapper.Patterns {
+		patternID := strings.Split(pattern.PatternDefinition.Id, "_")[1]
+		assert.Contains(t, rcContent, patternID)
+	}
+
+	// Check if the parameter is set correctly
 	assert.Contains(t, rcContent, "max-line-length=125")
 }
 
 func TestGeneratePylintRCDefault(t *testing.T) {
 	rcContent := pylint.GeneratePylintRCDefault()
+	assert.NotEmpty(t, rcContent)
 
-	// Print the generated content for inspection
-	fmt.Println("Generated Pylint RC Content:")
-	fmt.Println(rcContent)
-
-	// Basic validation
-	if rcContent == "" {
-		t.Error("Generated RC content is empty")
-	}
-
-	// Check for required sections
-	requiredSections := []string{"[MASTER]", "[MESSAGES CONTROL]"}
-	for _, section := range requiredSections {
-		if !strings.Contains(rcContent, section) {
-			t.Errorf("Missing required section: %s", section)
-		}
-	}
+	// Check if the content contains the expected sections
+	assert.Contains(t, rcContent, "[MASTER]")
+	assert.Contains(t, rcContent, "[MESSAGES CONTROL]")
+	assert.Contains(t, rcContent, "disable=all")
 
 	// Check if default patterns are enabled
-	if !strings.Contains(rcContent, "enable=") {
-		t.Error("Missing enable line")
-	}
-
-	// Check if any parameters are present
-	if !strings.Contains(rcContent, "=") {
-		t.Error("No parameters found in the configuration")
+	for _, patternID := range pylint.DefaultPatterns {
+		assert.Contains(t, rcContent, patternID)
 	}
 }

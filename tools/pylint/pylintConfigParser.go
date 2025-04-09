@@ -1,15 +1,15 @@
 package pylint
 
 import (
-	"codacy/cli-v2/tools/types"
+	"codacy/cli-v2/domain"
 	"fmt"
 	"log"
 	"strings"
 )
 
 // getDefaultParametersForPatterns returns a map of pattern IDs to their default parameters
-func getDefaultParametersForPatterns(patternIDs []string) map[string][]types.ParameterConfiguration {
-	defaultParams := make(map[string][]types.ParameterConfiguration)
+func getDefaultParametersForPatterns(patternIDs []string) map[string][]domain.ParameterConfiguration {
+	defaultParams := make(map[string][]domain.ParameterConfiguration)
 
 	for _, patternID := range patternIDs {
 		if params, exists := PatternDefaultParameters[patternID]; exists {
@@ -39,7 +39,7 @@ func writeEnabledPatterns(rcContent *strings.Builder, patternIDs []string) {
 }
 
 // writeParametersBySection writes the parameters grouped by section to the RC content
-func writeParametersBySection(rcContent *strings.Builder, groupedParams map[string][]types.PylintPatternParameterConfiguration) {
+func writeParametersBySection(rcContent *strings.Builder, groupedParams map[string][]domain.ParameterConfiguration) {
 	for sectionName, params := range groupedParams {
 		rcContent.WriteString(fmt.Sprintf("[%s]\n", sectionName))
 		for _, param := range params {
@@ -50,18 +50,21 @@ func writeParametersBySection(rcContent *strings.Builder, groupedParams map[stri
 }
 
 // groupParametersByPatterns groups parameters from patterns into sections
-func groupParametersByPatterns(patterns []types.PatternConfiguration) map[string][]types.PylintPatternParameterConfiguration {
-	groupedParams := make(map[string][]types.PylintPatternParameterConfiguration)
+func groupParametersByPatterns(patterns []domain.PatternConfiguration) map[string][]domain.ParameterConfiguration {
+	groupedParams := make(map[string][]domain.ParameterConfiguration)
 
 	for _, pattern := range patterns {
-		patternID := extractPatternId(pattern.InternalId)
+		patternID := extractPatternId(pattern.PatternDefinition.Id)
 		params := pattern.Parameters
 
 		// If no parameters, check defaults
 		if len(params) == 0 {
-			params = PatternDefaultParameters[patternID]
+			if defaultParams, exists := PatternDefaultParameters[patternID]; exists {
+				params = defaultParams
+			}
 		}
 
+		// Add parameters to their respective sections
 		for _, param := range params {
 			sectionName := GetParameterSection(param.Name)
 			if sectionName == nil {
@@ -69,11 +72,19 @@ func groupParametersByPatterns(patterns []types.PatternConfiguration) map[string
 				continue
 			}
 
-			groupedParams[*sectionName] = append(groupedParams[*sectionName], types.PylintPatternParameterConfiguration{
-				Name:        param.Name,
-				Value:       param.Value,
-				SectionName: sectionName,
-			})
+			// Check if parameter already exists in section
+			exists := false
+			for _, existingParam := range groupedParams[*sectionName] {
+				if existingParam.Name == param.Name {
+					exists = true
+					break
+				}
+			}
+
+			// Only add if not already present
+			if !exists {
+				groupedParams[*sectionName] = append(groupedParams[*sectionName], param)
+			}
 		}
 	}
 
@@ -90,10 +101,12 @@ func GeneratePylintRCDefault() string {
 	defaultParams := getDefaultParametersForPatterns(DefaultPatterns)
 
 	// Convert default parameters to pattern configurations
-	var patterns []types.PatternConfiguration
+	var patterns []domain.PatternConfiguration
 	for patternID, params := range defaultParams {
-		patterns = append(patterns, types.PatternConfiguration{
-			InternalId: "PyLintPython3_" + patternID,
+		patterns = append(patterns, domain.PatternConfiguration{
+			PatternDefinition: domain.PatternDefinition{
+				Id: "PyLintPython3_" + patternID,
+			},
 			Parameters: params,
 		})
 	}
@@ -106,24 +119,23 @@ func GeneratePylintRCDefault() string {
 }
 
 // GeneratePylintRC generates a pylintrc file content with the specified patterns enabled
-func GeneratePylintRC(config types.ToolConfiguration) string {
+func GeneratePylintRC(config []domain.PatternConfiguration) string {
 	var rcContent strings.Builder
 
 	writePylintRCHeader(&rcContent)
 
 	// Collect enabled pattern IDs
 	var enabledPatternsIds []string
-	if config.IsEnabled {
-		for _, pattern := range config.Patterns {
-			patternID := extractPatternId(pattern.InternalId)
-			enabledPatternsIds = append(enabledPatternsIds, patternID)
-		}
+
+	for _, pattern := range config {
+		patternID := extractPatternId(pattern.PatternDefinition.Id)
+		enabledPatternsIds = append(enabledPatternsIds, patternID)
 	}
 
 	writeEnabledPatterns(&rcContent, enabledPatternsIds)
 
 	// Group and write parameters
-	groupedParams := groupParametersByPatterns(config.Patterns)
+	groupedParams := groupParametersByPatterns(config)
 	writeParametersBySection(&rcContent, groupedParams)
 
 	return rcContent.String()
