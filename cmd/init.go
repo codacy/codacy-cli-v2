@@ -31,9 +31,9 @@ var initFlags InitFlags
 
 func init() {
 	initCmd.Flags().StringVar(&initFlags.apiToken, "api-token", "", "optional codacy api token, if defined configurations will be fetched from codacy")
-	initCmd.Flags().StringVar(&initFlags.provider, "provider", "", "optional provider (gh/bb/gl), if defined configurations will be fetched from codacy")
-	initCmd.Flags().StringVar(&initFlags.organization, "organization", "", "optional remote organization name, if defined configurations will be fetched from codacy")
-	initCmd.Flags().StringVar(&initFlags.repository, "repository", "", "optional remote repository name, if defined configurations will be fetched from codacy")
+	initCmd.Flags().StringVar(&initFlags.provider, "provider", "", "provider (gh/bb/gl) to fetch configurations from codacy, required when api-token is provided")
+	initCmd.Flags().StringVar(&initFlags.organization, "organization", "", "remote organization name to fetch configurations from codacy, required when api-token is provided")
+	initCmd.Flags().StringVar(&initFlags.repository, "repository", "", "remote repository name to fetch configurations from codacy, required when api-token is provided")
 	rootCmd.AddCommand(initCmd)
 }
 
