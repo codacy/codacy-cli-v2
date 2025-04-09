@@ -313,12 +313,12 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 
 func createPMDConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
 	pmdConfigurationString := tools.CreatePmdConfig(config)
-	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(pmdConfigurationString), utils.DefaultRW)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(pmdConfigurationString), utils.DefaultFilePerms)
 }
 
 func createDefaultPMDConfigFile(toolsConfigDir string) error {
 	content := tools.CreatePmdConfig([]domain.PatternConfiguration{})
-	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(content), utils.DefaultRW)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "pmd-ruleset.xml"), []byte(content), utils.DefaultFilePerms)
 }
 
 // createTrivyConfigFile creates a trivy.yaml configuration file based on the API configuration
