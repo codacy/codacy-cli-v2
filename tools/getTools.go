@@ -11,6 +11,55 @@ import (
 	"time"
 )
 
+func enrichToolsWithVersion(tools []Tool) ([]Tool, error) {
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	// Create a new GET request
+	req, err := http.NewRequest("GET", "https://api.codacy.com/api/v3/tools", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Send the request
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("failed to get tools from Codacy API: status code %d", resp.StatusCode)
+	}
+
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	var response ToolsResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	// Create a map of tool UUIDs to versions
+	versionMap := make(map[string]string)
+	for _, tool := range response.Data {
+		versionMap[tool.Uuid] = tool.Version
+	}
+
+	// Enrich the input tools with versions
+	for i, tool := range tools {
+		if version, exists := versionMap[tool.Uuid]; exists {
+			tools[i].Version = version
+		}
+	}
+
+	return tools, nil
+}
+
 func GetRepositoryTools(codacyBase string, apiToken string, provider string, organization string, repository string) ([]Tool, error) {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -70,7 +119,7 @@ func GetRepositoryTools(codacyBase string, apiToken string, provider string, org
 		}
 	}
 
-	return enabledTools, nil
+	return enrichToolsWithVersion(enabledTools)
 }
 
 type ToolsResponse struct {
