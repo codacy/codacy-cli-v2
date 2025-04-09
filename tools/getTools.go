@@ -1,7 +1,7 @@
 package tools
 
 import (
-	"codacy/cli-v2/config"
+	"codacy/cli-v2/plugins"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -107,13 +107,16 @@ func GetRepositoryTools(codacyBase string, apiToken string, provider string, org
 		return nil, err
 	}
 
-	cliSupportedTools := config.Config.Tools()
+	supportedTools, err := plugins.GetSupportedTools()
+	if err != nil {
+		return nil, err
+	}
 
 	// Filter enabled tools
 	var enabledTools []Tool
 	for _, tool := range response.Data {
 		if tool.Settings.Enabled {
-			if _, exists := cliSupportedTools[strings.ToLower(tool.Name)]; exists {
+			if _, exists := supportedTools[strings.ToLower(tool.Name)]; exists {
 				enabledTools = append(enabledTools, tool)
 			}
 		}

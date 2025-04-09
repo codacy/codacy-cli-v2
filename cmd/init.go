@@ -42,7 +42,16 @@ var initCmd = &cobra.Command{
 	Short: "Bootstraps project configuration",
 	Long:  "Bootstraps project configuration, creates codacy configuration file",
 	Run: func(cmd *cobra.Command, args []string) {
-		config.Config.CreateLocalCodacyDir()
+		// Create local codacy directory first
+		if err := config.Config.CreateLocalCodacyDir(); err != nil {
+			log.Fatalf("Failed to create local codacy directory: %v", err)
+		}
+
+		// Create tools-configs directory
+		toolsConfigDir := config.Config.ToolsConfigDirectory()
+		if err := os.MkdirAll(toolsConfigDir, 0777); err != nil {
+			log.Fatalf("Failed to create tools-configs directory: %v", err)
+		}
 
 		cliLocalMode := len(initFlags.apiToken) == 0
 
@@ -93,25 +102,27 @@ cli-config.yaml
 
 func createConfigurationFiles(tools []tools.Tool, cliLocalMode bool) error {
 	configFile, err := os.Create(config.Config.ProjectConfigFile())
-	defer configFile.Close()
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to create project config file: %w", err)
 	}
+	defer configFile.Close()
 
-	_, err = configFile.WriteString(configFileTemplate(tools))
+	configContent := configFileTemplate(tools)
+	_, err = configFile.WriteString(configContent)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to write project config file: %w", err)
 	}
 
 	cliConfigFile, err := os.Create(config.Config.CliConfigFile())
-	defer cliConfigFile.Close()
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to create CLI config file: %w", err)
 	}
+	defer cliConfigFile.Close()
 
-	_, err = cliConfigFile.WriteString(cliConfigFileTemplate(cliLocalMode))
+	cliConfigContent := cliConfigFileTemplate(cliLocalMode)
+	_, err = cliConfigFile.WriteString(cliConfigContent)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to write CLI config file: %w", err)
 	}
 
 	return nil
@@ -162,7 +173,7 @@ func cliConfigFileTemplate(cliLocalMode bool) string {
 }
 
 func buildRepositoryConfigurationFiles(token string) error {
-	fmt.Println("Fetching repository configuration from codacy using api token ...")
+	fmt.Println("Fetching repository configuration from codacy ...")
 
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
 

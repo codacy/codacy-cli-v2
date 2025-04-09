@@ -152,3 +152,45 @@ func TestProcessToolsWithDownload(t *testing.T) {
 	}
 	assert.Contains(t, trivyInfo.DownloadURL, expectedArch)
 }
+
+func TestGetSupportedTools(t *testing.T) {
+	tests := []struct {
+		name          string
+		expectedTools []string
+		expectedError bool
+	}{
+		{
+			name: "should return supported tools",
+			expectedTools: []string{
+				"eslint",
+				"pmd",
+				"pylint",
+				"trivy",
+			},
+			expectedError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			supportedTools, err := GetSupportedTools()
+
+			if tt.expectedError {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotNil(t, supportedTools)
+
+			// Check that all expected tools are supported
+			for _, expectedTool := range tt.expectedTools {
+				_, exists := supportedTools[expectedTool]
+				assert.True(t, exists, "tool %s should be supported", expectedTool)
+			}
+
+			// Check that we have exactly the expected number of tools
+			assert.Equal(t, len(tt.expectedTools), len(supportedTools), "number of supported tools should match")
+		})
+	}
+}
