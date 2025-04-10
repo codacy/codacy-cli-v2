@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -130,35 +131,83 @@ func createConfigurationFiles(tools []tools.Tool, cliLocalMode bool) error {
 }
 
 func configFileTemplate(tools []tools.Tool) string {
+	// Maps to track which tools are enabled
+	toolsMap := make(map[string]bool)
+	toolVersions := make(map[string]string)
+
+	// Track needed runtimes
+	needsNode := false
+	needsPython := false
 
 	// Default versions
-	eslintVersion := "9.3.0"
-	trivyVersion := "0.59.1" // Latest stable version
-	pylintVersion := "3.3.6"
-	pmdVersion := "6.55.0"
+	defaultVersions := map[string]string{
+		ESLint: "9.3.0",
+		Trivy:  "0.59.1",
+		PyLint: "3.3.6",
+		PMD:    "6.55.0",
+	}
 
+	// Build map of enabled tools with their versions
 	for _, tool := range tools {
-		switch tool.Uuid {
-		case ESLint:
-			eslintVersion = tool.Version
-		case Trivy:
-			trivyVersion = tool.Version
-		case PyLint:
-			pylintVersion = tool.Version
-		case PMD:
-			pmdVersion = tool.Version
+		toolsMap[tool.Uuid] = true
+		if tool.Version != "" {
+			toolVersions[tool.Uuid] = tool.Version
+		} else {
+			toolVersions[tool.Uuid] = defaultVersions[tool.Uuid]
+		}
+
+		// Check if tool needs a runtime
+		if tool.Uuid == ESLint {
+			needsNode = true
+		} else if tool.Uuid == PyLint {
+			needsPython = true
 		}
 	}
 
-	return fmt.Sprintf(`runtimes:
-    - node@22.2.0
-    - python@3.11.11
-tools:
-    - eslint@%s
-    - trivy@%s
-    - pylint@%s
-    - pmd@%s
-`, eslintVersion, trivyVersion, pylintVersion, pmdVersion)
+	// Start building the YAML content
+	var sb strings.Builder
+	sb.WriteString("runtimes:\n")
+
+	// Only include runtimes needed by the enabled tools
+	if len(tools) > 0 {
+		if needsNode {
+			sb.WriteString("    - node@22.2.0\n")
+		}
+		if needsPython {
+			sb.WriteString("    - python@3.11.11\n")
+		}
+	} else {
+		// In local mode with no tools specified, include all runtimes
+		sb.WriteString("    - node@22.2.0\n")
+		sb.WriteString("    - python@3.11.11\n")
+	}
+
+	sb.WriteString("tools:\n")
+
+	// If we have tools from the API (enabled tools), use only those
+	if len(tools) > 0 {
+		// Add only the tools that are in the API response (enabled tools)
+		uuidToName := map[string]string{
+			ESLint: "eslint",
+			Trivy:  "trivy",
+			PyLint: "pylint",
+			PMD:    "pmd",
+		}
+
+		for uuid, name := range uuidToName {
+			if toolsMap[uuid] {
+				sb.WriteString(fmt.Sprintf("    - %s@%s\n", name, toolVersions[uuid]))
+			}
+		}
+	} else {
+		// If no tools were specified (local mode), include all defaults
+		sb.WriteString(fmt.Sprintf("    - eslint@%s\n", defaultVersions[ESLint]))
+		sb.WriteString(fmt.Sprintf("    - trivy@%s\n", defaultVersions[Trivy]))
+		sb.WriteString(fmt.Sprintf("    - pylint@%s\n", defaultVersions[PyLint]))
+		sb.WriteString(fmt.Sprintf("    - pmd@%s\n", defaultVersions[PMD]))
+	}
+
+	return sb.String()
 }
 
 func cliConfigFileTemplate(cliLocalMode bool) string {
@@ -183,6 +232,11 @@ func buildRepositoryConfigurationFiles(token string) error {
 		return fmt.Errorf("failed to create tools-configs directory: %w", err)
 	}
 
+	// Clear any previous configuration files
+	if err := cleanConfigDirectory(toolsConfigDir); err != nil {
+		return fmt.Errorf("failed to clean configuration directory: %w", err)
+	}
+
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -192,12 +246,17 @@ func buildRepositoryConfigurationFiles(token string) error {
 		return err
 	}
 
-	err = createConfigurationFiles(apiTools, true)
+	// Filter out any tools that use configuration file
+	configuredToolsWithUI := tools.FilterToolsByConfigUsage(apiTools)
+
+	// Create main config files with all enabled API tools
+	err = createConfigurationFiles(apiTools, false)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, tool := range apiTools {
+	// Only generate config files for tools not using their own config file
+	for _, tool := range configuredToolsWithUI {
 		url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns?enabled=true",
 			CodacyApiBase,
 			initFlags.provider,
@@ -373,6 +432,33 @@ func createDefaultEslintConfigFile(toolsConfigDir string) error {
 
 	// Write to file
 	return os.WriteFile(filepath.Join(toolsConfigDir, "eslint.config.mjs"), []byte(content), utils.DefaultFilePerms)
+}
+
+// cleanConfigDirectory removes all previous configuration files in the tools-configs directory
+func cleanConfigDirectory(toolsConfigDir string) error {
+	// Check if directory exists
+	if _, err := os.Stat(toolsConfigDir); os.IsNotExist(err) {
+		return nil // Directory doesn't exist, nothing to clean
+	}
+
+	// Read directory contents
+	entries, err := os.ReadDir(toolsConfigDir)
+	if err != nil {
+		return fmt.Errorf("failed to read config directory: %w", err)
+	}
+
+	// Remove all files
+	for _, entry := range entries {
+		if !entry.IsDir() { // Only remove files, not subdirectories
+			filePath := filepath.Join(toolsConfigDir, entry.Name())
+			if err := os.Remove(filePath); err != nil {
+				return fmt.Errorf("failed to remove file %s: %w", filePath, err)
+			}
+		}
+	}
+
+	fmt.Println("Cleaned previous configuration files")
+	return nil
 }
 
 const (
