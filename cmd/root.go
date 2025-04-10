@@ -74,7 +74,7 @@ func getExampleText() string {
 
 func init() {
 	// Add global flags here
-	rootCmd.PersistentFlags().StringP("config", "c", filepath.Join(".codacy", "codacy.yaml"), "config file")
+	rootCmd.PersistentFlags().String("config", filepath.Join(".codacy", "codacy.yaml"), "config file")
 
 	// Customize help template
 	rootCmd.SetUsageTemplate(`
