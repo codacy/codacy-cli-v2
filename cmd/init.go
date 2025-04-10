@@ -183,6 +183,11 @@ func buildRepositoryConfigurationFiles(token string) error {
 		return fmt.Errorf("failed to create tools-configs directory: %w", err)
 	}
 
+	// Clear any previous configuration files
+	if err := cleanConfigDirectory(toolsConfigDir); err != nil {
+		return fmt.Errorf("failed to clean configuration directory: %w", err)
+	}
+
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -192,12 +197,24 @@ func buildRepositoryConfigurationFiles(token string) error {
 		return err
 	}
 
-	err = createConfigurationFiles(apiTools, true)
+	// Filter out any tools that use configuration file
+	var configuredToolsWithUI []tools.Tool
+	for _, tool := range apiTools {
+		if !tool.Settings.UsesConfigFile {
+			configuredToolsWithUI = append(configuredToolsWithUI, tool)
+		} else {
+			fmt.Printf("Skipping config generation for %s - configured to use repo's config file\n", tool.Name)
+		}
+	}
+
+	// Create main config files with all enabled API tools
+	err = createConfigurationFiles(apiTools, false)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, tool := range apiTools {
+	// Only generate config files for tools not using their own config file
+	for _, tool := range configuredToolsWithUI {
 		url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns?enabled=true",
 			CodacyApiBase,
 			initFlags.provider,
@@ -373,6 +390,33 @@ func createDefaultEslintConfigFile(toolsConfigDir string) error {
 
 	// Write to file
 	return os.WriteFile(filepath.Join(toolsConfigDir, "eslint.config.mjs"), []byte(content), utils.DefaultFilePerms)
+}
+
+// cleanConfigDirectory removes all previous configuration files in the tools-configs directory
+func cleanConfigDirectory(toolsConfigDir string) error {
+	// Check if directory exists
+	if _, err := os.Stat(toolsConfigDir); os.IsNotExist(err) {
+		return nil // Directory doesn't exist, nothing to clean
+	}
+
+	// Read directory contents
+	entries, err := os.ReadDir(toolsConfigDir)
+	if err != nil {
+		return fmt.Errorf("failed to read config directory: %w", err)
+	}
+
+	// Remove all files
+	for _, entry := range entries {
+		if !entry.IsDir() { // Only remove files, not subdirectories
+			filePath := filepath.Join(toolsConfigDir, entry.Name())
+			if err := os.Remove(filePath); err != nil {
+				return fmt.Errorf("failed to remove file %s: %w", filePath, err)
+			}
+		}
+	}
+
+	fmt.Println("Cleaned previous configuration files")
+	return nil
 }
 
 const (
