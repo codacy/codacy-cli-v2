@@ -11,7 +11,8 @@ import (
 )
 
 type ConfigType struct {
-	homePath             string
+	repositoryDirectory string
+
 	globalCacheDirectory string
 	runtimesDirectory    string
 	toolsDirectory       string
@@ -24,8 +25,8 @@ type ConfigType struct {
 	tools    map[string]*plugins.ToolInfo
 }
 
-func (c *ConfigType) HomePath() string {
-	return c.homePath
+func (c *ConfigType) RepositoryDirectory() string {
+	return c.repositoryDirectory
 }
 
 func (c *ConfigType) CodacyDirectory() string {
@@ -98,15 +99,42 @@ func (c *ConfigType) ToolsConfigDirectory() string {
 	return c.toolsConfigDirectory
 }
 
-func (c *ConfigType) setupCodacyPaths() {
-	c.globalCacheDirectory = filepath.Join(c.homePath, ".cache", "codacy")
+func NewConfigType(repositoryDirectory string, repositoryCache string, globalCache string) *ConfigType {
+	c := &ConfigType{}
+
+	c.repositoryDirectory = repositoryDirectory
+	c.localCodacyDirectory = repositoryCache
+	c.globalCacheDirectory = globalCache
+
 	c.runtimesDirectory = filepath.Join(c.globalCacheDirectory, "runtimes")
 	c.toolsDirectory = filepath.Join(c.globalCacheDirectory, "tools")
-	c.localCodacyDirectory = ".codacy"
 	c.toolsConfigDirectory = filepath.Join(c.localCodacyDirectory, "tools-configs")
 
 	c.projectConfigFile = filepath.Join(c.localCodacyDirectory, "codacy.yaml")
 	c.cliConfigFile = filepath.Join(c.localCodacyDirectory, "cli-config.yaml")
+
+	c.runtimes = make(map[string]*plugins.RuntimeInfo)
+	c.tools = make(map[string]*plugins.ToolInfo)
+	return c
+}
+
+// TODO: Consider not having a global config and instead pass the config object around
+func setupGlobalConfig(repositoryDirectory string, repositoryCache string, globalCache string) {
+	newConfig := NewConfigType(repositoryDirectory, repositoryCache, globalCache)
+
+	Config.repositoryDirectory = newConfig.repositoryDirectory
+	Config.localCodacyDirectory = newConfig.localCodacyDirectory
+	Config.globalCacheDirectory = newConfig.globalCacheDirectory
+
+	Config.runtimesDirectory = newConfig.runtimesDirectory
+	Config.toolsDirectory = newConfig.toolsDirectory
+	Config.toolsConfigDirectory = newConfig.toolsConfigDirectory
+
+	Config.projectConfigFile = newConfig.projectConfigFile
+	Config.cliConfigFile = newConfig.cliConfigFile
+
+	Config.runtimes = newConfig.runtimes
+	Config.tools = newConfig.tools
 }
 
 func (c *ConfigType) CreateCodacyDirs() error {
@@ -136,11 +164,12 @@ func Init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	Config.homePath = homePath
+	// Repository directory is the current working directory
+	repositoryDirectory := ""
+	repositoryCache := ".codacy"
+	globalCache := filepath.Join(homePath, ".cache", "codacy")
 
-	Config.setupCodacyPaths()
-	Config.runtimes = make(map[string]*plugins.RuntimeInfo)
-	Config.tools = make(map[string]*plugins.ToolInfo)
+	setupGlobalConfig(repositoryDirectory, repositoryCache, globalCache)
 }
 
 // IsRuntimeInstalled checks if a runtime is already installed

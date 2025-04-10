@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"codacy/cli-v2/config"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/utils"
 	"fmt"
@@ -19,9 +20,10 @@ func RunPylint(workDirectory string, toolInfo *plugins.ToolInfo, files []string,
 	// Always use JSON output format since we'll convert to SARIF if needed
 	args = append(args, "--output-format=json")
 
-	// Use the configuration file from .codacy/tools-configs/pylintrc
-	configPath := filepath.Join(workDirectory, ".codacy", "tools-configs", "pylint.rc")
-	args = append(args, fmt.Sprintf("--rcfile=%s", configPath))
+	// Check if a config file exists in the expected location and use it if present
+	if configFile, exists := ConfigFileExists(config.Config, "pylint.rc"); exists {
+		args = append(args, fmt.Sprintf("--rcfile=%s", configFile))
+	}
 
 	// Create a temporary file for JSON output if we need to convert to SARIF
 	var tempFile string

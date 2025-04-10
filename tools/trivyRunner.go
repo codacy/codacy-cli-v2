@@ -4,16 +4,16 @@ import (
 	"codacy/cli-v2/config"
 	"os"
 	"os/exec"
-	"path/filepath"
 )
 
 // RunTrivy executes Trivy vulnerability scanner with the specified options
 func RunTrivy(repositoryToAnalyseDirectory string, trivyBinary string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	cmd := exec.Command(trivyBinary, "fs")
 
-	// Add config file from tools-configs directory
-	configFile := filepath.Join(config.Config.ToolsConfigDirectory(), "trivy.yaml")
-	cmd.Args = append(cmd.Args, "--config", configFile)
+	// Add config file from tools-configs directory if it exists
+	if configFile, exists := ConfigFileExists(config.Config, "trivy.yaml"); exists {
+		cmd.Args = append(cmd.Args, "--config", configFile)
+	}
 
 	// Add format options
 	if outputFile != "" {

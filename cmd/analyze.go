@@ -211,7 +211,7 @@ func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile stri
 	pmd := config.Config.Tools()["pmd"]
 	pmdBinary := pmd.Binaries["pmd"]
 
-	err := tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, "")
+	err := tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, config.Config)
 	if err != nil {
 		log.Fatalf("Error running PMD: %v", err)
 	}
