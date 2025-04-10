@@ -135,6 +135,10 @@ func configFileTemplate(tools []tools.Tool) string {
 	toolsMap := make(map[string]bool)
 	toolVersions := make(map[string]string)
 
+	// Track needed runtimes
+	needsNode := false
+	needsPython := false
+
 	// Default versions
 	defaultVersions := map[string]string{
 		ESLint: "9.3.0",
@@ -151,13 +155,33 @@ func configFileTemplate(tools []tools.Tool) string {
 		} else {
 			toolVersions[tool.Uuid] = defaultVersions[tool.Uuid]
 		}
+
+		// Check if tool needs a runtime
+		if tool.Uuid == ESLint {
+			needsNode = true
+		} else if tool.Uuid == PyLint {
+			needsPython = true
+		}
 	}
 
 	// Start building the YAML content
 	var sb strings.Builder
 	sb.WriteString("runtimes:\n")
-	sb.WriteString("    - node@22.2.0\n")
-	sb.WriteString("    - python@3.11.11\n")
+
+	// Only include runtimes needed by the enabled tools
+	if len(tools) > 0 {
+		if needsNode {
+			sb.WriteString("    - node@22.2.0\n")
+		}
+		if needsPython {
+			sb.WriteString("    - python@3.11.11\n")
+		}
+	} else {
+		// In local mode with no tools specified, include all runtimes
+		sb.WriteString("    - node@22.2.0\n")
+		sb.WriteString("    - python@3.11.11\n")
+	}
+
 	sb.WriteString("tools:\n")
 
 	// If we have tools from the API (enabled tools), use only those
