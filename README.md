@@ -94,6 +94,14 @@ To upload a SARIF file to Codacy:
 codacy-cli upload -s path/to/your.sarif -c your-commit-uuid -t your-project-token
 ```
 
+## Breaking Changes
+
+Some behaviors have changed with the new updates of the CLI. To rely on a specific version, you can add that version to your environment:
+
+```
+export CODACY_CLI_V2_VERSION="1.0.0-main.133.3607792"
+```
+
 ### Example Repository
 
 As an example, you can check https://github.com/troubleshoot-codacy/eslint-test-examples for a repository that has an action relying on this CLI.
