@@ -247,14 +247,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 	}
 
 	// Filter out any tools that use configuration file
-	var configuredToolsWithUI []tools.Tool
-	for _, tool := range apiTools {
-		if !tool.Settings.UsesConfigFile {
-			configuredToolsWithUI = append(configuredToolsWithUI, tool)
-		} else {
-			fmt.Printf("Skipping config generation for %s - configured to use repo's config file\n", tool.Name)
-		}
-	}
+	configuredToolsWithUI := tools.FilterToolsByConfigUsage(apiTools)
 
 	// Create main config files with all enabled API tools
 	err = createConfigurationFiles(apiTools, false)

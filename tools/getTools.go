@@ -138,3 +138,17 @@ type Tool struct {
 		UsesConfigFile bool `json:"hasConfigurationFile"`
 	} `json:"settings"`
 }
+
+// FilterToolsByConfigUsage filters out tools that use their own configuration files
+// Returns only tools that need configuration to be generated for them (UsesConfigFile = false)
+func FilterToolsByConfigUsage(tools []Tool) []Tool {
+	var filtered []Tool
+	for _, tool := range tools {
+		if !tool.Settings.UsesConfigFile {
+			filtered = append(filtered, tool)
+		} else {
+			fmt.Printf("Skipping config generation for %s - configured to use repo's config file\n", tool.Name)
+		}
+	}
+	return filtered
+}
