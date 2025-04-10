@@ -16,12 +16,12 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 
 	cmd := exec.Command(nodeBinary, eslintJsPath)
 
-	// For Eslint compatibility with version 8.
-	// https://eslint.org/docs/v8.x/use/configure/configuration-files-new
-	cmd.Env = append(cmd.Env, "ESLINT_USE_FLAT_CONFIG=true")
-
 	// Add config file from tools-configs directory if it exists
 	if configFile, exists := ConfigFileExists(config.Config, "eslint.config.mjs"); exists {
+		// For Eslint compatibility with version 8.
+		// https://eslint.org/docs/v8.x/use/configure/configuration-files-new
+		cmd.Env = append(cmd.Env, "ESLINT_USE_FLAT_CONFIG=true")
+
 		cmd.Args = append(cmd.Args, "-c", configFile)
 	}
 
