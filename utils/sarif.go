@@ -181,12 +181,18 @@ func createEmptySarifReport() []byte {
 	return sarifData
 }
 
+type SimpleSarifReport struct {
+	Version string            `json:"version"`
+	Schema  string            `json:"$schema"`
+	Runs    []json.RawMessage `json:"runs"`
+}
+
 // MergeSarifOutputs combines multiple SARIF files into a single output file
 func MergeSarifOutputs(inputFiles []string, outputFile string) error {
-	var mergedSarif SarifReport
+	var mergedSarif SimpleSarifReport
 	mergedSarif.Version = "2.1.0"
 	mergedSarif.Schema = "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
-	mergedSarif.Runs = make([]Run, 0)
+	mergedSarif.Runs = make([]json.RawMessage, 0)
 
 	for _, file := range inputFiles {
 		data, err := os.ReadFile(file)
@@ -198,7 +204,7 @@ func MergeSarifOutputs(inputFiles []string, outputFile string) error {
 			return fmt.Errorf("failed to read SARIF file %s: %w", file, err)
 		}
 
-		var sarif SarifReport
+		var sarif SimpleSarifReport
 		if err := json.Unmarshal(data, &sarif); err != nil {
 			return fmt.Errorf("failed to parse SARIF file %s: %w", file, err)
 		}
