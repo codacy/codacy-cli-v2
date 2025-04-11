@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"codacy/cli-v2/config"
 	"codacy/cli-v2/plugins"
 	"fmt"
 	"os"
@@ -18,8 +19,13 @@ func RunSemgrep(workDirectory string, toolInfo *plugins.ToolInfo, files []string
 		cmdArgs = append(cmdArgs, "--sarif")
 	}
 
-	// add --config auto
-	cmdArgs = append(cmdArgs, "--config", "auto")
+	// Check if a config file exists in the expected location and use it if present
+	if configFile, exists := ConfigFileExists(config.Config, ".semgrep.yml"); exists {
+		cmdArgs = append(cmdArgs, "--config", configFile)
+	} else {
+		// add --config auto only if no config file exists
+		cmdArgs = append(cmdArgs, "--config", "auto")
+	}
 
 	// Add files to analyze - if no files specified, analyze current directory
 	if len(files) > 0 {
