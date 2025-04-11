@@ -65,7 +65,7 @@ func RunDartAnalyzer(workDirectory string, toolInfo *plugins.ToolInfo, files []s
 			fmt.Printf("Error getting tools from Codacy: %v\n", err)
 			return
 		}
-		if tool.Settings.UsesConfigurationFile {
+		if tool.Settings.UsesConfigFile {
 			fmt.Println("Codacy is expecting a config file, please add one to your project or change the tool settings")
 			return
 		}

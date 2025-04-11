@@ -226,11 +226,6 @@ func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 	}
 }
 
-func runDartAnalyzer(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
-	dartanalyzer := config.Config.Tools()["dartanalyzer"]
-	tools.RunDartAnalyzer(workDirectory, dartanalyzer, pathsToCheck, outputFile, outputFormat, apiToken, provider, owner, repository)
-}
-
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Runs all configured linters.",
@@ -303,6 +298,7 @@ var analyzeCmd = &cobra.Command{
 				log.Printf("Running %s...\n", toolName)
 				runTool(workDirectory, toolName, args, outputFile)
 			}
+		}
 	},
 }
 
