@@ -226,6 +226,18 @@ func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 	}
 }
 
+func runSemgrepAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
+	semgrep := config.Config.Tools()["semgrep"]
+	if semgrep == nil {
+		log.Fatal("Semgrep tool configuration not found")
+	}
+
+	err := tools.RunSemgrep(workDirectory, semgrep, pathsToCheck, outputFile, outputFormat)
+	if err != nil {
+		log.Fatalf("Failed to run Semgrep analysis: %v", err)
+	}
+}
+
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Runs all configured linters.",
@@ -312,6 +324,8 @@ func runTool(workDirectory string, toolName string, args []string, outputFile st
 		runPmdAnalysis(workDirectory, args, outputFile, outputFormat)
 	case "pylint":
 		runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
+	case "semgrep":
+		runSemgrepAnalysis(workDirectory, args, outputFile, outputFormat)
 	default:
 		log.Printf("Warning: Unsupported tool: %s\n", toolName)
 	}

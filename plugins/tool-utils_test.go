@@ -166,6 +166,7 @@ func TestGetSupportedTools(t *testing.T) {
 				"pmd",
 				"pylint",
 				"trivy",
+				"semgrep",
 			},
 			expectedError: false,
 		},
