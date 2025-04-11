@@ -46,10 +46,10 @@ func RunSemgrep(workDirectory string, toolInfo *plugins.ToolInfo, files []string
 	cmd := exec.Command(semgrepPath, cmdArgs...)
 	cmd.Dir = workDirectory
 
-	// If output file is specified, create it and redirect output
-	var outputWriter *os.File
-	var err error
 	if outputFile != "" {
+		// If output file is specified, create it and redirect output
+		var outputWriter *os.File
+		var err error
 		outputWriter, err = os.Create(filepath.Clean(outputFile))
 		if err != nil {
 			return fmt.Errorf("failed to create output file: %w", err)

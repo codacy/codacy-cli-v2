@@ -2,7 +2,6 @@ package tools
 
 import (
 	"codacy/cli-v2/plugins"
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,11 +12,11 @@ import (
 func TestRunSemgrepWithSpecificFiles(t *testing.T) {
 	homeDirectory, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal(err.Error())
+		t.Fatalf("Failed to get home directory: %v", err)
 	}
 	currentDirectory, err := os.Getwd()
 	if err != nil {
-		log.Fatal(err.Error())
+		t.Fatalf("Failed to get current directory: %v", err)
 	}
 
 	// Set up test directories and files
