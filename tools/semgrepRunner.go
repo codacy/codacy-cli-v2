@@ -19,8 +19,11 @@ func RunSemgrep(workDirectory string, toolInfo *plugins.ToolInfo, files []string
 		cmdArgs = append(cmdArgs, "--sarif")
 	}
 
+	// Define possible Semgrep config file names
+	semgrepConfigFiles := []string{".semgrep.yml", ".semgrep.yaml", ".semgrep/semgrep.yml"}
+
 	// Check if a config file exists in the expected location and use it if present
-	if configFile, exists := ConfigFileExists(config.Config, ".semgrep.yml"); exists {
+	if configFile, exists := ConfigFileExists(config.Config, semgrepConfigFiles...); exists {
 		cmdArgs = append(cmdArgs, "--config", configFile)
 	} else {
 		// add --config auto only if no config file exists
