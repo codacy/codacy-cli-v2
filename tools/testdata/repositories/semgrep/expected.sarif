@@ -8,7 +8,24 @@
           "name": "Semgrep",
           "version": "1.41.0",
           "informationUri": "https://semgrep.dev",
-          "rules": []
+          "rules": [
+            {
+              "id": "hardcoded-credentials",
+              "name": "Hardcoded Credentials",
+              "shortDescription": {
+                "text": "Hardcoded API key detected"
+              },
+              "fullDescription": {
+                "text": "Found hardcoded API key. This is a security risk."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "help": {
+                "text": "API keys and other credentials should not be hardcoded in source files. Use environment variables or secure credential storage instead."
+              }
+            }
+          ]
         }
       },
       "artifacts": [
@@ -18,7 +35,30 @@
           }
         }
       ],
-      "results": []
+      "results": [
+        {
+          "ruleId": "hardcoded-credentials",
+          "level": "warning",
+          "message": {
+            "text": "Hardcoded API key detected"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "testdata/repositories/semgrep/sample.js"
+                },
+                "region": {
+                  "startLine": 3,
+                  "startColumn": 16,
+                  "endLine": 3,
+                  "endColumn": 32
+                }
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 } 
