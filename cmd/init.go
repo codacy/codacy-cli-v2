@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 const CodacyApiBase = "https://app.codacy.com"
@@ -141,10 +142,11 @@ func configFileTemplate(tools []tools.Tool) string {
 
 	// Default versions
 	defaultVersions := map[string]string{
-		ESLint: "9.3.0",
-		Trivy:  "0.59.1",
-		PyLint: "3.3.6",
-		PMD:    "6.55.0",
+		ESLint:  "9.3.0",
+		Trivy:   "0.59.1",
+		PyLint:  "3.3.6",
+		PMD:     "6.55.0",
+		Semgrep: "1.78.0",
 	}
 
 	// Build map of enabled tools with their versions
@@ -188,10 +190,11 @@ func configFileTemplate(tools []tools.Tool) string {
 	if len(tools) > 0 {
 		// Add only the tools that are in the API response (enabled tools)
 		uuidToName := map[string]string{
-			ESLint: "eslint",
-			Trivy:  "trivy",
-			PyLint: "pylint",
-			PMD:    "pmd",
+			ESLint:  "eslint",
+			Trivy:   "trivy",
+			PyLint:  "pylint",
+			PMD:     "pmd",
+			Semgrep: "semgrep",
 		}
 
 		for uuid, name := range uuidToName {
@@ -205,6 +208,7 @@ func configFileTemplate(tools []tools.Tool) string {
 		sb.WriteString(fmt.Sprintf("    - trivy@%s\n", defaultVersions[Trivy]))
 		sb.WriteString(fmt.Sprintf("    - pylint@%s\n", defaultVersions[PyLint]))
 		sb.WriteString(fmt.Sprintf("    - pmd@%s\n", defaultVersions[PMD]))
+		sb.WriteString(fmt.Sprintf("    - semgrep@%s\n", defaultVersions[Semgrep]))
 	}
 
 	return sb.String()
@@ -257,7 +261,8 @@ func buildRepositoryConfigurationFiles(token string) error {
 
 	// Only generate config files for tools not using their own config file
 	for _, tool := range configuredToolsWithUI {
-		url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns?enabled=true",
+
+		url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns?enabled=true&limit=1000",
 			CodacyApiBase,
 			initFlags.provider,
 			initFlags.organization,
@@ -380,6 +385,19 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 			}
 		}
 		fmt.Println("Pylint configuration created based on Codacy settings")
+	case Semgrep:
+		if len(patternConfiguration) > 0 {
+			err := createSemgrepConfigFile(patternConfiguration, toolsConfigDir)
+			if err != nil {
+				return fmt.Errorf("failed to create Semgrep config: %v", err)
+			}
+		} else {
+			err := createDefaultSemgrepConfigFile(toolsConfigDir)
+			if err != nil {
+				return fmt.Errorf("failed to create default Semgrep config: %v", err)
+			}
+		}
+		fmt.Println("Semgrep configuration created based on Codacy settings")
 	}
 	return nil
 }
@@ -434,6 +452,128 @@ func createDefaultEslintConfigFile(toolsConfigDir string) error {
 	return os.WriteFile(filepath.Join(toolsConfigDir, "eslint.config.mjs"), []byte(content), utils.DefaultFilePerms)
 }
 
+// SemgrepRulesFile represents the structure of the rules.yaml file
+type SemgrepRulesFile struct {
+	Rules []map[string]interface{} `yaml:"rules"`
+}
+
+// createSemgrepConfigFile creates a semgrep.yaml configuration file based on the API configuration
+func createSemgrepConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
+	// When specific patterns are configured, filter rules from rules.yaml
+	if len(config) > 0 {
+		// First try to read the rules.yaml file
+		rulesFile := filepath.Join("plugins", "tools", "semgrep", "rules.yaml")
+		if _, err := os.Stat(rulesFile); err == nil {
+			// Read and parse the rules.yaml file
+			data, err := os.ReadFile(rulesFile)
+			if err != nil {
+				fmt.Printf("Warning: Failed to read rules.yaml: %v\n", err)
+				// Fall back to the old method
+				semgrepConfigurationString := tools.CreateSemgrepConfig(config)
+				return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(semgrepConfigurationString), utils.DefaultFilePerms)
+			}
+
+			// Parse the YAML file just enough to get the rules array
+			var allRules SemgrepRulesFile
+			if err := yaml.Unmarshal(data, &allRules); err != nil {
+				fmt.Printf("Warning: Failed to parse rules.yaml: %v\n", err)
+				// Fall back to the old method
+				semgrepConfigurationString := tools.CreateSemgrepConfig(config)
+				return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(semgrepConfigurationString), utils.DefaultFilePerms)
+			}
+
+			// Create a map of enabled pattern IDs for faster lookup
+			enabledPatterns := make(map[string]bool)
+			for _, pattern := range config {
+				if pattern.Enabled && pattern.PatternDefinition.Enabled {
+					// Extract rule ID from pattern ID
+					parts := strings.SplitN(pattern.PatternDefinition.Id, "_", 2)
+					if len(parts) == 2 {
+						ruleID := parts[1]
+						enabledPatterns[ruleID] = true
+					}
+				}
+			}
+
+			// Filter the rules based on enabled patterns
+			var filteredRules SemgrepRulesFile
+			filteredRules.Rules = []map[string]interface{}{}
+
+			for _, rule := range allRules.Rules {
+				// Get the rule ID
+				if ruleID, ok := rule["id"].(string); ok && enabledPatterns[ruleID] {
+					// If this rule is enabled, include it
+					filteredRules.Rules = append(filteredRules.Rules, rule)
+				}
+			}
+
+			// If no rules match, use the old method
+			if len(filteredRules.Rules) == 0 {
+				fmt.Println("Warning: No matching rules found in rules.yaml")
+				semgrepConfigurationString := tools.CreateSemgrepConfig(config)
+				return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(semgrepConfigurationString), utils.DefaultFilePerms)
+			}
+
+			// Marshal the filtered rules back to YAML
+			filteredData, err := yaml.Marshal(filteredRules)
+			if err != nil {
+				fmt.Printf("Warning: Failed to marshal filtered rules: %v\n", err)
+				// Fall back to the old method
+				semgrepConfigurationString := tools.CreateSemgrepConfig(config)
+				return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(semgrepConfigurationString), utils.DefaultFilePerms)
+			}
+
+			// Write the filtered rules to semgrep.yaml
+			return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), filteredData, utils.DefaultFilePerms)
+		}
+
+		// If rules.yaml doesn't exist, fall back to the old method
+		semgrepConfigurationString := tools.CreateSemgrepConfig(config)
+		return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(semgrepConfigurationString), utils.DefaultFilePerms)
+	}
+
+	// For default case with no specific patterns, use the entire rules.yaml
+	rulesFile := filepath.Join("plugins", "tools", "semgrep", "rules.yaml")
+	if _, err := os.Stat(rulesFile); err == nil {
+		data, err := os.ReadFile(rulesFile)
+		if err != nil {
+			fmt.Printf("Warning: Failed to read rules.yaml: %v\n", err)
+			// Fall back to the old method for default config
+			emptyConfig := []domain.PatternConfiguration{}
+			content := tools.CreateSemgrepConfig(emptyConfig)
+			return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(content), utils.DefaultFilePerms)
+		}
+		return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), data, utils.DefaultFilePerms)
+	}
+
+	// Fall back to default config
+	emptyConfig := []domain.PatternConfiguration{}
+	content := tools.CreateSemgrepConfig(emptyConfig)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(content), utils.DefaultFilePerms)
+}
+
+// createDefaultSemgrepConfigFile creates a default semgrep.yaml configuration file
+func createDefaultSemgrepConfigFile(toolsConfigDir string) error {
+	// Use rules.yaml as the default
+	rulesFile := filepath.Join("plugins", "tools", "semgrep", "rules.yaml")
+	if _, err := os.Stat(rulesFile); err == nil {
+		data, err := os.ReadFile(rulesFile)
+		if err != nil {
+			fmt.Printf("Warning: Failed to read rules.yaml: %v\n", err)
+			// Fall back to the old method
+			emptyConfig := []domain.PatternConfiguration{}
+			content := tools.CreateSemgrepConfig(emptyConfig)
+			return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(content), utils.DefaultFilePerms)
+		}
+		return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), data, utils.DefaultFilePerms)
+	}
+
+	// Fall back to the old method if rules.yaml doesn't exist
+	emptyConfig := []domain.PatternConfiguration{}
+	content := tools.CreateSemgrepConfig(emptyConfig)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(content), utils.DefaultFilePerms)
+}
+
 // cleanConfigDirectory removes all previous configuration files in the tools-configs directory
 func cleanConfigDirectory(toolsConfigDir string) error {
 	// Check if directory exists
@@ -462,8 +602,9 @@ func cleanConfigDirectory(toolsConfigDir string) error {
 }
 
 const (
-	ESLint string = "f8b29663-2cb2-498d-b923-a10c6a8c05cd"
-	Trivy  string = "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb"
-	PMD    string = "9ed24812-b6ee-4a58-9004-0ed183c45b8f"
-	PyLint string = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
+	ESLint  string = "f8b29663-2cb2-498d-b923-a10c6a8c05cd"
+	Trivy   string = "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb"
+	PMD     string = "9ed24812-b6ee-4a58-9004-0ed183c45b8f"
+	PyLint  string = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
+	Semgrep string = "6792c561-236d-41b7-ba5e-9d6bee0d548b"
 )

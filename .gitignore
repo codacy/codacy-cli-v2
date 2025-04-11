@@ -27,3 +27,6 @@ go.work.sum
 # Codacy CLI 
 cli-v2
 codacy-cli
+
+#Macos
+.DS_Store

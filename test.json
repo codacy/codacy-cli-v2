@@ -1,0 +1,1957 @@
+{
+  "data": [
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.dart.detect-gemini.detect-gemini",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-gemini",
+        "description": "Possibly found usage of AI: Gemini",
+        "explanation": "## detect-gemini\nPossibly found usage of AI: Gemini",
+        "languages": ["Dart"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.go.detect-gemini.detect-gemini",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-gemini",
+        "description": "Possibly found usage of AI: Gemini",
+        "explanation": "## detect-gemini\nPossibly found usage of AI: Gemini",
+        "languages": ["Go"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.go.detect-openai.detect-openai",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-openai",
+        "description": "Possibly found usage of AI: OpenAI",
+        "explanation": "## detect-openai\nPossibly found usage of AI: OpenAI",
+        "languages": ["Go"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.kotlin.detect-gemini.detect-gemini",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-gemini",
+        "description": "Possibly found usage of AI: Gemini",
+        "explanation": "## detect-gemini\nPossibly found usage of AI: Gemini",
+        "languages": ["Kotlin"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.python.detect-anthropic.detect-anthropic",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-anthropic",
+        "description": "Possibly found usage of AI: Anthropic",
+        "explanation": "## detect-anthropic\nPossibly found usage of AI: Anthropic",
+        "languages": ["Python"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.python.detect-gemini.detect-gemini",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-gemini",
+        "description": "Possibly found usage of AI: Gemini",
+        "explanation": "## detect-gemini\nPossibly found usage of AI: Gemini",
+        "languages": ["Python"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.python.detect-huggingface.detect-huggingface",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-huggingface",
+        "description": "Possibly found usage of AI: HuggingFace",
+        "explanation": "## detect-huggingface\nPossibly found usage of AI: HuggingFace",
+        "languages": ["Python"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.python.detect-langchain.detect-langchain",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-langchain",
+        "description": "Possibly found usage of AI tooling: LangChain",
+        "explanation": "## detect-langchain\nPossibly found usage of AI tooling: LangChain",
+        "languages": ["Python"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.python.detect-mistral.detect-mistral",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-mistral",
+        "description": "Possibly found usage of AI: Mistral",
+        "explanation": "## detect-mistral\nPossibly found usage of AI: Mistral",
+        "languages": ["Python"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.python.detect-openai.detect-openai",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-openai",
+        "description": "Possibly found usage of AI: OpenAI",
+        "explanation": "## detect-openai\nPossibly found usage of AI: OpenAI",
+        "languages": ["Python"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.python.detect-pytorch.detect-pytorch",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-pytorch",
+        "description": "Possibly found usage of AI tooling: PyTorch",
+        "explanation": "## detect-pytorch\nPossibly found usage of AI tooling: PyTorch",
+        "languages": ["Python"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.python.detect-tensorflow.detect-tensorflow",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-tensorflow",
+        "description": "Possibly found usage of AI tooling: Tensorflow",
+        "explanation": "## detect-tensorflow\nPossibly found usage of AI tooling: Tensorflow",
+        "languages": ["Python"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.swift.detect-apple-core-ml.detect-apple-core-ml",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-apple-core-ml",
+        "description": "Possibly found usage of AI: Apple CoreML",
+        "explanation": "## detect-apple-core-ml\nPossibly found usage of AI: Apple CoreML",
+        "languages": ["Swift"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.swift.detect-gemini.detect-gemini",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-gemini",
+        "description": "Possibly found usage of AI: Gemini",
+        "explanation": "## detect-gemini\nPossibly found usage of AI: Gemini",
+        "languages": ["Swift"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.typescript.detect-anthropic.detect-anthropic",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-anthropic",
+        "description": "Possibly found usage of AI: Anthropic",
+        "explanation": "## detect-anthropic\nPossibly found usage of AI: Anthropic",
+        "languages": ["Javascript", "TypeScript"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.typescript.detect-gemini.detect-gemini",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-gemini",
+        "description": "Possibly found usage of AI: Gemini",
+        "explanation": "## detect-gemini\nPossibly found usage of AI: Gemini",
+        "languages": ["Javascript", "TypeScript"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.typescript.detect-mistral.detect-mistral",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-mistral",
+        "description": "Possibly found usage of AI: Mistral",
+        "explanation": "## detect-mistral\nPossibly found usage of AI: Mistral",
+        "languages": ["Javascript", "TypeScript"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.typescript.detect-openai.detect-openai",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-openai",
+        "description": "Possibly found usage of AI: OpenAI",
+        "explanation": "## detect-openai\nPossibly found usage of AI: OpenAI",
+        "languages": ["Javascript", "TypeScript"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.typescript.detect-promptfoo.detect-promptfoo",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-promptfoo",
+        "description": "Possibly found usage of AI tooling: promptfoo",
+        "explanation": "## detect-promptfoo\nPossibly found usage of AI tooling: promptfoo",
+        "languages": ["Javascript", "TypeScript"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.typescript.detect-vercel-ai.detect-vercel-ai",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-vercel-ai",
+        "description": "Possibly found usage of AI: VercelAI",
+        "explanation": "## detect-vercel-ai\nPossibly found usage of AI: VercelAI",
+        "languages": ["Javascript", "TypeScript"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.best-practice.ncino.accessmodifiers.globalaccessmodifiers.global-access-modifiers",
+        "category": "BestPractice",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "global-access-modifiers",
+        "description": "Global classes, methods, and variables should be avoided (especially in managed packages) as they can never be deleted or changed in signature.",
+        "explanation": "## global-access-modifiers\nGlobal classes, methods, and variables should be avoided (especially in managed packages) as they can never be deleted or changed in signature. Always check twice if something needs to be global.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.best-practice.ncino.tests.useassertclass.use-assert-class",
+        "category": "BestPractice",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "use-assert-class",
+        "description": "Assert methods in the System class have been replaced with the Assert class: https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_class_System_Assert.htm",
+        "explanation": "## use-assert-class\nAssert methods in the System class have been replaced with the Assert class: https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_class_System_Assert.htm",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.best-practice.ncino.urls.absoluteurls.absolute-urls",
+        "category": "BestPractice",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "absolute-urls",
+        "description": "Using absolute URLs to Salesforce Pages is bug prone.",
+        "explanation": "## absolute-urls\nUsing absolute URLs to Salesforce Pages is bug prone. Different sandboxes and production environments will have different instance names (like \"na10\", \"na15\" etc.). Code using absolute URLs will only work when it runs in the corresponding salesforce instances. It will break as soon as it is deployed in another one. Thus only relative URLs, i.e. without the domain and subdomain names, should be used when pointing to a salesforce page.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.performance.ncino.operationsinloops.avoidnativedmlinloops.avoid-native-dml-in-loops",
+        "category": "Performance",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "avoid-native-dml-in-loops",
+        "description": "Avoid DML statements inside loops to avoid hitting the DML governor limit.",
+        "explanation": "## avoid-native-dml-in-loops\nAvoid DML statements inside loops to avoid hitting the DML governor limit. Instead, try to batch up the data into a list and invoke your DML once on that list of data outside the loop.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.performance.ncino.operationsinloops.avoidoperationswithlimitsinloops.avoid-operations-with-limits-in-loops",
+        "category": "Performance",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "avoid-operations-with-limits-in-loops",
+        "description": "Database class methods, DML operations, SOQL queries, SOSL queries, Approval class methods, Email sending, async scheduling or queueing within loops can cause governor limit exceptions.",
+        "explanation": "## avoid-operations-with-limits-in-loops\nDatabase class methods, DML operations, SOQL queries, SOSL queries, Approval class methods, Email sending, async scheduling or queueing within loops can cause governor limit exceptions. Instead, try to batch up the data into a list and invoke the operation once on that list of data outside the loop.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.performance.ncino.operationsinloops.avoidsoqlinloops.avoid-soql-in-loops",
+        "category": "Performance",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "avoid-soql-in-loops",
+        "description": "Database class methods, DML operations, SOQL queries, SOSL queries, Approval class methods, Email sending, async scheduling or queueing within loops can cause governor limit exceptions.",
+        "explanation": "## avoid-soql-in-loops\nDatabase class methods, DML operations, SOQL queries, SOSL queries, Approval class methods, Email sending, async scheduling or queueing within loops can cause governor limit exceptions. Instead, try to batch up the data into a list and invoke the operation once on that list of data outside the loop.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.performance.ncino.operationsinloops.avoidsoslinloops.avoid-sosl-in-loops",
+        "category": "Performance",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "avoid-sosl-in-loops",
+        "description": "Database class methods, DML operations, SOQL queries, SOSL queries, Approval class methods, Email sending, async scheduling or queueing within loops can cause governor limit exceptions.",
+        "explanation": "## avoid-sosl-in-loops\nDatabase class methods, DML operations, SOQL queries, SOSL queries, Approval class methods, Email sending, async scheduling or queueing within loops can cause governor limit exceptions. Instead, try to batch up the data into a list and invoke the operation once on that list of data outside the loop.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.security.ncino.dml.apexcsrfconstructor.apex-csrf-constructor",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": true,
+        "parameters": [],
+        "title": "apex-csrf-constructor",
+        "subCategory": "InsecureStorage",
+        "description": "Having DML operations in Apex class constructor or initializers can have unexpected side effects: By just accessing a page, the DML statements would be executed and the database would be modified.",
+        "explanation": "## apex-csrf-constructor\nHaving DML operations in Apex class constructor or initializers can have unexpected side effects: By just accessing a page, the DML statements would be executed and the database would be modified. Just querying the database is permitted.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.security.ncino.dml.apexcsrfstaticconstructor.apex-csrf-static-constructor",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": true,
+        "parameters": [],
+        "title": "apex-csrf-static-constructor",
+        "subCategory": "InsecureStorage",
+        "description": "Having DML operations in Apex class constructor or initializers can have unexpected side effects: By just accessing a page, the DML statements would be executed and the database would be modified.",
+        "explanation": "## apex-csrf-static-constructor\nHaving DML operations in Apex class constructor or initializers can have unexpected side effects: By just accessing a page, the DML statements would be executed and the database would be modified. Just querying the database is permitted.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.security.ncino.dml.dmlnativestatements.dml-native-statements",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "dml-native-statements",
+        "subCategory": "InsecureStorage",
+        "description": "Native Salesforce DML operations execute in system context, ignoring the current user's permissions, field-level security, organization-wide defaults, position in the role hierarchy, and sharing rules.",
+        "explanation": "## dml-native-statements\nNative Salesforce DML operations execute in system context, ignoring the current user's permissions, field-level security, organization-wide defaults, position in the role hierarchy, and sharing rules. Be mindful when using native Salesforce DML operations.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.security.ncino.encryption.badcrypto.bad-crypto",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "bad-crypto",
+        "subCategory": "Cryptography",
+        "description": "The rule makes sure you are using randomly generated IVs and keys for Crypto calls.",
+        "explanation": "## bad-crypto\nThe rule makes sure you are using randomly generated IVs and keys for Crypto calls. Hard-coding these values greatly compromises the security of encrypted data.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.security.ncino.endpoints.insecurehttprequest.insecure-http-request",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": true,
+        "parameters": [],
+        "title": "insecure-http-request",
+        "description": "The software transmits sensitive or security-critical data in cleartext in a communication channel that can be sniffed by unauthorized actors.",
+        "explanation": "## insecure-http-request\nThe software transmits sensitive or security-critical data in cleartext in a communication channel that can be sniffed by unauthorized actors.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.security.ncino.endpoints.namedcredentialsconstantmatch.named-credentials-constant-match",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": true,
+        "parameters": [],
+        "title": "named-credentials-constant-match",
+        "description": "Named Credentials (and callout endpoints) should be used instead of hard-coding credentials. 1. Hard-coded credentials are hard to maintain when mixed in with application code. 2. It is particularly hard to update hard-coded credentials when they are used amongst different classes. 3. Granting a developer access to the codebase means granting knowledge of credentials, and thus keeping a two-level access is not possible. 4. Using different credentials for different environments is troublesome and",
+        "explanation": "## named-credentials-constant-match\nNamed Credentials (and callout endpoints) should be used instead of hard-coding credentials. 1. Hard-coded credentials are hard to maintain when mixed in with application code. 2. It is particularly hard to update hard-coded credentials when they are used amongst different classes. 3. Granting a developer access to the codebase means granting knowledge of credentials, and thus keeping a two-level access is not possible. 4. Using different credentials for different environments is troublesome and error-prone.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.security.ncino.endpoints.namedcredentialsstringmatch.named-credentials-string-match",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": true,
+        "parameters": [],
+        "title": "named-credentials-string-match",
+        "description": "Named Credentials (and callout endpoints) should be used instead of hard-coding credentials. 1. Hard-coded credentials are hard to maintain when mixed in with application code. 2. It is particularly hard to update hard-coded credentials when they are used amongst different classes. 3. Granting a developer access to the codebase means granting knowledge of credentials, and thus keeping a two-level access is not possible. 4. Using different credentials for different environments is troublesome and",
+        "explanation": "## named-credentials-string-match\nNamed Credentials (and callout endpoints) should be used instead of hard-coding credentials. 1. Hard-coded credentials are hard to maintain when mixed in with application code. 2. It is particularly hard to update hard-coded credentials when they are used amongst different classes. 3. Granting a developer access to the codebase means granting knowledge of credentials, and thus keeping a two-level access is not possible. 4. Using different credentials for different environments is troublesome and error-prone.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.security.ncino.injection.apexsoqlinjectionfromunescapedurlparam.soql-injection-unescaped-url-param",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": true,
+        "parameters": [],
+        "title": "soql-injection-unescaped-url-param",
+        "subCategory": "InputValidation",
+        "description": "If a dynamic query must be used,leverage nFORCE Query Builder.",
+        "explanation": "## soql-injection-unescaped-url-param\nIf a dynamic query must be used,leverage nFORCE Query Builder. In other programming languages, the related flaw is known as SQL injection. Apex doesn't use SQL, but uses its own database query language, SOQL. SOQL is much simpler and more limited in functionality than SQL. The risks are much lower for SOQL injection than for SQL injection, but the attacks are nearly identical to traditional SQL injection. SQL/SOQL injection takes user-supplied input and uses those values in a dynamic SOQL query. If the input isn't validated, it can include SOQL commands that effectively modify the SOQL statement and trick the application into performing unintended commands.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.security.ncino.injection.apexsoqlinjectionunescapedparam.soql-injection-unescaped-param",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": true,
+        "parameters": [],
+        "title": "soql-injection-unescaped-param",
+        "subCategory": "InputValidation",
+        "description": "If a dynamic query must be used,leverage nFORCE Query Builder.",
+        "explanation": "## soql-injection-unescaped-param\nIf a dynamic query must be used,leverage nFORCE Query Builder. In other programming languages, the related flaw is known as SQL injection. Apex doesn't use SQL, but uses its own database query language, SOQL. SOQL is much simpler and more limited in functionality than SQL. The risks are much lower for SOQL injection than for SQL injection, but the attacks are nearly identical to traditional SQL injection. SQL/SOQL injection takes user-supplied input and uses those values in a dynamic SOQL query. If the input isn't validated, it can include SOQL commands that effectively modify the SOQL statement and trick the application into performing unintended commands.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.security.ncino.sharing.specifysharinglevel.specify-sharing-level",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": true,
+        "parameters": [],
+        "title": "specify-sharing-level",
+        "subCategory": "Other",
+        "description": "Every Apex class should have an explicit sharing mode declared.",
+        "explanation": "## specify-sharing-level\nEvery Apex class should have an explicit sharing mode declared. Use the `with sharing` or `without sharing` keywords on a class to specify whether sharing rules must be enforced. Use the `inherited sharing` keyword on an Apex class to run the class in the sharing mode of the class that called it.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_apex.lang.security.ncino.system.systemdebug.system-debug",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": true,
+        "parameters": [],
+        "title": "system-debug",
+        "description": "In addition to debug statements potentially logging data excessively, debug statements also contribute to longer transactions and consume Apex CPU time even when debug logs are not being captured.",
+        "explanation": "## system-debug\nIn addition to debug statements potentially logging data excessively, debug statements also contribute to longer transactions and consume Apex CPU time even when debug logs are not being captured.",
+        "languages": ["Apex"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_bash.curl.security.curl-eval.curl-eval",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": true,
+        "parameters": [],
+        "title": "curl-eval",
+        "subCategory": "InputValidation",
+        "description": "Data is being eval'd from a `curl` command.",
+        "explanation": "## curl-eval\nData is being eval'd from a `curl` command. An attacker with control of the server in the `curl` command could inject malicious code into the `eval`, resulting in a system comrpomise. Avoid eval'ing untrusted data if you can. If you must do this, consider checking the SHA sum of the content returned by the server to verify its integrity.",
+        "languages": ["Shell"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_bash.curl.security.curl-pipe-bash.curl-pipe-bash",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "curl-pipe-bash",
+        "subCategory": "InputValidation",
+        "description": "Data is being piped into `bash` from a `curl` command.",
+        "explanation": "## curl-pipe-bash\nData is being piped into `bash` from a `curl` command. An attacker with control of the server in the `curl` command could inject malicious code into the pipe, resulting in a system compromise. Avoid piping untrusted data into `bash` or any other shell if you can. If you must do this, consider checking the SHA sum of the content returned by the server to verify its integrity.",
+        "languages": ["Shell"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_bash.lang.best-practice.iteration-over-ls-output.iteration-over-ls-output",
+        "category": "BestPractice",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "iteration-over-ls-output",
+        "description": "Iterating over ls output is fragile.",
+        "explanation": "## iteration-over-ls-output\nIterating over ls output is fragile. Use globs, e.g. 'dir/*' instead of '$(ls dir)'.",
+        "languages": ["Shell"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_bash.lang.best-practice.useless-cat.useless-cat",
+        "category": "BestPractice",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "useless-cat",
+        "description": "Useless call to 'cat' in a pipeline.",
+        "explanation": "## useless-cat\nUseless call to 'cat' in a pipeline. Use '<' and '>' for any command to read from a file or write to a file.",
+        "languages": ["Shell"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_bash.lang.correctness.unquoted-expansion.unquoted-command-substitution-in-command",
+        "category": "ErrorProne",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "unquoted-command-substitution-in-command",
+        "description": "The result of command substitution $(...) or `...`, if unquoted, is split on whitespace or other separators specified by the IFS variable.",
+        "explanation": "## unquoted-command-substitution-in-command\nThe result of command substitution $(...) or `...`, if unquoted, is split on whitespace or other separators specified by the IFS variable. You should surround it with double quotes to avoid splitting the result.",
+        "languages": ["Shell"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_bash.lang.correctness.unquoted-expansion.unquoted-variable-expansion-in-command",
+        "category": "ErrorProne",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "unquoted-variable-expansion-in-command",
+        "description": "Variable expansions must be double-quoted so as to prevent being split into multiple pieces according to whitespace or whichever separator is specified by the IFS variable.",
+        "explanation": "## unquoted-variable-expansion-in-command\nVariable expansions must be double-quoted so as to prevent being split into multiple pieces according to whitespace or whichever separator is specified by the IFS variable. If you really wish to split the variable's contents, you may use a variable that starts with an underscore e.g. $_X instead of $X, and semgrep will ignore it. If what you need is an array, consider using a proper bash array.",
+        "languages": ["Shell"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_bash.lang.security.ifs-tampering.ifs-tampering",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "ifs-tampering",
+        "subCategory": "InputValidation",
+        "description": "The special variable IFS affects how splitting takes place when expanding unquoted variables.",
+        "explanation": "## ifs-tampering\nThe special variable IFS affects how splitting takes place when expanding unquoted variables. Don't set it globally. Prefer a dedicated utility such as 'cut' or 'awk' if you need to split input data. If you must use 'read', set IFS locally using e.g. 'IFS=\",\" read -a my_array'.",
+        "languages": ["Shell"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_access_rule-RpcImpersonateClient-ImpersonateLoggedOnUser",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_access_rule-RpcImpersonateClient-ImpersonateLoggedOnUser",
+        "subCategory": "InsecureStorage",
+        "description": "These functions may be used to either drop or change account privileges.",
+        "explanation": "## c_access_rule-RpcImpersonateClient-ImpersonateLoggedOnUser\nThese functions may be used to either drop or change account privileges. If the calls\nfail, the process will continue to run with the privileges assigned to it on start. Depending\non\nthe logic of the application, this may allow attackers to abuse the system due to privileges\nnever\nbeing changed to a different access level.\n\nAlways ensure return values of this function are checked to determine if the application should\ncontinue to operate.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_access_rule-umask",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_access_rule-umask",
+        "subCategory": "Other",
+        "description": "The umask function call sets the process's file mode creation mask. umask values determine what permissions a file should be created with and who can read or write to these files.",
+        "explanation": "## c_access_rule-umask\nThe umask function call sets the process's file mode creation mask. umask values determine\nwhat permissions a file should be created with and who can read or write to these files.\nEnsure that umask is given most restrictive possible setting depending on the context,\nusually 066 or 077, for more information please see:\nhttps://en.wikipedia.org/wiki/Umask#Mask_effect.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-fscanf-sscanf",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-fscanf-sscanf",
+        "subCategory": "InputValidation",
+        "description": "Format specifiers can take optional field widths, which should be used to limit how many characters are copied into the target buffer.",
+        "explanation": "## c_buffer_rule-fscanf-sscanf\nFormat specifiers can take optional field widths, which should be\nused to limit how many characters are copied into the target buffer.\n\nExample:\n```\n  const char str[20] = \"AAAAAAAAAAAAAAAAAAA\";\n  char buf[11] = {0};\n  sscanf(str, \"%10s\", &buf); // buf = AAAAAAAAAA\\0\n```",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-getenv-curl-getenv",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-getenv-curl-getenv",
+        "subCategory": "InputValidation",
+        "description": "This function's return value should be treated as untrusted input as it could be modified by an attacker.",
+        "explanation": "## c_buffer_rule-getenv-curl-getenv\nThis function's return value should be treated as untrusted input as it could be\nmodified by an attacker. Possible risks include:\n\n- The value being too large and causing buffer overflows\n- Files under the attacker's control being used maliciously\n- Files outside of an attacker's control becoming accessible, depending on\naccess privileges.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-gets--getts",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-gets--getts",
+        "subCategory": "InputValidation",
+        "description": "The gets() function reads a line from stdin into the provided buffer until either a terminating newline or EOF. This terminating newline or EOF is replaced with a null byte `'\\0'`. No check for buffer overruns are performed so it is recommended to use `fgets()` instead.",
+        "explanation": "## c_buffer_rule-gets--getts\nThe gets() function reads a line from stdin into the provided buffer\nuntil either a terminating newline or EOF. This terminating newline or\nEOF is replaced with a null byte `'\\0'`. No check for buffer overruns are\nperformed so it is recommended to use `fgets()` instead. Do note\nthat some platforms will continue reading data after a `'\\0'` is encountered.\n\nUsage of `fgets()` is not recommended for reading binary based files or inputs,\ninstead the `read` or `fread` functions should be used.\n\nFor more information please see: https://linux.die.net/man/3/fgets",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-getwd",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-getwd",
+        "subCategory": "InputValidation",
+        "description": "`getwd` does not contain a parameter to limit how many characters can be copied into the destination buffer.",
+        "explanation": "## c_buffer_rule-getwd\n`getwd` does not contain a parameter to limit how many characters can be copied into the\ndestination buffer. For portability and security reasons `getwd` has been deprecated in\nfavor of `getcwd`.\n\nFor more information please see: https://linux.die.net/man/3/getcwd",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-g-get-home-dir",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-g-get-home-dir",
+        "subCategory": "InputValidation",
+        "description": "This function is synonymous with `getenv(\"HOME\")` and should be treated as untrusted input as it could be modified by an attacker.",
+        "explanation": "## c_buffer_rule-g-get-home-dir\nThis function is synonymous with `getenv(\"HOME\")` and should be treated\nas untrusted input as it could be modified by an attacker. Possible risks\ninclude:\n\n- The value being too large and causing buffer overflows\n- Files under the attacker's control being used maliciously\n- Files outside of an attacker's control becoming accessible, depending on\naccess privileges.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-g-get-tmp-dir",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-g-get-tmp-dir",
+        "subCategory": "InputValidation",
+        "description": "This function is synonymous with `getenv(\"TMP\")` and should be treated as untrusted input as it could be modified by an attacker.",
+        "explanation": "## c_buffer_rule-g-get-tmp-dir\nThis function is synonymous with `getenv(\"TMP\")` and should be treated\nas untrusted input as it could be modified by an attacker. Possible risks\ninclude:\n\n- The value being too large and causing buffer overflows\n- Files under the attacker's control being used maliciously\n- Files outside of an attacker's control becoming accessible, depending on\naccess privileges.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-lstrcatn-wcsncat",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-lstrcatn-wcsncat",
+        "subCategory": "InputValidation",
+        "description": "Consider using more secure alternatives such as `snprintf`, instead of the `wcsncat` family of functions.",
+        "explanation": "## c_buffer_rule-lstrcatn-wcsncat\nConsider using more secure alternatives such as `snprintf`, instead of the\n`wcsncat` family of functions.\n\nIf developing for C Runtime Library (CRT), more secure versions of these functions should be\nused, see:\nhttps://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/strncat-strncat-l-wcsncat-wcsncat-l-mbsncat-mbsncat-l?view=msvc-170",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-lstrcat-wcscat",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-lstrcat-wcscat",
+        "subCategory": "InputValidation",
+        "description": "The `strcat` family of functions are unable to limit how many bytes are copied to the destination buffer.",
+        "explanation": "## c_buffer_rule-lstrcat-wcscat\nThe `strcat` family of functions are unable to limit how many bytes are copied\nto the destination buffer. It is recommended to use more secure alternatives such as\n`snprintf`.\n\nIf developing for C Runtime Library (CRT), more secure versions of these functions should be\nused, see:\nhttps://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/strcat-s-wcscat-s-mbscat-s?view=msvc-170",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-lstrcpyn-wcsncpy",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-lstrcpyn-wcsncpy",
+        "subCategory": "InputValidation",
+        "description": "The `lstrcpyn` family of functions do not always check for invalid pointers or check if there is sufficient space prior to copying.",
+        "explanation": "## c_buffer_rule-lstrcpyn-wcsncpy\nThe `lstrcpyn` family of functions do not always check for invalid pointers or check if there\nis sufficient space prior to copying. The count argument limits the number of characters copied\nbut does validate if the count will fit within the size of the destination buffer, leading to\npotential overflows.\n\nIf developing for C Runtime Library (CRT), more secure versions of these functions should be\nused, see:\nhttps://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/strncpy-s-strncpy-s-l-wcsncpy-s-wcsncpy-s-l-mbsncpy-s-mbsncpy-s-l?view=msvc-170",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-lstrcpy-wcscpy",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-lstrcpy-wcscpy",
+        "subCategory": "InputValidation",
+        "description": "The `lstrcpy` family of functions do not provide the ability to limit or check buffer sizes before copying to a destination buffer.",
+        "explanation": "## c_buffer_rule-lstrcpy-wcscpy\nThe `lstrcpy` family of functions do not provide the ability to limit or check buffer\nsizes before copying to a destination buffer. This can lead to buffer overflows. Consider\nusing more secure alternatives such as `strncpy_s`.\n\nIf developing for C Runtime Library (CRT), more secure versions of these functions should be\nused, see:\nhttps://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/strncpy-s-strncpy-s-l-wcsncpy-s-wcsncpy-s-l-mbsncpy-s-mbsncpy-s-l?view=msvc-170",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-memcpy-CopyMemory",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-memcpy-CopyMemory",
+        "subCategory": "InputValidation",
+        "description": "The `memcpy` family of functions require the developer to validate that the destination buffer is the same size or larger than the source buffer.",
+        "explanation": "## c_buffer_rule-memcpy-CopyMemory\nThe `memcpy` family of functions require the developer to validate that the destination buffer\nis the same size or larger than the source buffer. Buffer overflows could be introduced if care\nis not taken to validate buffer sizes.\n\nIf developing for C Runtime Library (CRT), more secure versions of these functions should be\nused, see:\nhttps://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/memcpy-s-wmemcpy-s?view=msvc-170",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-MultiByteToWideChar",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-MultiByteToWideChar",
+        "subCategory": "InputValidation",
+        "description": "The input buffer is the number of bytes in the string, but the size of the output buffer is the number of characters.",
+        "explanation": "## c_buffer_rule-MultiByteToWideChar\nThe input buffer is the number of bytes in the string, but the size\nof the output buffer is the number of characters. To avoid overflows, the\napplication must determine the correct buffer size which depends on the data type\nthe buffer receives.\n\nFor more information see:\nhttps://learn.microsoft.com/en-us/windows/win32/intl/security-considerations--international-features",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-realpath",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-realpath",
+        "subCategory": "InputValidation",
+        "description": "The `realpath` function should not be called with a destination buffer as it could lead to overflowing if the path is greater than PATH_LEN. It is instead recommended to call `realpath` with the destination buffer set to NULL and use the return value as the resolved path.",
+        "explanation": "## c_buffer_rule-realpath\nThe `realpath` function should not be called with a destination buffer as it could\nlead to overflowing if the path is greater than PATH_LEN. It is instead recommended\nto call `realpath` with the destination buffer set to NULL and use the return value\nas the resolved path. Be sure to free the returned pointer as realpath will allocate\nthe buffer internally using `malloc`.\n\nFor more information see: https://linux.die.net/man/3/realpath\n\nExample:\n\n```\nchar const *symlink_path = \"/tmp/symlink\";\nchar *resolved_path = NULL;\n\nresolved_path = realpath(symlink_path, NULL);\nif (errno == 0) {\n  // ... use resolved_path...\n  free(resolved_path);\n}\n```",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-scanf-vscanf",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-scanf-vscanf",
+        "subCategory": "InputValidation",
+        "description": "Format specifiers can take optional field widths, which should be used to limit how many characters are copied into the target buffer.",
+        "explanation": "## c_buffer_rule-scanf-vscanf\nFormat specifiers can take optional field widths, which should be\nused to limit how many characters are copied into the target buffer.\n\nFor more information please see: https://linux.die.net/man/3/scanf\n\nExample:\n```\n  char buf[11] = {0};\n  scanf(\"%10s\", &buf); // buf = AAAAAAAAAA\\0\n```\n\nIf developing for C Runtime Library (CRT), more secure versions of these functions should be\nused, see:\nhttps://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/scanf-s-scanf-s-l-wscanf-s-wscanf-s-l?view=msvc-170",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-sprintf-vsprintf",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-sprintf-vsprintf",
+        "subCategory": "InputValidation",
+        "description": "Use sprintf_s, snprintf, or vsnprintf instead.",
+        "explanation": "## c_buffer_rule-sprintf-vsprintf\nUse sprintf_s, snprintf, or vsnprintf instead. The `sprintf` family of functions do not allow\ncallers to set limits on how many bytes the destination buffer can hold. Consider using more\nsecure alternatives such as `snprintf`.\n\nFor more information please see: https://linux.die.net/man/3/snprintf\n\nIf developing for C Runtime Library (CRT), more secure versions of these functions should be\nused, see:\nhttps://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/sprintf-s-sprintf-s-l-swprintf-s-swprintf-s-l?view=msvc-170",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-strcat",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-strcat",
+        "subCategory": "InputValidation",
+        "description": "The `strcat` family of functions are unable to limit how many bytes are copied to the destination buffer.",
+        "explanation": "## c_buffer_rule-strcat\nThe `strcat` family of functions are unable to limit how many bytes are copied\nto the destination buffer. It is recommended to use more secure alternatives such as\n`snprintf`.\n\nFor more information please see: https://linux.die.net/man/3/snprintf\n\nIf developing for C Runtime Library (CRT), more secure versions of these functions should be\nused, see:\nhttps://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/strcat-s-wcscat-s-mbscat-s?view=msvc-170",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-StrCat-StrCatA",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-StrCat-StrCatA",
+        "subCategory": "InputValidation",
+        "description": "The `StrCat` family of functions do not guarantee the final string to be null terminated.",
+        "explanation": "## c_buffer_rule-StrCat-StrCatA\nThe `StrCat` family of functions do not guarantee the final string to be null terminated.\nConsider using one of the following alternatives: `StringCbCat`, `StringCbCatEx`,\n`StringCbCatN`, `StringCbCatNEx`, `StringCchCat`, `StringCchCatEx`, `StringCchCatN`, or\n`StringCchCatNEx`.\n\nFor more information please see: https://learn.microsoft.com/en-us/windows/win32/api/strsafe/",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-strccpy-strcadd",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-strccpy-strcadd",
+        "subCategory": "InputValidation",
+        "description": "The `strccpy` and `strcadd` functions do not allow the caller to check that the destination size of the buffer will fit the input buffer prior to copying.",
+        "explanation": "## c_buffer_rule-strccpy-strcadd\nThe `strccpy` and `strcadd` functions do not allow the caller to check that the destination\nsize\nof the buffer will fit the input buffer prior to copying.\n\nFor more information please see:\nhttps://docs.oracle.com/cd/E18752_01/html/816-5172/streadd-3gen.html",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-strcpy",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-strcpy",
+        "subCategory": "InputValidation",
+        "description": "The `strcpy` family of functions do not provide the ability to limit or check buffer sizes before copying to a destination buffer.",
+        "explanation": "## c_buffer_rule-strcpy\nThe `strcpy` family of functions do not provide the ability to limit or check buffer\nsizes before copying to a destination buffer. This can lead to buffer overflows. Consider\nusing more secure alternatives such as `strncpy` and provide the correct limit to the\ndestination buffer and ensure the string is null terminated.\n\nFor more information please see: https://linux.die.net/man/3/strncpy\n\nIf developing for C Runtime Library (CRT), more secure versions of these functions should be\nused, see:\nhttps://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/strncpy-s-strncpy-s-l-wcsncpy-s-wcsncpy-s-l-mbsncpy-s-mbsncpy-s-l?view=msvc-170",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-strcpyA-strcpyW",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-strcpyA-strcpyW",
+        "subCategory": "InputValidation",
+        "description": "The `StrCpy` family of functions do not guarantee the final string to be null terminated.",
+        "explanation": "## c_buffer_rule-strcpyA-strcpyW\nThe `StrCpy` family of functions do not guarantee the final string to be null terminated.\nConsider\nusing one of the following alternatives `StringCbCopy`, `StringCbCopyEx`, `StringCbCopyN`,\n`StringCbCopyNEx`, `StringCchCopy`, `StringCchCopyEx`, `StringCchCopyN`, or `StringCchCopyNEx`.\n\nIf developing for C Runtime Library (CRT), more secure versions of these functions should be\nused, see:\nhttps://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/strncpy-s-strncpy-s-l-wcsncpy-s-wcsncpy-s-l-mbsncpy-s-mbsncpy-s-l?view=msvc-170",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-streadd-strecpy",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-streadd-strecpy",
+        "subCategory": "InputValidation",
+        "description": "The `strecpy` and `streadd` functions require that the destination buffer size be at least four times the size of the source due to each character potentially becoming a `\\` and 3 digits.",
+        "explanation": "## c_buffer_rule-streadd-strecpy\nThe `strecpy` and `streadd` functions require that the destination buffer size be at least\nfour\ntimes the size of the source due to each character potentially becoming a `\\` and 3 digits.\n\nFor more information please see:\nhttps://docs.oracle.com/cd/E18752_01/html/816-5172/streadd-3gen.html",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-strlen-wcslen",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-strlen-wcslen",
+        "subCategory": "InputValidation",
+        "description": "The `strlen` family of functions does not handle strings that are not null terminated.",
+        "explanation": "## c_buffer_rule-strlen-wcslen\nThe `strlen` family of functions does not handle strings that are not null\nterminated. This can lead to buffer over reads and cause the application to\ncrash by accessing unintended memory locations. It is recommended that `strnlen`\nbe used instead as a `maxlen` value can be provided.\n\nFor more information please see: https://linux.die.net/man/3/strnlen\n\nIf developing for C Runtime Library (CRT), more secure versions of these functions should be\nused, see:\nhttps://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/strnlen-strnlen-s?view=msvc-170",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-strncat",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-strncat",
+        "subCategory": "InputValidation",
+        "description": "The `strncat` family of functions are easy to use incorrectly when calculating destination buffer sizes.",
+        "explanation": "## c_buffer_rule-strncat\nThe `strncat` family of functions are easy to use incorrectly when calculating destination\nbuffer\nsizes. It is recommended to use more secure alternatives such as `snprintf`.\n\nFor more information please see: https://linux.die.net/man/3/snprintf\n\nIf developing for C Runtime Library (CRT), more secure versions of these functions should be\nused, see:\nhttps://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/strncat-s-strncat-s-l-wcsncat-s-wcsncat-s-l-mbsncat-s-mbsncat-s-l?view=msvc-170",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-strncpy",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-strncpy",
+        "subCategory": "InputValidation",
+        "description": "The `strncpy` family of functions do not properly handle strings that are not null terminated.",
+        "explanation": "## c_buffer_rule-strncpy\nThe `strncpy` family of functions do not properly handle strings that are not null terminated.\nIt is recommended to use more secure alternatives such as `snprintf`.\n\nFor more information please see: https://linux.die.net/man/3/snprintf\n\nIf developing for C Runtime Library (CRT), more secure versions of these functions should be\nused, see:\nhttps://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/strncpy-s-strncpy-s-l-wcsncpy-s-wcsncpy-s-l-mbsncpy-s-mbsncpy-s-l?view=msvc-170",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_buffer_rule-strtrns",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_buffer_rule-strtrns",
+        "subCategory": "InputValidation",
+        "description": "This function is easy to misuse by not accounting for the space necessary when transforming strings.",
+        "explanation": "## c_buffer_rule-strtrns\nThis function is easy to misuse by not accounting for the space necessary when transforming\nstrings. Ensure that the destination buffer is large enough to fit the transformed output.\n\nFor more information please see:\nhttps://docs.oracle.com/cd/E36784_01/html/E36877/strtrns-3gen.html",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_crypto_rule-crypt-crypt-r",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_crypto_rule-crypt-crypt-r",
+        "subCategory": "Visibility",
+        "description": "The crypt functions are not recommended due to the significantly small key space.",
+        "explanation": "## c_crypto_rule-crypt-crypt-r\nThe crypt functions are not recommended due to the significantly small\nkey space. Modern hardware can crack crypt produced passwords relatively quickly.\n\nConsider using the Argon2id password hashing algorithm provided by libsodium.\nFor more information please see: https://libsodium.gitbook.io/doc/password_hashing.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_crypto_rule-EVP-des-ecb-EVP-des-cbc",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_crypto_rule-EVP-des-ecb-EVP-des-cbc",
+        "subCategory": "Visibility",
+        "description": "The DES algorithm has not been recommended for over 15 years and was withdrawn from NIST (FIPS 46-3) in 2005.  Consider using libsodium's `crypto_secretbox_easy` authenticated encryption functions instead.",
+        "explanation": "## c_crypto_rule-EVP-des-ecb-EVP-des-cbc\nThe DES algorithm has not been recommended for over 15 years and was withdrawn from NIST (FIPS\n46-3) in 2005.\n\nConsider using libsodium's `crypto_secretbox_easy` authenticated encryption functions instead.\n\nFor more information please see:\n https://libsodium.gitbook.io/doc/secret-key_cryptography/secretbox.\n\nIf you must be FIPS compliant, consider using OpenSSLs AES or 3DES ciphers.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_crypto_rule-EVP-rc4-40-EVP-rc2-40-cbc",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_crypto_rule-EVP-rc4-40-EVP-rc2-40-cbc",
+        "subCategory": "Visibility",
+        "description": "The RC4 algorithm is vulnerable to many attacks and should no longer be used for encrypting data streams.",
+        "explanation": "## c_crypto_rule-EVP-rc4-40-EVP-rc2-40-cbc\nThe RC4 algorithm is vulnerable to many attacks and should no longer be used for encrypting\ndata streams.\n\nConsider using libsodium's `crypto_secretstream_xchacha20poly1305` stream cipher encryption\nfunctions instead. For more information please see:\nhttps://libsodium.gitbook.io/doc/secret-key_cryptography/secretstream\n\nIf you must be FIPS compliant, consider using OpenSSLs AES or 3DES ciphers.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_format_rule-fprintf-vfprintf",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_format_rule-fprintf-vfprintf",
+        "subCategory": "InputValidation",
+        "description": "Format string vulnerabilities allow an attacker to read or in some cases, potentially write data to and from locations in the processes' memory.",
+        "explanation": "## c_format_rule-fprintf-vfprintf\nFormat string vulnerabilities allow an attacker to read or in some cases,\npotentially write data to\nand from locations in the processes' memory. To prevent against format\nstring attacks, do not allow\nusers or un-validated input to provide the format specification.\nConsider using a constant for the format specification, or only allow specific\ncharacters to be provided to the format argument for the `fprintf` family of functions.\n\nFor more information please see: https://linux.die.net/man/3/fprintf\n\nFor more information on format string attacks please see OWASP's attack\nguide: https://owasp.org/www-community/attacks/Format_string_attack",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_format_rule-printf-vprintf",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_format_rule-printf-vprintf",
+        "subCategory": "InputValidation",
+        "description": "Format string vulnerabilities allow an attacker to read or in some cases, potentially write data to and from locations in the processes' memory.",
+        "explanation": "## c_format_rule-printf-vprintf\nFormat string vulnerabilities allow an attacker to read or in some cases, potentially write\ndata to\nand from locations in the processes' memory. To prevent against format string attacks, do not\nallow\nusers or un-validated input to provide the format specification.\nConsider using a constant for the format specification, or only allow specific\ncharacters to be provided to the format argument for the `printf` family of functions.\n\nFor more information please see: https://linux.die.net/man/3/fprintf\n\nFor more information on format string attacks please see OWASP's attack guide:\nhttps://owasp.org/www-community/attacks/Format_string_attack",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_format_rule-snprintf-vsnprintf",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_format_rule-snprintf-vsnprintf",
+        "subCategory": "InputValidation",
+        "description": "Format string vulnerabilities allow an attacker to read or in some cases, potentially write data to and from locations in the processes' memory.",
+        "explanation": "## c_format_rule-snprintf-vsnprintf\nFormat string vulnerabilities allow an attacker to read or in some cases, potentially write\ndata to\nand from locations in the processes' memory. To prevent against format string attacks, do not\nallow\nusers or un-validated input to provide the format specification.\nConsider using a constant for the format specification, or strip all format\nspecifiers from the input prior to calling the `snprintf` family of functions.\n\nNote that some variations of this function do not always null terminate the strings.\n\nFor more information on using snprintf please see: https://linux.die.net/man/3/snprintf\n\nFor more information on format string attacks please see OWASP's attack guide:\nhttps://owasp.org/www-community/attacks/Format_string_attack",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_format_rule-syslog",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_format_rule-syslog",
+        "subCategory": "InputValidation",
+        "description": "Format string vulnerabilities allow an attacker to read or in some cases, potentially write data to and from locations in the processes' memory.",
+        "explanation": "## c_format_rule-syslog\nFormat string vulnerabilities allow an attacker to read or in some cases, potentially write\ndata to\nand from locations in the processes' memory. To prevent against format string attacks, do not\nallow\nusers or un-validated input to provide the format specification.\nConsider using a constant for the format specification, or strip all format\nspecifiers from the input prior to calling the `syslog` function.\n\nFor more information please see: https://capec.mitre.org/data/definitions/67.html",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_free_rule-memalign",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_free_rule-memalign",
+        "subCategory": "InputValidation",
+        "description": "The `memalign` function may not check that the alignment argument is correct.",
+        "explanation": "## c_free_rule-memalign\nThe `memalign` function may not check that the alignment argument is correct. Calling\nfree (on non Linux-based systems) may fail and in certain circumstances this failure\nmay be exploitable. This function has been deprecated in favor of `posix_memalign`.\n\nFor more information please see: https://linux.die.net/man/3/memalign",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c_integer_rule-atoi-atol",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "c_integer_rule-atoi-atol",
+        "subCategory": "InputValidation",
+        "description": "The `atoi` family of functions can potentially overflow or underflow integer values.",
+        "explanation": "## c_integer_rule-atoi-atol\nThe `atoi` family of functions can potentially overflow or underflow integer values. Consider\nusing `stroul` instead.\n\nFor more information please see:\nhttps://wiki.sei.cmu.edu/confluence/display/c/ERR34-C.+Detect+errors+when+converting+a+string+to+a+number",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.correctness.c-string-equality.c-string-equality",
+        "category": "ErrorProne",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "c-string-equality",
+        "description": "Using == on char* performs pointer comparison, use strcmp instead",
+        "explanation": "## c-string-equality\nUsing == on char* performs pointer comparison, use strcmp instead",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.correctness.goto-fail.double_goto",
+        "category": "ErrorProne",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "double_goto",
+        "description": "The second goto statement will always be executed.",
+        "explanation": "## double_goto\nThe second goto statement will always be executed.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.correctness.incorrect-use-ato-fn.incorrect-use-ato-fn",
+        "category": "ErrorProne",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "incorrect-use-ato-fn",
+        "description": "Avoid the 'ato*()' family of functions.",
+        "explanation": "## incorrect-use-ato-fn\nAvoid the 'ato*()' family of functions. Their use can lead to undefined behavior, integer overflows, and lack of appropriate error handling. Instead prefer the 'strtol*()' family of functions.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.correctness.incorrect-use-sscanf-fn.incorrect-use-sscanf-fn",
+        "category": "ErrorProne",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "incorrect-use-sscanf-fn",
+        "description": "Avoid 'sscanf()' for number conversions.",
+        "explanation": "## incorrect-use-sscanf-fn\nAvoid 'sscanf()' for number conversions. Its use can lead to undefined behavior, slow processing, and integer overflows. Instead prefer the 'strto*()' family of functions.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.security.double-free.double-free",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "double-free",
+        "subCategory": "InputValidation",
+        "description": "Variable '$VAR' was freed twice.",
+        "explanation": "## double-free\nVariable '$VAR' was freed twice. This can lead to undefined behavior.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.security.function-use-after-free.function-use-after-free",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "function-use-after-free",
+        "description": "Variable '$VAR' was passed to a function after being freed.",
+        "explanation": "## function-use-after-free\nVariable '$VAR' was passed to a function after being freed. This can lead to undefined behavior.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.security.info-leak-on-non-formatted-string.info-leak-on-non-formated-string",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "info-leak-on-non-formated-string",
+        "subCategory": "Visibility",
+        "description": "Use %s, %d, %c... to format your variables, otherwise this could leak information.",
+        "explanation": "## info-leak-on-non-formated-string\nUse %s, %d, %c... to format your variables, otherwise this could leak information.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.security.insecure-use-gets-fn.insecure-use-gets-fn",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": true,
+        "parameters": [],
+        "title": "insecure-use-gets-fn",
+        "description": "Avoid 'gets()'. This function does not consider buffer boundaries and can lead to buffer overflows.",
+        "explanation": "## insecure-use-gets-fn\nAvoid 'gets()'. This function does not consider buffer boundaries and can lead to buffer overflows. Use 'fgets()' or 'gets_s()' instead.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.security.insecure-use-memset.insecure-use-memset",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "insecure-use-memset",
+        "subCategory": "Other",
+        "description": "When handling sensitive information in a buffer, it's important to ensure  that the data is securely erased before the buffer is deleted or reused.",
+        "explanation": "## insecure-use-memset\nWhen handling sensitive information in a buffer, it's important to ensure  that the data is securely erased before the buffer is deleted or reused.  While `memset()` is commonly used for this purpose, it can leave sensitive  information behind due to compiler optimizations or other factors.  To avoid this potential vulnerability, it's recommended to use the  `memset_s()` function instead. `memset_s()` is a standardized function  that securely overwrites the memory with a specified value, making it more  difficult for an attacker to recover any sensitive data that was stored in  the buffer. By using `memset_s()` instead of `memset()`, you can help to  ensure that your application is more secure and less vulnerable to exploits  that rely on residual data in memory.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.security.insecure-use-printf-fn.insecure-use-printf-fn",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "insecure-use-printf-fn",
+        "description": "Avoid using user-controlled format strings passed into 'sprintf', 'printf' and 'vsprintf'. These functions put you at risk of buffer overflow vulnerabilities through the use of format string exploits.",
+        "explanation": "## insecure-use-printf-fn\nAvoid using user-controlled format strings passed into 'sprintf', 'printf' and 'vsprintf'. These functions put you at risk of buffer overflow vulnerabilities through the use of format string exploits. Instead, use 'snprintf' and 'vsnprintf'.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.security.insecure-use-scanf-fn.insecure-use-scanf-fn",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "insecure-use-scanf-fn",
+        "description": "Avoid using 'scanf()'. This function, when used improperly, does not consider buffer boundaries and can lead to buffer overflows.",
+        "explanation": "## insecure-use-scanf-fn\nAvoid using 'scanf()'. This function, when used improperly, does not consider buffer boundaries and can lead to buffer overflows. Use 'fgets()' instead for reading input.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.security.insecure-use-strcat-fn.insecure-use-strcat-fn",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "insecure-use-strcat-fn",
+        "description": "Finding triggers whenever there is a strcat or strncat used.",
+        "explanation": "## insecure-use-strcat-fn\nFinding triggers whenever there is a strcat or strncat used. This is an issue because strcat or strncat can lead to buffer overflow vulns. Fix this by using strcat_s instead.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.security.insecure-use-string-copy-fn.insecure-use-string-copy-fn",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "insecure-use-string-copy-fn",
+        "description": "Finding triggers whenever there is a strcpy or strncpy used.",
+        "explanation": "## insecure-use-string-copy-fn\nFinding triggers whenever there is a strcpy or strncpy used. This is an issue because strcpy does not affirm the size of the destination array and strncpy will not automatically NULL-terminate strings. This can lead to buffer overflows, which can cause program crashes and potentially let an attacker inject code in the program. Fix this by using strcpy_s instead (although note that strcpy_s is an optional part of the C11 standard, and so may not be available).",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.security.insecure-use-strtok-fn.insecure-use-strtok-fn",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "insecure-use-strtok-fn",
+        "description": "Avoid using 'strtok()'. This function directly modifies the first argument buffer, permanently erasing the delimiter character.",
+        "explanation": "## insecure-use-strtok-fn\nAvoid using 'strtok()'. This function directly modifies the first argument buffer, permanently erasing the delimiter character. Use 'strtok_r()' instead.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.security.random-fd-exhaustion.random-fd-exhaustion",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": true,
+        "parameters": [],
+        "title": "random-fd-exhaustion",
+        "description": "Call to 'read()' without error checking is susceptible to file descriptor exhaustion.",
+        "explanation": "## random-fd-exhaustion\nCall to 'read()' without error checking is susceptible to file descriptor exhaustion. Consider using the 'getrandom()' function.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_c.lang.security.use-after-free.use-after-free",
+        "category": "Security",
+        "level": "Warning",
+        "severityLevel": "Warning",
+        "enabled": false,
+        "parameters": [],
+        "title": "use-after-free",
+        "description": "Variable '$VAR' was used after being freed.",
+        "explanation": "## use-after-free\nVariable '$VAR' was used after being freed. This can lead to undefined behavior.",
+        "languages": ["C", "CPP"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_clojure.lang.security.command-injection-shell-call.command-injection-shell-call",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": false,
+        "parameters": [],
+        "title": "command-injection-shell-call",
+        "subCategory": "InputValidation",
+        "description": "A call to clojure.java.shell has been found, this could lead to an RCE if the inputs are user-controllable.",
+        "explanation": "## command-injection-shell-call\nA call to clojure.java.shell has been found, this could lead to an RCE if the inputs are user-controllable. Please ensure their origin is validated and sanitized.",
+        "languages": ["Clojure"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_clojure.lang.security.documentbuilderfactory-xxe.documentbuilderfactory-xxe",
+        "category": "Security",
+        "level": "Error",
+        "severityLevel": "Error",
+        "enabled": true,
+        "parameters": [],
+        "title": "documentbuilderfactory-xxe",
+        "subCategory": "InputValidation",
+        "description": "DOCTYPE declarations are enabled for javax.xml.parsers.SAXParserFactory.",
+        "explanation": "## documentbuilderfactory-xxe\nDOCTYPE declarations are enabled for javax.xml.parsers.SAXParserFactory. Without prohibiting external entity declarations, this is vulnerable to XML external entity attacks. Disable this by setting the feature \"http://apache.org/xml/features/disallow-doctype-decl\" to true. Alternatively, allow DOCTYPE declarations and only prohibit external entities declarations. This can be done by setting the features \"http://xml.org/sax/features/external-general-entities\" and \"http://xml.org/sax/features/external-parameter-entities\" to false.",
+        "languages": ["Clojure"],
+        "timeToFix": 5
+      },
+      "enabled": true,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": [{ "id": 112973, "name": "Our Default + SOC2" }]
+    },
+    {
+      "patternDefinition": {
+        "id": "Semgrep_ai.csharp.detect-openai.detect-openai",
+        "category": "BestPractice",
+        "level": "Info",
+        "severityLevel": "Info",
+        "enabled": false,
+        "parameters": [],
+        "title": "detect-openai",
+        "description": "Possibly found usage of AI: OpenAI",
+        "explanation": "## detect-openai\nPossibly found usage of AI: OpenAI",
+        "languages": ["CSharp"],
+        "timeToFix": 5
+      },
+      "enabled": false,
+      "isCustom": false,
+      "parameters": [],
+      "enabledBy": []
+    }
+  ],
+  "pagination": { "cursor": "2", "limit": 100, "total": 2482 },
+  "meta": { "totalEnabled": 1898 }
+}
