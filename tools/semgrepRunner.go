@@ -10,11 +10,8 @@ import (
 
 // RunSemgrep executes Semgrep analysis on the specified directory
 func RunSemgrep(workDirectory string, toolInfo *plugins.ToolInfo, files []string, outputFile string, outputFormat string) error {
-	// Get Python binary from venv
-	pythonPath := filepath.Join(toolInfo.InstallDir, "venv", "bin", "python3")
-
 	// Construct base command with -m semgrep to run semgrep module
-	cmdArgs := []string{"-m", "semgrep", "scan"}
+	cmdArgs := []string{"scan"}
 
 	// Add output format if specified
 	if outputFormat == "sarif" {
@@ -31,8 +28,13 @@ func RunSemgrep(workDirectory string, toolInfo *plugins.ToolInfo, files []string
 		cmdArgs = append(cmdArgs, ".")
 	}
 
+	cmdArgs = append(cmdArgs, "--disable-version-check")
+
+	// Get Semgrep binary from the specified installation path
+	semgrepPath := filepath.Join(toolInfo.InstallDir, "venv", "bin", "semgrep")
+
 	// Create Semgrep command
-	cmd := exec.Command(pythonPath, cmdArgs...)
+	cmd := exec.Command(semgrepPath, cmdArgs...)
 	cmd.Dir = workDirectory
 
 	// If output file is specified, create it and redirect output
