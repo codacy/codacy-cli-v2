@@ -261,7 +261,11 @@ func createEmptySarifReport() []byte {
 			},
 		},
 	}
-	sarifData, _ := json.MarshalIndent(emptyReport, "", "  ")
+	sarifData, err := json.MarshalIndent(emptyReport, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error marshaling empty SARIF report: %v\n", err)
+		return []byte("{}")
+	}
 	return sarifData
 }
 
@@ -294,7 +298,11 @@ func createEmptySarifReportWithError(errorMessage string) []byte {
 			},
 		},
 	}
-	sarifData, _ := json.MarshalIndent(emptyReport, "", "  ")
+	sarifData, err := json.MarshalIndent(emptyReport, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error marshaling SARIF report with error: %v\n", err)
+		return []byte("{}")
+	}
 	return sarifData
 }
 
