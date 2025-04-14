@@ -6,16 +6,13 @@ import (
 	"codacy/cli-v2/plugins"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 )
 
-const CodacyApiBase = "https://app.codacy.com"
 const codacyToolName = "dartanalyzer"
 const patternPrefix = "dartanalyzer_"
 
@@ -137,115 +134,4 @@ func RunDartAnalyzer(workDirectory string, toolInfo *plugins.ToolInfo, files []s
 		cmd.Run()
 	}
 
-}
-
-func convertDartAnalyzerOutputToSarif(output string) (string, error) {
-	// Create base SARIF structure
-	sarif := map[string]interface{}{
-		"$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
-		"runs": []map[string]interface{}{
-			{
-				"results": []map[string]interface{}{},
-			},
-		},
-	}
-
-	// Split output into lines
-	lines := strings.Split(output, "\n")
-
-	// Process each line
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-
-		// Split line into fields
-		fields := strings.Split(line, "|")
-		if len(fields) < 8 {
-			continue
-		}
-
-		// Extract fields
-		file := fields[3]
-		lineNum, _ := strconv.Atoi(fields[4])
-		message := fields[7]
-
-		// Create result object
-		result := map[string]interface{}{
-			"message": map[string]string{
-				"text": message,
-			},
-			"locations": []map[string]interface{}{
-				{
-					"physicalLocation": map[string]interface{}{
-						"artifactLocation": map[string]interface{}{
-							"uri": file,
-						},
-						"region": map[string]interface{}{
-							"startLine": lineNum,
-						},
-					},
-				},
-			},
-		}
-
-		// Add result to SARIF output
-		sarif["runs"].([]map[string]interface{})[0]["results"] = append(
-			sarif["runs"].([]map[string]interface{})[0]["results"].([]map[string]interface{}),
-			result,
-		)
-	}
-
-	// Convert to JSON
-	sarifJson, err := json.MarshalIndent(sarif, "", "  ")
-	if err != nil {
-		return "", fmt.Errorf("error marshaling SARIF: %v", err)
-	}
-
-	return string(sarifJson), nil
-}
-
-func getToolFromCodacy(apiToken string, provider string, owner string, repository string) (*Tool, error) {
-	url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools",
-		CodacyApiBase,
-		provider,
-		owner,
-		repository)
-
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %v", err)
-	}
-
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("api-token", apiToken)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("error making request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("failed to get tools from Codacy API: %v", resp.Status)
-	}
-
-	var response struct {
-		Data []Tool `json:"data"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("error decoding response: %v", err)
-	}
-
-	for _, tool := range response.Data {
-		if tool.Name == codacyToolName {
-			return &tool, nil
-		}
-	}
-	return nil, fmt.Errorf("tool %s not found", codacyToolName)
 }

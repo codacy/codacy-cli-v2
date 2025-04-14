@@ -138,13 +138,14 @@ func configFileTemplate(tools []tools.Tool) string {
 	// Track needed runtimes
 	needsNode := false
 	needsPython := false
-
+	needsDart := false
 	// Default versions
 	defaultVersions := map[string]string{
-		ESLint: "9.3.0",
-		Trivy:  "0.59.1",
-		PyLint: "3.3.6",
-		PMD:    "6.55.0",
+		ESLint:       "9.3.0",
+		Trivy:        "0.59.1",
+		PyLint:       "3.3.6",
+		PMD:          "6.55.0",
+		DartAnalyzer: "3.7.2",
 	}
 
 	// Build map of enabled tools with their versions
@@ -161,6 +162,8 @@ func configFileTemplate(tools []tools.Tool) string {
 			needsNode = true
 		} else if tool.Uuid == PyLint {
 			needsPython = true
+		} else if tool.Uuid == DartAnalyzer {
+			needsDart = true
 		}
 	}
 
@@ -176,10 +179,14 @@ func configFileTemplate(tools []tools.Tool) string {
 		if needsPython {
 			sb.WriteString("    - python@3.11.11\n")
 		}
+		if needsDart {
+			sb.WriteString("    - dart@3.7.2\n")
+		}
 	} else {
 		// In local mode with no tools specified, include all runtimes
 		sb.WriteString("    - node@22.2.0\n")
 		sb.WriteString("    - python@3.11.11\n")
+		sb.WriteString("    - dart@3.7.2\n")
 	}
 
 	sb.WriteString("tools:\n")
@@ -188,10 +195,11 @@ func configFileTemplate(tools []tools.Tool) string {
 	if len(tools) > 0 {
 		// Add only the tools that are in the API response (enabled tools)
 		uuidToName := map[string]string{
-			ESLint: "eslint",
-			Trivy:  "trivy",
-			PyLint: "pylint",
-			PMD:    "pmd",
+			ESLint:       "eslint",
+			Trivy:        "trivy",
+			PyLint:       "pylint",
+			PMD:          "pmd",
+			DartAnalyzer: "dartanalyzer",
 		}
 
 		for uuid, name := range uuidToName {
@@ -205,6 +213,7 @@ func configFileTemplate(tools []tools.Tool) string {
 		sb.WriteString(fmt.Sprintf("    - trivy@%s\n", defaultVersions[Trivy]))
 		sb.WriteString(fmt.Sprintf("    - pylint@%s\n", defaultVersions[PyLint]))
 		sb.WriteString(fmt.Sprintf("    - pmd@%s\n", defaultVersions[PMD]))
+		sb.WriteString(fmt.Sprintf("    - dartanalyzer@%s\n", defaultVersions[DartAnalyzer]))
 	}
 
 	return sb.String()

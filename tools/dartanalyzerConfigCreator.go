@@ -2,9 +2,7 @@ package tools
 
 import (
 	"codacy/cli-v2/domain"
-	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -27,16 +25,10 @@ func CreateDartAnalyzerConfig(configuration []domain.PatternConfiguration) strin
 	errorsMap := config["analyzer"].(map[string]interface{})["errors"].(map[string]string)
 	lintsMap := config["linter"].(map[string]interface{})["rules"].(map[string]string)
 	for _, pattern := range configuration {
-		fmt.Println(pattern.PatternDefinition.Id, pattern.Enabled, pattern.PatternDefinition.Category)
 		if slices.Contains(errorPatterns, pattern.PatternDefinition.Category) {
-			if pattern.Enabled {
-				errorsMap[strings.TrimPrefix(pattern.PatternDefinition.Id, patternPrefix)] = strings.ToLower(pattern.PatternDefinition.Level)
-			} else {
-				errorsMap[strings.TrimPrefix(pattern.PatternDefinition.Id, patternPrefix)] = "ignore"
-			}
-
+			errorsMap[strings.TrimPrefix(pattern.PatternDefinition.Id, patternPrefix)] = strings.ToLower(pattern.PatternDefinition.Level)
 		} else {
-			lintsMap[strings.TrimPrefix(pattern.PatternDefinition.Id, patternPrefix)] = strconv.FormatBool(pattern.Enabled)
+			lintsMap[strings.TrimPrefix(pattern.PatternDefinition.Id, patternPrefix)] = "true"
 		}
 	}
 

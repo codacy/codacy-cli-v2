@@ -13,6 +13,5 @@ type PatternDefinition struct {
 
 type PatternConfiguration struct {
 	PatternDefinition PatternDefinition `json:"patternDefinition"`
-	Enabled           bool              `json:"enabled"`
 	Parameters        []ParameterConfiguration
 }
