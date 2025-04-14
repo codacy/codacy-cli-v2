@@ -228,7 +228,7 @@ func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 
 func runDartAnalyzer(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
 	dartanalyzer := config.Config.Tools()["dartanalyzer"]
-	tools.RunDartAnalyzer(workDirectory, dartanalyzer, pathsToCheck, outputFile, outputFormat, apiToken, provider, owner, repository)
+	tools.RunDartAnalyzer(workDirectory, dartanalyzer.InstallDir, dartanalyzer.Binaries["dart"], pathsToCheck, outputFile, outputFormat)
 }
 
 var analyzeCmd = &cobra.Command{

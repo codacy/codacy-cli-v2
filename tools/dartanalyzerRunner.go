@@ -3,7 +3,6 @@ package tools
 import (
 	"bufio"
 	"bytes"
-	"codacy/cli-v2/plugins"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -13,13 +12,12 @@ import (
 	"strings"
 )
 
-const codacyToolName = "dartanalyzer"
 const patternPrefix = "dartanalyzer_"
 
-func RunDartAnalyzer(workDirectory string, toolInfo *plugins.ToolInfo, files []string, outputFile string, outputFormat string, apiToken string, provider string, owner string, repository string) {
+func RunDartAnalyzer(workDirectory string, installationDirectory string, binary string, files []string, outputFile string, outputFormat string) {
 
 	configFiles := []string{"analysis_options.yaml", "analysis_options.yml"}
-	dartAnalyzerPath := filepath.Join(toolInfo.InstallDir, "bin", "dart")
+	dartAnalyzerPath := filepath.Join(installationDirectory, "bin", "dart")
 	fmt.Println(dartAnalyzerPath)
 
 	args := []string{"analyze", "--format", "machine"}
