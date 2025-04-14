@@ -6,3 +6,4 @@ tools:
     - trivy@0.59.1
     - pylint@3.3.6
     - pmd@6.55.0
+    - semgrep@1.78.0
