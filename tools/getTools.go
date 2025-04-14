@@ -90,6 +90,7 @@ func GetRepositoryTools(codacyBase string, apiToken string, provider string, org
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
+		fmt.Println("Error:", url)
 		return nil, errors.New("failed to get repository tools from Codacy API")
 	}
 

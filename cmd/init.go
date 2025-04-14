@@ -380,6 +380,13 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 			}
 		}
 		fmt.Println("Pylint configuration created based on Codacy settings")
+	case DartAnalyzer:
+		if len(patternConfiguration) > 0 {
+			err := createDartAnalyzerConfigFile(patternConfiguration, toolsConfigDir)
+			if err != nil {
+				return fmt.Errorf("failed to create Dart Analyzer config: %v", err)
+			}
+		}
 	}
 	return nil
 }
@@ -412,6 +419,12 @@ func createTrivyConfigFile(config []domain.PatternConfiguration, toolsConfigDir 
 
 	// Write to file
 	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(trivyConfigurationString), utils.DefaultFilePerms)
+}
+
+func createDartAnalyzerConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
+
+	dartAnalyzerConfigurationString := tools.CreateDartAnalyzerConfig(config)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "analysis_options.yaml"), []byte(dartAnalyzerConfigurationString), utils.DefaultFilePerms)
 }
 
 // createDefaultTrivyConfigFile creates a default trivy.yaml configuration file

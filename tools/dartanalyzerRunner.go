@@ -10,15 +10,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
-// TODO: Move to config or centralized place
 const CodacyApiBase = "https://app.codacy.com"
 const codacyToolName = "dartanalyzer"
 const patternPrefix = "dartanalyzer_"
@@ -26,8 +22,6 @@ const patternPrefix = "dartanalyzer_"
 func RunDartAnalyzer(workDirectory string, toolInfo *plugins.ToolInfo, files []string, outputFile string, outputFormat string, apiToken string, provider string, owner string, repository string) {
 
 	configFiles := []string{"analysis_options.yaml", "analysis_options.yml"}
-	needToCleanUp := false
-	configPath := ""
 	dartAnalyzerPath := filepath.Join(toolInfo.InstallDir, "bin", "dart")
 	fmt.Println(dartAnalyzerPath)
 
@@ -55,28 +49,7 @@ func RunDartAnalyzer(workDirectory string, toolInfo *plugins.ToolInfo, files []s
 	}
 
 	if !configExists {
-		fmt.Println("No config file found, trying to generate one")
-		if apiToken == "" {
-			fmt.Println("Error: Project token is required for dartanalyzer if no config file exists")
-			return
-		}
-		tool, err := getToolFromCodacy(apiToken, provider, owner, repository)
-		if err != nil {
-			fmt.Printf("Error getting tools from Codacy: %v\n", err)
-			return
-		}
-		if tool.Settings.UsesConfigFile {
-			fmt.Println("Codacy is expecting a config file, please add one to your project or change the tool settings")
-			return
-		}
-
-		// Create default analysis_options.yaml if no config exists
-		configPath = filepath.Join(workDirectory, "analysis_options.yaml")
-		if err := generateDartAnalyzerConfig(configPath, apiToken, provider, owner, repository, tool.Uuid); err != nil {
-			fmt.Printf("Error generating dart analyzer config: %v\n", err)
-			return
-		}
-		needToCleanUp = true
+		fmt.Println("No config file found, using tool defaults")
 	} else {
 		fmt.Println("Config file found, using it")
 	}
@@ -164,10 +137,6 @@ func RunDartAnalyzer(workDirectory string, toolInfo *plugins.ToolInfo, files []s
 		cmd.Run()
 	}
 
-	if needToCleanUp {
-		fmt.Println("Cleaning up", configPath)
-		os.Remove(configPath)
-	}
 }
 
 func convertDartAnalyzerOutputToSarif(output string) (string, error) {
@@ -279,115 +248,4 @@ func getToolFromCodacy(apiToken string, provider string, owner string, repositor
 		}
 	}
 	return nil, fmt.Errorf("tool %s not found", codacyToolName)
-}
-
-func generateDartAnalyzerConfig(configPath string, apiToken string, provider string, owner string, repository string, toolUuid string) error {
-
-	// Get enabled patterns from Codacy API
-
-	url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns",
-		CodacyApiBase,
-		provider,
-		owner,
-		repository,
-		toolUuid)
-
-	fmt.Println(configPath)
-
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return fmt.Errorf("error creating request: %v", err)
-	}
-
-	// Set project token header
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("api-token", apiToken)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("error making request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("failed to get patterns from Codacy API: %v", resp.Status)
-	}
-
-	var patterns struct {
-		Data []struct {
-			PatternDefinition struct {
-				ID          string   `json:"id"`
-				Title       string   `json:"title"`
-				Category    string   `json:"category"`
-				SubCategory string   `json:"subCategory"`
-				Level       string   `json:"level"`
-				Languages   []string `json:"languages"`
-			} `json:"patternDefinition"`
-			Enabled    bool `json:"enabled"`
-			IsCustom   bool `json:"isCustom"`
-			Parameters []struct {
-				Name  string `json:"name"`
-				Value string `json:"value"`
-			} `json:"parameters"`
-			EnabledBy []struct {
-				ID   int    `json:"id"`
-				Name string `json:"name"`
-			} `json:"enabledBy"`
-		} `json:"data"`
-		Pagination struct {
-			Cursor string `json:"cursor"`
-			Limit  int    `json:"limit"`
-			Total  int    `json:"total"`
-		} `json:"pagination"`
-		Meta struct {
-			TotalEnabled int `json:"totalEnabled"`
-		} `json:"meta"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&patterns); err != nil {
-		return fmt.Errorf("error decoding response: %v", err)
-	}
-
-	// Find Dart Analyzer patterns
-	errorPatterns := []string{"ErrorProne", "Security", "Performance"}
-	// Create analysis_options.yaml content
-	config := map[string]interface{}{
-		"analyzer": map[string]interface{}{
-			"errors": map[string]string{},
-		},
-		"linter": map[string]interface{}{
-			"rules": map[string]string{},
-		},
-	}
-
-	errorsMap := config["analyzer"].(map[string]interface{})["errors"].(map[string]string)
-	lintsMap := config["linter"].(map[string]interface{})["rules"].(map[string]string)
-	for _, pattern := range patterns.Data {
-		fmt.Println(pattern.PatternDefinition.ID, pattern.Enabled, pattern.PatternDefinition.Category)
-		if slices.Contains(errorPatterns, pattern.PatternDefinition.Category) {
-			if pattern.Enabled {
-				errorsMap[strings.TrimPrefix(pattern.PatternDefinition.ID, patternPrefix)] = strings.ToLower(pattern.PatternDefinition.Level)
-			} else {
-				errorsMap[strings.TrimPrefix(pattern.PatternDefinition.ID, patternPrefix)] = "ignore"
-			}
-
-		} else {
-			lintsMap[strings.TrimPrefix(pattern.PatternDefinition.ID, patternPrefix)] = strconv.FormatBool(pattern.Enabled)
-		}
-	}
-
-	// Write config to file
-	yamlData, err := yaml.Marshal(config)
-	if err != nil {
-		return fmt.Errorf("error marshaling config: %v", err)
-	}
-
-	if err := os.WriteFile(configPath, yamlData, 0644); err != nil {
-		return fmt.Errorf("error writing config file: %v", err)
-	}
-	return nil
 }

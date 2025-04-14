@@ -122,13 +122,11 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 		if err != nil {
 			return nil, fmt.Errorf("error reading plugin.yaml for %s: %w", config.Name, err)
 		}
-		fmt.Println("Plugin path", pluginPath)
 		var pluginConfig ToolPluginConfig
 		err = yaml.Unmarshal(data, &pluginConfig)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing plugin.yaml for %s: %w", config.Name, err)
 		}
-		fmt.Println("EOD")
 		// Create the install directory path
 		installDir := path.Join(toolDir, fmt.Sprintf("%s@%s", config.Name, config.Version))
 
