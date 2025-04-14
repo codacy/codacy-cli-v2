@@ -462,8 +462,9 @@ func cleanConfigDirectory(toolsConfigDir string) error {
 }
 
 const (
-	ESLint string = "f8b29663-2cb2-498d-b923-a10c6a8c05cd"
-	Trivy  string = "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb"
-	PMD    string = "9ed24812-b6ee-4a58-9004-0ed183c45b8f"
-	PyLint string = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
+	ESLint       string = "f8b29663-2cb2-498d-b923-a10c6a8c05cd"
+	Trivy        string = "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb"
+	PMD          string = "9ed24812-b6ee-4a58-9004-0ed183c45b8f"
+	PyLint       string = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
+	DartAnalyzer string = "d203d615-6cf1-41f9-be5f-e2f660f7850f"
 )
