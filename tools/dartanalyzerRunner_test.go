@@ -41,7 +41,7 @@ func TestRunDartAnalyzerToFile(t *testing.T) {
 	}
 	obtainedSarif := string(obtainedSarifBytes)
 
-	filePrefix := "file://" + currentDirectory + "/"
+	filePrefix := currentDirectory + "/"
 	actualSarif := strings.ReplaceAll(obtainedSarif, filePrefix, "")
 
 	expectedSarif := strings.TrimSpace(string(expectedSarifBytes))

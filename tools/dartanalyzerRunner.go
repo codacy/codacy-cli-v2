@@ -18,7 +18,6 @@ func RunDartAnalyzer(workDirectory string, installationDirectory string, binary 
 
 	configFiles := []string{"analysis_options.yaml", "analysis_options.yml"}
 	dartAnalyzerPath := filepath.Join(installationDirectory, "bin", "dart")
-	fmt.Println(dartAnalyzerPath)
 
 	args := []string{"analyze", "--format", "machine"}
 	// Add files to analyze - if no files specified, analyze current directory
@@ -31,8 +30,6 @@ func RunDartAnalyzer(workDirectory string, installationDirectory string, binary 
 	cmd := exec.Command(dartAnalyzerPath, args...)
 
 	cmd.Dir = workDirectory
-
-	fmt.Println("Running", cmd.String())
 
 	// Check if any config file exists
 	configExists := false

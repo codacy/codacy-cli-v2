@@ -8,7 +8,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "/Users/heliorocha/dev/codacy/codacy-cli-v2/tools/testdata/repositories/dartanalizer/src/main.dart"
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
                 },
                 "region": {
                   "startLine": 2
@@ -26,7 +26,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "/Users/heliorocha/dev/codacy/codacy-cli-v2/tools/testdata/repositories/dartanalizer/src/main.dart"
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
                 },
                 "region": {
                   "startLine": 6
@@ -44,7 +44,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "/Users/heliorocha/dev/codacy/codacy-cli-v2/tools/testdata/repositories/dartanalizer/src/main.dart"
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
                 },
                 "region": {
                   "startLine": 23
@@ -62,7 +62,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "/Users/heliorocha/dev/codacy/codacy-cli-v2/tools/testdata/repositories/dartanalizer/src/main.dart"
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
                 },
                 "region": {
                   "startLine": 26
@@ -80,7 +80,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "/Users/heliorocha/dev/codacy/codacy-cli-v2/tools/testdata/repositories/dartanalizer/src/main.dart"
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
                 },
                 "region": {
                   "startLine": 31
@@ -98,7 +98,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "/Users/heliorocha/dev/codacy/codacy-cli-v2/tools/testdata/repositories/dartanalizer/src/main.dart"
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
                 },
                 "region": {
                   "startLine": 35
@@ -116,7 +116,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "/Users/heliorocha/dev/codacy/codacy-cli-v2/tools/testdata/repositories/dartanalizer/src/main.dart"
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
                 },
                 "region": {
                   "startLine": 35
