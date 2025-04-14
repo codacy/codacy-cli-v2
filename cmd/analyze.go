@@ -188,42 +188,33 @@ func getToolName(toolName string, version string) string {
 	return toolName
 }
 
-func runEslintAnalysis(workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string) {
+func runEslintAnalysis(workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string) error {
 	eslint := config.Config.Tools()["eslint"]
 	eslintInstallationDirectory := eslint.InstallDir
 	nodeRuntime := config.Config.Runtimes()["node"]
 	nodeBinary := nodeRuntime.Binaries["node"]
 
-	tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, pathsToCheck, autoFix, outputFile, outputFormat)
+	return tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, pathsToCheck, autoFix, outputFile, outputFormat)
 }
 
-func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
+func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	trivy := config.Config.Tools()["trivy"]
 	trivyBinary := trivy.Binaries["trivy"]
 
-	err := tools.RunTrivy(workDirectory, trivyBinary, pathsToCheck, outputFile, outputFormat)
-	if err != nil {
-		log.Fatalf("Error running Trivy: %v", err)
-	}
+	return tools.RunTrivy(workDirectory, trivyBinary, pathsToCheck, outputFile, outputFormat)
 }
 
-func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
+func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	pmd := config.Config.Tools()["pmd"]
 	pmdBinary := pmd.Binaries["pmd"]
 
-	err := tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, config.Config)
-	if err != nil {
-		log.Fatalf("Error running PMD: %v", err)
-	}
+	return tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, config.Config)
 }
 
-func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
+func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	pylint := config.Config.Tools()["pylint"]
 
-	err := tools.RunPylint(workDirectory, pylint, pathsToCheck, outputFile, outputFormat)
-	if err != nil {
-		log.Fatalf("Error running Pylint: %v", err)
-	}
+	return tools.RunPylint(workDirectory, pylint, pathsToCheck, outputFile, outputFormat)
 }
 
 var analyzeCmd = &cobra.Command{
@@ -262,11 +253,20 @@ var analyzeCmd = &cobra.Command{
 			defer os.RemoveAll(tmpDir)
 
 			var sarifOutputs []string
+			failedTools := make(map[string]error)
 			for toolName := range toolsToRun {
 				log.Printf("Running %s...\n", toolName)
 				tmpFile := filepath.Join(tmpDir, fmt.Sprintf("%s.sarif", toolName))
-				runTool(workDirectory, toolName, args, tmpFile)
+				if err := runTool(workDirectory, toolName, args, tmpFile); err != nil {
+					log.Printf("Warning: Tool %s failed: %v\n", toolName, err)
+					failedTools[toolName] = err
+					continue
+				}
 				sarifOutputs = append(sarifOutputs, tmpFile)
+			}
+
+			if len(sarifOutputs) == 0 && len(failedTools) > 0 {
+				log.Fatal("All tools failed to run. No analysis results available.")
 			}
 
 			// create output file tmp file
@@ -275,6 +275,22 @@ var analyzeCmd = &cobra.Command{
 			// Merge all SARIF outputs
 			if err := utils.MergeSarifOutputs(sarifOutputs, tmpOutputFile); err != nil {
 				log.Fatalf("Failed to merge SARIF outputs: %v", err)
+			}
+
+			// Add error runs to the merged SARIF
+			if len(failedTools) > 0 {
+				mergedSarif, err := utils.ReadSarifFile(tmpOutputFile)
+				if err != nil {
+					log.Fatalf("Failed to read merged SARIF: %v", err)
+				}
+
+				for toolName, err := range failedTools {
+					utils.AddErrorRun(&mergedSarif, toolName, err.Error())
+				}
+
+				if err := utils.WriteSarifFile(mergedSarif, tmpOutputFile); err != nil {
+					log.Fatalf("Failed to write updated SARIF: %v", err)
+				}
 			}
 
 			if outputFile != "" {
@@ -302,17 +318,17 @@ var analyzeCmd = &cobra.Command{
 	},
 }
 
-func runTool(workDirectory string, toolName string, args []string, outputFile string) {
+func runTool(workDirectory string, toolName string, args []string, outputFile string) error {
 	switch toolName {
 	case "eslint":
-		runEslintAnalysis(workDirectory, args, autoFix, outputFile, outputFormat)
+		return runEslintAnalysis(workDirectory, args, autoFix, outputFile, outputFormat)
 	case "trivy":
-		runTrivyAnalysis(workDirectory, args, outputFile, outputFormat)
+		return runTrivyAnalysis(workDirectory, args, outputFile, outputFormat)
 	case "pmd":
-		runPmdAnalysis(workDirectory, args, outputFile, outputFormat)
+		return runPmdAnalysis(workDirectory, args, outputFile, outputFormat)
 	case "pylint":
-		runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
+		return runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
 	default:
-		log.Printf("Warning: Unsupported tool: %s\n", toolName)
+		return fmt.Errorf("unsupported tool: %s", toolName)
 	}
 }
