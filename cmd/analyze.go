@@ -217,12 +217,9 @@ func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 	return tools.RunPylint(workDirectory, pylint, pathsToCheck, outputFile, outputFormat)
 }
 
-func runDartAnalyzer(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) {
+func runDartAnalyzer(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	dartanalyzer := config.Config.Tools()["dartanalyzer"]
-	err := tools.RunDartAnalyzer(workDirectory, dartanalyzer.InstallDir, dartanalyzer.Binaries["dart"], pathsToCheck, outputFile, outputFormat)
-	if err != nil {
-		log.Fatalf("Error running Dart Analyzer: %v", err)
-	}
+	return tools.RunDartAnalyzer(workDirectory, dartanalyzer.InstallDir, dartanalyzer.Binaries["dart"], pathsToCheck, outputFile, outputFormat)
 }
 
 var analyzeCmd = &cobra.Command{
