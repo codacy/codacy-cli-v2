@@ -5,7 +5,6 @@ import (
 	cfg "codacy/cli-v2/config"
 	config_file "codacy/cli-v2/config-file"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"time"
@@ -126,11 +125,10 @@ var installCmd = &cobra.Command{
 			}),
 		)
 
-		// Redirect all output to /dev/null during installation
+		// Redirect progress bar output to /dev/null
 		oldStdout := os.Stdout
 		devNull, _ := os.Open(os.DevNull)
 		os.Stdout = devNull
-		log.SetOutput(io.Discard)
 
 		// Install runtimes first
 		for name, runtime := range cfg.Config.Runtimes() {
@@ -159,7 +157,6 @@ var installCmd = &cobra.Command{
 		// Restore output
 		os.Stdout = oldStdout
 		devNull.Close()
-		log.SetOutput(os.Stderr)
 
 		// Print completion status
 		fmt.Println()

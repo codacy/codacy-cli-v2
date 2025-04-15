@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"gopkg.in/yaml.v3"
 )
 
 // InstallTools installs all tools defined in the configuration
@@ -67,10 +69,11 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 
 	// Prepare template data
 	templateData := map[string]string{
-		"InstallDir":  toolInfo.InstallDir,
-		"PackageName": toolInfo.Name,
-		"Version":     toolInfo.Version,
-		"Registry":    registry,
+		"InstallDir":    toolInfo.InstallDir,
+		"PackageName":   toolInfo.Name,
+		"Version":       toolInfo.Version,
+		"Registry":      registry,
+		"EslintPlugins": extractEslintPlugins(),
 	}
 
 	// Get package manager binary based on the tool configuration
@@ -102,6 +105,10 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 	if err != nil {
 		return fmt.Errorf("failed to prepare install command: %w", err)
 	}
+
+	// Debug log the command and template data
+	log.Printf("Template data: %+v\n", templateData)
+	log.Printf("Install command: %s\n", installCmd)
 
 	// Execute the installation command using the package manager
 	cmd := exec.Command(packageManagerBinary, strings.Split(installCmd, " ")...)
@@ -239,4 +246,36 @@ func executeToolTemplate(tmplStr string, data map[string]string) (string, error)
 	}
 
 	return buf.String(), nil
+}
+
+func extractEslintPlugins() string {
+	// Read the eslint_plugins.yaml file
+	filePath := filepath.Join(Config.ToolsConfigDirectory(), "eslint_plugins.yaml")
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Printf("Error reading eslint_plugins.yaml: %v", err)
+		return ""
+	}
+
+	// Parse the YAML content
+	var config struct {
+		Plugins []string `yaml:"plugins"`
+	}
+	if err := yaml.Unmarshal(content, &config); err != nil {
+		log.Printf("Error parsing eslint_plugins.yaml: %v", err)
+		return ""
+	}
+
+	// Convert the array to a space-separated string, removing quotes
+	var result string
+	for i, plugin := range config.Plugins {
+		if i > 0 {
+			result += " "
+		}
+		// Remove quotes if present
+		plugin = strings.Trim(plugin, "\"")
+		result += plugin
+	}
+
+	return result
 }

@@ -322,6 +322,7 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 	case ESLint:
 		if len(patternConfiguration) > 0 {
 			eslintConfigurationString := tools.CreateEslintConfig(patternConfiguration)
+			_ = tools.CreateEslintConfigWithPlugins(patternConfiguration)
 
 			eslintConfigFile, err := os.Create(filepath.Join(toolsConfigDir, "eslint.config.mjs"))
 			if err != nil {
