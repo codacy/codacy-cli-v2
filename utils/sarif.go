@@ -27,9 +27,8 @@ type SarifReport struct {
 }
 
 type Run struct {
-	Tool        Tool         `json:"tool"`
-	Results     []Result     `json:"results"`
-	Invocations []Invocation `json:"invocations,omitempty"`
+	Tool    Tool     `json:"tool"`
+	Results []Result `json:"results"`
 }
 
 type Tool struct {
@@ -81,89 +80,18 @@ type ArtifactLocation struct {
 type Region struct {
 	StartLine   int `json:"startLine"`
 	StartColumn int `json:"startColumn"`
-	EndLine     int `json:"endLine"`
-	EndColumn   int `json:"endColumn"`
-}
-
-type Invocation struct {
-	ExecutionSuccessful bool     `json:"executionSuccessful"`
-	ExitCode            int      `json:"exitCode"`
-	ExitSignalName      string   `json:"exitSignalName"`
-	ExitSignalNumber    int      `json:"exitSignalNumber"`
-	Stderr              Artifact `json:"stderr"`
-}
-
-type Artifact struct {
-	Text string `json:"text"`
 }
 
 type MessageText struct {
 	Text string `json:"text"`
 }
 
-// ReadSarifFile reads a SARIF file and returns its contents
-func ReadSarifFile(file string) (SarifReport, error) {
-	data, err := os.ReadFile(file)
-	if err != nil {
-		return SarifReport{}, fmt.Errorf("failed to read SARIF file: %w", err)
-	}
-
-	var sarif SarifReport
-	if err := json.Unmarshal(data, &sarif); err != nil {
-		return SarifReport{}, fmt.Errorf("failed to parse SARIF file: %w", err)
-	}
-
-	return sarif, nil
-}
-
-// WriteSarifFile writes a SARIF report to a file
-func WriteSarifFile(sarif SarifReport, outputFile string) error {
-	out, err := os.Create(outputFile)
-	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
-	}
-	defer out.Close()
-
-	encoder := json.NewEncoder(out)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(sarif); err != nil {
-		return fmt.Errorf("failed to write SARIF: %w", err)
-	}
-
-	return nil
-}
-
-// AddErrorRun adds an error run to an existing SARIF report
-func AddErrorRun(sarif *SarifReport, toolName string, errorMessage string) {
-	errorRun := Run{
-		Tool: Tool{
-			Driver: Driver{
-				Name:    toolName,
-				Version: "1.0.0",
-			},
-		},
-		Invocations: []Invocation{
-			{
-				ExecutionSuccessful: false,
-				ExitCode:            1,
-				ExitSignalName:      "error",
-				ExitSignalNumber:    1,
-				Stderr: Artifact{
-					Text: errorMessage,
-				},
-			},
-		},
-		Results: []Result{},
-	}
-	sarif.Runs = append(sarif.Runs, errorRun)
-}
-
 // ConvertPylintToSarif converts Pylint JSON output to SARIF format
 func ConvertPylintToSarif(pylintOutput []byte) []byte {
 	var issues []PylintIssue
 	if err := json.Unmarshal(pylintOutput, &issues); err != nil {
-		// If parsing fails, return empty SARIF report with error
-		return createEmptySarifReportWithError(err.Error())
+		// If parsing fails, return empty SARIF report
+		return createEmptySarifReport()
 	}
 
 	// Create SARIF report
@@ -180,17 +108,6 @@ func ConvertPylintToSarif(pylintOutput []byte) []byte {
 					},
 				},
 				Results: make([]Result, 0, len(issues)),
-				Invocations: []Invocation{
-					{
-						ExecutionSuccessful: true, // Pylint ran successfully if we got here
-						ExitCode:            0,
-						ExitSignalName:      "",
-						ExitSignalNumber:    0,
-						Stderr: Artifact{
-							Text: "",
-						},
-					},
-				},
 			},
 		},
 	}
@@ -256,53 +173,11 @@ func createEmptySarifReport() []byte {
 						InformationURI: "https://pylint.org",
 					},
 				},
-				Results:     []Result{},
-				Invocations: []Invocation{},
-			},
-		},
-	}
-	sarifData, err := json.MarshalIndent(emptyReport, "", "  ")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error marshaling empty SARIF report: %v\n", err)
-		return []byte("{}")
-	}
-	return sarifData
-}
-
-// createEmptySarifReportWithError creates an empty SARIF report with error information
-func createEmptySarifReportWithError(errorMessage string) []byte {
-	emptyReport := SarifReport{
-		Version: "2.1.0",
-		Schema:  "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
-		Runs: []Run{
-			{
-				Tool: Tool{
-					Driver: Driver{
-						Name:           "Pylint",
-						Version:        "3.3.6",
-						InformationURI: "https://pylint.org",
-					},
-				},
 				Results: []Result{},
-				Invocations: []Invocation{
-					{
-						ExecutionSuccessful: false,
-						ExitCode:            1,
-						ExitSignalName:      "error",
-						ExitSignalNumber:    1,
-						Stderr: Artifact{
-							Text: errorMessage,
-						},
-					},
-				},
 			},
 		},
 	}
-	sarifData, err := json.MarshalIndent(emptyReport, "", "  ")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error marshaling SARIF report with error: %v\n", err)
-		return []byte("{}")
-	}
+	sarifData, _ := json.MarshalIndent(emptyReport, "", "  ")
 	return sarifData
 }
 

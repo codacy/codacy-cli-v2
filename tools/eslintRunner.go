@@ -51,6 +51,10 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 	nodePathEnv := "NODE_PATH=" + eslintInstallationNodeModules
 	cmd.Env = append(cmd.Env, nodePathEnv)
 
+	// DEBUG
+	// fmt.Println(cmd.Env)
+	// fmt.Println(cmd)
+
 	// Run the command and handle errors
 	err := cmd.Run()
 	if err != nil {

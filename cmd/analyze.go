@@ -253,20 +253,14 @@ var analyzeCmd = &cobra.Command{
 			defer os.RemoveAll(tmpDir)
 
 			var sarifOutputs []string
-			failedTools := make(map[string]error)
 			for toolName := range toolsToRun {
 				log.Printf("Running %s...\n", toolName)
 				tmpFile := filepath.Join(tmpDir, fmt.Sprintf("%s.sarif", toolName))
 				if err := runTool(workDirectory, toolName, args, tmpFile); err != nil {
-					log.Printf("Warning: Tool %s failed: %v\n", toolName, err)
-					failedTools[toolName] = err
+					log.Printf("Tool failed to run: %s: %v\n", toolName, err)
 					continue
 				}
 				sarifOutputs = append(sarifOutputs, tmpFile)
-			}
-
-			if len(sarifOutputs) == 0 && len(failedTools) > 0 {
-				log.Fatal("All tools failed to run. No analysis results available.")
 			}
 
 			// create output file tmp file
@@ -275,22 +269,6 @@ var analyzeCmd = &cobra.Command{
 			// Merge all SARIF outputs
 			if err := utils.MergeSarifOutputs(sarifOutputs, tmpOutputFile); err != nil {
 				log.Fatalf("Failed to merge SARIF outputs: %v", err)
-			}
-
-			// Add error runs to the merged SARIF
-			if len(failedTools) > 0 {
-				mergedSarif, err := utils.ReadSarifFile(tmpOutputFile)
-				if err != nil {
-					log.Fatalf("Failed to read merged SARIF: %v", err)
-				}
-
-				for toolName, err := range failedTools {
-					utils.AddErrorRun(&mergedSarif, toolName, err.Error())
-				}
-
-				if err := utils.WriteSarifFile(mergedSarif, tmpOutputFile); err != nil {
-					log.Fatalf("Failed to write updated SARIF: %v", err)
-				}
 			}
 
 			if outputFile != "" {
@@ -312,7 +290,10 @@ var analyzeCmd = &cobra.Command{
 			// Run tools without merging outputs
 			for toolName := range toolsToRun {
 				log.Printf("Running %s...\n", toolName)
-				runTool(workDirectory, toolName, args, outputFile)
+				if err := runTool(workDirectory, toolName, args, outputFile); err != nil {
+					log.Printf("Tool failed to run: %s: %v\n", toolName, err)
+					continue
+				}
 			}
 		}
 	},
