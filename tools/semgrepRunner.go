@@ -45,8 +45,6 @@ func RunSemgrep(workDirectory string, toolInfo *plugins.ToolInfo, files []string
 		cmdArgs = append(cmdArgs, ".")
 	}
 
-	cmdArgs = append(cmdArgs, "--disable-version-check")
-
 	// Get Semgrep binary from the specified installation path
 	semgrepPath := filepath.Join(toolInfo.InstallDir, "venv", "bin", "semgrep")
 
