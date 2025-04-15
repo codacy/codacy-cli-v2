@@ -291,7 +291,6 @@ var analyzeCmd = &cobra.Command{
 				log.Printf("Running %s...\n", toolName)
 				if err := runTool(workDirectory, toolName, args, outputFile); err != nil {
 					log.Printf("Tool failed to run: %s: %v\n", toolName, err)
-					continue
 				}
 			}
 		}
