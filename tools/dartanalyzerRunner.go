@@ -14,7 +14,7 @@ import (
 
 const patternPrefix = "dartanalyzer_"
 
-func RunDartAnalyzer(workDirectory string, installationDirectory string, binary string, files []string, outputFile string, outputFormat string) {
+func RunDartAnalyzer(workDirectory string, installationDirectory string, binary string, files []string, outputFile string, outputFormat string) error {
 
 	configFiles := []string{"analysis_options.yaml", "analysis_options.yml"}
 	dartAnalyzerPath := filepath.Join(installationDirectory, "bin", "dart")
@@ -128,5 +128,5 @@ func RunDartAnalyzer(workDirectory string, installationDirectory string, binary 
 		cmd.Stdout = os.Stdout
 		cmd.Run()
 	}
-
+	return nil
 }
