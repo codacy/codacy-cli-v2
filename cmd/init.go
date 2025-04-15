@@ -390,13 +390,11 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 			if err != nil {
 				return fmt.Errorf("failed to create Semgrep config: %v", err)
 			}
+			fmt.Println("Semgrep configuration created based on Codacy settings")
 		} else {
-			err := createDefaultSemgrepConfigFile(toolsConfigDir)
-			if err != nil {
-				return fmt.Errorf("failed to create default Semgrep config: %v", err)
-			}
+			// In case of no patterns, we run semgrep with default config
+			return nil
 		}
-		fmt.Println("Semgrep configuration created based on Codacy settings")
 	}
 	return nil
 }
@@ -460,44 +458,9 @@ type SemgrepRulesFile struct {
 func createSemgrepConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
 	// Use the refactored function from tools package
 	configData, err := tools.GetSemgrepConfig(config)
+
 	if err != nil {
-		// Log the error but continue with a minimal configuration
-		fmt.Printf("Warning: %v. Creating a minimal configuration.\n", err)
-
-		// Create a minimal configuration
-		minimalConfig := []byte(`rules:
-  - id: all
-    pattern: |
-      $X
-    message: "Semgrep analysis"
-    languages: [generic]
-    severity: INFO
-`)
-		return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), minimalConfig, utils.DefaultFilePerms)
-	}
-
-	// Write to file
-	return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), configData, utils.DefaultFilePerms)
-}
-
-// createDefaultSemgrepConfigFile creates a default semgrep.yaml configuration file
-func createDefaultSemgrepConfigFile(toolsConfigDir string) error {
-	// Use the refactored function from tools package
-	configData, err := tools.GetDefaultSemgrepConfig()
-	if err != nil {
-		// Log the error but continue with a minimal configuration
-		fmt.Printf("Warning: %v. Creating a minimal configuration.\n", err)
-
-		// Create a minimal configuration
-		minimalConfig := []byte(`rules:
-  - id: all
-    pattern: |
-      $X
-    message: "Semgrep analysis"
-    languages: [generic]
-    severity: INFO
-`)
-		return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), minimalConfig, utils.DefaultFilePerms)
+		return fmt.Errorf("failed to create Semgrep config: %v", err)
 	}
 
 	// Write to file

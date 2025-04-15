@@ -144,6 +144,7 @@ type Tool struct {
 func FilterToolsByConfigUsage(tools []Tool) []Tool {
 	var filtered []Tool
 	for _, tool := range tools {
+
 		if !tool.Settings.UsesConfigFile {
 			filtered = append(filtered, tool)
 		} else {
