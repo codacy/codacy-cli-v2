@@ -45,7 +45,7 @@ To install `codacy-cli` using Homebrew:
 brew install codacy/codacy-cli-v2/codacy-cli-v2
 ```
 
-## Linux
+### Linux
 
 For Linux, we rely on the codacy-cli.sh script in the root. To download the CLI, run:
 
@@ -66,7 +66,7 @@ Before running the analysis, install the specified tools:
 codacy-cli install
 ```
 
-### Run Analysis
+## Run Analysis
 
 To run ESLint and output the results to the terminal:
 
@@ -102,6 +102,16 @@ Some behaviors have changed with the new updates of the CLI. To rely on a specif
 export CODACY_CLI_V2_VERSION="1.0.0-main.133.3607792"
 ```
 
-### Example Repository
+## Example Repository
 
 As an example, you can check https://github.com/troubleshoot-codacy/eslint-test-examples for a repository that has an action relying on this CLI.
+
+## Troubleshooting
+
+#### Errors related to `docker-credential-osxkeychain` not found when running analysis
+
+Install the docker credential helper. For example, in MacOS:
+
+```bash
+brew install docker-credential-helper
+```

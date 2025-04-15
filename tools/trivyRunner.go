@@ -2,6 +2,7 @@ package tools
 
 import (
 	"codacy/cli-v2/config"
+	"fmt"
 	"os"
 	"os/exec"
 )
@@ -35,5 +36,9 @@ func RunTrivy(repositoryToAnalyseDirectory string, trivyBinary string, pathsToCh
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 
-	return cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to run Trivy: %w", err)
+	}
+	return nil
 }
