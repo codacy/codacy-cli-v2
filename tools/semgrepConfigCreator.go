@@ -3,127 +3,91 @@ package tools
 import (
 	"codacy/cli-v2/domain"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
-// supportedLanguages is a list of all languages supported by Semgrep
-var supportedLanguages = []string{
-	"apex", "bash", "c", "c#", "c++", "cairo",
-	"clojure", "cpp", "csharp", "dart", "docker",
-	"dockerfile", "elixir", "ex", "generic", "go",
-	"golang", "hack", "hcl", "html", "java",
-	"javascript", "js", "json", "jsonnet", "julia",
-	"kotlin", "kt", "lisp", "lua", "move_on_aptos",
-	"none", "ocaml", "php", "promql", "proto",
-	"proto3", "protobuf", "py", "python", "python2",
-	"python3", "ql", "r", "regex", "ruby",
-	"rust", "scala", "scheme", "sh", "sol",
-	"solidity", "swift", "terraform", "tf", "ts",
-	"typescript", "vue", "xml", "yaml",
+// semgrepRulesFile represents the structure of the rules.yaml file
+type semgrepRulesFile struct {
+	Rules []map[string]interface{} `yaml:"rules"`
 }
 
-// CreateSemgrepConfig generates a Semgrep configuration based on the tool configuration
-func CreateSemgrepConfig(config []domain.PatternConfiguration) string {
-	// Build the rules list
-	var rules []string
+// FilterRulesFromFile extracts enabled rules from a rules.yaml file based on configuration
+func FilterRulesFromFile(rulesFilePath string, config []domain.PatternConfiguration) ([]byte, error) {
+	// Read the rules.yaml file
+	data, err := os.ReadFile(rulesFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read rules file: %w", err)
+	}
 
-	// Process each pattern from the API
+	// Parse the YAML file
+	var allRules semgrepRulesFile
+	if err := yaml.Unmarshal(data, &allRules); err != nil {
+		return nil, fmt.Errorf("failed to parse rules file: %w", err)
+	}
+
+	// Create a map of enabled pattern IDs for faster lookup
+	enabledPatterns := make(map[string]bool)
 	for _, pattern := range config {
-
-		// Skip if pattern is not enabled
-		if !pattern.Enabled || !pattern.PatternDefinition.Enabled {
-			continue
-		}
-
-		// Skip if no languages defined
-		if len(pattern.PatternDefinition.Languages) == 0 {
-			continue
-		}
-
-		// Get the first language (Semgrep only supports one language per rule)
-		language := strings.ToLower(pattern.PatternDefinition.Languages[0])
-
-		// Map language names to Semgrep supported languages
-		switch language {
-		case "csharp":
-			language = "c#"
-		case "cpp":
-			language = "c++"
-		case "golang":
-			language = "go"
-		case "js":
-			language = "javascript"
-		case "kt":
-			language = "kotlin"
-		case "py":
-			language = "python"
-		case "sh":
-			language = "bash"
-		case "tf":
-			language = "terraform"
-		case "ts":
-			language = "typescript"
-		}
-
-		// Skip if language is not supported by Semgrep
-		isSupported := false
-		for _, supportedLang := range supportedLanguages {
-			if language == supportedLang {
-				isSupported = true
-				break
+		if pattern.Enabled && pattern.PatternDefinition.Enabled {
+			// Extract rule ID from pattern ID
+			parts := strings.SplitN(pattern.PatternDefinition.Id, "_", 2)
+			if len(parts) == 2 {
+				ruleID := parts[1]
+				enabledPatterns[ruleID] = true
 			}
 		}
-		if !isSupported {
-			continue
-		}
-
-		// Extract rule ID from pattern ID
-		parts := strings.SplitN(pattern.PatternDefinition.Id, "_", 2)
-		if len(parts) != 2 {
-			continue // Skip invalid pattern IDs
-		}
-
-		// The rest is the rule path
-		rulePath := parts[1]
-
-		// Ensure we have a valid ID
-		if rulePath == "" {
-			rulePath = "default_rule"
-		}
-
-		// Create rule entry
-		rule := fmt.Sprintf(`  - id: %s
-    pattern: |
-      $X
-    message: "Semgrep rule: %s"
-    languages: [%s]
-    severity: %s`,
-			strings.ReplaceAll(rulePath, ".", "_"), // Replace dots with underscores in ID
-			rulePath,
-			language,
-			strings.ToUpper(pattern.PatternDefinition.SeverityLevel))
-
-		rules = append(rules, rule)
 	}
 
-	// If no rules were added, use a default configuration
-	if len(rules) == 0 {
-		return `rules:
-  - id: default_rule
-    pattern: |
-      $X
-    message: "Semgrep analysis"
-    languages: [generic]
-    severity: INFO
-`
+	// Filter the rules based on enabled patterns
+	var filteredRules semgrepRulesFile
+	filteredRules.Rules = []map[string]interface{}{}
+
+	for _, rule := range allRules.Rules {
+		// Get the rule ID
+		if ruleID, ok := rule["id"].(string); ok && enabledPatterns[ruleID] {
+			// If this rule is enabled, include it
+			filteredRules.Rules = append(filteredRules.Rules, rule)
+		}
 	}
 
-	// Generate semgrep.yaml content
-	var contentBuilder strings.Builder
-	contentBuilder.WriteString("rules:\n")
-	for _, rule := range rules {
-		contentBuilder.WriteString(rule + "\n")
+	// If no rules match, return an error
+	if len(filteredRules.Rules) == 0 {
+		return nil, fmt.Errorf("no matching rules found")
 	}
 
-	return contentBuilder.String()
+	// Marshal the filtered rules back to YAML
+	return yaml.Marshal(filteredRules)
+}
+
+// GetSemgrepConfig gets the Semgrep configuration based on the pattern configuration
+func GetSemgrepConfig(config []domain.PatternConfiguration) ([]byte, error) {
+	// Get the default rules file location
+	rulesFile := filepath.Join("plugins", "tools", "semgrep", "rules.yaml")
+
+	// Check if it exists and config is not empty
+	if _, err := os.Stat(rulesFile); err == nil && len(config) > 0 {
+		// Try to filter rules from the file
+		return FilterRulesFromFile(rulesFile, config)
+	}
+
+	// If rules.yaml doesn't exist or config is empty, return an error
+	return nil, fmt.Errorf("rules.yaml not found or empty configuration")
+}
+
+// GetDefaultSemgrepConfig gets the default Semgrep configuration
+func GetDefaultSemgrepConfig() ([]byte, error) {
+	// Get the default rules file location
+	rulesFile := filepath.Join("plugins", "tools", "semgrep", "rules.yaml")
+
+	// If the file exists, return its contents
+	if _, err := os.Stat(rulesFile); err == nil {
+		return os.ReadFile(rulesFile)
+	}
+
+	// Return an error if rules.yaml doesn't exist
+	return nil, fmt.Errorf("rules.yaml not found")
 }

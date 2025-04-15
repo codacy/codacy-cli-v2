@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 const CodacyApiBase = "https://app.codacy.com"
@@ -459,119 +458,50 @@ type SemgrepRulesFile struct {
 
 // createSemgrepConfigFile creates a semgrep.yaml configuration file based on the API configuration
 func createSemgrepConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
-	// When specific patterns are configured, filter rules from rules.yaml
-	if len(config) > 0 {
-		// First try to read the rules.yaml file
-		rulesFile := filepath.Join("plugins", "tools", "semgrep", "rules.yaml")
-		if _, err := os.Stat(rulesFile); err == nil {
-			// Read and parse the rules.yaml file
-			data, err := os.ReadFile(rulesFile)
-			if err != nil {
-				fmt.Printf("Warning: Failed to read rules.yaml: %v\n", err)
-				// Fall back to the old method
-				semgrepConfigurationString := tools.CreateSemgrepConfig(config)
-				return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(semgrepConfigurationString), utils.DefaultFilePerms)
-			}
+	// Use the refactored function from tools package
+	configData, err := tools.GetSemgrepConfig(config)
+	if err != nil {
+		// Log the error but continue with a minimal configuration
+		fmt.Printf("Warning: %v. Creating a minimal configuration.\n", err)
 
-			// Parse the YAML file just enough to get the rules array
-			var allRules SemgrepRulesFile
-			if err := yaml.Unmarshal(data, &allRules); err != nil {
-				fmt.Printf("Warning: Failed to parse rules.yaml: %v\n", err)
-				// Fall back to the old method
-				semgrepConfigurationString := tools.CreateSemgrepConfig(config)
-				return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(semgrepConfigurationString), utils.DefaultFilePerms)
-			}
-
-			// Create a map of enabled pattern IDs for faster lookup
-			enabledPatterns := make(map[string]bool)
-			for _, pattern := range config {
-				if pattern.Enabled && pattern.PatternDefinition.Enabled {
-					// Extract rule ID from pattern ID
-					parts := strings.SplitN(pattern.PatternDefinition.Id, "_", 2)
-					if len(parts) == 2 {
-						ruleID := parts[1]
-						enabledPatterns[ruleID] = true
-					}
-				}
-			}
-
-			// Filter the rules based on enabled patterns
-			var filteredRules SemgrepRulesFile
-			filteredRules.Rules = []map[string]interface{}{}
-
-			for _, rule := range allRules.Rules {
-				// Get the rule ID
-				if ruleID, ok := rule["id"].(string); ok && enabledPatterns[ruleID] {
-					// If this rule is enabled, include it
-					filteredRules.Rules = append(filteredRules.Rules, rule)
-				}
-			}
-
-			// If no rules match, use the old method
-			if len(filteredRules.Rules) == 0 {
-				fmt.Println("Warning: No matching rules found in rules.yaml")
-				semgrepConfigurationString := tools.CreateSemgrepConfig(config)
-				return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(semgrepConfigurationString), utils.DefaultFilePerms)
-			}
-
-			// Marshal the filtered rules back to YAML
-			filteredData, err := yaml.Marshal(filteredRules)
-			if err != nil {
-				fmt.Printf("Warning: Failed to marshal filtered rules: %v\n", err)
-				// Fall back to the old method
-				semgrepConfigurationString := tools.CreateSemgrepConfig(config)
-				return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(semgrepConfigurationString), utils.DefaultFilePerms)
-			}
-
-			// Write the filtered rules to semgrep.yaml
-			return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), filteredData, utils.DefaultFilePerms)
-		}
-
-		// If rules.yaml doesn't exist, fall back to the old method
-		semgrepConfigurationString := tools.CreateSemgrepConfig(config)
-		return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(semgrepConfigurationString), utils.DefaultFilePerms)
+		// Create a minimal configuration
+		minimalConfig := []byte(`rules:
+  - id: all
+    pattern: |
+      $X
+    message: "Semgrep analysis"
+    languages: [generic]
+    severity: INFO
+`)
+		return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), minimalConfig, utils.DefaultFilePerms)
 	}
 
-	// For default case with no specific patterns, use the entire rules.yaml
-	rulesFile := filepath.Join("plugins", "tools", "semgrep", "rules.yaml")
-	if _, err := os.Stat(rulesFile); err == nil {
-		data, err := os.ReadFile(rulesFile)
-		if err != nil {
-			fmt.Printf("Warning: Failed to read rules.yaml: %v\n", err)
-			// Fall back to the old method for default config
-			emptyConfig := []domain.PatternConfiguration{}
-			content := tools.CreateSemgrepConfig(emptyConfig)
-			return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(content), utils.DefaultFilePerms)
-		}
-		return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), data, utils.DefaultFilePerms)
-	}
-
-	// Fall back to default config
-	emptyConfig := []domain.PatternConfiguration{}
-	content := tools.CreateSemgrepConfig(emptyConfig)
-	return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(content), utils.DefaultFilePerms)
+	// Write to file
+	return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), configData, utils.DefaultFilePerms)
 }
 
 // createDefaultSemgrepConfigFile creates a default semgrep.yaml configuration file
 func createDefaultSemgrepConfigFile(toolsConfigDir string) error {
-	// Use rules.yaml as the default
-	rulesFile := filepath.Join("plugins", "tools", "semgrep", "rules.yaml")
-	if _, err := os.Stat(rulesFile); err == nil {
-		data, err := os.ReadFile(rulesFile)
-		if err != nil {
-			fmt.Printf("Warning: Failed to read rules.yaml: %v\n", err)
-			// Fall back to the old method
-			emptyConfig := []domain.PatternConfiguration{}
-			content := tools.CreateSemgrepConfig(emptyConfig)
-			return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(content), utils.DefaultFilePerms)
-		}
-		return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), data, utils.DefaultFilePerms)
+	// Use the refactored function from tools package
+	configData, err := tools.GetDefaultSemgrepConfig()
+	if err != nil {
+		// Log the error but continue with a minimal configuration
+		fmt.Printf("Warning: %v. Creating a minimal configuration.\n", err)
+
+		// Create a minimal configuration
+		minimalConfig := []byte(`rules:
+  - id: all
+    pattern: |
+      $X
+    message: "Semgrep analysis"
+    languages: [generic]
+    severity: INFO
+`)
+		return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), minimalConfig, utils.DefaultFilePerms)
 	}
 
-	// Fall back to the old method if rules.yaml doesn't exist
-	emptyConfig := []domain.PatternConfiguration{}
-	content := tools.CreateSemgrepConfig(emptyConfig)
-	return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), []byte(content), utils.DefaultFilePerms)
+	// Write to file
+	return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), configData, utils.DefaultFilePerms)
 }
 
 // cleanConfigDirectory removes all previous configuration files in the tools-configs directory

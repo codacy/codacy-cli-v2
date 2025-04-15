@@ -100813,7 +100813,7 @@ rules:
       - "A01:2021-Broken Access Control"
     cwe: "CWE-22"
     shortDescription: "Improper limitation of a pathname to a restricted directory 
-    ('Path Traversal')"    
+      ('Path Traversal')"    
     references:
       - "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/07-Input_Validation_Testing/11.1-Testing_for_Local_File_Inclusion"
       - "https://github.com/semgrep/semgrep-rules/blob/develop/ruby/rails/security/brakeman/check-render-local-file-include.yaml"
