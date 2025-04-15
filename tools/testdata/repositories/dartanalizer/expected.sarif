@@ -1,0 +1,135 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "results": [
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
+                },
+                "region": {
+                  "startLine": 2
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Unused import: 'dart:io'."
+          },
+          "ruleId": "UNUSED_IMPORT"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
+                },
+                "region": {
+                  "startLine": 6
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "The value of the local variable 'x' isn't used."
+          },
+          "ruleId": "UNUSED_LOCAL_VARIABLE"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
+                },
+                "region": {
+                  "startLine": 23
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "The value of the local variable 'unused' isn't used."
+          },
+          "ruleId": "UNUSED_LOCAL_VARIABLE"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
+                },
+                "region": {
+                  "startLine": 26
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "The value of the local variable 'something' isn't used."
+          },
+          "ruleId": "UNUSED_LOCAL_VARIABLE"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
+                },
+                "region": {
+                  "startLine": 31
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Dead code."
+          },
+          "ruleId": "DEAD_CODE"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
+                },
+                "region": {
+                  "startLine": 35
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Dead code."
+          },
+          "ruleId": "DEAD_CODE"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "testdata/repositories/dartanalizer/src/main.dart"
+                },
+                "region": {
+                  "startLine": 35
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "The value of the local variable 'number' isn't used."
+          },
+          "ruleId": "UNUSED_LOCAL_VARIABLE"
+        }
+      ]
+    }
+  ]
+}

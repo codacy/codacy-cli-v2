@@ -6,7 +6,9 @@ type ParameterConfiguration struct {
 }
 
 type PatternDefinition struct {
-	Id string `json:"id"`
+	Id       string `json:"id"`
+	Category string `json:"category"`
+	Level    string `json:"level"`
 }
 
 type PatternConfiguration struct {

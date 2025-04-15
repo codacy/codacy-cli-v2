@@ -138,13 +138,14 @@ func configFileTemplate(tools []tools.Tool) string {
 	// Track needed runtimes
 	needsNode := false
 	needsPython := false
-
+	needsDart := false
 	// Default versions
 	defaultVersions := map[string]string{
-		ESLint: "9.3.0",
-		Trivy:  "0.59.1",
-		PyLint: "3.3.6",
-		PMD:    "6.55.0",
+		ESLint:       "9.3.0",
+		Trivy:        "0.59.1",
+		PyLint:       "3.3.6",
+		PMD:          "6.55.0",
+		DartAnalyzer: "3.7.2",
 	}
 
 	// Build map of enabled tools with their versions
@@ -161,6 +162,8 @@ func configFileTemplate(tools []tools.Tool) string {
 			needsNode = true
 		} else if tool.Uuid == PyLint {
 			needsPython = true
+		} else if tool.Uuid == DartAnalyzer {
+			needsDart = true
 		}
 	}
 
@@ -176,10 +179,14 @@ func configFileTemplate(tools []tools.Tool) string {
 		if needsPython {
 			sb.WriteString("    - python@3.11.11\n")
 		}
+		if needsDart {
+			sb.WriteString("    - dart@3.7.2\n")
+		}
 	} else {
 		// In local mode with no tools specified, include all runtimes
 		sb.WriteString("    - node@22.2.0\n")
 		sb.WriteString("    - python@3.11.11\n")
+		sb.WriteString("    - dart@3.7.2\n")
 	}
 
 	sb.WriteString("tools:\n")
@@ -188,10 +195,11 @@ func configFileTemplate(tools []tools.Tool) string {
 	if len(tools) > 0 {
 		// Add only the tools that are in the API response (enabled tools)
 		uuidToName := map[string]string{
-			ESLint: "eslint",
-			Trivy:  "trivy",
-			PyLint: "pylint",
-			PMD:    "pmd",
+			ESLint:       "eslint",
+			Trivy:        "trivy",
+			PyLint:       "pylint",
+			PMD:          "pmd",
+			DartAnalyzer: "dartanalyzer",
 		}
 
 		for uuid, name := range uuidToName {
@@ -205,6 +213,7 @@ func configFileTemplate(tools []tools.Tool) string {
 		sb.WriteString(fmt.Sprintf("    - trivy@%s\n", defaultVersions[Trivy]))
 		sb.WriteString(fmt.Sprintf("    - pylint@%s\n", defaultVersions[PyLint]))
 		sb.WriteString(fmt.Sprintf("    - pmd@%s\n", defaultVersions[PMD]))
+		sb.WriteString(fmt.Sprintf("    - dartanalyzer@%s\n", defaultVersions[DartAnalyzer]))
 	}
 
 	return sb.String()
@@ -380,6 +389,13 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 			}
 		}
 		fmt.Println("Pylint configuration created based on Codacy settings")
+	case DartAnalyzer:
+		if len(patternConfiguration) > 0 {
+			err := createDartAnalyzerConfigFile(patternConfiguration, toolsConfigDir)
+			if err != nil {
+				return fmt.Errorf("failed to create Dart Analyzer config: %v", err)
+			}
+		}
 	}
 	return nil
 }
@@ -412,6 +428,12 @@ func createTrivyConfigFile(config []domain.PatternConfiguration, toolsConfigDir 
 
 	// Write to file
 	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(trivyConfigurationString), utils.DefaultFilePerms)
+}
+
+func createDartAnalyzerConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
+
+	dartAnalyzerConfigurationString := tools.CreateDartAnalyzerConfig(config)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "analysis_options.yaml"), []byte(dartAnalyzerConfigurationString), utils.DefaultFilePerms)
 }
 
 // createDefaultTrivyConfigFile creates a default trivy.yaml configuration file
@@ -462,8 +484,9 @@ func cleanConfigDirectory(toolsConfigDir string) error {
 }
 
 const (
-	ESLint string = "f8b29663-2cb2-498d-b923-a10c6a8c05cd"
-	Trivy  string = "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb"
-	PMD    string = "9ed24812-b6ee-4a58-9004-0ed183c45b8f"
-	PyLint string = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
+	ESLint       string = "f8b29663-2cb2-498d-b923-a10c6a8c05cd"
+	Trivy        string = "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb"
+	PMD          string = "9ed24812-b6ee-4a58-9004-0ed183c45b8f"
+	PyLint       string = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
+	DartAnalyzer string = "d203d615-6cf1-41f9-be5f-e2f660f7850f"
 )

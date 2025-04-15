@@ -217,6 +217,11 @@ func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 	return tools.RunPylint(workDirectory, pylint, pathsToCheck, outputFile, outputFormat)
 }
 
+func runDartAnalyzer(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
+	dartanalyzer := config.Config.Tools()["dartanalyzer"]
+	return tools.RunDartAnalyzer(workDirectory, dartanalyzer.InstallDir, dartanalyzer.Binaries["dart"], pathsToCheck, outputFile, outputFormat)
+}
+
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Runs all configured linters.",
@@ -307,6 +312,8 @@ func runTool(workDirectory string, toolName string, args []string, outputFile st
 		return runPmdAnalysis(workDirectory, args, outputFile, outputFormat)
 	case "pylint":
 		return runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
+	case "dartanalyzer":
+		return runDartAnalyzer(workDirectory, args, outputFile, outputFormat)
 	default:
 		return fmt.Errorf("unsupported tool: %s", toolName)
 	}
