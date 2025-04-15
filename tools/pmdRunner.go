@@ -2,6 +2,7 @@ package tools
 
 import (
 	"codacy/cli-v2/config"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -56,7 +57,7 @@ func RunPmd(repositoryToAnalyseDirectory string, pmdBinary string, pathsToCheck 
 			// Exit code 4 means violations found – treat as success
 			return nil
 		}
-		return err
+		return fmt.Errorf("failed to run PMD: %w", err)
 	}
 	return nil
 }

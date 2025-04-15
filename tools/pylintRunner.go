@@ -59,7 +59,7 @@ func RunPylint(workDirectory string, toolInfo *plugins.ToolInfo, files []string,
 		// Pylint returns non-zero exit code when it finds issues
 		// We should not treat this as an error
 		if _, ok := err.(*exec.ExitError); !ok {
-			return fmt.Errorf("failed to run pylint: %w", err)
+			return fmt.Errorf("failed to run Pylint: %w", err)
 		}
 	}
 
