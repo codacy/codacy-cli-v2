@@ -258,7 +258,6 @@ var analyzeCmd = &cobra.Command{
 				tmpFile := filepath.Join(tmpDir, fmt.Sprintf("%s.sarif", toolName))
 				if err := runTool(workDirectory, toolName, args, tmpFile); err != nil {
 					log.Printf("Tool failed to run: %s: %v\n", toolName, err)
-					continue
 				}
 				sarifOutputs = append(sarifOutputs, tmpFile)
 			}
