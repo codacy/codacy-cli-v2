@@ -38,6 +38,15 @@ func CreateEslintConfig(configuration []domain.PatternConfiguration) string {
 		rule = strings.ReplaceAll(rule, "_", "/")
 		rule = strings.ReplaceAll(rule, tempstring, "_")
 
+		// If the rule starts with @, it's a scoped plugin rule
+		if strings.HasPrefix(rule, "@") {
+			parts := strings.Split(rule, "/")
+			if len(parts) >= 2 {
+				// Add eslint-plugin to the plugin name
+				rule = parts[0] + "/eslint-plugin/" + strings.Join(parts[1:], "/")
+			}
+		}
+
 		parametersString := ""
 
 		for _, parameter := range patternConfiguration.Parameters {

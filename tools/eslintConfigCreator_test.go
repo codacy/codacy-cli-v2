@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 	"os"
 	"path/filepath"
@@ -151,6 +152,13 @@ func TestCreateEslintConfigWithPlugins(t *testing.T) {
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		t.Fatalf("Failed to create tools config directory: %v", err)
 	}
+
+	// Save original config and restore it after the test
+	originalConfig := config.Config
+	defer func() { config.Config = originalConfig }()
+
+	// Create a new config for testing
+	config.Config = *config.NewConfigType("", tmpDir, tmpDir)
 
 	tests := []struct {
 		name           string
