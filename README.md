@@ -1,117 +1,185 @@
-# codacy-cli-v2
+# Codacy CLI v2
 
-The Codacy CLI (version 2) is a command-line tool that supports analyzing code using tools like ESLint and uploading the results in SARIF format to Codacy. 
-The tool is invoked using the `codacy-cli` command, and provides two main commands: analyze and upload.
+The Codacy CLI (version 2) is a command-line tool that helps you analyze code quality and security issues in your codebase and upload the results to Codacy. It supports multiple analysis tools including ESLint, Trivy, PMD, PyLint, and DartAnalyzer.
 
-### Commands
+## Installation
 
-- **`analyze` Command**: Runs ESLint analysis on the codebase.
-    - `--output, -o`: Output file for the results.
-    - `--tool, -t`: Specifies the tool to run analysis with (e.g., ESLint).
-    - `--format`: Output format (use 'sarif' for SARIF format to terminal).
-    - `--fix`: Automatically fixes issues when possible.
-
-- **`upload` Command With Project Token**: Uploads a SARIF file containing analysis results to Codacy.
-    - `--sarif-path, -s`: Path to the SARIF report.
-    - `--commit-uuid, -c`: Commit UUID.
-    - `--project-token, -t`: Project token for Codacy API.
-
-- **`upload` Command With API Token**: Uploads a SARIF file containing analysis results to Codacy.
-    - `--sarif-path, -s`: Path to the SARIF report.
-    - `--commit-uuid, -c`: Commit UUID.
-    - `--api-token, -a`: User level token for Codacy API.
-    - `--provider, -p`: Provider name (e.g., gh, gl, bb).
-    - `--owner, -o`: Repository owner.
-    - `--repository, -r`: Repository name.
-
-### Important Concepts
-
-- **`.codacy/codacy.yaml`**: Configuration file to specify runtimes and tools versions for the CLI.
-  ```yaml
-  runtimes:
-      - node@22.2.0
-  tools:
-      - eslint@9.3.0
-  
-- **`codacy-cli install`**: Command to install the specified node and eslint versions before running analysis.
-
-## Download
-
-### MacOS (brew)
-
-To install `codacy-cli` using Homebrew:
+### macOS (Homebrew)
 
 ```bash
 brew install codacy/codacy-cli-v2/codacy-cli-v2
 ```
 
-### Linux
-
-For Linux, we rely on the codacy-cli.sh script in the root. To download the CLI, run:
+### Linux and macOS (Script)
 
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/codacy/codacy-cli-v2/main/codacy-cli.sh)
 ```
-You can either put the downloaded script in a specific file or create an alias that will download the script and look for changes:
+
+You can create an alias for easy access:
 
 ```bash
 alias codacy-cli="bash <(curl -Ls https://raw.githubusercontent.com/codacy/codacy-cli-v2/main/codacy-cli.sh)"
 ```
 
-## Installation
+### Specific Version
 
-Before running the analysis, install the specified tools:
+To use a specific version of the CLI:
+
+```bash
+export CODACY_CLI_V2_VERSION="1.0.0-main.133.3607792"
+```
+
+## Getting Started
+
+### Initialize Your Project
+
+Set up your project with a configuration file:
+
+```bash
+# With Codacy API token (recommended)
+codacy-cli init --api-token YOUR_API_TOKEN --provider gh --organization YOUR_ORG --repository YOUR_REPO
+
+# Or use local configuration only
+codacy-cli init
+```
+
+### Install Required Tools
+
+Install the runtimes and tools specified in your configuration:
 
 ```bash
 codacy-cli install
 ```
 
-## Run Analysis
+## Commands
 
-To run ESLint and output the results to the terminal:
+### Initialize Project (`init`)
 
 ```bash
+# With API token
+codacy-cli init --api-token YOUR_API_TOKEN --provider gh --organization YOUR_ORG --repository YOUR_REPO
+
+# Local mode (without Codacy integration)
+codacy-cli init
+```
+
+This command creates a `.codacy` directory with configuration files, including `codacy.yaml` that defines the tools and runtime versions to use.
+
+### Install Tools (`install`)
+
+```bash
+codacy-cli install
+```
+
+Installs all the runtimes and tools specified in your configuration file.
+
+### Run Analysis (`analyze`)
+
+```bash
+# Run analysis with a specific tool
 codacy-cli analyze --tool eslint
-```
 
-To output results in SARIF format to the terminal:
-
-```bash
+# Run analysis and output results in SARIF format to terminal
 codacy-cli analyze --tool eslint --format sarif
+
+# Run analysis and save results to a file
+codacy-cli analyze --tool eslint --format sarif --output results.sarif
+
+# Run analysis with auto-fix (when supported)
+codacy-cli analyze --tool eslint --fix
 ```
 
-To store the results as SARIF in a file:
+Supported tools:
+- ESLint (JavaScript/TypeScript)
+- Trivy (Security scanning)
+- PMD (Java, etc.)
+- PyLint (Python)
+- DartAnalyzer (Dart)
 
+### Upload Results (`upload`)
+
+Using project token:
 ```bash
-codacy-cli analyze -t eslint --format sarif -o eslint.sarif
+codacy-cli upload --sarif-path results.sarif --commit-uuid YOUR_COMMIT_UUID --project-token YOUR_PROJECT_TOKEN
 ```
 
-## Upload Results
-
-To upload a SARIF file to Codacy:
-
+Using API token:
 ```bash
-codacy-cli upload -s path/to/your.sarif -c your-commit-uuid -t your-project-token
+codacy-cli upload --sarif-path results.sarif --commit-uuid YOUR_COMMIT_UUID --api-token YOUR_API_TOKEN --provider gh --owner YOUR_ORG --repository YOUR_REPO
 ```
 
-## Breaking Changes
+## Configuration File
 
-Some behaviors have changed with the new updates of the CLI. To rely on a specific version, you can add that version to your environment:
+The Codacy CLI uses a YAML configuration file (`.codacy/codacy.yaml`) to specify runtimes and tools:
 
+```yaml
+runtimes:
+  - node@22.2.0
+  - python@3.11.11
+  - dart@3.7.2
+tools:
+  - eslint@9.3.0
+  - trivy@0.59.1
+  - pylint@3.3.6
+  - pmd@6.55.0
+  - dartanalyzer@3.7.2
 ```
-export CODACY_CLI_V2_VERSION="1.0.0-main.133.3607792"
+
+## CI/CD Integration
+
+To use Codacy CLI in your CI/CD pipeline, add it to your workflow. Example for GitHub Actions:
+
+```yaml
+- name: Install Codacy CLI
+  run: bash <(curl -Ls https://raw.githubusercontent.com/codacy/codacy-cli-v2/main/codacy-cli.sh) download
+
+- name: Initialize Codacy CLI
+  run: codacy-cli init
+
+- name: Install tools
+  run: codacy-cli install
+
+- name: Run analysis
+  run: codacy-cli analyze --tool eslint --format sarif --output results.sarif
+
+- name: Upload results
+  run: codacy-cli upload --sarif-path results.sarif --commit-uuid ${{ github.sha }} --project-token ${{ secrets.CODACY_PROJECT_TOKEN }}
 ```
 
 ## Example Repository
 
-As an example, you can check https://github.com/troubleshoot-codacy/eslint-test-examples for a repository that has an action relying on this CLI.
+For a complete example of using the Codacy CLI, check out: https://github.com/troubleshoot-codacy/eslint-test-examples
 
 ## Troubleshooting
 
-#### Errors related to `docker-credential-osxkeychain` not found when running analysis
+### Docker Credential Helper Errors
 
-Install the docker credential helper. For example, in MacOS:
+If you encounter errors related to `docker-credential-osxkeychain` when running analysis, install the Docker credential helper:
 
 ```bash
+# macOS
 brew install docker-credential-helper
 ```
+
+### Configuration File Not Found
+
+If you see an error about missing configuration:
+
+```
+No configuration file was found, execute init command first.
+```
+
+Run `codacy-cli init` to create the necessary configuration files.
+
+### Tool Installation Issues
+
+If you encounter issues with tool installation, try:
+
+1. Check your internet connection
+2. Verify you have appropriate permissions
+3. Run `codacy-cli install` with verbose output to see detailed errors
+
+## Support
+
+For issues or questions, please file an issue on the [GitHub repository](https://github.com/codacy/codacy-cli-v2/issues).
