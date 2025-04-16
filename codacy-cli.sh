@@ -10,11 +10,12 @@ get_version_from_json() {
     if [ -f "$version_file" ]; then
         local version=$(grep -o '"version": *"[^"]*"' "$version_file" | cut -d'"' -f4)
         if [ -n "$version" ]; then
-            echo "Found version $version in version.json"
+            echo "Found version $version in version.json" >&2
+            echo "$version"
             return 0
         fi
     fi
-    echo "No version found in version.json"
+    echo " No version found in version.json" >&2
     return 1
 }
 
@@ -121,21 +122,24 @@ version_file=".codacy/version.json"
 # Determine which version to use
 if [ "$1" = "update" ]; then
     echo "Updating to latest version"
-
     latest_version=$(get_latest_version)
     version="$latest_version"
+
     if [ -n "$CODACY_CLI_V2_VERSION" ]; then
         echo "WARNING: Latest version downloaded, but using version specified in CODACY_CLI_V2_VERSION environment variable: $CODACY_CLI_V2_VERSION"
         echo "         Unset CODACY_CLI_V2_VERSION to use the latest version"
+        version="$CODACY_CLI_V2_VERSION"
     fi
 elif [ -n "$CODACY_CLI_V2_VERSION" ]; then
     echo "Using version from CODACY_CLI_V2_VERSION environment variable: $CODACY_CLI_V2_VERSION"
     version="$CODACY_CLI_V2_VERSION"
 elif ! version=$(get_version_from_json ".codacy"); then
-    echo "No version specified, fetching latest version..."
+    echo "No version found in version.json, fetching latest version..."
     latest_version=$(get_latest_version)
     version="$latest_version"
-    echo "Using latest version: ${version}"
+    echo "Using latest version from GitHub: ${version}"
+else
+    echo "Using version from version.json: ${version}"
 fi
 
 # Set up version-specific paths
