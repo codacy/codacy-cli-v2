@@ -110,7 +110,15 @@ func NewConfigType(repositoryDirectory string, repositoryCache string, globalCac
 	c.toolsDirectory = filepath.Join(c.globalCacheDirectory, "tools")
 	c.toolsConfigDirectory = filepath.Join(c.localCodacyDirectory, "tools-configs")
 
-	c.projectConfigFile = filepath.Join(c.localCodacyDirectory, "codacy.yaml")
+	// If codacy.yml exists, we should rely on it
+	ymlPath := filepath.Join(c.localCodacyDirectory, "codacy.yml")
+	if _, err := os.Stat(ymlPath); err == nil {
+		c.projectConfigFile = ymlPath
+	} else {
+		// Otherwise default to codacy.yaml
+		c.projectConfigFile = filepath.Join(c.localCodacyDirectory, "codacy.yaml")
+	}
+
 	c.cliConfigFile = filepath.Join(c.localCodacyDirectory, "cli-config.yaml")
 
 	c.runtimes = make(map[string]*plugins.RuntimeInfo)
