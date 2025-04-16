@@ -16,10 +16,7 @@ import (
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update to the latest version",
-	Long: `Update to the latest version of the CLI. The command will:
-1. Check for the latest version on GitHub
-2. Download and install it if not already installed
-3. Update version.json with the latest version`,
+	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get the latest version
 		fmt.Println("Checking for latest version...")
