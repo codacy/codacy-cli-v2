@@ -11,10 +11,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"codacy/cli-v2/utils"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 var outputFile string
@@ -24,6 +26,133 @@ var outputFormat string
 var sarifPath string
 var commitUuid string
 var projectToken string
+
+// LanguagesConfig represents the structure of the languages configuration file
+type LanguagesConfig struct {
+	Tools []struct {
+		Name       string   `yaml:"name" json:"name"`
+		Languages  []string `yaml:"languages" json:"languages"`
+		Extensions []string `yaml:"extensions" json:"extensions"`
+	} `yaml:"tools" json:"tools"`
+}
+
+// LoadLanguageConfig loads the language configuration from the file
+func LoadLanguageConfig() (*LanguagesConfig, error) {
+	// First, try to load the YAML config
+	yamlPath := filepath.Join(config.Config.ToolsConfigDirectory(), "languages-config.yaml")
+
+	// Check if the YAML file exists
+	if _, err := os.Stat(yamlPath); err == nil {
+		data, err := os.ReadFile(yamlPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read languages configuration file: %w", err)
+		}
+
+		var config LanguagesConfig
+		if err := yaml.Unmarshal(data, &config); err != nil {
+			return nil, fmt.Errorf("failed to parse YAML languages configuration file: %w", err)
+		}
+
+		return &config, nil
+	}
+
+	// If YAML file doesn't exist, try the JSON config for backward compatibility
+	jsonPath := filepath.Join(config.Config.ToolsConfigDirectory(), "languages-config.json")
+
+	// Check if the JSON file exists
+	if _, err := os.Stat(jsonPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("languages configuration file not found: neither %s nor %s exists", yamlPath, jsonPath)
+	}
+
+	data, err := os.ReadFile(jsonPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read JSON languages configuration file: %w", err)
+	}
+
+	var config LanguagesConfig
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON languages configuration file: %w", err)
+	}
+
+	return &config, nil
+}
+
+// GetFileExtension extracts the file extension from a path
+func GetFileExtension(filePath string) string {
+	return strings.ToLower(filepath.Ext(filePath))
+}
+
+// IsToolSupportedForFile checks if a tool supports a given file based on its extension
+func IsToolSupportedForFile(toolName string, filePath string, langConfig *LanguagesConfig) bool {
+	if langConfig == nil {
+		// If no language config is available, assume all tools are supported
+		return true
+	}
+
+	fileExt := GetFileExtension(filePath)
+	if fileExt == "" {
+		// If file has no extension, assume tool is supported
+		return true
+	}
+
+	for _, tool := range langConfig.Tools {
+		if tool.Name == toolName {
+			// If tool has no extensions defined, assume it supports all files
+			if len(tool.Extensions) == 0 {
+				return true
+			}
+
+			// Check if file extension is supported by this tool
+			for _, ext := range tool.Extensions {
+				if strings.EqualFold(ext, fileExt) {
+					return true
+				}
+			}
+
+			// Extension not found in tool's supported extensions
+			return false
+		}
+	}
+
+	// If tool not found in config, assume it's supported
+	return true
+}
+
+// FilterToolsByLanguageSupport filters tools by language support for the given files
+func FilterToolsByLanguageSupport(tools map[string]*plugins.ToolInfo, files []string) map[string]*plugins.ToolInfo {
+	if len(files) == 0 {
+		// If no files specified, return all tools
+		return tools
+	}
+
+	langConfig, err := LoadLanguageConfig()
+	if err != nil {
+		log.Printf("Warning: Failed to load language configuration: %v. Running all tools.", err)
+		return tools
+	}
+
+	result := make(map[string]*plugins.ToolInfo)
+
+	// For each tool, check if it supports at least one of the files
+	for toolName, toolInfo := range tools {
+		supported := false
+
+		for _, file := range files {
+			if IsToolSupportedForFile(toolName, file, langConfig) {
+				supported = true
+				break
+			}
+		}
+
+		if supported {
+			result[toolName] = toolInfo
+		} else {
+			log.Printf("Skipping %s as it doesn't support the specified file(s)", toolName)
+		}
+	}
+
+	return result
+}
 
 type Sarif struct {
 	Runs []struct {
@@ -247,7 +376,15 @@ var analyzeCmd = &cobra.Command{
 			log.Fatal("No tools configured. Please run 'codacy-cli init' and 'codacy-cli install' first")
 		}
 
-		log.Println("Running all configured tools...")
+		// Filter tools by language support
+		toolsToRun = FilterToolsByLanguageSupport(toolsToRun, args)
+
+		if len(toolsToRun) == 0 {
+			log.Println("No tools support the specified file(s). Skipping analysis.")
+			return
+		}
+
+		log.Println("Running tools for the specified file(s)...")
 
 		if outputFormat == "sarif" {
 			// Create temporary directory for individual tool outputs
