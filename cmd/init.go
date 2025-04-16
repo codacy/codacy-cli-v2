@@ -255,6 +255,20 @@ func buildRepositoryConfigurationFiles(token string) error {
 		return err
 	}
 
+	// Map UUID to tool shortname for lookup
+	uuidToName := map[string]string{
+		ESLint:       "eslint",
+		Trivy:        "trivy",
+		PyLint:       "pylint",
+		PMD:          "pmd",
+		DartAnalyzer: "dartanalyzer",
+	}
+
+	// Generate languages configuration based on API tools response
+	if err := tools.CreateLanguagesConfigFile(apiTools, toolsConfigDir, uuidToName); err != nil {
+		return fmt.Errorf("failed to create languages configuration file: %w", err)
+	}
+
 	// Filter out any tools that use configuration file
 	configuredToolsWithUI := tools.FilterToolsByConfigUsage(apiTools)
 

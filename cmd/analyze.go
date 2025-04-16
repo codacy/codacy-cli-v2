@@ -120,8 +120,9 @@ func IsToolSupportedForFile(toolName string, filePath string, langConfig *Langua
 
 // FilterToolsByLanguageSupport filters tools by language support for the given files
 func FilterToolsByLanguageSupport(tools map[string]*plugins.ToolInfo, files []string) map[string]*plugins.ToolInfo {
-	if len(files) == 0 {
-		// If no files specified, return all tools
+
+	if len(files) == 0 || files[0] == "." {
+		// If no files specified or current directory, return all tools
 		return tools
 	}
 
