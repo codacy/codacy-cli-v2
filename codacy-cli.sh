@@ -10,12 +10,11 @@ get_version_from_json() {
     if [ -f "$version_file" ]; then
         local version=$(grep -o '"version": *"[^"]*"' "$version_file" | cut -d'"' -f4)
         if [ -n "$version" ]; then
-            echo "DEBUG: Found version $version in version.json"
-            echo "$version"
+            echo "Found version $version in version.json"
             return 0
         fi
     fi
-    echo "DEBUG: No version found in version.json"
+    echo "No version found in version.json"
     return 1
 }
 
@@ -28,7 +27,6 @@ create_version_json() {
     echo "{\"version\": \"$version\"}" > "$version_file"
 }
 
-echo "DEBUG: Command being run: $1"
 
 os_name=$(uname)
 arch=$(uname -m)
@@ -50,7 +48,7 @@ handle_rate_limit() {
 }
 
 get_latest_version() {
-    echo "DEBUG: Fetching latest version from GitHub" >&2
+    echo "Fetching latest version from GitHub" >&2
     local response
     if [ -n "$GH_TOKEN" ]; then
         response=$(curl -Lq --header "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/codacy/codacy-cli-v2/releases/latest" 2>/dev/null)
@@ -60,7 +58,7 @@ get_latest_version() {
 
     handle_rate_limit "$response"
     local version=$(echo "$response" | grep -m 1 tag_name | cut -d'"' -f4)
-    echo "DEBUG: Latest version from GitHub: $version" >&2
+    echo "Latest version is: $version" >&2
     echo "$version"
 }
 
@@ -81,7 +79,6 @@ download() {
     local url="$1"
     local output_folder="$2"
 
-    echo "DEBUG: Downloading to folder: $output_folder"
     ( cd "$output_folder" && download_file "$url" )
 }
 
@@ -115,7 +112,6 @@ if [ -z "$CODACY_CLI_V2_TMP_FOLDER" ]; then
     else
         CODACY_CLI_V2_TMP_FOLDER=".codacy-cli-v2"
     fi
-    echo "DEBUG: Using cache directory: $CODACY_CLI_V2_TMP_FOLDER"
 fi
 
 # Set up paths first
@@ -124,8 +120,8 @@ version_file=".codacy/version.json"
 
 # Determine which version to use
 if [ "$1" = "update" ]; then
-    echo "DEBUG: Update command detected, updating to latest version"
-    echo "No version specified, fetching latest version..."
+    echo "Updating to latest version"
+
     latest_version=$(get_latest_version)
     version="$latest_version"
     if [ -n "$CODACY_CLI_V2_VERSION" ]; then
@@ -133,7 +129,7 @@ if [ "$1" = "update" ]; then
         echo "         Unset CODACY_CLI_V2_VERSION to use the latest version"
     fi
 elif [ -n "$CODACY_CLI_V2_VERSION" ]; then
-    echo "DEBUG: Using version from CODACY_CLI_V2_VERSION environment variable: $CODACY_CLI_V2_VERSION"
+    echo "Using version from CODACY_CLI_V2_VERSION environment variable: $CODACY_CLI_V2_VERSION"
     version="$CODACY_CLI_V2_VERSION"
 elif ! version=$(get_version_from_json ".codacy"); then
     echo "No version specified, fetching latest version..."
@@ -154,11 +150,11 @@ chmod +x "$bin_path"
 
 # Create version.json if it doesn't exist
 if [ ! -f "$version_file" ]; then
-    echo "DEBUG: version.json not found, creating it"
+    echo "version.json not found, creating it"
     mkdir -p "$(dirname "$version_file")"
     create_version_json "$(dirname "$version_file")" "$version"
 else
-    echo "DEBUG: version.json already exists"
+    echo "version.json already exists"
 fi
 
 run_command="$bin_path"
@@ -169,10 +165,7 @@ fi
 if [ "$#" -eq 1 ] && [ "$1" = "download" ]; then
     echo "Codacy cli v2 download succeeded"
 elif [ "$#" -eq 1 ] && [ "$1" = "update" ]; then
-    # For update command, we've already downloaded the latest version
-    # The Go code will handle updating version.json
     echo "Successfully updated to version $version"
 else
-    echo "DEBUG: Executing command: $run_command $*"
     eval "$run_command $*"
 fi
