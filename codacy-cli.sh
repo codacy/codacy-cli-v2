@@ -23,7 +23,7 @@ create_version_json() {
     local version="$2"
     local version_file="$cache_dir/version.json"
     
-    echo "DEBUG: Creating version.json with version $version"
+    echo "Creating version.json with version $version"
     echo "{\"version\": \"$version\"}" > "$version_file"
 }
 
@@ -65,7 +65,7 @@ get_latest_version() {
 download_file() {
     local url="$1"
 
-    echo "DEBUG: Downloading from URL: ${url}"
+    echo "Downloading from URL: ${url}"
     if command -v curl > /dev/null 2>&1; then
         curl -# -LS "$url" -O
     elif command -v wget > /dev/null 2>&1; then
@@ -140,7 +140,7 @@ fi
 
 # Set up version-specific paths
 bin_folder="${CODACY_CLI_V2_TMP_FOLDER}/${version}"
-echo "DEBUG: Using binary folder: $bin_folder"
+
 mkdir -p "$bin_folder"
 bin_path="$bin_folder"/"$bin_name"
 
