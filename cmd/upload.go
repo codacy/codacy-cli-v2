@@ -97,7 +97,7 @@ func processSarif(sarif Sarif) [][]map[string]interface{} {
 				codacyIssues = append(codacyIssues, map[string]interface{}{
 					"source":   location.PhysicalLocation.ArtifactLocation.URI,
 					"line":     location.PhysicalLocation.Region.StartLine,
-					"type":     modifiedType,
+					"type":     pattern.ID,
 					"message":  result.Message.Text,
 					"level":    pattern.Level,
 					"category": pattern.Category,
