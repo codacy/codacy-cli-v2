@@ -2,6 +2,31 @@
 
 set -e +o pipefail
 
+
+get_version_from_json() {
+    local cache_dir="$1"
+    local version_file="$cache_dir/version.json"
+    
+    if [ -f "$version_file" ]; then
+        local version=$(grep -o '"version": *"[^"]*"' "$version_file" | cut -d'"' -f4)
+        if [ -n "$version" ]; then
+            echo "$version"
+            return 0
+        fi
+    fi
+    return 1
+}
+
+create_version_json() {
+    local cache_dir="$1"
+    local version="$2"
+    local version_file="$cache_dir/version.json"
+    
+
+    echo "{\"version\": \"$version\"}" > "$version_file"
+}
+
+
 os_name=$(uname)
 arch=$(uname -m)
 
@@ -14,16 +39,36 @@ case "$arch" in
   ;;
 esac
 
+handle_rate_limit() {
+    local response="$1"
+    if echo "$response" | grep -q "API rate limit exceeded"; then
+          fatal "Error: GitHub API rate limit exceeded. Please try again later"
+    fi
+}
+
+get_latest_version() {
+    local response
+    if [ -n "$GH_TOKEN" ]; then
+        response=$(curl -Lq --header "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/codacy/codacy-cli-v2/releases/latest" 2>/dev/null)
+    else
+        response=$(curl -Lq "https://api.github.com/repos/codacy/codacy-cli-v2/releases/latest" 2>/dev/null)
+    fi
+
+    handle_rate_limit "$response"
+    local version=$(echo "$response" | grep -m 1 tag_name | cut -d'"' -f4)
+    echo "$version"
+}
+
 download_file() {
     local url="$1"
 
-    echo "Download url: ${url}"
+    echo "Downloading from URL: ${url}"
     if command -v curl > /dev/null 2>&1; then
         curl -# -LS "$url" -O
     elif command -v wget > /dev/null 2>&1; then
         wget "$url"
     else
-        fatal "Could not find curl or wget, please install one."
+        fatal "Error: Could not find curl or wget, please install one."
     fi
 }
 
@@ -40,15 +85,18 @@ download_cli() {
 
     local bin_folder="$1"
     local bin_path="$2"
+    local version="$3"
 
     if [ ! -f "$bin_path" ]; then
-        echo "Downloading the codacy cli v2 version ($CODACY_CLI_V2_VERSION)"
+        echo "📥 Downloading CLI version $version..."
 
-        remote_file="codacy-cli-v2_${CODACY_CLI_V2_VERSION}_${suffix}_${arch}.tar.gz"
-        url="https://github.com/codacy/codacy-cli-v2/releases/download/${CODACY_CLI_V2_VERSION}/${remote_file}"
+        remote_file="codacy-cli-v2_${version}_${suffix}_${arch}.tar.gz"
+        url="https://github.com/codacy/codacy-cli-v2/releases/download/${version}/${remote_file}"
 
         download "$url" "$bin_folder"
         tar xzfv "${bin_folder}/${remote_file}" -C "${bin_folder}"
+    else
+        echo "✓ Using cached CLI version $version"
     fi
 }
 
@@ -63,29 +111,47 @@ if [ -z "$CODACY_CLI_V2_TMP_FOLDER" ]; then
     fi
 fi
 
-# if no version is specified, we fetch the latest
-if [ -z "$CODACY_CLI_V2_VERSION" ]; then
-  if [ -n "$GH_TOKEN" ]; then
-    CODACY_CLI_V2_VERSION="$(curl -Lq --header "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/codacy/codacy-cli-v2/releases/latest" 2>/dev/null | grep -m 1 tag_name | cut -d'"' -f4)"
-  else
-    CODACY_CLI_V2_VERSION="$(curl -Lq "https://api.github.com/repos/codacy/codacy-cli-v2/releases/latest" 2>/dev/null | grep -m 1 tag_name | cut -d'"' -f4)"
-  fi
+# Set up paths first
+bin_name="codacy-cli-v2"
+version_file=".codacy/version.json"
+
+# Determine which version to use
+if [ "$1" = "update" ]; then
+    echo "🔄 Checking for latest version..."
+    latest_version=$(get_latest_version)
+    version="$latest_version"
+
+    if [ -n "$CODACY_CLI_V2_VERSION" ]; then
+        echo "⚠️  Environment variable CODACY_CLI_V2_VERSION is set to $CODACY_CLI_V2_VERSION"
+        echo "   Latest version is $latest_version, but using specified version"
+        echo "   Unset CODACY_CLI_V2_VERSION to use the latest version"
+        version="$CODACY_CLI_V2_VERSION"
+    fi
+elif [ -n "$CODACY_CLI_V2_VERSION" ]; then
+    echo "ℹ️  Using version from environment: $CODACY_CLI_V2_VERSION"
+    version="$CODACY_CLI_V2_VERSION"
+elif ! version=$(get_version_from_json ".codacy"); then
+    echo "ℹ️  No version configured, fetching latest..."
+    version=$(get_latest_version)
 fi
 
-# Folder containing the binary
-bin_folder="${CODACY_CLI_V2_TMP_FOLDER}/${CODACY_CLI_V2_VERSION}"
-# Create the folder if not exists
+# Set up version-specific paths
+bin_folder="${CODACY_CLI_V2_TMP_FOLDER}/${version}"
+
 mkdir -p "$bin_folder"
-
-# name of the binary
-bin_name="codacy-cli-v2"
-
-# Set binary path
 bin_path="$bin_folder"/"$bin_name"
 
-# download the tool
-download_cli "$bin_folder" "$bin_path"
+# Download the tool if not already installed
+download_cli "$bin_folder" "$bin_path" "$version"
 chmod +x "$bin_path"
+
+# Create version.json if it doesn't exist
+if [ ! -f "$version_file" ]; then
+
+    mkdir -p "$(dirname "$version_file")"
+    create_version_json "$(dirname "$version_file")" "$version"
+
+fi
 
 run_command="$bin_path"
 if [ -z "$run_command" ]; then
@@ -93,7 +159,9 @@ if [ -z "$run_command" ]; then
 fi
 
 if [ "$#" -eq 1 ] && [ "$1" = "download" ]; then
-    echo "$g" "Codacy cli v2 download succeeded";
+    echo "Codacy cli v2 download succeeded"
+elif [ "$#" -eq 1 ] && [ "$1" = "update" ]; then
+    echo "Successfully updated to version $version"
 else
     eval "$run_command $*"
 fi
