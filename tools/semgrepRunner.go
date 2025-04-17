@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 )
 
 // RunSemgrep executes Semgrep analysis on the specified directory
@@ -66,8 +65,6 @@ func RunSemgrep(workDirectory string, toolInfo *plugins.ToolInfo, files []string
 		cmd.Stdout = os.Stdout
 	}
 	cmd.Stderr = os.Stderr
-
-	fmt.Printf("Running Semgrep with command: %s\n", strings.Join(cmd.Args, " "))
 
 	// Run Semgrep
 	if err := cmd.Run(); err != nil {
