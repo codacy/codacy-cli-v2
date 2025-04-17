@@ -6,6 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // * Run from the root of the repo we want to analyse
@@ -24,6 +27,20 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 		cmd.Env = append(cmd.Env, "ESLINT_USE_FLAT_CONFIG=true")
 
 		cmd.Args = append(cmd.Args, "-c", configFile)
+
+		// Add plugins if they exist
+		plugins := extractEslintPlugins()
+		fmt.Printf("ESLint plugins: %s\n", plugins)
+		if plugins != "" {
+			pluginList := strings.Split(plugins, " ")
+			for _, plugin := range pluginList {
+				if plugin == "" {
+					continue
+				}
+				cmd.Args = append(cmd.Args, "--plugin", plugin)
+			}
+		}
+
 	}
 
 	if autoFix {
@@ -48,12 +65,13 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 
+	// Set NODE_PATH to include both the tool's node_modules and global node_modules
 	nodePathEnv := "NODE_PATH=" + eslintInstallationNodeModules
 	cmd.Env = append(cmd.Env, nodePathEnv)
 
 	// DEBUG
-	// fmt.Println(cmd.Env)
-	// fmt.Println(cmd)
+	fmt.Println(cmd.Env)
+	fmt.Println(cmd)
 
 	// Run the command and handle errors
 	err := cmd.Run()
@@ -65,4 +83,51 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 		return fmt.Errorf("failed to run ESLint: %w", err)
 	}
 	return nil
+}
+
+func extractEslintPlugins() string {
+	// Read the eslint_plugins.yaml file
+	content, err := os.ReadFile(filepath.Join(".codacy", "tools-configs", "eslint_plugins.yaml"))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return ""
+		}
+		fmt.Printf("Error reading eslint_plugins.yaml: %v", err)
+		return ""
+	}
+
+	// Parse the YAML content
+	var config struct {
+		Plugins []string `yaml:"plugins"`
+	}
+	if err := yaml.Unmarshal(content, &config); err != nil {
+		fmt.Printf("Error parsing eslint_plugins.yaml: %v", err)
+		return ""
+	}
+
+	// Convert the array to a space-separated string, removing version numbers
+	var result string
+	for i, plugin := range config.Plugins {
+		if plugin == "" {
+			continue
+		}
+
+		if i > 0 {
+			result += " "
+		}
+
+		// Remove version number
+		if lastAt := strings.LastIndex(plugin, "@"); lastAt != -1 {
+			plugin = plugin[:lastAt]
+		}
+
+		// For scoped packages, ensure we have the full name
+		if strings.HasPrefix(plugin, "@") && !strings.Contains(plugin, "/eslint-plugin") {
+			plugin = strings.TrimSuffix(plugin, "/plugin") + "/eslint-plugin"
+		}
+
+		result += plugin
+	}
+
+	return result
 }

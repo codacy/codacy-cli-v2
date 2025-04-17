@@ -137,3 +137,81 @@ func TestAddDownloadBasedTool(t *testing.T) {
 	expectedBinaryPath := filepath.Join(expectedInstallDir, "trivy")
 	assert.Equal(t, expectedBinaryPath, trivyInfo.Binaries["trivy"])
 }
+
+func TestExtractEslintPlugins(t *testing.T) {
+	// Set up a temporary config for testing
+	originalConfig := Config
+	defer func() { Config = originalConfig }() // Restore original config after test
+
+	tempDir, err := os.MkdirTemp("", "codacy-tools-test")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// Set up the tools config directory
+	configDir := filepath.Join(tempDir, ".codacy", "tools-configs")
+	err = os.MkdirAll(configDir, 0755)
+	assert.NoError(t, err)
+
+	// Create a temporary config with the test directory
+	tempConfig := ConfigType{
+		toolsConfigDirectory: configDir,
+	}
+	Config = tempConfig
+
+	tests := []struct {
+		name           string
+		yamlContent    string
+		expectedOutput string
+		expectError    bool
+	}{
+		{
+			name: "Basic ESLint plugins",
+			yamlContent: `plugins:
+  - "eslint-plugin-jest@^28.11.0"
+  - "eslint-plugin-no-unsanitized@^4.0.2"
+  - "eslint-plugin-unicorn@^55.0.0"
+`,
+			expectedOutput: "eslint-plugin-jest@^28.11.0 eslint-plugin-no-unsanitized@^4.0.2 eslint-plugin-unicorn@^55.0.0",
+			expectError:    false,
+		},
+		{
+			name: "Scoped ESLint plugins",
+			yamlContent: `plugins:
+  - "@angular-eslint/eslint-plugin@^17.4.1"
+`,
+			expectedOutput: "@angular-eslint/eslint-plugin@^17.4.1",
+			expectError:    false,
+		},
+		{
+			name:           "Empty plugins",
+			yamlContent:    "plugins:\n",
+			expectedOutput: "",
+			expectError:    false,
+		},
+		{
+			name:           "Invalid YAML",
+			yamlContent:    "invalid: yaml: content",
+			expectedOutput: "",
+			expectError:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Write the test YAML content to a file
+			filePath := filepath.Join(configDir, "eslint_plugins.yaml")
+			err := os.WriteFile(filePath, []byte(tt.yamlContent), 0644)
+			assert.NoError(t, err)
+
+			// Run the function
+			result := extractEslintPlugins()
+
+			// Check the result
+			if tt.expectError {
+				assert.Empty(t, result)
+			} else {
+				assert.Equal(t, tt.expectedOutput, result)
+			}
+		})
+	}
+}

@@ -5,7 +5,7 @@ runtime_binaries:
   package_manager: npm
   execution: node
 installation:
-  command: "install --prefix {{.InstallDir}} {{.PackageName}}@{{.Version}} @microsoft/eslint-formatter-sarif"
+  command: "install --prefix {{.InstallDir}} {{.PackageName}}@{{.Version}} @microsoft/eslint-formatter-sarif {{.EslintPlugins}}"
   registry_template: "config set registry {{.Registry}}"
 binaries:
   - name: eslint
