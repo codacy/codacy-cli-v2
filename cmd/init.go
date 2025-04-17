@@ -141,12 +141,12 @@ func configFileTemplate(tools []tools.Tool) string {
 	needsDart := false
 	// Default versions
 	defaultVersions := map[string]string{
-		ESLint:  "9.3.0",
-		Trivy:   "0.59.1",
-		PyLint:  "3.3.6",
-		PMD:     "6.55.0",
+		ESLint:       "9.3.0",
+		Trivy:        "0.59.1",
+		PyLint:       "3.3.6",
+		PMD:          "6.55.0",
 		DartAnalyzer: "3.7.2",
-		Semgrep: "1.78.0",
+		Semgrep:      "1.78.0",
 	}
 
 	// Build map of enabled tools with their versions
@@ -201,7 +201,7 @@ func configFileTemplate(tools []tools.Tool) string {
 			PyLint:       "pylint",
 			PMD:          "pmd",
 			DartAnalyzer: "dartanalyzer",
-			Semgrep: "semgrep",
+			Semgrep:      "semgrep",
 		}
 
 		for uuid, name := range uuidToName {
@@ -393,6 +393,20 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 			}
 		}
 		fmt.Println("Pylint configuration created based on Codacy settings")
+	case DartAnalyzer:
+		if len(patternConfiguration) > 0 {
+			err := createDartAnalyzerConfigFile(patternConfiguration, toolsConfigDir)
+			if err != nil {
+				return fmt.Errorf("failed to create Dart Analyzer config: %v", err)
+			}
+		}
+	case Semgrep:
+		if len(patternConfiguration) > 0 {
+			err := createSemgrepConfigFile(patternConfiguration, toolsConfigDir)
+			if err != nil {
+				return fmt.Errorf("failed to create Semgrep config: %v", err)
+			}
+		}
 	}
 	return nil
 }
@@ -504,5 +518,5 @@ const (
 	PMD          string = "9ed24812-b6ee-4a58-9004-0ed183c45b8f"
 	PyLint       string = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
 	DartAnalyzer string = "d203d615-6cf1-41f9-be5f-e2f660f7850f"
-	Semgrep string = "6792c561-236d-41b7-ba5e-9d6bee0d548b"
+	Semgrep      string = "6792c561-236d-41b7-ba5e-9d6bee0d548b"
 )
