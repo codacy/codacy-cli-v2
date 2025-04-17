@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // RunSemgrep executes Semgrep analysis on the specified directory
@@ -14,13 +15,20 @@ func RunSemgrep(workDirectory string, toolInfo *plugins.ToolInfo, files []string
 	// Construct base command with -m semgrep to run semgrep module
 	cmdArgs := []string{"scan"}
 
+	// Defaults from https://github.com/codacy/codacy-semgrep/blob/master/internal/tool/command.go
+	cmdArgs = append(cmdArgs, "--max-memory", "2560")
+	cmdArgs = append(cmdArgs, "--timeout", "5")
+	cmdArgs = append(cmdArgs, "--timeout-threshold", "3")
+
+	cmdArgs = append(cmdArgs, "--disable-version-check")
+
 	// Add output format if specified
 	if outputFormat == "sarif" {
 		cmdArgs = append(cmdArgs, "--sarif")
 	}
 
 	// Define possible Semgrep config file names
-	semgrepConfigFiles := []string{".semgrep.yml", ".semgrep.yaml", ".semgrep/semgrep.yml"}
+	semgrepConfigFiles := []string{"semgrep.yml", "semgrep.yaml", "semgrep/semgrep.yml"}
 
 	// Check if a config file exists in the expected location and use it if present
 	if configFile, exists := ConfigFileExists(config.Config, semgrepConfigFiles...); exists {
@@ -36,8 +44,6 @@ func RunSemgrep(workDirectory string, toolInfo *plugins.ToolInfo, files []string
 	} else {
 		cmdArgs = append(cmdArgs, ".")
 	}
-
-	cmdArgs = append(cmdArgs, "--disable-version-check")
 
 	// Get Semgrep binary from the specified installation path
 	semgrepPath := filepath.Join(toolInfo.InstallDir, "venv", "bin", "semgrep")
@@ -60,6 +66,8 @@ func RunSemgrep(workDirectory string, toolInfo *plugins.ToolInfo, files []string
 		cmd.Stdout = os.Stdout
 	}
 	cmd.Stderr = os.Stderr
+
+	fmt.Printf("Running Semgrep with command: %s\n", strings.Join(cmd.Args, " "))
 
 	// Run Semgrep
 	if err := cmd.Run(); err != nil {

@@ -141,11 +141,12 @@ func configFileTemplate(tools []tools.Tool) string {
 	needsDart := false
 	// Default versions
 	defaultVersions := map[string]string{
-		ESLint:       "9.3.0",
-		Trivy:        "0.59.1",
-		PyLint:       "3.3.6",
-		PMD:          "6.55.0",
+		ESLint:  "9.3.0",
+		Trivy:   "0.59.1",
+		PyLint:  "3.3.6",
+		PMD:     "6.55.0",
 		DartAnalyzer: "3.7.2",
+		Semgrep: "1.78.0",
 	}
 
 	// Build map of enabled tools with their versions
@@ -200,6 +201,7 @@ func configFileTemplate(tools []tools.Tool) string {
 			PyLint:       "pylint",
 			PMD:          "pmd",
 			DartAnalyzer: "dartanalyzer",
+			Semgrep: "semgrep",
 		}
 
 		for uuid, name := range uuidToName {
@@ -214,6 +216,7 @@ func configFileTemplate(tools []tools.Tool) string {
 		sb.WriteString(fmt.Sprintf("    - pylint@%s\n", defaultVersions[PyLint]))
 		sb.WriteString(fmt.Sprintf("    - pmd@%s\n", defaultVersions[PMD]))
 		sb.WriteString(fmt.Sprintf("    - dartanalyzer@%s\n", defaultVersions[DartAnalyzer]))
+		sb.WriteString(fmt.Sprintf("    - semgrep@%s\n", defaultVersions[Semgrep]))
 	}
 
 	return sb.String()
@@ -266,7 +269,8 @@ func buildRepositoryConfigurationFiles(token string) error {
 
 	// Only generate config files for tools not using their own config file
 	for _, tool := range configuredToolsWithUI {
-		url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns?enabled=true",
+
+		url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns?enabled=true&limit=1000",
 			CodacyApiBase,
 			initFlags.provider,
 			initFlags.organization,
@@ -389,13 +393,6 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 			}
 		}
 		fmt.Println("Pylint configuration created based on Codacy settings")
-	case DartAnalyzer:
-		if len(patternConfiguration) > 0 {
-			err := createDartAnalyzerConfigFile(patternConfiguration, toolsConfigDir)
-			if err != nil {
-				return fmt.Errorf("failed to create Dart Analyzer config: %v", err)
-			}
-		}
 	}
 	return nil
 }
@@ -456,6 +453,24 @@ func createDefaultEslintConfigFile(toolsConfigDir string) error {
 	return os.WriteFile(filepath.Join(toolsConfigDir, "eslint.config.mjs"), []byte(content), utils.DefaultFilePerms)
 }
 
+// SemgrepRulesFile represents the structure of the rules.yaml file
+type SemgrepRulesFile struct {
+	Rules []map[string]interface{} `yaml:"rules"`
+}
+
+// createSemgrepConfigFile creates a semgrep.yaml configuration file based on the API configuration
+func createSemgrepConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
+	// Use the refactored function from tools package
+	configData, err := tools.GetSemgrepConfig(config)
+
+	if err != nil {
+		return fmt.Errorf("failed to create Semgrep config: %v", err)
+	}
+
+	// Write to file
+	return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), configData, utils.DefaultFilePerms)
+}
+
 // cleanConfigDirectory removes all previous configuration files in the tools-configs directory
 func cleanConfigDirectory(toolsConfigDir string) error {
 	// Check if directory exists
@@ -489,4 +504,5 @@ const (
 	PMD          string = "9ed24812-b6ee-4a58-9004-0ed183c45b8f"
 	PyLint       string = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
 	DartAnalyzer string = "d203d615-6cf1-41f9-be5f-e2f660f7850f"
+	Semgrep string = "6792c561-236d-41b7-ba5e-9d6bee0d548b"
 )

@@ -31,3 +31,6 @@ codacy-cli
 
 #Ignore cursor AI rules
 .cursor/rules/codacy.mdc
+
+#Macos
+.DS_Store
