@@ -28,10 +28,28 @@ func CreateEslintConfig(configuration []domain.PatternConfiguration) string {
 	for _, patternConfiguration := range configuration {
 		rule := strings.TrimPrefix(patternConfiguration.PatternDefinition.Id, "ESLint8_")
 
-		const tempstring = "TEMPORARYSTRING"
-		rule = strings.ReplaceAll(rule, "__", tempstring)
-		rule = strings.ReplaceAll(rule, "_", "/")
-		rule = strings.ReplaceAll(rule, tempstring, "_")
+		// Handle plugin rules (those containing _)
+		if strings.Contains(rule, "_") {
+			parts := strings.Split(rule, "_")
+			if len(parts) >= 2 {
+				// First part is the plugin name, last part is the rule name
+				plugin := parts[0]
+				ruleName := parts[len(parts)-1]
+
+				// Handle scoped packages
+				if strings.HasPrefix(plugin, "@") {
+					rule = fmt.Sprintf("%s/%s", plugin, ruleName)
+				} else {
+					// For non-scoped packages, add eslint-plugin- prefix
+					rule = fmt.Sprintf("%s/%s", "eslint-plugin-"+plugin, ruleName)
+				}
+			}
+		}
+
+		// Skip any rule that contains a plugin (contains "/")
+		if strings.Contains(rule, "/") {
+			continue
+		}
 
 		parametersString := ""
 
@@ -44,7 +62,6 @@ func CreateEslintConfig(configuration []domain.PatternConfiguration) string {
 		// build named parameters json object
 		namedParametersString := ""
 		for _, parameter := range patternConfiguration.Parameters {
-
 			if parameter.Name != "unnamedParam" {
 				if len(namedParametersString) == 0 {
 					namedParametersString += "{"

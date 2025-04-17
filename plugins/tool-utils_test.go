@@ -167,6 +167,7 @@ func TestGetSupportedTools(t *testing.T) {
 				"pylint",
 				"trivy",
 				"dartanalyzer",
+				"semgrep",
 			},
 			expectedError: false,
 		},
