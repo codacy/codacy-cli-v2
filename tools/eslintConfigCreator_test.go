@@ -70,7 +70,7 @@ func TestCreateEslintConfigNamedParam(t *testing.T) {
 		[]domain.PatternConfiguration{
 			{
 				PatternDefinition: domain.PatternDefinition{
-					Id: "consistent-return",
+					Id: "ESLint8_consistent-return",
 				},
 				Parameters: []domain.ParameterConfiguration{
 					{
@@ -94,7 +94,7 @@ func TestCreateEslintConfigUnnamedAndNamedParam(t *testing.T) {
 		[]domain.PatternConfiguration{
 			{
 				PatternDefinition: domain.PatternDefinition{
-					Id: "consistent-return",
+					Id: "ESLint8_consistent-return",
 				},
 				Parameters: []domain.ParameterConfiguration{
 					{
@@ -117,19 +117,18 @@ func TestCreateEslintConfigUnnamedAndNamedParam(t *testing.T) {
 ];`)
 }
 
-func TestCreateEslintConfigSupportPlugins(t *testing.T) {
+func TestCreateEslintConfigDoNotSupportPlugins(t *testing.T) {
 	testConfig(t,
 		[]domain.PatternConfiguration{
 			{
 				PatternDefinition: domain.PatternDefinition{
-					Id: "plugin/consistent-return",
+					Id: "ESLint8_plugin_consistent-return",
 				},
 			},
 		},
 		`export default [
     {
         rules: {
-          "plugin/consistent-return": "error",
         }
     }
 ];`)
