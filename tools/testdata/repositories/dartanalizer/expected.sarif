@@ -129,7 +129,12 @@
           },
           "ruleId": "UNUSED_LOCAL_VARIABLE"
         }
-      ]
+      ],
+      "tool": {
+        "driver": {
+          "name": "dartanalyzer"
+        }
+      }
     }
   ]
 }
