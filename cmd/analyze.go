@@ -222,6 +222,15 @@ func runDartAnalyzer(workDirectory string, pathsToCheck []string, outputFile str
 	return tools.RunDartAnalyzer(workDirectory, dartanalyzer.InstallDir, dartanalyzer.Binaries["dart"], pathsToCheck, outputFile, outputFormat)
 }
 
+func runSemgrepAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
+	semgrep := config.Config.Tools()["semgrep"]
+	if semgrep == nil {
+		log.Fatal("Semgrep tool configuration not found")
+	}
+
+	return tools.RunSemgrep(workDirectory, semgrep, pathsToCheck, outputFile, outputFormat)
+}
+
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Runs all configured linters.",
@@ -312,6 +321,8 @@ func runTool(workDirectory string, toolName string, args []string, outputFile st
 		return runPmdAnalysis(workDirectory, args, outputFile, outputFormat)
 	case "pylint":
 		return runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
+	case "semgrep":
+		return runSemgrepAnalysis(workDirectory, args, outputFile, outputFormat)
 	case "dartanalyzer":
 		return runDartAnalyzer(workDirectory, args, outputFile, outputFormat)
 	default:

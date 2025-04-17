@@ -1,0 +1,16 @@
+name: semgrep
+description: Static Analysis Security Testing (SAST) tool
+runtime: python
+runtime_binaries:
+  package_manager: python3
+  execution: python3
+binaries:
+  - name: python
+    path: "venv/bin/python3"
+formatters:
+  - name: json
+    flag: "--json"
+output_options:
+  file_flag: "--output"
+analysis_options:
+  default_path: "."

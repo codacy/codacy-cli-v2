@@ -8,3 +8,4 @@ tools:
     - pylint@3.3.6
     - pmd@6.55.0
     - dartanalyzer@3.7.2
+    - semgrep@1.78.0
