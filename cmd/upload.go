@@ -208,7 +208,7 @@ func resultsFinalWithAPIToken(commitUUID string, apiToken string, provider strin
 
 func getPatternByID(patterns []Pattern, patternID string) *Pattern {
 	for _, p := range patterns {
-		if p.ID == patternID {
+		if strings.EqualFold(p.ID, patternID) {
 			return &p
 		}
 	}

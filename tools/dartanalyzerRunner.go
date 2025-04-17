@@ -59,6 +59,11 @@ func RunDartAnalyzer(workDirectory string, installationDirectory string, binary 
 			"$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
 			"runs": []map[string]interface{}{
 				{
+					"tool": map[string]interface{}{
+						"driver": map[string]interface{}{
+							"name": "dartanalyzer",
+						},
+					},
 					"results": []map[string]interface{}{},
 				},
 			},
