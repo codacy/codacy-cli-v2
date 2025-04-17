@@ -342,7 +342,7 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 			if err != nil {
 				return fmt.Errorf("failed to write eslint config: %v", err)
 			}
-			fmt.Println("ESLint configuration created based on Codacy settings")
+			fmt.Println("ESLint configuration created based on Codacy settings. Ignoring plugin rules.")
 		} else {
 			err := createDefaultEslintConfigFile(toolsConfigDir)
 			if err != nil {
