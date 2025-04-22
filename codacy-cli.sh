@@ -2,13 +2,14 @@
 
 set -e +o pipefail
 
+# Set up paths first
+bin_name="codacy-cli-v2"
+cache_dir="$HOME/.cache/codacy"
+version_file="$cache_dir/version.yaml"
 
-get_version_from_json() {
-    local cache_dir="$1"
-    local version_file="$cache_dir/version.json"
-    
+get_version_from_yaml() {
     if [ -f "$version_file" ]; then
-        local version=$(grep -o '"version": *"[^"]*"' "$version_file" | cut -d'"' -f4)
+        local version=$(grep -o 'version: *"[^"]*"' "$version_file" | cut -d'"' -f2)
         if [ -n "$version" ]; then
             echo "$version"
             return 0
@@ -17,15 +18,13 @@ get_version_from_json() {
     return 1
 }
 
-create_version_json() {
-    local cache_dir="$1"
-    local version="$2"
-    local version_file="$cache_dir/version.json"
+create_version_yaml() {
+    local version="$1"
     
-
-    echo "{\"version\": \"$version\"}" > "$version_file"
+    echo "Creating version.yaml with version $version"
+    mkdir -p "$(dirname "$version_file")"
+    echo "version: \"$version\"" > "$version_file"
 }
-
 
 os_name=$(uname)
 arch=$(uname -m)
@@ -111,10 +110,6 @@ if [ -z "$CODACY_CLI_V2_TMP_FOLDER" ]; then
     fi
 fi
 
-# Set up paths first
-bin_name="codacy-cli-v2"
-version_file=".codacy/version.json"
-
 # Determine which version to use
 if [ "$1" = "update" ]; then
     echo "🔄 Checking for latest version..."
@@ -127,12 +122,18 @@ if [ "$1" = "update" ]; then
         echo "   Unset CODACY_CLI_V2_VERSION to use the latest version"
         version="$CODACY_CLI_V2_VERSION"
     fi
+    
+    # Always update version.yaml with the latest version
+    echo "Updating version.yaml with latest version $latest_version"
+    create_version_yaml "$latest_version"
 elif [ -n "$CODACY_CLI_V2_VERSION" ]; then
     echo "ℹ️  Using version from environment: $CODACY_CLI_V2_VERSION"
     version="$CODACY_CLI_V2_VERSION"
-elif ! version=$(get_version_from_json ".codacy"); then
+elif ! version=$(get_version_from_yaml); then
     echo "ℹ️  No version configured, fetching latest..."
     version=$(get_latest_version)
+    # Create version.yaml with the latest version
+    create_version_yaml "$version"
 fi
 
 # Set up version-specific paths

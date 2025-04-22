@@ -11,6 +11,7 @@ import (
 	"runtime"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 var updateCmd = &cobra.Command{
@@ -30,15 +31,15 @@ var updateCmd = &cobra.Command{
 		var cacheDir string
 		switch runtime.GOOS {
 		case "linux":
-			cacheDir = filepath.Join(os.Getenv("HOME"), ".cache", "codacy", "codacy-cli-v2")
+			cacheDir = filepath.Join(os.Getenv("HOME"), ".cache", "codacy")
 		case "darwin":
-			cacheDir = filepath.Join(os.Getenv("HOME"), "Library", "Caches", "Codacy", "codacy-cli-v2")
+			cacheDir = filepath.Join(os.Getenv("HOME"), ".cache", "codacy")
 		default:
-			cacheDir = ".codacy-cli-v2"
+			cacheDir = ".codacy"
 		}
 
 		// Check if version is already installed
-		versionDir := filepath.Join(cacheDir, latestVersion)
+		versionDir := filepath.Join(cacheDir, "codacy-cli-v2", latestVersion)
 		cachedBinary := filepath.Join(versionDir, "codacy-cli-v2")
 		if _, err := os.Stat(cachedBinary); err == nil {
 			fmt.Printf("Version %s is already installed locally\n", latestVersion)
@@ -70,25 +71,25 @@ var updateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// Update version.json in .codacy directory
-		versionFile := filepath.Join(".codacy", "version.json")
+		// Update version.yaml in cache directory
+		versionFile := filepath.Join(cacheDir, "version.yaml")
 		if err := os.MkdirAll(filepath.Dir(versionFile), 0755); err != nil {
-			fmt.Printf("Failed to create .codacy directory: %v\n", err)
+			fmt.Printf("Failed to create cache directory: %v\n", err)
 			os.Exit(1)
 		}
 
 		versionInfo := struct {
-			Version string `json:"version"`
+			Version string `yaml:"version"`
 		}{
 			Version: latestVersion,
 		}
-		versionJSON, err := json.Marshal(versionInfo)
+		versionYAML, err := yaml.Marshal(versionInfo)
 		if err != nil {
-			fmt.Printf("Failed to create version.json: %v\n", err)
+			fmt.Printf("Failed to create version.yaml: %v\n", err)
 			os.Exit(1)
 		}
-		if err := os.WriteFile(versionFile, versionJSON, 0644); err != nil {
-			fmt.Printf("Failed to write version.json: %v\n", err)
+		if err := os.WriteFile(versionFile, versionYAML, 0644); err != nil {
+			fmt.Printf("Failed to write version.yaml: %v\n", err)
 			os.Exit(1)
 		}
 
