@@ -146,12 +146,9 @@ bin_path="$bin_folder"/"$bin_name"
 download_cli "$bin_folder" "$bin_path" "$version"
 chmod +x "$bin_path"
 
-# Create version.json if it doesn't exist
-if [ ! -f "$version_file" ]; then
-
-    mkdir -p "$(dirname "$version_file")"
-    create_version_json "$(dirname "$version_file")" "$version"
-
+# Create version.yaml if it doesn't exist (for non-update commands)
+if [ "$1" != "update" ] && [ ! -f "$version_file" ]; then
+    create_version_yaml "$version"
 fi
 
 run_command="$bin_path"
