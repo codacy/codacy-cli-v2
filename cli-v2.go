@@ -23,8 +23,8 @@ func main() {
 		}
 	}
 
-	// Check if command is init
-	if len(os.Args) > 1 && os.Args[1] == "init" {
+	// Check if command is init/update
+	if len(os.Args) > 1 && (os.Args[1] == "init" || os.Args[1] == "update") {
 		cmd.Execute()
 		return
 	}
