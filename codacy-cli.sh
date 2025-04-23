@@ -18,7 +18,7 @@ case "$arch" in
   arch="386"
   ;;
 esac
-# Temporary folder for downloaded files
+
 if [ -z "$CODACY_CLI_V2_TMP_FOLDER" ]; then
     if [ "$(uname)" = "Linux" ]; then
         CODACY_CLI_V2_TMP_FOLDER="$HOME/.cache/codacy/codacy-cli-v2"
@@ -31,8 +31,6 @@ fi
 
 version_file="$CODACY_CLI_V2_TMP_FOLDER/version.yaml"
 
-# Create cache directory if it doesn't exist
-mkdir -p "$CODACY_CLI_V2_TMP_FOLDER"
 
 get_version_from_yaml() {
     if [ -f "$version_file" ]; then
@@ -106,22 +104,26 @@ download_cli() {
     fi
 }
 
-# Determine which version to use
-if [ "$1" = "update" ]; then
-    if [ -n "$CODACY_CLI_V2_VERSION" ]; then
-        echo "⚠️  Environment variable CODACY_CLI_V2_VERSION is set to $CODACY_CLI_V2_VERSION"
-        echo "   Unset CODACY_CLI_V2_VERSION to use the latest version"
-    fi
-    exec "$(dirname "$0")/codacy-cli-v2" update
-elif [ -n "$CODACY_CLI_V2_VERSION" ]; then
-    echo "ℹ️  Using version from environment: $CODACY_CLI_V2_VERSION"
-    version="$CODACY_CLI_V2_VERSION"
-elif ! version=$(get_version_from_yaml); then
-    echo "ℹ️  No version configured, fetching latest..."
+# Warn if CODACY_CLI_V2_VERSION is set and update is requested
+if [ -n "$CODACY_CLI_V2_VERSION" ] && [ "$1" = "update" ]; then
+    echo "⚠️  Warning: Performing update with forced version $CODACY_CLI_V2_VERSION"
+    echo "    This might prevent updating to the latest version"
+fi
+
+# Ensure version.yaml exists and is up to date
+if [ ! -f "$version_file" ] || [ "$1" = "update" ]; then
+    echo "ℹ️  Fetching latest version..."
     version=$(get_latest_version)
-    # Create version.yaml with the latest version
     echo "version: \"$version\"" > "$version_file"
 fi
+
+# Set the version to use
+if [ -n "$CODACY_CLI_V2_VERSION" ]; then
+    version="$CODACY_CLI_V2_VERSION"
+else
+    version=$(get_version_from_yaml)
+fi
+
 
 # Set up version-specific paths
 bin_folder="${CODACY_CLI_V2_TMP_FOLDER}/${version}"
