@@ -99,15 +99,13 @@ download_cli() {
 
         download "$url" "$bin_folder"
         tar xzfv "${bin_folder}/${remote_file}" -C "${bin_folder}"
-    else
-        echo "✓ Using cached CLI version $version"
     fi
 }
 
 # Warn if CODACY_CLI_V2_VERSION is set and update is requested
 if [ -n "$CODACY_CLI_V2_VERSION" ] && [ "$1" = "update" ]; then
     echo "⚠️  Warning: Performing update with forced version $CODACY_CLI_V2_VERSION"
-    echo "    This might prevent updating to the latest version"
+    echo "    Unset CODACY_CLI_V2_VERSION to use the latest version"
 fi
 
 # Ensure version.yaml exists and is up to date
