@@ -1,31 +1,12 @@
 #!/usr/bin/env bash
 
+
 set -e +o pipefail
 
 # Set up paths first
 bin_name="codacy-cli-v2"
-cache_dir="$HOME/.cache/codacy"
-version_file="$cache_dir/version.yaml"
 
-get_version_from_yaml() {
-    if [ -f "$version_file" ]; then
-        local version=$(grep -o 'version: *"[^"]*"' "$version_file" | cut -d'"' -f2)
-        if [ -n "$version" ]; then
-            echo "$version"
-            return 0
-        fi
-    fi
-    return 1
-}
-
-create_version_yaml() {
-    local version="$1"
-    
-    echo "Creating version.yaml with version $version"
-    mkdir -p "$(dirname "$version_file")"
-    echo "version: \"$version\"" > "$version_file"
-}
-
+# Determine OS-specific paths
 os_name=$(uname)
 arch=$(uname -m)
 
@@ -37,12 +18,31 @@ case "$arch" in
   arch="386"
   ;;
 esac
-
-handle_rate_limit() {
-    local response="$1"
-    if echo "$response" | grep -q "API rate limit exceeded"; then
-          fatal "Error: GitHub API rate limit exceeded. Please try again later"
+# Temporary folder for downloaded files
+if [ -z "$CODACY_CLI_V2_TMP_FOLDER" ]; then
+    if [ "$(uname)" = "Linux" ]; then
+        CODACY_CLI_V2_TMP_FOLDER="$HOME/.cache/codacy/codacy-cli-v2"
+    elif [ "$(uname)" = "Darwin" ]; then
+        CODACY_CLI_V2_TMP_FOLDER="$HOME/Library/Caches/Codacy/codacy-cli-v2"
+    else
+        CODACY_CLI_V2_TMP_FOLDER=".codacy-cli-v2"
     fi
+fi
+
+version_file="$CODACY_CLI_V2_TMP_FOLDER/version.yaml"
+
+# Create cache directory if it doesn't exist
+mkdir -p "$CODACY_CLI_V2_TMP_FOLDER"
+
+get_version_from_yaml() {
+    if [ -f "$version_file" ]; then
+        local version=$(grep -o 'version: *"[^"]*"' "$version_file" | cut -d'"' -f2)
+        if [ -n "$version" ]; then
+            echo "$version"
+            return 0
+        fi
+    fi
+    return 1
 }
 
 get_latest_version() {
@@ -56,6 +56,13 @@ get_latest_version() {
     handle_rate_limit "$response"
     local version=$(echo "$response" | grep -m 1 tag_name | cut -d'"' -f4)
     echo "$version"
+}
+
+handle_rate_limit() {
+    local response="$1"
+    if echo "$response" | grep -q "API rate limit exceeded"; then
+          fatal "Error: GitHub API rate limit exceeded. Please try again later"
+    fi
 }
 
 download_file() {
@@ -99,33 +106,13 @@ download_cli() {
     fi
 }
 
-# Temporary folder for downloaded files
-if [ -z "$CODACY_CLI_V2_TMP_FOLDER" ]; then
-    if [ "$os_name" = "Linux" ]; then
-        CODACY_CLI_V2_TMP_FOLDER="$HOME/.cache/codacy/codacy-cli-v2"
-    elif [ "$os_name" = "Darwin" ]; then
-        CODACY_CLI_V2_TMP_FOLDER="$HOME/Library/Caches/Codacy/codacy-cli-v2"
-    else
-        CODACY_CLI_V2_TMP_FOLDER=".codacy-cli-v2"
-    fi
-fi
-
 # Determine which version to use
 if [ "$1" = "update" ]; then
-    echo "🔄 Checking for latest version..."
-    latest_version=$(get_latest_version)
-    version="$latest_version"
-
     if [ -n "$CODACY_CLI_V2_VERSION" ]; then
         echo "⚠️  Environment variable CODACY_CLI_V2_VERSION is set to $CODACY_CLI_V2_VERSION"
-        echo "   Latest version is $latest_version, but using specified version"
         echo "   Unset CODACY_CLI_V2_VERSION to use the latest version"
-        version="$CODACY_CLI_V2_VERSION"
     fi
-    
-    # Always update version.yaml with the latest version
-    echo "Updating version.yaml with latest version $latest_version"
-    create_version_yaml "$latest_version"
+    exec "$(dirname "$0")/codacy-cli-v2" update
 elif [ -n "$CODACY_CLI_V2_VERSION" ]; then
     echo "ℹ️  Using version from environment: $CODACY_CLI_V2_VERSION"
     version="$CODACY_CLI_V2_VERSION"
@@ -133,7 +120,7 @@ elif ! version=$(get_version_from_yaml); then
     echo "ℹ️  No version configured, fetching latest..."
     version=$(get_latest_version)
     # Create version.yaml with the latest version
-    create_version_yaml "$version"
+    echo "version: \"$version\"" > "$version_file"
 fi
 
 # Set up version-specific paths
@@ -146,11 +133,6 @@ bin_path="$bin_folder"/"$bin_name"
 download_cli "$bin_folder" "$bin_path" "$version"
 chmod +x "$bin_path"
 
-# Create version.yaml if it doesn't exist (for non-update commands)
-if [ "$1" != "update" ] && [ ! -f "$version_file" ]; then
-    create_version_yaml "$version"
-fi
-
 run_command="$bin_path"
 if [ -z "$run_command" ]; then
     fatal "Codacy cli v2 binary could not be found."
@@ -158,8 +140,6 @@ fi
 
 if [ "$#" -eq 1 ] && [ "$1" = "download" ]; then
     echo "Codacy cli v2 download succeeded"
-elif [ "$#" -eq 1 ] && [ "$1" = "update" ]; then
-    echo "Successfully updated to version $version"
 else
     eval "$run_command $*"
 fi
