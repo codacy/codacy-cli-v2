@@ -99,8 +99,6 @@ download_cli() {
 
         download "$url" "$bin_folder"
         tar xzfv "${bin_folder}/${remote_file}" -C "${bin_folder}"
-    else
-        echo "✓ Using cached CLI version $version"
     fi
 }
 
