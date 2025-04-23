@@ -58,7 +58,7 @@ var updateCmd = &cobra.Command{
 			fmt.Printf("Failed to create version.yaml: %v\n", err)
 			os.Exit(1)
 		}
-		if err := os.WriteFile(versionFile, versionYAML, 0644); err != nil {
+		if err := os.WriteFile(versionFile, versionYAML, utils.DefaultFilePerms); err != nil {
 			fmt.Printf("Failed to write version.yaml: %v\n", err)
 			os.Exit(1)
 		}
