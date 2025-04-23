@@ -114,6 +114,7 @@ fi
 if [ ! -f "$version_file" ] || [ "$1" = "update" ]; then
     echo "ℹ️  Fetching latest version..."
     version=$(get_latest_version)
+    mkdir -p "$CODACY_CLI_V2_TMP_FOLDER"
     echo "version: \"$version\"" > "$version_file"
 fi
 
