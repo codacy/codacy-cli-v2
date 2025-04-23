@@ -19,7 +19,11 @@ var updateCmd = &cobra.Command{
 		versionFile := filepath.Join(config.Config.CodacyDirectory(), "version.yaml")
 		versionData, err := os.ReadFile(versionFile)
 		if err != nil {
-			fmt.Printf("Failed to read version.yaml: %v\n", err)
+			if os.IsNotExist(err) {
+				fmt.Println("Could not read version file. Make sure you have the latest version of the script")
+			} else {
+				fmt.Printf("Failed to read version.yaml: %v\n", err)
+			}
 			os.Exit(1)
 		}
 
