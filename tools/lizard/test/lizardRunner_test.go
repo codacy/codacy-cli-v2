@@ -28,16 +28,14 @@ func TestRunLizard(t *testing.T) {
 
 	// Setup tool info
 	toolInfo := &plugins.ToolInfo{
-		Binaries: map[string]string{
-			"python": filepath.Join(globalCache, "tools/lizard@1.17.19/venv/bin/python"),
-		},
+		InstallDir: filepath.Join(globalCache, "tools/lizard@1.17.19"),
 	}
 
 	t.Run("Output to file", func(t *testing.T) {
 		tempResultFile := filepath.Join(os.TempDir(), "lizard.csv")
 		defer os.Remove(tempResultFile)
 
-		err := lizard.RunLizard(testDirectory, toolInfo.Binaries["python"], []string{"complex.py"}, tempResultFile, "")
+		err := lizard.RunLizard(testDirectory, toolInfo, []string{"complex.py"}, tempResultFile, "")
 		assert.NoError(t, err)
 
 		// Read actual output
@@ -55,12 +53,12 @@ func TestRunLizard(t *testing.T) {
 	})
 
 	t.Run("No output file specified", func(t *testing.T) {
-		err := lizard.RunLizard(testDirectory, toolInfo.Binaries["python"], []string{"complex.py"}, "", "")
+		err := lizard.RunLizard(testDirectory, toolInfo, []string{"complex.py"}, "", "")
 		assert.NoError(t, err)
 	})
 
 	t.Run("No files specified", func(t *testing.T) {
-		err := lizard.RunLizard(testDirectory, toolInfo.Binaries["python"], nil, "", "")
+		err := lizard.RunLizard(testDirectory, toolInfo, nil, "", "")
 		assert.NoError(t, err)
 	})
 }
