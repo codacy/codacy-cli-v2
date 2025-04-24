@@ -258,6 +258,15 @@ func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 	return lizard.RunLizard(workDirectory, lizardBinary, pathsToCheck, outputFile, outputFormat)
 }
 
+func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
+	lizardTool := config.Config.Tools()["lizard"]
+	if lizardTool == nil {
+		log.Fatal("Lizard tool configuration not found")
+	}
+
+	return lizard.RunLizard(workDirectory, lizardTool, pathsToCheck, outputFile, outputFormat)
+}
+
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Runs all configured linters.",
