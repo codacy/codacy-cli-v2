@@ -4,6 +4,7 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/lizard"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -231,6 +232,15 @@ func runSemgrepAnalysis(workDirectory string, pathsToCheck []string, outputFile 
 	return tools.RunSemgrep(workDirectory, semgrep, pathsToCheck, outputFile, outputFormat)
 }
 
+func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
+	lizardTool := config.Config.Tools()["lizard"]
+	if lizardTool == nil {
+		log.Fatal("Lizard tool configuration not found")
+	}
+
+	return lizard.RunLizard(workDirectory, lizardTool, pathsToCheck, outputFile, outputFormat)
+}
+
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Runs all configured linters.",
@@ -250,13 +260,12 @@ var analyzeCmd = &cobra.Command{
 		} else {
 			// Run all configured tools
 			toolsToRun = config.Config.Tools()
+			log.Println("Running all configured tools...")
 		}
 
 		if len(toolsToRun) == 0 {
 			log.Fatal("No tools configured. Please run 'codacy-cli init' and 'codacy-cli install' first")
 		}
-
-		log.Println("Running all configured tools...")
 
 		if outputFormat == "sarif" {
 			// Create temporary directory for individual tool outputs
@@ -325,6 +334,8 @@ func runTool(workDirectory string, toolName string, args []string, outputFile st
 		return runSemgrepAnalysis(workDirectory, args, outputFile, outputFormat)
 	case "dartanalyzer":
 		return runDartAnalyzer(workDirectory, args, outputFile, outputFormat)
+	case "lizard":
+		return runLizardAnalysis(workDirectory, args, outputFile, outputFormat)
 	default:
 		return fmt.Errorf("unsupported tool: %s", toolName)
 	}

@@ -8,9 +8,13 @@ binaries:
   - name: python
     path: "venv/bin/python3"
 formatters:
-  - name: json
-    flag: "--output-format=json"
+  - name: xml
+    flag: "--xml"
+  - name: csv
+    flag: "--csv"
+  - name: html
+    flag: "--html"
 output_options:
-  file_flag: "--output"
+  file_flag: "-o"
 analysis_options:
   default_path: "." 
