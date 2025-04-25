@@ -203,6 +203,15 @@ func installPythonTool(name string, toolInfo *plugins.ToolInfo) error {
 		return fmt.Errorf("failed to install tool: %s\nError: %w", string(output), err)
 	}
 
+	// Install jinja2 if this is Lizard
+	if name == "lizard" {
+		cmd = exec.Command(pipPath, "install", "jinja2")
+		output, err = cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to install jinja2 dependency: %s\nError: %w", string(output), err)
+		}
+	}
+
 	log.Printf("Successfully installed %s v%s\n", toolInfo.Name, toolInfo.Version)
 	return nil
 }
