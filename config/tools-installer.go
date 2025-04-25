@@ -203,7 +203,9 @@ func installPythonTool(name string, toolInfo *plugins.ToolInfo) error {
 		return fmt.Errorf("failed to install tool: %s\nError: %w", string(output), err)
 	}
 
-	// Install jinja2 if this is Lizard
+	// Install jinja2 if this is Lizard,
+	// todo: temporary dependency for lizard
+	// will add field to plugin.yaml to specify extra dependencies
 	if name == "lizard" {
 		cmd = exec.Command(pipPath, "install", "jinja2")
 		output, err = cmd.CombinedOutput()
