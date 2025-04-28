@@ -1,17 +1,13 @@
 package lizard
 
 import (
-	"codacy/cli-v2/plugins"
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 )
 
 // RunLizard executes Lizard code complexity analyzer with the specified options
-func RunLizard(workDirectory string, toolInfo *plugins.ToolInfo, files []string, outputFile string, outputFormat string) error {
-	// Get Python binary from venv
-	pythonPath := filepath.Join(toolInfo.InstallDir, "venv", "bin", "python3")
+func RunLizard(workDirectory string, binary string, files []string, outputFile string, outputFormat string) error {
 
 	// Construct base command with -m lizard to run lizard module
 	args := []string{"-m", "lizard"}
@@ -29,7 +25,7 @@ func RunLizard(workDirectory string, toolInfo *plugins.ToolInfo, files []string,
 	}
 
 	// Create and run command
-	cmd := exec.Command(pythonPath, args...)
+	cmd := exec.Command(binary, args...)
 	cmd.Dir = workDirectory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -37,12 +33,11 @@ func RunLizard(workDirectory string, toolInfo *plugins.ToolInfo, files []string,
 	// Run the command
 	err := cmd.Run()
 	if err != nil {
-		// Lizard returns non-zero exit code when it finds issues
-		// We should not treat this as an error
-		if _, ok := err.(*exec.ExitError); !ok {
-			return fmt.Errorf("failed to run Lizard: %w", err)
+		// Lizard returns 1 when it finds issues, which is not a failure
+		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+			return nil
 		}
+		return fmt.Errorf("failed to run Lizard: %w", err)
 	}
-
 	return nil
 }
