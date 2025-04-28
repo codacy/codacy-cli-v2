@@ -2,17 +2,13 @@ package tools
 
 import (
 	"codacy/cli-v2/config"
-	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/utils"
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 )
 
-func RunPylint(workDirectory string, toolInfo *plugins.ToolInfo, files []string, outputFile string, outputFormat string) error {
-	// Get Python binary from venv
-	pythonPath := filepath.Join(toolInfo.InstallDir, "venv", "bin", "python3")
+func RunPylint(workDirectory string, binary string, files []string, outputFile string, outputFormat string) error {
 
 	// Construct base command with -m pylint to run pylint module
 	args := []string{"-m", "pylint"}
@@ -48,7 +44,7 @@ func RunPylint(workDirectory string, toolInfo *plugins.ToolInfo, files []string,
 	}
 
 	// Create and run command
-	cmd := exec.Command(pythonPath, args...)
+	cmd := exec.Command(binary, args...)
 	cmd.Dir = workDirectory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

@@ -200,6 +200,9 @@ func runEslintAnalysis(workDirectory string, pathsToCheck []string, autoFix bool
 
 func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	trivy := config.Config.Tools()["trivy"]
+	if trivy == nil {
+		log.Fatal("Trivy tool configuration not found")
+	}
 	trivyBinary := trivy.Binaries["trivy"]
 
 	return tools.RunTrivy(workDirectory, trivyBinary, pathsToCheck, outputFile, outputFormat)
@@ -207,6 +210,9 @@ func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile st
 
 func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	pmd := config.Config.Tools()["pmd"]
+	if pmd == nil {
+		log.Fatal("Pmd tool configuration not found")
+	}
 	pmdBinary := pmd.Binaries["pmd"]
 
 	return tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, config.Config)
@@ -214,12 +220,19 @@ func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile stri
 
 func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	pylint := config.Config.Tools()["pylint"]
+	if pylint == nil {
+		log.Fatal("Pylint tool configuration not found")
+	}
+	pylintBinary := pylint.Binaries["python"]
 
-	return tools.RunPylint(workDirectory, pylint, pathsToCheck, outputFile, outputFormat)
+	return tools.RunPylint(workDirectory, pylintBinary, pathsToCheck, outputFile, outputFormat)
 }
 
 func runDartAnalyzer(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	dartanalyzer := config.Config.Tools()["dartanalyzer"]
+	if dartanalyzer == nil {
+		log.Fatal("Dart analyzer tool configuration not found")
+	}
 	return tools.RunDartAnalyzer(workDirectory, dartanalyzer.InstallDir, dartanalyzer.Binaries["dart"], pathsToCheck, outputFile, outputFormat)
 }
 
@@ -228,17 +241,21 @@ func runSemgrepAnalysis(workDirectory string, pathsToCheck []string, outputFile 
 	if semgrep == nil {
 		log.Fatal("Semgrep tool configuration not found")
 	}
+	semgrepBinary := semgrep.Binaries["python"]
 
-	return tools.RunSemgrep(workDirectory, semgrep, pathsToCheck, outputFile, outputFormat)
+	return tools.RunSemgrep(workDirectory, semgrepBinary, pathsToCheck, outputFile, outputFormat)
 }
 
 func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	lizardTool := config.Config.Tools()["lizard"]
+
 	if lizardTool == nil {
 		log.Fatal("Lizard tool configuration not found")
 	}
 
-	return lizard.RunLizard(workDirectory, lizardTool, pathsToCheck, outputFile, outputFormat)
+	lizardBinary := lizardTool.Binaries["python"]
+
+	return lizard.RunLizard(workDirectory, lizardBinary, pathsToCheck, outputFile, outputFormat)
 }
 
 var analyzeCmd = &cobra.Command{
