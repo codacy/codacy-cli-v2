@@ -26,14 +26,16 @@ func TestRunSemgrepWithSpecificFiles(t *testing.T) {
 
 	// Create tool info for semgrep
 	toolInfo := &plugins.ToolInfo{
-		InstallDir: filepath.Join(homeDirectory, ".cache/codacy/tools/semgrep@1.78.0"),
+		Binaries: map[string]string{
+			"semgrep": filepath.Join(homeDirectory, ".cache/codacy/tools/semgrep@1.78.0/venv/bin/semgrep"),
+		},
 	}
 
 	// Specify files to analyze
 	filesToAnalyze := []string{"sample.js"}
 
 	// Run Semgrep analysis on specific files
-	err = RunSemgrep(testDirectory, toolInfo, filesToAnalyze, tempResultFile, "sarif")
+	err = RunSemgrep(testDirectory, toolInfo.Binaries["semgrep"], filesToAnalyze, tempResultFile, "sarif")
 	if err != nil {
 		t.Fatalf("Failed to run semgrep on specific files: %v", err)
 	}

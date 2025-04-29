@@ -1,0 +1,13 @@
+name: lizard
+description: Lizard code complexity analyzer
+runtime: python
+runtime_binaries:
+  package_manager: python3
+  execution: python3
+binaries:
+  - name: python
+    path: "venv/bin/python3"
+output_options:
+  file_flag: "-o"
+analysis_options:
+  default_path: "." 

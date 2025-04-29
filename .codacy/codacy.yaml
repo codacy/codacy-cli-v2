@@ -9,3 +9,4 @@ tools:
     - pmd@6.55.0
     - dartanalyzer@3.7.2
     - semgrep@1.78.0
+    - lizard@1.17.19
