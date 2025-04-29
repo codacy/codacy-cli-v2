@@ -1,0 +1,103 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Lizard",
+          "version": "1.17.10",
+          "informationUri": "https://github.com/terryyin/lizard",
+          "rules": [
+            {
+              "id": "Lizard_ccn-critical",
+              "shortDescription": {
+                "text": "Method has extremely high cyclomatic complexity"
+              },
+              "properties": {
+                "tags": [
+                  "critical"
+                ]
+              }
+            },
+            {
+              "id": "Lizard_ccn-minor",
+              "shortDescription": {
+                "text": "Method has high cyclomatic complexity"
+              },
+              "properties": {
+                "tags": [
+                  "minor"
+                ]
+              }
+            },
+            {
+              "id": "Lizard_nloc-medium",
+              "shortDescription": {
+                "text": "Method has too many lines of code"
+              },
+              "properties": {
+                "tags": [
+                  "medium"
+                ]
+              }
+            },
+            {
+              "id": "Lizard_nloc-minor",
+              "shortDescription": {
+                "text": "Method has too many lines of code"
+              },
+              "properties": {
+                "tags": [
+                  "minor"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "Lizard_nloc-medium",
+          "level": "medium",
+          "message": {
+            "text": "Method complex_analysis has 65 lines of code (limit is 25)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "complex.py"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "Lizard_ccn-critical",
+          "level": "critical",
+          "message": {
+            "text": "Method complex_analysis has a cyclomatic complexity of 31 (limit is 30)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "complex.py"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+} 
