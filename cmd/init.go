@@ -4,6 +4,7 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/lizard"
 	"codacy/cli-v2/tools/pylint"
 	"codacy/cli-v2/utils"
 	"encoding/json"
@@ -63,6 +64,10 @@ var initCmd = &cobra.Command{
 			noTools := []tools.Tool{}
 			err := createConfigurationFiles(noTools, cliLocalMode)
 			if err != nil {
+				log.Fatal(err)
+			}
+			// Create default configuration files
+			if err := buildDefaultConfigurationFiles(toolsConfigDir); err != nil {
 				log.Fatal(err)
 			}
 		} else {
@@ -411,6 +416,8 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 				return fmt.Errorf("failed to create Semgrep config: %v", err)
 			}
 		}
+	case Lizard:
+		createLizardConfigFile(toolsConfigDir, patternConfiguration)
 	}
 	return nil
 }
@@ -423,7 +430,6 @@ func createPMDConfigFile(config []domain.PatternConfiguration, toolsConfigDir st
 func createDefaultPMDConfigFile(toolsConfigDir string) error {
 	content := tools.CreatePmdConfig([]domain.PatternConfiguration{})
 	return os.WriteFile(filepath.Join(toolsConfigDir, "ruleset.xml"), []byte(content), utils.DefaultFilePerms)
-
 }
 
 func createPylintConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
@@ -513,6 +519,49 @@ func cleanConfigDirectory(toolsConfigDir string) error {
 	}
 
 	fmt.Println("Cleaned previous configuration files")
+	return nil
+}
+
+func createLizardConfigFile(toolsConfigDir string, patternConfiguration []domain.PatternConfiguration) error {
+	var patterns []domain.PatternDefinition
+
+	if len(patternConfiguration) == 0 {
+		fmt.Println("Using default Lizard configuration")
+		var err error
+		patterns, err = tools.FetchDefaultEnabledPatterns(Lizard)
+		if err != nil {
+			return err
+		}
+	} else {
+		patterns = make([]domain.PatternDefinition, len(patternConfiguration))
+		for i, pattern := range patternConfiguration {
+			patterns[i] = pattern.PatternDefinition
+		}
+
+		fmt.Println("Lizard configuration created based on Codacy settings")
+	}
+
+	content, err := lizard.CreateLizardConfig(patterns)
+	if err != nil {
+		return fmt.Errorf("failed to create Lizard configuration: %w", err)
+	}
+
+	return os.WriteFile(filepath.Join(toolsConfigDir, "lizard.yaml"), []byte(content), utils.DefaultFilePerms)
+}
+
+// buildDefaultConfigurationFiles creates default configuration files for all tools
+func buildDefaultConfigurationFiles(toolsConfigDir string) error {
+	// Create default Lizard configuration
+	if err := createLizardConfigFile(toolsConfigDir, []domain.PatternConfiguration{}); err != nil {
+		return fmt.Errorf("failed to create default Lizard configuration: %w", err)
+	}
+
+	// Add other default tool configurations here as needed
+	// For example:
+	// if err := createDefaultEslintConfigFile(toolsConfigDir); err != nil {
+	//     return fmt.Errorf("failed to create default ESLint configuration: %w", err)
+	// }
+
 	return nil
 }
 

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/domain"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/tools/lizard"
@@ -250,12 +251,30 @@ func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 	lizardTool := config.Config.Tools()["lizard"]
 
 	if lizardTool == nil {
-		log.Fatal("Lizard tool configuration not found")
+		log.Fatal("Lizard plugin configuration not found")
 	}
 
 	lizardBinary := lizardTool.Binaries["python"]
 
-	return lizard.RunLizard(workDirectory, lizardBinary, pathsToCheck, outputFile, outputFormat)
+	configFile, exists := tools.ConfigFileExists(config.Config, "lizard.yaml")
+	var patterns []domain.PatternDefinition
+	var err error
+
+	if exists {
+		// Configuration exists, read from file
+		patterns, err = lizard.ReadConfig(configFile)
+		if err != nil {
+			return fmt.Errorf("error reading config file: %v", err)
+		}
+	} else {
+		fmt.Println("No configuration file found, fetching default patterns from Codacy API...")
+		patterns, err = tools.FetchDefaultEnabledPatterns(Lizard)
+		if err != nil {
+			return fmt.Errorf("failed to fetch default patterns: %v", err)
+		}
+	}
+
+	return lizard.RunLizard(workDirectory, lizardBinary, pathsToCheck, outputFile, outputFormat, patterns)
 }
 
 var analyzeCmd = &cobra.Command{
