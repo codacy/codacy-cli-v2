@@ -7,13 +7,6 @@ runtime_binaries:
 binaries:
   - name: python
     path: "venv/bin/python3"
-formatters:
-  - name: xml
-    flag: "--xml"
-  - name: csv
-    flag: "--csv"
-  - name: html
-    flag: "--html"
 output_options:
   file_flag: "-o"
 analysis_options:
