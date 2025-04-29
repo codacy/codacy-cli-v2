@@ -140,6 +140,7 @@ func configFileTemplate(tools []tools.Tool) string {
 	needsNode := false
 	needsPython := false
 	needsDart := false
+
 	// Default versions
 	defaultVersions := map[string]string{
 		ESLint:       "9.3.0",
@@ -148,6 +149,7 @@ func configFileTemplate(tools []tools.Tool) string {
 		PMD:          "6.55.0",
 		DartAnalyzer: "3.7.2",
 		Semgrep:      "1.78.0",
+		Lizard:       "1.17.19",
 	}
 
 	// Build map of enabled tools with their versions
@@ -162,7 +164,7 @@ func configFileTemplate(tools []tools.Tool) string {
 		// Check if tool needs a runtime
 		if tool.Uuid == ESLint {
 			needsNode = true
-		} else if tool.Uuid == PyLint {
+		} else if tool.Uuid == PyLint || tool.Uuid == Lizard {
 			needsPython = true
 		} else if tool.Uuid == DartAnalyzer {
 			needsDart = true
@@ -203,6 +205,7 @@ func configFileTemplate(tools []tools.Tool) string {
 			PMD:          "pmd",
 			DartAnalyzer: "dartanalyzer",
 			Semgrep:      "semgrep",
+			Lizard:       "lizard",
 		}
 
 		for uuid, name := range uuidToName {
@@ -218,6 +221,7 @@ func configFileTemplate(tools []tools.Tool) string {
 		sb.WriteString(fmt.Sprintf("    - pmd@%s\n", defaultVersions[PMD]))
 		sb.WriteString(fmt.Sprintf("    - dartanalyzer@%s\n", defaultVersions[DartAnalyzer]))
 		sb.WriteString(fmt.Sprintf("    - semgrep@%s\n", defaultVersions[Semgrep]))
+		sb.WriteString(fmt.Sprintf("    - lizard@%s\n", defaultVersions[Lizard]))
 	}
 
 	return sb.String()
@@ -534,4 +538,5 @@ const (
 	PyLint       string = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
 	DartAnalyzer string = "d203d615-6cf1-41f9-be5f-e2f660f7850f"
 	Semgrep      string = "6792c561-236d-41b7-ba5e-9d6bee0d548b"
+	Lizard       string = "76348462-84b3-409a-90d3-955e90abfb87"
 )
