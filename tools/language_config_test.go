@@ -1,112 +1,222 @@
 package tools
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"sort"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateLanguagesConfigFile(t *testing.T) {
-	// Create a temporary directory for test
-	tempDir, err := os.MkdirTemp("", "codacy-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	// Define test tool IDs
-	const (
-		testESLintID       = "eslint-id"
-		testPyLintID       = "pylint-id"
-		testTrivyID        = "trivy-id"
-		testPMDID          = "pmd-id"
-		testDartAnalyzerID = "dartanalyzer-id"
-	)
-
-	// Create a map of tool IDs to names
-	toolIDMap := map[string]string{
-		testESLintID:       "eslint",
-		testPyLintID:       "pylint",
-		testTrivyID:        "trivy",
-		testPMDID:          "pmd",
-		testDartAnalyzerID: "dartanalyzer",
-	}
-
-	// Create mock tool data
-	mockTools := []Tool{
+func TestGetRepositoryLanguages(t *testing.T) {
+	// Test cases
+	tests := []struct {
+		name           string
+		response       []map[string]interface{}
+		expectedResult map[string][]string
+		expectedError  bool
+	}{
 		{
-			Uuid: testPyLintID, // Pylint
-			Name: "Pylint",
+			name: "Single enabled and detected language",
+			response: []map[string]interface{}{
+				{
+					"name":           "JavaScript",
+					"codacyDefaults": []string{".js", ".jsx", ".jsm"},
+					"extensions":     []string{".js", ".vue"},
+					"enabled":        true,
+					"detected":       true,
+				},
+				{
+					"name":           "Python",
+					"codacyDefaults": []string{".py"},
+					"extensions":     []string{},
+					"enabled":        false,
+					"detected":       true,
+				},
+			},
+			expectedResult: map[string][]string{
+				"JavaScript": {".js", ".jsx", ".jsm", ".vue"},
+			},
+			expectedError: false,
 		},
 		{
-			Uuid: testESLintID, // ESLint
-			Name: "ESLint",
+			name: "Multiple enabled and detected languages",
+			response: []map[string]interface{}{
+				{
+					"name":           "JavaScript",
+					"codacyDefaults": []string{".js", ".jsx"},
+					"extensions":     []string{".js"},
+					"enabled":        true,
+					"detected":       true,
+				},
+				{
+					"name":           "Python",
+					"codacyDefaults": []string{".py"},
+					"extensions":     []string{".pyi"},
+					"enabled":        true,
+					"detected":       true,
+				},
+			},
+			expectedResult: map[string][]string{
+				"JavaScript": {".js", ".jsx"},
+				"Python":     {".py", ".pyi"},
+			},
+			expectedError: false,
+		},
+		{
+			name: "No enabled languages",
+			response: []map[string]interface{}{
+				{
+					"name":           "JavaScript",
+					"codacyDefaults": []string{".js"},
+					"extensions":     []string{},
+					"enabled":        false,
+					"detected":       true,
+				},
+			},
+			expectedResult: map[string][]string{},
+			expectedError:  false,
+		},
+		{
+			name: "No detected languages",
+			response: []map[string]interface{}{
+				{
+					"name":           "JavaScript",
+					"codacyDefaults": []string{".js"},
+					"extensions":     []string{},
+					"enabled":        true,
+					"detected":       false,
+				},
+			},
+			expectedResult: map[string][]string{},
+			expectedError:  false,
 		},
 	}
 
-	// Call the function under test
-	err = CreateLanguagesConfigFile(mockTools, tempDir, toolIDMap)
-	if err != nil {
-		t.Fatalf("CreateLanguagesConfigFile failed: %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a test server
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Verify the request
+				assert.Equal(t, "GET", r.Method)
+				assert.Equal(t, "/api/v3/organizations/gh/org/repositories/repo/settings/languages", r.URL.Path)
+				assert.Equal(t, "test-token", r.Header.Get("api-token"))
 
-	// Verify the file was created
-	configPath := filepath.Join(tempDir, "languages-config.yaml")
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		t.Fatalf("languages-config.yaml was not created")
-	}
+				// Write the response
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"languages": tt.response,
+				})
+			}))
+			defer server.Close()
 
-	// Read the file content
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		t.Fatalf("Failed to read generated file: %v", err)
-	}
+			// Create a test function that uses the test server URL
+			testGetRepositoryLanguages := func(apiToken string, provider string, organization string, repository string) (map[string][]string, error) {
+				client := &http.Client{
+					Timeout: 10 * time.Second,
+				}
 
-	// Check content has expected tools
-	content := string(data)
-	if !strings.Contains(content, "name: pylint") {
-		t.Errorf("Expected pylint in config, but it was not found")
-	}
-	if !strings.Contains(content, "name: eslint") {
-		t.Errorf("Expected eslint in config, but it was not found")
-	}
+				url := fmt.Sprintf("%s/api/v3/organizations/%s/%s/repositories/%s/settings/languages",
+					server.URL,
+					provider,
+					organization,
+					repository)
 
-	// Verify other tools are not included
-	if strings.Contains(content, "name: trivy") {
-		t.Errorf("Unexpected trivy in config")
-	}
-	if strings.Contains(content, "name: pmd") {
-		t.Errorf("Unexpected pmd in config")
-	}
+				// Create a new GET request
+				req, err := http.NewRequest("GET", url, nil)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create request: %w", err)
+				}
 
-	// Check for flow style arrays
-	if !strings.Contains(content, "languages: [") {
-		t.Errorf("Expected flow-style array for languages, but not found")
-	}
-	if !strings.Contains(content, "extensions: [") {
-		t.Errorf("Expected flow-style array for extensions, but not found")
-	}
+				// Set the API token header
+				req.Header.Set("api-token", apiToken)
 
-	// Test with no tools - should include all tools
-	emptyTools := []Tool{}
-	err = CreateLanguagesConfigFile(emptyTools, tempDir, toolIDMap)
-	if err != nil {
-		t.Fatalf("CreateLanguagesConfigFile failed with empty tools: %v", err)
-	}
+				// Send the request
+				resp, err := client.Do(req)
+				if err != nil {
+					return nil, fmt.Errorf("failed to send request: %w", err)
+				}
+				defer resp.Body.Close()
 
-	// Read the file again
-	data, err = os.ReadFile(configPath)
-	if err != nil {
-		t.Fatalf("Failed to read generated file: %v", err)
-	}
+				if resp.StatusCode != 200 {
+					return nil, fmt.Errorf("failed to get repository languages: status code %d", resp.StatusCode)
+				}
 
-	// With empty tools, all tools should be included
-	content = string(data)
-	for toolName := range toolIDMap {
-		shortName := toolIDMap[toolName]
-		if !strings.Contains(content, "name: "+shortName) {
-			t.Errorf("Expected %s in config when no tools specified, but it was not found", shortName)
-		}
+				// Read the response body
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read response body: %w", err)
+				}
+
+				// Define the response structure
+				type LanguageResponse struct {
+					Name           string   `json:"name"`
+					CodacyDefaults []string `json:"codacyDefaults"`
+					Extensions     []string `json:"extensions"`
+					Enabled        bool     `json:"enabled"`
+					Detected       bool     `json:"detected"`
+				}
+
+				type LanguagesResponse struct {
+					Languages []LanguageResponse `json:"languages"`
+				}
+
+				var response LanguagesResponse
+				if err := json.Unmarshal(body, &response); err != nil {
+					return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+				}
+
+				// Create map to store language name -> combined extensions
+				result := make(map[string][]string)
+
+				// Filter and process languages
+				for _, lang := range response.Languages {
+					if lang.Enabled && lang.Detected {
+						// Combine and deduplicate extensions
+						extensions := make(map[string]struct{})
+						for _, ext := range lang.CodacyDefaults {
+							extensions[ext] = struct{}{}
+						}
+						for _, ext := range lang.Extensions {
+							extensions[ext] = struct{}{}
+						}
+
+						// Convert map to slice
+						extSlice := make([]string, 0, len(extensions))
+						for ext := range extensions {
+							extSlice = append(extSlice, ext)
+						}
+
+						// Sort extensions for consistent order
+						sort.Strings(extSlice)
+
+						// Add to result map
+						result[lang.Name] = extSlice
+					}
+				}
+
+				return result, nil
+			}
+
+			// Call the test function
+			result, err := testGetRepositoryLanguages("test-token", "gh", "org", "repo")
+
+			// Check the results
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				// Sort expected extensions for each language
+				for lang := range tt.expectedResult {
+					sort.Strings(tt.expectedResult[lang])
+				}
+				assert.Equal(t, tt.expectedResult, result)
+			}
+		})
 	}
 }
