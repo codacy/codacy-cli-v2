@@ -6,11 +6,13 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 )
 
 func TestGetRepositoryLanguages(t *testing.T) {
@@ -219,4 +221,97 @@ func TestGetRepositoryLanguages(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateLanguagesConfigFile_ExtensionsFromRepository(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Mock API server for getRepositoryLanguages
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"languages": []map[string]interface{}{
+				{
+					"name":           "JavaScript",
+					"codacyDefaults": []string{".js", ".jsx"},
+					"extensions":     []string{".js", ".vue"},
+					"enabled":        true,
+					"detected":       true,
+				},
+				{
+					"name":           "Python",
+					"codacyDefaults": []string{".py"},
+					"extensions":     []string{".testPy"},
+					"enabled":        true,
+					"detected":       true,
+				},
+				{
+					"name":           "Apex",
+					"codacyDefaults": []string{".cls"},
+					"extensions":     []string{".app", ".trigger"},
+					"enabled":        true,
+					"detected":       true,
+				},
+				{
+					"name":           "Scala",
+					"codacyDefaults": []string{".scala"},
+					"extensions":     []string{},
+					"enabled":        true,
+					"detected":       true,
+				},
+				{
+					"name":           "Ruby",
+					"codacyDefaults": []string{".rb"},
+					"extensions":     []string{".gemspec"},
+					"enabled":        true,
+					"detected":       true,
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	// Patch CodacyApiBase to use the test server
+	oldBase := CodacyApiBase
+	CodacyApiBase = server.URL
+	defer func() { CodacyApiBase = oldBase }()
+
+	apiTools := []Tool{
+		{Uuid: "eslint-uuid"},
+		{Uuid: "pylint-uuid"},
+		{Uuid: "pmd-uuid"},
+	}
+	toolIDMap := map[string]string{
+		"eslint-uuid": "eslint",
+		"pylint-uuid": "pylint",
+		"pmd-uuid":    "pmd",
+	}
+
+	err := CreateLanguagesConfigFile(apiTools, tempDir, toolIDMap, "test-token", "gh", "org", "repo")
+	assert.NoError(t, err)
+
+	// Read and unmarshal the generated YAML
+	data, err := os.ReadFile(tempDir + "/languages-config.yaml")
+	assert.NoError(t, err)
+
+	var config LanguagesConfig
+	err = yaml.Unmarshal(data, &config)
+	assert.NoError(t, err)
+
+	// Check that extensions are correct for each tool
+	eslint := findTool(config.Tools, "eslint")
+	assert.ElementsMatch(t, []string{".js", ".jsx", ".vue"}, eslint.Extensions)
+	pylint := findTool(config.Tools, "pylint")
+	assert.ElementsMatch(t, []string{".py", ".testPy"}, pylint.Extensions)
+	pmd := findTool(config.Tools, "pmd")
+	assert.ElementsMatch(t, []string{".cls", ".app", ".trigger", ".scala", ".rb", ".gemspec"}, pmd.Extensions)
+}
+
+func findTool(tools []ToolLanguageInfo, name string) ToolLanguageInfo {
+	for _, t := range tools {
+		if t.Name == name {
+			return t
+		}
+	}
+	return ToolLanguageInfo{}
 }

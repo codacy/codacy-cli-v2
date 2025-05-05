@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const CodacyApiBase = "https://app.codacy.com"
+var CodacyApiBase = "https://app.codacy.com"
 
 // ToolLanguageInfo contains language and extension information for a tool
 type ToolLanguageInfo struct {
@@ -91,17 +92,26 @@ func CreateLanguagesConfigFile(apiTools []Tool, toolsConfigDir string, toolIDMap
 
 			// Filter languages based on repository languages
 			var filteredLanguages []string
+			var filteredExtensionsSet = make(map[string]struct{})
 			for _, lang := range langInfo.Languages {
-				// Convert both to lowercase for case-insensitive comparison
 				lowerLang := strings.ToLower(lang)
 				if extensions, exists := repositoryLanguages[lowerLang]; exists && len(extensions) > 0 {
 					filteredLanguages = append(filteredLanguages, lang)
+					for _, ext := range extensions {
+						filteredExtensionsSet[ext] = struct{}{}
+					}
 				}
 			}
+			filteredExtensions := make([]string, 0, len(filteredExtensionsSet))
+			for ext := range filteredExtensionsSet {
+				filteredExtensions = append(filteredExtensions, ext)
+			}
+			slices.Sort(filteredExtensions)
+			langInfo.Languages = filteredLanguages
+			langInfo.Extensions = filteredExtensions
 
 			// Only add tool if it has languages that exist in the repository
 			if len(filteredLanguages) > 0 {
-				langInfo.Languages = filteredLanguages
 				configTools = append(configTools, langInfo)
 			}
 		}
@@ -135,7 +145,6 @@ func CreateLanguagesConfigFile(apiTools []Tool, toolsConfigDir string, toolIDMap
 	return nil
 }
 
-// https://app.codacy.com/api/v3/organizations/gh/troubleshoot-codacy/repositories/eslint-test-examples/settings/languages
 func getRepositoryLanguages(apiToken string, provider string, organization string, repository string) (map[string][]string, error) {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -211,6 +220,9 @@ func getRepositoryLanguages(apiToken string, provider string, organization strin
 			for ext := range extensions {
 				extSlice = append(extSlice, ext)
 			}
+
+			// Sort extensions for consistent ordering in the config file
+			slices.Sort(extSlice)
 
 			// Add to result map with lowercase key for case-insensitive matching
 			result[strings.ToLower(lang.Name)] = extSlice
