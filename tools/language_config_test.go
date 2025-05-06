@@ -304,7 +304,7 @@ func TestCreateLanguagesConfigFile_ExtensionsFromRepository(t *testing.T) {
 	pylint := findTool(config.Tools, "pylint")
 	assert.ElementsMatch(t, []string{".py", ".testPy"}, pylint.Extensions)
 	pmd := findTool(config.Tools, "pmd")
-	assert.ElementsMatch(t, []string{".cls", ".app", ".trigger", ".scala", ".rb", ".gemspec"}, pmd.Extensions)
+	assert.ElementsMatch(t, []string{".cls", ".app", ".trigger", ".scala", ".rb", ".gemspec", ".js", ".jsx", ".vue"}, pmd.Extensions)
 }
 
 func findTool(tools []ToolLanguageInfo, name string) ToolLanguageInfo {
