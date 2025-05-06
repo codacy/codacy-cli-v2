@@ -1,0 +1,11 @@
+{
+  "name": "trivy-test-app",
+  "version": "1.0.0",
+  "description": "Test application for Trivy vulnerability scanning",
+  "main": "app.js",
+  "dependencies": {
+    "express": "4.16.4",
+    "lodash": "4.17.15",
+    "moment": "2.24.0"
+  }
+} 
