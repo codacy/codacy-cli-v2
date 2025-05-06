@@ -267,7 +267,7 @@ func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 			return fmt.Errorf("error reading config file: %v", err)
 		}
 	} else {
-		fmt.Println("No configuration file found, fetching default patterns from Codacy API...")
+		fmt.Println("No configuration file found for Lizard, using default patterns, run init with repository token to get a custom configuration")
 		patterns, err = tools.FetchDefaultEnabledPatterns(Lizard)
 		if err != nil {
 			return fmt.Errorf("failed to fetch default patterns: %v", err)
