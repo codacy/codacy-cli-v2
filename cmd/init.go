@@ -268,7 +268,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 	}
 
 	// Generate languages configuration based on API tools response
-	if err := tools.CreateLanguagesConfigFile(apiTools, toolsConfigDir, uuidToName); err != nil {
+	if err := tools.CreateLanguagesConfigFile(apiTools, toolsConfigDir, uuidToName, token, initFlags.provider, initFlags.organization, initFlags.repository); err != nil {
 		return fmt.Errorf("failed to create languages configuration file: %w", err)
 	}
 
