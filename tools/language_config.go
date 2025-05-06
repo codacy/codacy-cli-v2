@@ -30,8 +30,15 @@ type LanguagesConfig struct {
 	Tools []ToolLanguageInfo `yaml:"tools"`
 }
 
+type InitFlags struct {
+	apiToken     string
+	provider     string
+	organization string
+	repository   string
+}
+
 // CreateLanguagesConfigFile creates languages-config.yaml based on API response
-func CreateLanguagesConfigFile(apiTools []Tool, toolsConfigDir string, toolIDMap map[string]string, apiToken string, provider string, organization string, repository string) error {
+func CreateLanguagesConfigFile(apiTools []Tool, toolsConfigDir string, toolIDMap map[string]string, initFlags InitFlags) error {
 	// Map tool names to their language/extension information
 	toolLanguageMap := map[string]ToolLanguageInfo{
 		"cppcheck": {
@@ -69,7 +76,7 @@ func CreateLanguagesConfigFile(apiTools []Tool, toolsConfigDir string, toolIDMap
 	// Build a list of tool language info for enabled tools
 	var configTools []ToolLanguageInfo
 
-	repositoryLanguages, err := getRepositoryLanguages(apiToken, provider, organization, repository)
+	repositoryLanguages, err := getRepositoryLanguages(initFlags.apiToken, initFlags.provider, initFlags.organization, initFlags.repository)
 	if err != nil {
 		return fmt.Errorf("failed to get repository languages: %w", err)
 	}
