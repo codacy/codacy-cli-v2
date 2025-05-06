@@ -1,0 +1,45 @@
+name: Pylint plugin test
+
+permissions:
+  contents: write
+
+on:
+  push:
+    paths:
+      - 'plugins/tools/pylint/**'
+
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Build CLI
+        run: |
+          go build -o cli-v2 ./cli-v2.go
+          chmod +x cli-v2
+
+      - name: Run Pylint plugin tests
+        run: |
+          # Store the path to the CLI
+          CLI_PATH="$(pwd)/cli-v2"
+          # Change to test directory
+          cd plugins/tools/pylint/test/src
+          # Install the plugin
+          "$CLI_PATH" install
+          # Run analysis
+          "$CLI_PATH" analyze --tool pylint --format sarif --output actual.sarif
+          # Convert absolute paths to relative paths in the output
+          sed -i 's|file:///home/runner/work/codacy-cli-v2/codacy-cli-v2/|file:///|g' actual.sarif
+          # Compare with expected output
+          jq --sort-keys . expected.sarif > expected.sorted.json
+          jq --sort-keys . actual.sarif > actual.sorted.json
+          diff expected.sorted.json actual.sorted.json
