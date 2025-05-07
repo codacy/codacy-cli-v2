@@ -17,6 +17,12 @@ case "$arch" in
 "x86")
   arch="386"
   ;;
+"arm64")
+  arch="arm64"
+  ;;
+"aarch64")
+  arch="arm64"
+  ;;
 esac
 
 if [ -z "$CODACY_CLI_V2_TMP_FOLDER" ]; then
