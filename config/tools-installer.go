@@ -6,6 +6,7 @@ import (
 	"codacy/cli-v2/utils"
 	"codacy/cli-v2/utils/logger"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -164,6 +165,25 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 
 	// Execute the installation command using the package manager
 	cmd := exec.Command(packageManagerBinary, strings.Split(installCmd, " ")...)
+
+	// Special handling for ESLint installation in WSL environment
+	if toolInfo.Name == "eslint" {
+		// Get node binary directory to add to PATH
+		nodeBinary, ok := runtimeInfo.Binaries["node"]
+		if ok {
+			nodeDir := filepath.Dir(nodeBinary)
+			// Get current PATH
+			currentPath := os.Getenv("PATH")
+			// For WSL, always use Linux path separator
+			pathSeparator := ":"
+			newPath := nodeDir + pathSeparator + currentPath
+			cmd.Env = append(os.Environ(), "PATH="+newPath)
+			log.Printf("Setting PATH environment for ESLint installation: %s\n", nodeDir)
+		}
+	}
+
+	log.Printf("Installing %s v%s...\n", toolInfo.Name, toolInfo.Version)
+	log.Printf("Running command: %s %s\n", packageManagerBinary, installCmd)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to install tool: %s: %w", string(output), err)
