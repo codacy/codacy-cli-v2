@@ -1,0 +1,21 @@
+rules:
+  - id: python.requests.security.no-http-url
+    pattern: requests.get("http://...")
+    message: "Insecure HTTP URL in requests.get()"
+    severity: WARNING
+    languages: [python]
+
+  - id: python.cryptography.bad-cryptography
+    pattern: |
+      from cryptography.fernet import Fernet
+      key = Fernet.generate_key()
+      f = Fernet(key)
+    message: "Using Fernet for encryption without proper key management"
+    severity: WARNING
+    languages: [python]
+
+  - id: python.security.audit.avoid-assert
+    pattern: assert $X
+    message: "Use of assert statement in production code"
+    severity: WARNING
+    languages: [python] 

@@ -1,16 +1,13 @@
-name: Pylint plugin test
+name: plugin it-test
 
 permissions:
   contents: write
 
 on:
   push:
-    paths:
-      - 'plugins/tools/pylint/**'
-
 
 jobs:
-  test:
+  pylint-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -42,4 +39,38 @@ jobs:
           # Compare with expected output
           jq --sort-keys . expected.sarif > expected.sorted.json
           jq --sort-keys . actual.sarif > actual.sorted.json
+          diff expected.sorted.json actual.sorted.json
+
+  semgrep-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Build CLI
+        run: |
+          go build -o cli-v2 ./cli-v2.go
+          chmod +x cli-v2
+
+      - name: Run Semgrep plugin tests
+        run: |
+          # Store the path to the CLI
+          CLI_PATH="$(pwd)/cli-v2"
+          # Change to test directory
+          cd plugins/tools/semgrep/test/src
+          # Install the plugin
+          "$CLI_PATH" install
+          # Run analysis
+          "$CLI_PATH" analyze --tool semgrep --format sarif --output actual.sarif
+          # Convert absolute paths to relative paths in the output
+          sed -i 's|file:///home/runner/work/codacy-cli-v2/codacy-cli-v2/|file:///|g' actual.sarif
+          # Compare with expected output
+          jq --sort-keys '.runs[0].tool.driver.rules |= if . then sort_by(.id) else . end' expected.sarif > expected.sorted.json
+          jq --sort-keys '.runs[0].tool.driver.rules |= if . then sort_by(.id) else . end' actual.sarif > actual.sorted.json
           diff expected.sorted.json actual.sorted.json
