@@ -5,8 +5,8 @@ runtime_binaries:
   package_manager: python3
   execution: python3
 binaries:
-  - name: python
-    path: "venv/bin/python3"
+  - name: semgrep
+    path: "venv/bin/semgrep"
 formatters:
   - name: json
     flag: "--json"
