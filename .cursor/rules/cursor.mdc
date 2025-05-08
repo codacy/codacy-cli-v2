@@ -6,7 +6,7 @@ alwaysApply: true
 
 # Your rule content
 
-## Key R
+## Key Rules
 - run go build after each code modification to see if app compiles
 
 ## Code Style Guidelines

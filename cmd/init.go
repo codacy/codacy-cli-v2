@@ -94,6 +94,7 @@ func createGitIgnoreFile() error {
 tools-configs/
 .gitignore
 cli-config.yaml
+logs/
 `
 	if _, err := gitIgnoreFile.WriteString(content); err != nil {
 		return fmt.Errorf("failed to write to .gitignore file: %w", err)
