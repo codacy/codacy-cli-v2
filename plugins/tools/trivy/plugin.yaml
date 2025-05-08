@@ -1,7 +1,7 @@
 name: trivy
 description: Trivy vulnerability scanner
 download:
-  url_template: "https://github.com/aquasecurity/trivy/releases/download/213.{{.Extension}}"
+  url_template: "https://github.com/aquasecurity/trivy/releases/download/v{{.Version}}/trivy_{{.Version}}_{{.OS}}-{{.Arch}}.{{.Extension}}"
   file_name_template: "trivy_{{.Version}}_{{.OS}}_{{.Arch}}"
   extension:
     windows: "zip"
