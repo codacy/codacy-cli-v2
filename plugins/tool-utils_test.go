@@ -168,6 +168,7 @@ func TestGetSupportedTools(t *testing.T) {
 				"trivy",
 				"dartanalyzer",
 				"semgrep",
+				"lizard",
 			},
 			expectedError: false,
 		},
