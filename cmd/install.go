@@ -166,7 +166,10 @@ var installCmd = &cobra.Command{
 						"version": runtime.Version,
 						"error":   err.Error(),
 					})
-					log.Fatal(err)
+					fmt.Printf("\n⚠️  Warning: Failed to install runtime %s v%s: %v\n", name, runtime.Version, err)
+					// Continue with next runtime instead of fatal
+					progressBar.Add(1)
+					continue
 				}
 				logger.Info("Successfully installed runtime", logrus.Fields{
 					"runtime": name,
@@ -191,7 +194,10 @@ var installCmd = &cobra.Command{
 						"version": tool.Version,
 						"error":   err.Error(),
 					})
-					log.Fatal(err)
+					fmt.Printf("\n⚠️  Warning: Failed to install tool %s v%s: %v\n", name, tool.Version, err)
+					// Continue with next tool instead of fatal
+					progressBar.Add(1)
+					continue
 				}
 				logger.Info("Successfully installed tool", logrus.Fields{
 					"tool":    name,
@@ -206,21 +212,39 @@ var installCmd = &cobra.Command{
 		devNull.Close()
 		log.SetOutput(os.Stderr)
 
-		// Print completion status
+		// Print completion status with warnings for failed installations
 		fmt.Println()
+		var hasFailures bool
 		for name, runtime := range cfg.Config.Runtimes() {
 			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
-				green.Printf("  ✓ Runtime: %s v%s\n", name, runtime.Version)
+				if cfg.Config.IsRuntimeInstalled(name, runtime) {
+					green.Printf("  ✓ Runtime: %s v%s\n", name, runtime.Version)
+				} else {
+					color.Yellow("  ⚠️  Runtime: %s v%s (installation failed)", name, runtime.Version)
+					hasFailures = true
+				}
 			}
 		}
 		for name, tool := range cfg.Config.Tools() {
 			if !cfg.Config.IsToolInstalled(name, tool) {
-				green.Printf("  ✓ Tool: %s v%s\n", name, tool.Version)
+				if cfg.Config.IsToolInstalled(name, tool) {
+					green.Printf("  ✓ Tool: %s v%s\n", name, tool.Version)
+				} else {
+					color.Yellow("  ⚠️  Tool: %s v%s (installation failed)", name, tool.Version)
+					hasFailures = true
+				}
 			}
 		}
 		fmt.Println()
-		logger.Info("Installation completed successfully", nil)
-		bold.Println("✅ Installation completed successfully!")
+		if hasFailures {
+			logger.Warn("Installation completed with some failures", nil)
+			bold.Println("⚠️  Installation completed with some failures!")
+			fmt.Println("Some components failed to install. You can try installing them again with:")
+			fmt.Println("  codacy-cli install")
+		} else {
+			logger.Info("Installation completed successfully", nil)
+			bold.Println("✅ Installation completed successfully!")
+		}
 	},
 }
 
