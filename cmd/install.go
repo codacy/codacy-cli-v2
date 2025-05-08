@@ -217,22 +217,18 @@ var installCmd = &cobra.Command{
 		var hasFailures bool
 		for name, runtime := range cfg.Config.Runtimes() {
 			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
-				if cfg.Config.IsRuntimeInstalled(name, runtime) {
-					green.Printf("  ✓ Runtime: %s v%s\n", name, runtime.Version)
-				} else {
-					color.Yellow("  ⚠️  Runtime: %s v%s (installation failed)", name, runtime.Version)
-					hasFailures = true
-				}
+				color.Yellow("  ⚠️  Runtime: %s v%s (installation failed)", name, runtime.Version)
+				hasFailures = true
+			} else {
+				green.Printf("  ✓ Runtime: %s v%s\n", name, runtime.Version)
 			}
 		}
 		for name, tool := range cfg.Config.Tools() {
 			if !cfg.Config.IsToolInstalled(name, tool) {
-				if cfg.Config.IsToolInstalled(name, tool) {
-					green.Printf("  ✓ Tool: %s v%s\n", name, tool.Version)
-				} else {
-					color.Yellow("  ⚠️  Tool: %s v%s (installation failed)", name, tool.Version)
-					hasFailures = true
-				}
+				color.Yellow("  ⚠️  Tool: %s v%s (installation failed)", name, tool.Version)
+				hasFailures = true
+			} else {
+				green.Printf("  ✓ Tool: %s v%s\n", name, tool.Version)
 			}
 		}
 		fmt.Println()
@@ -246,25 +242,4 @@ var installCmd = &cobra.Command{
 			bold.Println("✅ Installation completed successfully!")
 		}
 	},
-}
-
-func installRuntimes(config *cfg.ConfigType) {
-	err := cfg.InstallRuntimes(config)
-	if err != nil {
-		logger.Error("Failed to install runtimes", logrus.Fields{
-			"error": err.Error(),
-		})
-		log.Fatal(err)
-	}
-}
-
-func installTools(config *cfg.ConfigType, registry string) {
-	// Use the new tools-installer instead of manual installation
-	err := cfg.InstallTools(config, registry)
-	if err != nil {
-		logger.Error("Failed to install tools", logrus.Fields{
-			"error": err.Error(),
-		})
-		log.Fatal(err)
-	}
 }
