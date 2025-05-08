@@ -4,13 +4,24 @@ import (
 	"codacy/cli-v2/cmd"
 	"codacy/cli-v2/config"
 	config_file "codacy/cli-v2/config-file"
+	"codacy/cli-v2/utils/logger"
 	"fmt"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
 	// Initialize config global object
 	config.Init()
+
+	// Initialize logger
+	if err := logger.Initialize(&config.Config); err != nil {
+		fmt.Printf("Failed to initialize logger: %v\n", err)
+	}
+
+	// Log startup message
+	logger.Debug("Starting Codacy CLI.", logrus.Fields{})
 
 	// This also setup the config global !
 	configErr := config_file.ReadConfigFile(config.Config.ProjectConfigFile())
@@ -31,7 +42,17 @@ func main() {
 
 	// All other commands require a configuration file
 	if configErr != nil && len(os.Args) > 1 {
-		fmt.Println("No configuration file was found, execute init command first.")
+		if os.IsNotExist(configErr) {
+			message := "No configuration file was found, execute init command first."
+			logger.Info(message)
+			fmt.Println(message)
+		} else {
+			logger.Error("Configuration error", logrus.Fields{
+				"error": configErr.Error(),
+			})
+			fmt.Printf("Failed to parse configuration file: %v\n", configErr)
+			fmt.Println("Please check the file format and try again, or run init command to create a new configuration.")
+		}
 		return
 	}
 

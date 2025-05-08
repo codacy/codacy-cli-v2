@@ -75,6 +75,13 @@ func Initialize(conf *config.ConfigType) error {
 	// Set up log rotation using lumberjack
 	logFile := filepath.Join(logsDir, "codacy-cli.log")
 
+	// Try to create/open the log file to test permissions
+	f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, utils.DefaultFilePerms)
+	if err != nil {
+		return fmt.Errorf("failed to create/open log file: %w", err)
+	}
+	f.Close()
+
 	lumberjackLogger := &lumberjack.Logger{
 		Filename:   logFile,
 		MaxSize:    10,   // megabytes
@@ -86,7 +93,7 @@ func Initialize(conf *config.ConfigType) error {
 	// Configure logrus to use our custom formatter
 	fileLogger.SetFormatter(&CustomTextFormatter{})
 	fileLogger.SetOutput(lumberjackLogger)
-	fileLogger.SetLevel(logrus.InfoLevel)
+	fileLogger.SetLevel(logrus.DebugLevel)
 
 	// Enable caller information for file location
 	fileLogger.SetReportCaller(true)
@@ -103,21 +110,37 @@ func Log(level logrus.Level, msg string, fields logrus.Fields) {
 }
 
 // Info logs an info level message
-func Info(msg string, fields logrus.Fields) {
-	Log(logrus.InfoLevel, msg, fields)
+func Info(msg string, fields ...logrus.Fields) {
+	var f logrus.Fields
+	if len(fields) > 0 {
+		f = fields[0]
+	}
+	Log(logrus.InfoLevel, msg, f)
 }
 
 // Error logs an error level message
-func Error(msg string, fields logrus.Fields) {
-	Log(logrus.ErrorLevel, msg, fields)
+func Error(msg string, fields ...logrus.Fields) {
+	var f logrus.Fields
+	if len(fields) > 0 {
+		f = fields[0]
+	}
+	Log(logrus.ErrorLevel, msg, f)
 }
 
 // Debug logs a debug level message
-func Debug(msg string, fields logrus.Fields) {
-	Log(logrus.DebugLevel, msg, fields)
+func Debug(msg string, fields ...logrus.Fields) {
+	var f logrus.Fields
+	if len(fields) > 0 {
+		f = fields[0]
+	}
+	Log(logrus.DebugLevel, msg, f)
 }
 
 // Warn logs a warning level message
-func Warn(msg string, fields logrus.Fields) {
-	Log(logrus.WarnLevel, msg, fields)
+func Warn(msg string, fields ...logrus.Fields) {
+	var f logrus.Fields
+	if len(fields) > 0 {
+		f = fields[0]
+	}
+	Log(logrus.WarnLevel, msg, f)
 }
