@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -17,8 +18,9 @@ var toolsFS embed.FS
 
 // ToolBinary represents a binary executable provided by the tool
 type ToolBinary struct {
-	Name string `yaml:"name"`
-	Path string `yaml:"path"`
+	Name        string `yaml:"name"`
+	Path        string `yaml:"path"`
+	WindowsPath string `yaml:"windows_path,omitempty"`
 }
 
 // Formatter represents a supported output format
@@ -73,6 +75,7 @@ type ToolPluginConfig struct {
 	RuntimeBinaries RuntimeBinaries    `yaml:"runtime_binaries"`
 	Installation    InstallationConfig `yaml:"installation"`
 	Download        DownloadConfig     `yaml:"download"`
+	Environment     map[string]string  `yaml:"environment"`
 	Binaries        []ToolBinary       `yaml:"binaries"`
 	Formatters      []Formatter        `yaml:"formatters"`
 	OutputOptions   OutputOptions      `yaml:"output_options"`
@@ -107,6 +110,8 @@ type ToolInfo struct {
 	DownloadURL string
 	FileName    string
 	Extension   string
+	// Environment variables
+	Environment map[string]string
 }
 
 // ProcessTools processes a list of tool configurations and returns a map of tool information
@@ -158,6 +163,8 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 			// Store raw command templates (processing will happen later)
 			InstallCommand:  pluginConfig.Installation.Command,
 			RegistryCommand: pluginConfig.Installation.RegistryTemplate,
+			// Store environment variables
+			Environment: make(map[string]string),
 		}
 
 		// Handle download configuration for directly downloaded tools
@@ -183,8 +190,14 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 
 		// Process binary paths
 		for _, binary := range pluginConfig.Binaries {
+			// Use Windows-specific path if available and on Windows
+			binaryPath := binary.Path
+			if runtime.GOOS == "windows" && binary.WindowsPath != "" {
+				binaryPath = binary.WindowsPath
+			}
+
 			// Process template variables in binary path
-			tmpl, err := template.New("binary_path").Parse(binary.Path)
+			tmpl, err := template.New("binary_path").Parse(binaryPath)
 			if err != nil {
 				return nil, fmt.Errorf("error parsing binary path template for %s: %w", config.Name, err)
 			}
@@ -199,13 +212,46 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 				return nil, fmt.Errorf("error executing binary path template for %s: %w", config.Name, err)
 			}
 
-			binaryPath := filepath.Join(installDir, buf.String())
+			binaryPath = filepath.Join(installDir, buf.String())
 			info.Binaries[binary.Name] = binaryPath
 		}
 
 		// Process formatters
 		for _, formatter := range pluginConfig.Formatters {
 			info.Formatters[formatter.Name] = formatter.Flag
+		}
+
+		// Process environment variables
+		if len(pluginConfig.Environment) > 0 {
+			// Get runtime install directory if needed
+			var runtimeInstallDir string
+			if info.Runtime != "" {
+				if runtime, ok := runtimes[info.Runtime]; ok {
+					runtimeInstallDir = runtime.InstallDir
+				}
+			}
+
+			// Process each environment variable
+			for key, tmplStr := range pluginConfig.Environment {
+				tmpl, err := template.New("env").Parse(tmplStr)
+				if err != nil {
+					return nil, fmt.Errorf("error parsing environment template for %s: %w", config.Name, err)
+				}
+
+				var buf bytes.Buffer
+				err = tmpl.Execute(&buf, struct {
+					RuntimeInstallDir string
+					Path              string
+				}{
+					RuntimeInstallDir: runtimeInstallDir,
+					Path:              os.Getenv("PATH"),
+				})
+				if err != nil {
+					return nil, fmt.Errorf("error executing environment template for %s: %w", config.Name, err)
+				}
+
+				info.Environment[key] = buf.String()
+			}
 		}
 
 		result[config.Name] = info
