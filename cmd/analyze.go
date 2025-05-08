@@ -390,6 +390,10 @@ func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 	var patterns []domain.PatternDefinition
 	var err error
 
+	//this logic is here because I want to pass the config to the runner which is good for:
+	//Separation of concerns, runner will simply run the tool now
+	//Easier testing, since config is now passed
+	//Avoiding fetching the default patterns in tests (unless we want to maintain codacy directory with the configs)
 	if exists {
 		// Configuration exists, read from file
 		patterns, err = lizard.ReadConfig(configFile)
