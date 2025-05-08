@@ -5,7 +5,6 @@ import (
 	"embed"
 	"fmt"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"text/template"
@@ -134,7 +133,8 @@ func processRuntime(config RuntimeConfig, runtimesDir string) (*RuntimeInfo, err
 
 // LoadPlugin loads a plugin configuration from the specified plugin directory
 func loadPlugin(runtimeName string) (*runtimePlugin, error) {
-	pluginPath := filepath.Join("runtimes", runtimeName, "plugin.yaml")
+	// Always use forward slashes for embedded filesystem paths (for windows support)
+	pluginPath := fmt.Sprintf("runtimes/%s/plugin.yaml", runtimeName)
 
 	// Read from embedded filesystem
 	data, err := pluginsFS.ReadFile(pluginPath)
