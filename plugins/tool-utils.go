@@ -114,8 +114,8 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 	result := make(map[string]*ToolInfo)
 
 	for _, config := range configs {
-		// Load the tool plugin
-		pluginPath := filepath.Join("tools", config.Name, "plugin.yaml")
+		// Load the tool plugin - always use forward slashes for embedded filesystem paths (for windows support)
+		pluginPath := fmt.Sprintf("tools/%s/plugin.yaml", config.Name)
 
 		// Read from embedded filesystem
 		data, err := toolsFS.ReadFile(pluginPath)
@@ -321,7 +321,8 @@ func GetSupportedTools() (map[string]struct{}, error) {
 		}
 
 		toolName := entry.Name()
-		pluginPath := filepath.Join("tools", toolName, "plugin.yaml")
+		// Always use forward slashes for embedded filesystem paths
+		pluginPath := fmt.Sprintf("tools/%s/plugin.yaml", toolName)
 
 		// Check if plugin.yaml exists
 		_, err := toolsFS.ReadFile(pluginPath)
