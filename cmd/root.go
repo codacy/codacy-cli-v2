@@ -19,7 +19,8 @@ var rootCmd = &cobra.Command{
 	Example: getExampleText(),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Initialize logger before any command runs
-		if err := logger.Initialize(&config.Config); err != nil {
+		logsDir := filepath.Join(config.Config.LocalCodacyDirectory(), "logs")
+		if err := logger.Initialize(logsDir); err != nil {
 			fmt.Printf("Warning: Failed to initialize file logger: %v\n", err)
 		}
 	},

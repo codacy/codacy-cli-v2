@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/utils"
+	"codacy/cli-v2/utils/logger"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,13 +15,38 @@ import (
 
 // InstallTools installs all tools defined in the configuration
 func InstallTools(config *ConfigType, registry string) error {
+	var failedTools []string
+
 	for name, toolInfo := range config.Tools() {
+		logger.Info("Starting tool installation", map[string]interface{}{
+			"tool":    name,
+			"version": toolInfo.Version,
+			"runtime": toolInfo.Runtime,
+		})
+
 		fmt.Printf("Installing tool: %s v%s...\n", name, toolInfo.Version)
 		err := InstallTool(name, toolInfo, registry)
 		if err != nil {
-			return fmt.Errorf("failed to install tool %s: %w", name, err)
+			logger.Error("Failed to install tool", map[string]interface{}{
+				"tool":    name,
+				"version": toolInfo.Version,
+				"runtime": toolInfo.Runtime,
+				"error":   err.Error(),
+			})
+			failedTools = append(failedTools, name)
+			continue
 		}
+
+		logger.Info("Successfully installed tool", map[string]interface{}{
+			"tool":    name,
+			"version": toolInfo.Version,
+			"runtime": toolInfo.Runtime,
+		})
 		fmt.Printf("Successfully installed %s v%s\n", name, toolInfo.Version)
+	}
+
+	if len(failedTools) > 0 {
+		return fmt.Errorf("failed to install the following tools: %v", failedTools)
 	}
 	return nil
 }
@@ -30,12 +55,16 @@ func InstallTools(config *ConfigType, registry string) error {
 func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error {
 	// Check if the tool is already installed
 	if isToolInstalled(toolInfo) {
+		logger.Info("Tool already installed", map[string]interface{}{
+			"tool":    name,
+			"version": toolInfo.Version,
+			"runtime": toolInfo.Runtime,
+		})
 		fmt.Printf("Tool %s v%s is already installed\n", name, toolInfo.Version)
 		return nil
 	}
 
 	// Make sure the installation directory exists
-
 	err := os.MkdirAll(toolInfo.InstallDir, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create installation directory: %w", err)
@@ -44,17 +73,31 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error
 	// Check if this is a download-based tool (like trivy) or a runtime-based tool (like eslint)
 	if toolInfo.DownloadURL != "" {
 		// This is a download-based tool
+		logger.Debug("Installing download-based tool", map[string]interface{}{
+			"tool":        name,
+			"version":     toolInfo.Version,
+			"downloadURL": toolInfo.DownloadURL,
+		})
 		fmt.Printf("Downloading %s...\n", name)
 		return installDownloadBasedTool(toolInfo)
 	}
 
 	// Handle Python tools differently
 	if toolInfo.Runtime == "python" {
+		logger.Debug("Installing Python tool", map[string]interface{}{
+			"tool":    name,
+			"version": toolInfo.Version,
+		})
 		fmt.Printf("Installing Python tool %s...\n", name)
 		return installPythonTool(name, toolInfo)
 	}
 
 	// For runtime-based tools
+	logger.Debug("Installing runtime-based tool", map[string]interface{}{
+		"tool":    name,
+		"version": toolInfo.Version,
+		"runtime": toolInfo.Runtime,
+	})
 	fmt.Printf("Installing %s using %s runtime...\n", name, toolInfo.Runtime)
 	return installRuntimeTool(name, toolInfo, registry)
 }
@@ -88,7 +131,12 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 			return fmt.Errorf("failed to prepare registry command: %w", err)
 		}
 
-		log.Printf("Setting registry...\n %s %s\n", packageManagerBinary, regCmd)
+		logger.Debug("Setting registry", map[string]interface{}{
+			"tool":              name,
+			"packageManager":    packageManagerName,
+			"packageManagerBin": packageManagerBinary,
+			"command":           regCmd,
+		})
 
 		if regCmd != "" {
 			registryCmd := exec.Command(packageManagerBinary, strings.Split(regCmd, " ")...)
@@ -104,16 +152,25 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 		return fmt.Errorf("failed to prepare install command: %w", err)
 	}
 
+	logger.Debug("Installing tool", map[string]interface{}{
+		"tool":              name,
+		"version":           toolInfo.Version,
+		"packageManager":    packageManagerName,
+		"packageManagerBin": packageManagerBinary,
+		"command":           installCmd,
+	})
+
 	// Execute the installation command using the package manager
 	cmd := exec.Command(packageManagerBinary, strings.Split(installCmd, " ")...)
-
-	log.Printf("Installing %s v%s...\n", toolInfo.Name, toolInfo.Version)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to install tool: %s: %w", string(output), err)
 	}
 
-	log.Printf("Successfully installed %s v%s\n", toolInfo.Name, toolInfo.Version)
+	logger.Debug("Tool installation completed", map[string]interface{}{
+		"tool":    name,
+		"version": toolInfo.Version,
+	})
 	return nil
 }
 
@@ -127,7 +184,12 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 	_, err := os.Stat(downloadPath)
 	if os.IsNotExist(err) {
 		// Download the file
-		log.Printf("Downloading %s v%s...\n", toolInfo.Name, toolInfo.Version)
+		logger.Debug("Downloading tool", map[string]interface{}{
+			"tool":         toolInfo.Name,
+			"version":      toolInfo.Version,
+			"downloadURL":  toolInfo.DownloadURL,
+			"downloadPath": downloadPath,
+		})
 		downloadPath, err = utils.DownloadFile(toolInfo.DownloadURL, Config.ToolsDirectory())
 		if err != nil {
 			return fmt.Errorf("failed to download tool: %w", err)
@@ -135,7 +197,11 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 	} else if err != nil {
 		return fmt.Errorf("error checking for existing download: %w", err)
 	} else {
-		log.Printf("Using existing download for %s v%s\n", toolInfo.Name, toolInfo.Version)
+		logger.Debug("Using existing tool download", map[string]interface{}{
+			"tool":         toolInfo.Name,
+			"version":      toolInfo.Version,
+			"downloadPath": downloadPath,
+		})
 	}
 
 	// Open the downloaded file
@@ -152,7 +218,13 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 	}
 
 	// Extract directly to the installation directory
-	log.Printf("Extracting %s v%s...\n", toolInfo.Name, toolInfo.Version)
+	logger.Debug("Extracting tool", map[string]interface{}{
+		"tool":             toolInfo.Name,
+		"version":          toolInfo.Version,
+		"fileName":         fileName,
+		"extractDirectory": toolInfo.InstallDir,
+	})
+
 	if strings.HasSuffix(fileName, ".zip") {
 		err = utils.ExtractZip(file.Name(), toolInfo.InstallDir)
 	} else {
@@ -171,12 +243,18 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 		}
 	}
 
-	log.Printf("Successfully installed %s v%s\n", toolInfo.Name, toolInfo.Version)
+	logger.Debug("Tool extraction completed", map[string]interface{}{
+		"tool":    toolInfo.Name,
+		"version": toolInfo.Version,
+	})
 	return nil
 }
 
 func installPythonTool(name string, toolInfo *plugins.ToolInfo) error {
-	log.Printf("Installing %s v%s...\n", toolInfo.Name, toolInfo.Version)
+	logger.Debug("Starting Python tool installation", map[string]interface{}{
+		"tool":    toolInfo.Name,
+		"version": toolInfo.Version,
+	})
 
 	runtimeInfo, ok := Config.Runtimes()[toolInfo.Runtime]
 	if !ok {
@@ -189,6 +267,12 @@ func installPythonTool(name string, toolInfo *plugins.ToolInfo) error {
 	}
 
 	// Create venv
+	logger.Debug("Creating Python virtual environment", map[string]interface{}{
+		"tool":    toolInfo.Name,
+		"version": toolInfo.Version,
+		"venvDir": filepath.Join(toolInfo.InstallDir, "venv"),
+	})
+
 	cmd := exec.Command(pythonBinary, "-m", "venv", filepath.Join(toolInfo.InstallDir, "venv"))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -197,13 +281,22 @@ func installPythonTool(name string, toolInfo *plugins.ToolInfo) error {
 
 	// Install the tool using pip from venv
 	pipPath := filepath.Join(toolInfo.InstallDir, "venv", "bin", "pip")
+	logger.Debug("Installing Python package", map[string]interface{}{
+		"tool":    toolInfo.Name,
+		"version": toolInfo.Version,
+		"pipPath": pipPath,
+	})
+
 	cmd = exec.Command(pipPath, "install", fmt.Sprintf("%s==%s", toolInfo.Name, toolInfo.Version))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to install tool: %s\nError: %w", string(output), err)
 	}
 
-	log.Printf("Successfully installed %s v%s\n", toolInfo.Name, toolInfo.Version)
+	logger.Debug("Python tool installation completed", map[string]interface{}{
+		"tool":    toolInfo.Name,
+		"version": toolInfo.Version,
+	})
 	return nil
 }
 
