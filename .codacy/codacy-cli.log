@@ -1,0 +1,8 @@
+2025-05-08T11:00:00+02:00 [INFO] (utils/logger/logger.go:93) Starting installation process
+...
+2025-05-08T11:05:36+02:00 [INFO] (utils/logger/logger.go:93) Installing runtime runtime=python version=3.11.11
+2025-05-08T11:05:40+02:00 [INFO] (utils/logger/logger.go:93) Successfully installed runtime runtime=python version=3.11.11
+2025-05-08T11:05:40+02:00 [INFO] (utils/logger/logger.go:93) Installing tool version=8.57.0 tool=eslint
+2025-05-08T11:05:44+02:00 [INFO] (utils/logger/logger.go:93) Successfully installed tool tool=eslint version=8.57.0
+2025-05-08T11:05:44+02:00 [INFO] (utils/logger/logger.go:93) Installing tool version=0.59.1 tool=trivy
+2025-05-08T11:05:44+02:00 [ERROR] (utils/logger/logger.go:93) Failed to install tool error=failed to download tool: failed to download file: status code 404, URL: https://github.com/aquasecurity/trivy/releases/download/213.tar.gz, Response: Not Found tool=trivy version=0.59.1

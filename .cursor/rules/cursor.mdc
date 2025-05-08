@@ -6,6 +6,9 @@ alwaysApply: true
 
 # Your rule content
 
+## Key R
+- run go build after each code modification to see if app compiles
+
 ## Code Style Guidelines
 - **Imports**: Standard lib first, external packages second, internal last
 - **Naming**: PascalCase for exported (public), camelCase for unexported (private)
@@ -19,4 +22,4 @@ alwaysApply: true
 - `cmd/`: CLI command implementations
 - `config/`: Configuration handling
 - `tools/`: Tool-specific implementations
-- `utils/`: Utility functions
+- `utils/`: Utility functions and static - look for static like default file permisson here
