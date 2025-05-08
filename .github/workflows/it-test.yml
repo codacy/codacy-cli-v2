@@ -51,5 +51,8 @@ jobs:
           # Run Pylint tests with simple sorting
           run_test "pylint" "."
 
+          # Run Enigma tests with simple sorting
+          run_test "codacy-enigma-cli" "."
+
           # Run Semgrep tests with rules sorting
           run_test "semgrep" ".runs[0].tool.driver.rules |= if . then sort_by(.id) else . end"
