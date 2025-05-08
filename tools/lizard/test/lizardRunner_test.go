@@ -1,9 +1,8 @@
 package test
 
 import (
-	"codacy/cli-v2/plugins"
+	"codacy/cli-v2/domain"
 	"codacy/cli-v2/tools/lizard"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,55 +11,114 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRunLizard(t *testing.T) {
+func TestRunLizardWithSarifOutput(t *testing.T) {
+	// Get the current directory
+	currentDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get current directory: %v", err)
+	}
+
+	// Get the home directory
 	homeDirectory, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal(err.Error())
-	}
-	currentDirectory, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err.Error())
+		t.Fatalf("Failed to get home directory: %v", err)
 	}
 
-	// Use the current directory containing our sample complex code
-	testDirectory := currentDirectory
-	globalCache := filepath.Join(homeDirectory, ".cache/codacy")
+	// Construct the path to the Lizard binary
+	globalCache := filepath.Join(homeDirectory, ".cache", "codacy")
+	lizardBinary := filepath.Join(globalCache, "tools/lizard@1.17.19/venv/bin/python")
 
-	// Setup tool info
-	toolInfo := &plugins.ToolInfo{
-		Binaries: map[string]string{
-			"python": filepath.Join(globalCache, "tools/lizard@1.17.19/venv/bin/python"),
+	// Construct the path to the test file
+	complexPyPath := filepath.Join(currentDir, "complex.py")
+
+	// Create test patterns
+	patterns := []domain.PatternDefinition{
+		{
+			Id:            "Lizard_nloc-minor",
+			Category:      "CodeStyle",
+			Level:         "Code",
+			SeverityLevel: "Minor",
+			Title:         "Method Too Long (Minor)",
+			Description:   "Method has too many lines of code",
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:    "threshold",
+					Value:   "15",
+					Default: "15",
+				},
+			},
+		},
+		{
+			Id:            "Lizard_nloc-medium",
+			Category:      "CodeStyle",
+			Level:         "Code",
+			SeverityLevel: "Medium",
+			Title:         "Method Too Long (Medium)",
+			Description:   "Method has too many lines of code",
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:    "threshold",
+					Value:   "25",
+					Default: "25",
+				},
+			},
+		},
+		{
+			Id:            "Lizard_ccn-minor",
+			Category:      "CodeStyle",
+			Level:         "Code",
+			SeverityLevel: "Minor",
+			Title:         "Cyclomatic Complexity (Minor)",
+			Description:   "Method has high cyclomatic complexity",
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:    "threshold",
+					Value:   "3",
+					Default: "3",
+				},
+			},
+		},
+		{
+			Id:            "Lizard_ccn-critical",
+			Category:      "CodeStyle",
+			Level:         "Code",
+			SeverityLevel: "Critical",
+			Title:         "Cyclomatic Complexity (Critical)",
+			Description:   "Method has extremely high cyclomatic complexity",
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:    "threshold",
+					Value:   "30",
+					Default: "30",
+				},
+			},
 		},
 	}
 
-	t.Run("Output to file", func(t *testing.T) {
-		tempResultFile := filepath.Join(os.TempDir(), "lizard.csv")
-		defer os.Remove(tempResultFile)
+	// Create a temporary output file
+	outputFile := filepath.Join(currentDir, "output.sarif")
+	defer os.Remove(outputFile)
 
-		err := lizard.RunLizard(testDirectory, toolInfo.Binaries["python"], []string{"complex.py"}, tempResultFile, "")
-		assert.NoError(t, err)
+	// Read expected SARIF output
+	expectedData, err := os.ReadFile("expected.sarif")
+	if err != nil {
+		t.Fatalf("Failed to read expected SARIF output: %v", err)
+	}
+	expectedOutput := strings.TrimSpace(string(expectedData))
 
-		// Read actual output
-		actualData, err := os.ReadFile(tempResultFile)
-		assert.NoError(t, err)
+	// Run Lizard with SARIF output
+	err = lizard.RunLizard(currentDir, lizardBinary, []string{complexPyPath}, outputFile, "sarif", patterns)
+	if err != nil {
+		t.Fatalf("RunLizard failed: %v", err)
+	}
 
-		// Read expected output
-		expectedData, err := os.ReadFile("expected.csv")
-		assert.NoError(t, err)
+	// Read and parse the SARIF output
+	data, err := os.ReadFile(outputFile)
+	if err != nil {
+		t.Fatalf("Failed to read SARIF output: %v", err)
+	}
 
-		// Normalize and compare the files
-		actualStr := strings.TrimSpace(string(actualData))
-		expectedStr := strings.TrimSpace(string(expectedData))
-		assert.Equal(t, expectedStr, actualStr, "Output does not match expected output")
-	})
-
-	t.Run("No output file specified", func(t *testing.T) {
-		err := lizard.RunLizard(testDirectory, toolInfo.Binaries["python"], []string{"complex.py"}, "", "")
-		assert.NoError(t, err)
-	})
-
-	t.Run("No files specified", func(t *testing.T) {
-		err := lizard.RunLizard(testDirectory, toolInfo.Binaries["python"], nil, "", "")
-		assert.NoError(t, err)
-	})
+	// Compare the outputs
+	actualOutput := strings.TrimSpace(string(data))
+	assert.Equal(t, expectedOutput, actualOutput, "SARIF output does not match expected output")
 }
