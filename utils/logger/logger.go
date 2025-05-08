@@ -2,7 +2,9 @@ package logger
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/utils"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -64,8 +66,14 @@ func Initialize(conf *config.ConfigType) error {
 	// Create a new logger instance
 	fileLogger = logrus.New()
 
+	// Create logs directory if it doesn't exist
+	logsDir := filepath.Join(conf.LocalCodacyDirectory(), "logs")
+	if err := os.MkdirAll(logsDir, utils.DefaultDirPerms); err != nil {
+		return fmt.Errorf("failed to create logs directory: %w", err)
+	}
+
 	// Set up log rotation using lumberjack
-	logFile := filepath.Join(conf.LocalCodacyDirectory(), "codacy-cli.log")
+	logFile := filepath.Join(logsDir, "codacy-cli.log")
 
 	lumberjackLogger := &lumberjack.Logger{
 		Filename:   logFile,
