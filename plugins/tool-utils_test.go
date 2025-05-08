@@ -169,6 +169,7 @@ func TestGetSupportedTools(t *testing.T) {
 				"dartanalyzer",
 				"semgrep",
 				"lizard",
+				"codacy-enigma-cli",
 			},
 			expectedError: false,
 		},
