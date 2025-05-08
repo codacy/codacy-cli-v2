@@ -1,8 +1,9 @@
 package domain
 
 type ParameterConfiguration struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	Name    string `json:"name"`
+	Value   string `json:"value,omitempty"`
+	Default string `json:"default,omitempty"`
 }
 
 type PatternDefinition struct {

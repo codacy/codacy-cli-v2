@@ -2,7 +2,6 @@ package tools
 
 import (
 	"codacy/cli-v2/config"
-	"codacy/cli-v2/plugins"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,7 +9,7 @@ import (
 )
 
 // RunSemgrep executes Semgrep analysis on the specified directory
-func RunSemgrep(workDirectory string, toolInfo *plugins.ToolInfo, files []string, outputFile string, outputFormat string) error {
+func RunSemgrep(workDirectory string, binary string, files []string, outputFile string, outputFormat string) error {
 	// Construct base command with -m semgrep to run semgrep module
 	cmdArgs := []string{"scan"}
 
@@ -44,11 +43,8 @@ func RunSemgrep(workDirectory string, toolInfo *plugins.ToolInfo, files []string
 		cmdArgs = append(cmdArgs, ".")
 	}
 
-	// Get Semgrep binary from the specified installation path
-	semgrepPath := filepath.Join(toolInfo.InstallDir, "venv", "bin", "semgrep")
-
 	// Create Semgrep command
-	cmd := exec.Command(semgrepPath, cmdArgs...)
+	cmd := exec.Command(binary, cmdArgs...)
 	cmd.Dir = workDirectory
 
 	if outputFile != "" {

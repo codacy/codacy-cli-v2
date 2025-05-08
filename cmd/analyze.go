@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/domain"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/lizard"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -329,6 +331,9 @@ func runEslintAnalysis(workDirectory string, pathsToCheck []string, autoFix bool
 
 func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	trivy := config.Config.Tools()["trivy"]
+	if trivy == nil {
+		log.Fatal("Trivy tool configuration not found")
+	}
 	trivyBinary := trivy.Binaries["trivy"]
 
 	return tools.RunTrivy(workDirectory, trivyBinary, pathsToCheck, outputFile, outputFormat)
@@ -336,6 +341,9 @@ func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile st
 
 func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	pmd := config.Config.Tools()["pmd"]
+	if pmd == nil {
+		log.Fatal("Pmd tool configuration not found")
+	}
 	pmdBinary := pmd.Binaries["pmd"]
 
 	return tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, config.Config)
@@ -343,12 +351,19 @@ func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile stri
 
 func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	pylint := config.Config.Tools()["pylint"]
+	if pylint == nil {
+		log.Fatal("Pylint tool configuration not found")
+	}
+	pylintBinary := pylint.Binaries["python"]
 
-	return tools.RunPylint(workDirectory, pylint, pathsToCheck, outputFile, outputFormat)
+	return tools.RunPylint(workDirectory, pylintBinary, pathsToCheck, outputFile, outputFormat)
 }
 
 func runDartAnalyzer(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	dartanalyzer := config.Config.Tools()["dartanalyzer"]
+	if dartanalyzer == nil {
+		log.Fatal("Dart analyzer tool configuration not found")
+	}
 	return tools.RunDartAnalyzer(workDirectory, dartanalyzer.InstallDir, dartanalyzer.Binaries["dart"], pathsToCheck, outputFile, outputFormat)
 }
 
@@ -357,8 +372,43 @@ func runSemgrepAnalysis(workDirectory string, pathsToCheck []string, outputFile 
 	if semgrep == nil {
 		log.Fatal("Semgrep tool configuration not found")
 	}
+	semgrepBinary := semgrep.Binaries["python"]
 
-	return tools.RunSemgrep(workDirectory, semgrep, pathsToCheck, outputFile, outputFormat)
+	return tools.RunSemgrep(workDirectory, semgrepBinary, pathsToCheck, outputFile, outputFormat)
+}
+
+func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
+	lizardTool := config.Config.Tools()["lizard"]
+
+	if lizardTool == nil {
+		log.Fatal("Lizard plugin configuration not found")
+	}
+
+	lizardBinary := lizardTool.Binaries["python"]
+
+	configFile, exists := tools.ConfigFileExists(config.Config, "lizard.yaml")
+	var patterns []domain.PatternDefinition
+	var err error
+
+	//this logic is here because I want to pass the config to the runner which is good for:
+	//Separation of concerns, runner will simply run the tool now
+	//Easier testing, since config is now passed
+	//Avoiding fetching the default patterns in tests (unless we want to maintain codacy directory with the configs)
+	if exists {
+		// Configuration exists, read from file
+		patterns, err = lizard.ReadConfig(configFile)
+		if err != nil {
+			return fmt.Errorf("error reading config file: %v", err)
+		}
+	} else {
+		fmt.Println("No configuration file found for Lizard, using default patterns, run init with repository token to get a custom configuration")
+		patterns, err = tools.FetchDefaultEnabledPatterns(Lizard)
+		if err != nil {
+			return fmt.Errorf("failed to fetch default patterns: %v", err)
+		}
+	}
+
+	return lizard.RunLizard(workDirectory, lizardBinary, pathsToCheck, outputFile, outputFormat, patterns)
 }
 
 var analyzeCmd = &cobra.Command{
@@ -380,6 +430,7 @@ var analyzeCmd = &cobra.Command{
 		} else {
 			// Run all configured tools
 			toolsToRun = config.Config.Tools()
+			log.Println("Running all configured tools...")
 		}
 
 		if len(toolsToRun) == 0 {
@@ -463,6 +514,8 @@ func runTool(workDirectory string, toolName string, args []string, outputFile st
 		return runSemgrepAnalysis(workDirectory, args, outputFile, outputFormat)
 	case "dartanalyzer":
 		return runDartAnalyzer(workDirectory, args, outputFile, outputFormat)
+	case "lizard":
+		return runLizardAnalysis(workDirectory, args, outputFile, outputFormat)
 	default:
 		return fmt.Errorf("unsupported tool: %s", toolName)
 	}

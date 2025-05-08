@@ -4,6 +4,7 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/tools/lizard"
 	"codacy/cli-v2/tools/pylint"
 	"codacy/cli-v2/utils"
 	"encoding/json"
@@ -63,6 +64,10 @@ var initCmd = &cobra.Command{
 			noTools := []tools.Tool{}
 			err := createConfigurationFiles(noTools, cliLocalMode)
 			if err != nil {
+				log.Fatal(err)
+			}
+			// Create default configuration files
+			if err := buildDefaultConfigurationFiles(toolsConfigDir); err != nil {
 				log.Fatal(err)
 			}
 		} else {
@@ -140,6 +145,7 @@ func configFileTemplate(tools []tools.Tool) string {
 	needsNode := false
 	needsPython := false
 	needsDart := false
+
 	// Default versions
 	defaultVersions := map[string]string{
 		ESLint:       "9.3.0",
@@ -148,6 +154,7 @@ func configFileTemplate(tools []tools.Tool) string {
 		PMD:          "6.55.0",
 		DartAnalyzer: "3.7.2",
 		Semgrep:      "1.78.0",
+		Lizard:       "1.17.19",
 	}
 
 	// Build map of enabled tools with their versions
@@ -162,7 +169,7 @@ func configFileTemplate(tools []tools.Tool) string {
 		// Check if tool needs a runtime
 		if tool.Uuid == ESLint {
 			needsNode = true
-		} else if tool.Uuid == PyLint {
+		} else if tool.Uuid == PyLint || tool.Uuid == Lizard {
 			needsPython = true
 		} else if tool.Uuid == DartAnalyzer {
 			needsDart = true
@@ -203,6 +210,7 @@ func configFileTemplate(tools []tools.Tool) string {
 			PMD:          "pmd",
 			DartAnalyzer: "dartanalyzer",
 			Semgrep:      "semgrep",
+			Lizard:       "lizard",
 		}
 
 		for uuid, name := range uuidToName {
@@ -218,6 +226,7 @@ func configFileTemplate(tools []tools.Tool) string {
 		sb.WriteString(fmt.Sprintf("    - pmd@%s\n", defaultVersions[PMD]))
 		sb.WriteString(fmt.Sprintf("    - dartanalyzer@%s\n", defaultVersions[DartAnalyzer]))
 		sb.WriteString(fmt.Sprintf("    - semgrep@%s\n", defaultVersions[Semgrep]))
+		sb.WriteString(fmt.Sprintf("    - lizard@%s\n", defaultVersions[Lizard]))
 	}
 
 	return sb.String()
@@ -422,6 +431,8 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 				return fmt.Errorf("failed to create Semgrep config: %v", err)
 			}
 		}
+	case Lizard:
+		createLizardConfigFile(toolsConfigDir, patternConfiguration)
 	}
 	return nil
 }
@@ -434,7 +445,6 @@ func createPMDConfigFile(config []domain.PatternConfiguration, toolsConfigDir st
 func createDefaultPMDConfigFile(toolsConfigDir string) error {
 	content := tools.CreatePmdConfig([]domain.PatternConfiguration{})
 	return os.WriteFile(filepath.Join(toolsConfigDir, "ruleset.xml"), []byte(content), utils.DefaultFilePerms)
-
 }
 
 func createPylintConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
@@ -527,6 +537,49 @@ func cleanConfigDirectory(toolsConfigDir string) error {
 	return nil
 }
 
+func createLizardConfigFile(toolsConfigDir string, patternConfiguration []domain.PatternConfiguration) error {
+	var patterns []domain.PatternDefinition
+
+	if len(patternConfiguration) == 0 {
+		fmt.Println("Using default Lizard configuration")
+		var err error
+		patterns, err = tools.FetchDefaultEnabledPatterns(Lizard)
+		if err != nil {
+			return err
+		}
+	} else {
+		patterns = make([]domain.PatternDefinition, len(patternConfiguration))
+		for i, pattern := range patternConfiguration {
+			patterns[i] = pattern.PatternDefinition
+		}
+
+		fmt.Println("Lizard configuration created based on Codacy settings")
+	}
+
+	content, err := lizard.CreateLizardConfig(patterns)
+	if err != nil {
+		return fmt.Errorf("failed to create Lizard configuration: %w", err)
+	}
+
+	return os.WriteFile(filepath.Join(toolsConfigDir, "lizard.yaml"), []byte(content), utils.DefaultFilePerms)
+}
+
+// buildDefaultConfigurationFiles creates default configuration files for all tools
+func buildDefaultConfigurationFiles(toolsConfigDir string) error {
+	// Create default Lizard configuration
+	if err := createLizardConfigFile(toolsConfigDir, []domain.PatternConfiguration{}); err != nil {
+		return fmt.Errorf("failed to create default Lizard configuration: %w", err)
+	}
+
+	// Add other default tool configurations here as needed
+	// For example:
+	// if err := createDefaultEslintConfigFile(toolsConfigDir); err != nil {
+	//     return fmt.Errorf("failed to create default ESLint configuration: %w", err)
+	// }
+
+	return nil
+}
+
 const (
 	ESLint       string = "f8b29663-2cb2-498d-b923-a10c6a8c05cd"
 	Trivy        string = "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb"
@@ -534,4 +587,5 @@ const (
 	PyLint       string = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
 	DartAnalyzer string = "d203d615-6cf1-41f9-be5f-e2f660f7850f"
 	Semgrep      string = "6792c561-236d-41b7-ba5e-9d6bee0d548b"
+	Lizard       string = "76348462-84b3-409a-90d3-955e90abfb87"
 )

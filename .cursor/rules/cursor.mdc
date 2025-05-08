@@ -7,7 +7,7 @@ alwaysApply: true
 # Your rule content
 
 ## Key Rules
-- use fulnames like e.g. feature, instaed of feat 
+- use full names like e.g. feature, instead of feat
 - run go build after each code modification to see if app compiles
 - remove dead unused code 
 
