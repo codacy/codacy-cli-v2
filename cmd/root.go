@@ -5,6 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"codacy/cli-v2/config"
+	"codacy/cli-v2/utils/logger"
+
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
@@ -14,6 +17,12 @@ var rootCmd = &cobra.Command{
 	Short:   "Codacy CLI - A command line interface for Codacy",
 	Long:    "",
 	Example: getExampleText(),
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// Initialize logger before any command runs
+		if err := logger.Initialize(&config.Config); err != nil {
+			fmt.Printf("Warning: Failed to initialize file logger: %v\n", err)
+		}
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// Check if .codacy directory exists
 		if _, err := os.Stat(".codacy"); os.IsNotExist(err) {
