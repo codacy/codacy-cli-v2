@@ -25,34 +25,41 @@ jobs:
           chmod +x cli-v2
 
       - name: Run plugin tests
+        id: run_tests
+        continue-on-error: true
         run: |
-          run_test() {
-            local tool=$1
-            local jq_filter=$2
-            echo "Running $tool tests..."
-            # Store the path to the CLI
-            CLI_PATH="$(pwd)/cli-v2"
-            # Change to test directory
-            cd plugins/tools/$tool/test/src
-            # Install the plugin
-            "$CLI_PATH" install
-            # Run analysis
-            "$CLI_PATH" analyze --tool $tool --format sarif --output actual.sarif
-            # Convert absolute paths to relative paths in the output
-            sed -i 's|file:///home/runner/work/codacy-cli-v2/codacy-cli-v2/|file:///|g' actual.sarif
-            # Compare with expected output
-            jq --sort-keys "$jq_filter" expected.sarif > expected.sorted.json
-            jq --sort-keys "$jq_filter" actual.sarif > actual.sorted.json
-            diff expected.sorted.json actual.sorted.json
-            # Go back to root directory
-            cd ../../../../..
-          }
+          # Make the script executable
+          chmod +x run-tool-tests.sh
+          
+          # Initialize failed tools file
+          rm -f /tmp/failed_tools.txt
+          touch /tmp/failed_tools.txt
+          
+          # Run tests for each tool directory
+          for tool_dir in plugins/tools/*/; do
+            tool_name=$(basename "$tool_dir")
+            if [ -d "$tool_dir/test/src" ]; then
+              echo "Running tests for $tool_name..."
+              ./run-tool-tests.sh "$tool_name" || echo "$tool_name" >> /tmp/failed_tools.txt
+            fi
+          done
+          
+          # Check if any tools failed
+          if [ -s /tmp/failed_tools.txt ] && [ "$(wc -l < /tmp/failed_tools.txt)" -gt 0 ]; then
+            echo -e "\n❌ The following tools failed their tests:"
+            cat /tmp/failed_tools.txt
+            echo "::error::Some tool tests failed. Please check the logs above for details."
+            exit 1
+          else
+            echo "✅ All tool tests passed successfully!"
+          fi
 
-          # Run Pylint tests with simple sorting
-          run_test "pylint" "."
-
-          # Run Enigma tests with simple sorting
-          run_test "codacy-enigma-cli" "."
-
-          # Run Semgrep tests with rules sorting
-          run_test "semgrep" ".runs[0].tool.driver.rules |= if . then sort_by(.id) else . end"
+      - name: Check test results
+        if: steps.run_tests.outcome == 'failure'
+        run: |
+          if [ -s /tmp/failed_tools.txt ] && [ "$(wc -l < /tmp/failed_tools.txt)" -gt 0 ]; then
+            echo -e "\n❌ The following tools failed their tests:"
+            cat /tmp/failed_tools.txt
+          fi
+          echo "Some tool tests failed. Please check the logs above for details."
+          exit 1

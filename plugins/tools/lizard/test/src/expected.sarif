@@ -1,0 +1,103 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Lizard",
+          "version": "1.17.10",
+          "informationUri": "https://github.com/terryyin/lizard",
+          "rules": [
+            {
+              "id": "Lizard_ccn-medium",
+              "shortDescription": {
+                "text": "Check the Cyclomatic Complexity value of a function or logic block. If the threshold is not met, raise a Medium issue. The default threshold is 8."
+              },
+              "properties": {
+                "tags": [
+                  "warning"
+                ]
+              }
+            },
+            {
+              "id": "Lizard_file-nloc-medium",
+              "shortDescription": {
+                "text": "Check the number of lines of code (without comments) in a file. If the threshold is not met, raise a Medium issue. The default threshold is 500."
+              },
+              "properties": {
+                "tags": [
+                  "warning"
+                ]
+              }
+            },
+            {
+              "id": "Lizard_nloc-medium",
+              "shortDescription": {
+                "text": "Check the number of lines of code (without comments) in a function. If the threshold is not met, raise a Medium issue. The default threshold is 50."
+              },
+              "properties": {
+                "tags": [
+                  "warning"
+                ]
+              }
+            },
+            {
+              "id": "Lizard_parameter-count-medium",
+              "shortDescription": {
+                "text": "Check the number of parameters sent to a function. If the threshold is not met, raise a Medium issue. The default threshold is 8."
+              },
+              "properties": {
+                "tags": [
+                  "warning"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "Lizard_nloc-medium",
+          "level": "warning",
+          "message": {
+            "text": "Method complex_analysis has 65 lines of code (limit is 50)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "Test.py"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "Lizard_ccn-medium",
+          "level": "warning",
+          "message": {
+            "text": "Method complex_analysis has a cyclomatic complexity of 31 (limit is 8)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "Test.py"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

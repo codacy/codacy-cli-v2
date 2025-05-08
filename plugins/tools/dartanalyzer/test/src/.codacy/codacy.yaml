@@ -1,0 +1,4 @@
+runtimes:
+    - dart@3.7.2
+tools:
+    - dartanalyzer@3.7.2
