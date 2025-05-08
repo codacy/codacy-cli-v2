@@ -372,7 +372,7 @@ func runSemgrepAnalysis(workDirectory string, pathsToCheck []string, outputFile 
 	if semgrep == nil {
 		log.Fatal("Semgrep tool configuration not found")
 	}
-	semgrepBinary := semgrep.Binaries["python"]
+	semgrepBinary := semgrep.Binaries["semgrep"]
 
 	return tools.RunSemgrep(workDirectory, semgrepBinary, pathsToCheck, outputFile, outputFormat)
 }
