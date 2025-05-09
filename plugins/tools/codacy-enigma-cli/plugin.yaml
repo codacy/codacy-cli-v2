@@ -1,0 +1,12 @@
+name: codacy-enigma-cli
+description: Enigma CLI
+download:
+  url_template: "https://github.com/codacy/codacy-enigma-cli-releases/releases/download/{{.Version}}/codacy-enigma-cli-releases_{{.Version}}_{{.OS}}_{{.Arch}}.tar.gz"
+binaries:
+  - name: codacy-enigma-cli
+    path: "codacy-enigma-cli-releases"
+formatters:
+  - name: json
+    flag: "-f json"
+  - name: sarif
+    flag: "-f sarif"

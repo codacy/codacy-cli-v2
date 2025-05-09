@@ -411,6 +411,15 @@ func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 	return lizard.RunLizard(workDirectory, lizardBinary, pathsToCheck, outputFile, outputFormat, patterns)
 }
 
+func runEnigmaAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
+	enigma := config.Config.Tools()["codacy-enigma-cli"]
+	if enigma == nil {
+		log.Fatal("Enigma tool configuration not found")
+	}
+
+	return tools.RunEnigma(workDirectory, enigma.InstallDir, enigma.Binaries["codacy-enigma-cli"], pathsToCheck, outputFile, outputFormat)
+}
+
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Runs all configured linters.",
@@ -516,6 +525,8 @@ func runTool(workDirectory string, toolName string, args []string, outputFile st
 		return runDartAnalyzer(workDirectory, args, outputFile, outputFormat)
 	case "lizard":
 		return runLizardAnalysis(workDirectory, args, outputFile, outputFormat)
+	case "codacy-enigma-cli":
+		return runEnigmaAnalysis(workDirectory, args, outputFile, outputFormat)
 	default:
 		return fmt.Errorf("unsupported tool: %s", toolName)
 	}
