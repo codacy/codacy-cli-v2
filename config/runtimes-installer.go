@@ -3,20 +3,44 @@ package config
 import (
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/utils"
+	"codacy/cli-v2/utils/logger"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 // InstallRuntimes installs all runtimes defined in the configuration
 func InstallRuntimes(config *ConfigType) error {
+	var failedRuntimes []string
+
 	for name, runtimeInfo := range config.Runtimes() {
+		logger.Info("Starting runtime installation", logrus.Fields{
+			"runtime": name,
+			"version": runtimeInfo.Version,
+		})
+
 		err := InstallRuntime(name, runtimeInfo)
 		if err != nil {
-			return fmt.Errorf("failed to install runtime %s: %w", name, err)
+			logger.Error("Failed to install runtime", logrus.Fields{
+				"runtime": name,
+				"version": runtimeInfo.Version,
+				"error":   err.Error(),
+			})
+			failedRuntimes = append(failedRuntimes, name)
+			continue
 		}
+
+		logger.Info("Successfully installed runtime", logrus.Fields{
+			"runtime": name,
+			"version": runtimeInfo.Version,
+		})
+	}
+
+	if len(failedRuntimes) > 0 {
+		return fmt.Errorf("failed to install the following runtimes: %v", failedRuntimes)
 	}
 	return nil
 }
@@ -25,6 +49,10 @@ func InstallRuntimes(config *ConfigType) error {
 func InstallRuntime(name string, runtimeInfo *plugins.RuntimeInfo) error {
 	// Check if the runtime is already installed
 	if isRuntimeInstalled(runtimeInfo) {
+		logger.Info("Runtime already installed", logrus.Fields{
+			"runtime": name,
+			"version": runtimeInfo.Version,
+		})
 		fmt.Printf("Runtime %s v%s is already installed\n", name, runtimeInfo.Version)
 		return nil
 	}
@@ -67,7 +95,12 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 	_, err := os.Stat(downloadPath)
 	if os.IsNotExist(err) {
 		// Download the file
-		// log.Printf("Downloading %s v%s...\n", runtimeInfo.Name, runtimeInfo.Version)
+		logger.Debug("Downloading runtime", logrus.Fields{
+			"runtime":      runtimeInfo.Name,
+			"version":      runtimeInfo.Version,
+			"downloadURL":  runtimeInfo.DownloadURL,
+			"downloadPath": downloadPath,
+		})
 		downloadPath, err = utils.DownloadFile(runtimeInfo.DownloadURL, Config.RuntimesDirectory())
 		if err != nil {
 			return fmt.Errorf("failed to download runtime: %w", err)
@@ -75,7 +108,11 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 	} else if err != nil {
 		return fmt.Errorf("error checking for existing download: %w", err)
 	} else {
-		log.Printf("Using existing download for %s v%s\n", runtimeInfo.Name, runtimeInfo.Version)
+		logger.Debug("Using existing runtime download", logrus.Fields{
+			"runtime":      runtimeInfo.Name,
+			"version":      runtimeInfo.Version,
+			"downloadPath": downloadPath,
+		})
 	}
 
 	// Open the downloaded file
@@ -86,7 +123,13 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 	defer file.Close()
 
 	// Extract based on file extension
-	// log.Printf("Extracting %s v%s...\n", runtimeInfo.Name, runtimeInfo.Version)
+	logger.Debug("Extracting runtime", logrus.Fields{
+		"runtime":          runtimeInfo.Name,
+		"version":          runtimeInfo.Version,
+		"fileName":         fileName,
+		"extractDirectory": Config.RuntimesDirectory(),
+	})
+
 	if strings.HasSuffix(fileName, ".zip") {
 		err = utils.ExtractZip(file.Name(), Config.RuntimesDirectory())
 	} else {
@@ -97,6 +140,9 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 		return fmt.Errorf("failed to extract runtime: %w", err)
 	}
 
-	log.Printf("Successfully installed %s v%s\n", runtimeInfo.Name, runtimeInfo.Version)
+	logger.Debug("Runtime extraction completed", logrus.Fields{
+		"runtime": runtimeInfo.Name,
+		"version": runtimeInfo.Version,
+	})
 	return nil
 }

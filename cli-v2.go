@@ -7,6 +7,7 @@ import (
 	"codacy/cli-v2/utils/logger"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 )
@@ -15,8 +16,9 @@ func main() {
 	// Initialize config global object
 	config.Init()
 
-	// Initialize logger
-	if err := logger.Initialize(&config.Config); err != nil {
+	// Initialize logger with the logs directory
+	logsDir := filepath.Join(config.Config.LocalCodacyDirectory(), "logs")
+	if err := logger.Initialize(logsDir); err != nil {
 		fmt.Printf("Failed to initialize logger: %v\n", err)
 	}
 

@@ -209,7 +209,18 @@ func (c *ConfigType) IsToolInstalled(name string, tool *plugins.ToolInfo) bool {
 
 	// Check if at least one binary exists
 	for _, binaryPath := range tool.Binaries {
+		// If the path is relative, join it with the installation directory
+		if !filepath.IsAbs(binaryPath) {
+			binaryPath = filepath.Join(tool.InstallDir, binaryPath)
+		}
+
+		// Try both with and without .exe
 		_, err := os.Stat(binaryPath)
+		if err == nil {
+			return true
+		}
+
+		_, err = os.Stat(binaryPath + ".exe")
 		if err == nil {
 			return true
 		}
