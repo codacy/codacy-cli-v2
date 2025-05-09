@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/sirupsen/logrus"
 )
 
 // InstallTools installs all tools defined in the configuration
@@ -18,7 +20,7 @@ func InstallTools(config *ConfigType, registry string) error {
 	var failedTools []string
 
 	for name, toolInfo := range config.Tools() {
-		logger.Info("Starting tool installation", map[string]interface{}{
+		logger.Info("Starting tool installation", logrus.Fields{
 			"tool":    name,
 			"version": toolInfo.Version,
 			"runtime": toolInfo.Runtime,
@@ -27,7 +29,7 @@ func InstallTools(config *ConfigType, registry string) error {
 		fmt.Printf("Installing tool: %s v%s...\n", name, toolInfo.Version)
 		err := InstallTool(name, toolInfo, registry)
 		if err != nil {
-			logger.Error("Failed to install tool", map[string]interface{}{
+			logger.Error("Failed to install tool", logrus.Fields{
 				"tool":    name,
 				"version": toolInfo.Version,
 				"runtime": toolInfo.Runtime,
@@ -37,7 +39,7 @@ func InstallTools(config *ConfigType, registry string) error {
 			continue
 		}
 
-		logger.Info("Successfully installed tool", map[string]interface{}{
+		logger.Info("Successfully installed tool", logrus.Fields{
 			"tool":    name,
 			"version": toolInfo.Version,
 			"runtime": toolInfo.Runtime,
@@ -55,7 +57,7 @@ func InstallTools(config *ConfigType, registry string) error {
 func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error {
 	// Check if the tool is already installed
 	if isToolInstalled(toolInfo) {
-		logger.Info("Tool already installed", map[string]interface{}{
+		logger.Info("Tool already installed", logrus.Fields{
 			"tool":    name,
 			"version": toolInfo.Version,
 			"runtime": toolInfo.Runtime,
@@ -73,7 +75,7 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error
 	// Check if this is a download-based tool (like trivy) or a runtime-based tool (like eslint)
 	if toolInfo.DownloadURL != "" {
 		// This is a download-based tool
-		logger.Debug("Installing download-based tool", map[string]interface{}{
+		logger.Debug("Installing download-based tool", logrus.Fields{
 			"tool":        name,
 			"version":     toolInfo.Version,
 			"downloadURL": toolInfo.DownloadURL,
@@ -84,7 +86,7 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error
 
 	// Handle Python tools differently
 	if toolInfo.Runtime == "python" {
-		logger.Debug("Installing Python tool", map[string]interface{}{
+		logger.Debug("Installing Python tool", logrus.Fields{
 			"tool":    name,
 			"version": toolInfo.Version,
 		})
@@ -93,7 +95,7 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error
 	}
 
 	// For runtime-based tools
-	logger.Debug("Installing runtime-based tool", map[string]interface{}{
+	logger.Debug("Installing runtime-based tool", logrus.Fields{
 		"tool":    name,
 		"version": toolInfo.Version,
 		"runtime": toolInfo.Runtime,
@@ -131,7 +133,7 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 			return fmt.Errorf("failed to prepare registry command: %w", err)
 		}
 
-		logger.Debug("Setting registry", map[string]interface{}{
+		logger.Debug("Setting registry", logrus.Fields{
 			"tool":              name,
 			"packageManager":    packageManagerName,
 			"packageManagerBin": packageManagerBinary,
@@ -152,7 +154,7 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 		return fmt.Errorf("failed to prepare install command: %w", err)
 	}
 
-	logger.Debug("Installing tool", map[string]interface{}{
+	logger.Debug("Installing tool", logrus.Fields{
 		"tool":              name,
 		"version":           toolInfo.Version,
 		"packageManager":    packageManagerName,
@@ -167,7 +169,7 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 		return fmt.Errorf("failed to install tool: %s: %w", string(output), err)
 	}
 
-	logger.Debug("Tool installation completed", map[string]interface{}{
+	logger.Debug("Tool installation completed", logrus.Fields{
 		"tool":    name,
 		"version": toolInfo.Version,
 	})
@@ -184,7 +186,7 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 	_, err := os.Stat(downloadPath)
 	if os.IsNotExist(err) {
 		// Download the file
-		logger.Debug("Downloading tool", map[string]interface{}{
+		logger.Debug("Downloading tool", logrus.Fields{
 			"tool":         toolInfo.Name,
 			"version":      toolInfo.Version,
 			"downloadURL":  toolInfo.DownloadURL,
@@ -197,7 +199,7 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 	} else if err != nil {
 		return fmt.Errorf("error checking for existing download: %w", err)
 	} else {
-		logger.Debug("Using existing tool download", map[string]interface{}{
+		logger.Debug("Using existing tool download", logrus.Fields{
 			"tool":         toolInfo.Name,
 			"version":      toolInfo.Version,
 			"downloadPath": downloadPath,
@@ -217,8 +219,8 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 		return fmt.Errorf("failed to create installation directory: %w", err)
 	}
 
-	// Extract directly to the installation directory
-	logger.Debug("Extracting tool", map[string]interface{}{
+	// Extract based on file extension
+	logger.Debug("Extracting tool", logrus.Fields{
 		"tool":             toolInfo.Name,
 		"version":          toolInfo.Version,
 		"fileName":         fileName,
@@ -243,7 +245,7 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 		}
 	}
 
-	logger.Debug("Tool extraction completed", map[string]interface{}{
+	logger.Debug("Tool extraction completed", logrus.Fields{
 		"tool":    toolInfo.Name,
 		"version": toolInfo.Version,
 	})
@@ -251,7 +253,7 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 }
 
 func installPythonTool(name string, toolInfo *plugins.ToolInfo) error {
-	logger.Debug("Starting Python tool installation", map[string]interface{}{
+	logger.Debug("Starting Python tool installation", logrus.Fields{
 		"tool":    toolInfo.Name,
 		"version": toolInfo.Version,
 	})
@@ -267,7 +269,7 @@ func installPythonTool(name string, toolInfo *plugins.ToolInfo) error {
 	}
 
 	// Create venv
-	logger.Debug("Creating Python virtual environment", map[string]interface{}{
+	logger.Debug("Creating Python virtual environment", logrus.Fields{
 		"tool":    toolInfo.Name,
 		"version": toolInfo.Version,
 		"venvDir": filepath.Join(toolInfo.InstallDir, "venv"),
@@ -281,7 +283,7 @@ func installPythonTool(name string, toolInfo *plugins.ToolInfo) error {
 
 	// Install the tool using pip from venv
 	pipPath := filepath.Join(toolInfo.InstallDir, "venv", "bin", "pip")
-	logger.Debug("Installing Python package", map[string]interface{}{
+	logger.Debug("Installing Python package", logrus.Fields{
 		"tool":    toolInfo.Name,
 		"version": toolInfo.Version,
 		"pipPath": pipPath,
@@ -293,7 +295,7 @@ func installPythonTool(name string, toolInfo *plugins.ToolInfo) error {
 		return fmt.Errorf("failed to install tool: %s\nError: %w", string(output), err)
 	}
 
-	logger.Debug("Python tool installation completed", map[string]interface{}{
+	logger.Debug("Python tool installation completed", logrus.Fields{
 		"tool":    toolInfo.Name,
 		"version": toolInfo.Version,
 	})
