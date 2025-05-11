@@ -53,3 +53,9 @@ jobs:
           else
             echo "✅ All tool tests passed successfully!"
           fi
+
+      - name: Check test results
+        if: steps.run_tests.outcome == 'failure'
+        run: |
+          echo "Job failed because some tool tests failed. Please check the logs above for details."
+          exit 1
