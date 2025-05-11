@@ -11,7 +11,7 @@
           "rules": [
             {
               "id": "CVE-2024-21538",
-              "name": "LanguageS",
+              "name": "LanguageSpecificPackageVulnerability",
               "shortDescription": {
                 "text": "cross-spawn: regular expression denial of service"
               },
