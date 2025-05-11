@@ -40,7 +40,7 @@ jobs:
             tool_name=$(basename "$tool_dir")
             if [ -d "$tool_dir/test/src" ]; then
               echo "Running tests for $tool_name..."
-              ./run-tool-tests.sh "$tool_name" || echo "$tool_name" >> /tmp/failed_tools.txt
+              ./run-tool-tests.sh "$tool_name"
             fi
           done
           
@@ -53,13 +53,3 @@ jobs:
           else
             echo "✅ All tool tests passed successfully!"
           fi
-
-      - name: Check test results
-        if: steps.run_tests.outcome == 'failure'
-        run: |
-          if [ -s /tmp/failed_tools.txt ] && [ "$(wc -l < /tmp/failed_tools.txt)" -gt 0 ]; then
-            echo -e "\n❌ The following tools failed their tests:"
-            cat /tmp/failed_tools.txt
-          fi
-          echo "Some tool tests failed. Please check the logs above for details."
-          exit 1
