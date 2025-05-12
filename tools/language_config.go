@@ -64,6 +64,16 @@ func CreateLanguagesConfigFile(apiTools []Tool, toolsConfigDir string, toolIDMap
 			Languages:  []string{"Dart"},
 			Extensions: []string{".dart"},
 		},
+		"lizard": {
+			Name:       "lizard",
+			Languages:  []string{"C", "CPP", "Java", "C#", "JavaScript", "TypeScript", "VueJS", "Objective-C", "Swift", "Python", "Ruby", "TTCN-3", "PHP", "Scala", "GDScript", "Golang", "Lua", "Rust", "Fortran", "Kotlin", "Solidity", "Erlang", "Zig", "Perl"},
+			Extensions: []string{".c", ".cpp", ".cc", ".h", ".hpp", ".java", ".cs", ".js", ".jsx", ".ts", ".tsx", ".vue", ".m", ".swift", ".py", ".rb", ".ttcn", ".php", ".scala", ".gd", ".go", ".lua", ".rs", ".f", ".f90", ".kt", ".sol", ".erl", ".zig", ".pl"},
+		},
+		"semgrep": {
+			Name:       "semgrep",
+			Languages:  []string{"C", "CPP", "C#", "Generic", "Go", "Java", "JavaScript", "JSON", "Kotlin", "Python", "TypeScript", "Ruby", "Rust", "JSX", "PHP", "Scala", "Swift", "Terraform"},
+			Extensions: []string{".c", ".cpp", ".h", ".hpp", ".cs", ".go", ".java", ".js", ".json", ".kt", ".py", ".ts", ".rb", ".rs", ".jsx", ".php", ".scala", ".swift", ".tf", ".tfvars"},
+		},
 	}
 
 	// Build a list of tool language info for enabled tools

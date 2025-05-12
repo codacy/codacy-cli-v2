@@ -1,0 +1,9 @@
+[MASTER]
+ignore=CVS
+persistent=yes
+load-plugins=
+
+[MESSAGES CONTROL]
+disable=all
+enable=E1124,E1130,E1133
+

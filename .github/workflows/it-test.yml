@@ -7,7 +7,28 @@ on:
   push:
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for git history
+      - name: Set up Go
+        uses: actions/setup-go@v4
+      - name: Build CLI for all platforms
+        run: make build-all
+      - name: Upload CLI binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-binaries
+          path: |
+            cli-v2-linux
+            cli-v2.exe
+            cli-v2-macos
+
   test:
+    needs: build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -25,10 +46,9 @@ jobs:
           go-version: '1.21'
           cache: true
 
-      - name: Download CLI binaries from go workflow
-        uses: dawidd6/action-download-artifact@v2
+      - name: Download CLI binaries
+        uses: actions/download-artifact@v4
         with:
-          workflow: go.yml
           name: cli-binaries
           path: .
 
@@ -47,6 +67,26 @@ jobs:
       - name: Make binary executable
         if: matrix.os != 'windows-latest'
         run: chmod +x cli-v2
+
+      - name: Run init command tests
+        if: matrix.os != 'windows-latest'
+        id: run_init_tests
+        continue-on-error: true
+        shell: bash
+        env:
+          CODACY_API_TOKEN: ${{ secrets.CODACY_API_TOKEN }}
+        run: |
+          # Make the script executable
+          chmod +x integration-tests/run.sh
+          
+          # Run the init command tests
+          echo "Running init command integration tests..."
+          ./integration-tests/run.sh || {
+            echo "❌ Init command tests failed"
+            echo "::error::Init command tests failed. Please check the logs above for details."
+            exit 1
+          }
+          echo "✅ Init command tests passed successfully!"
 
       - name: Run tool tests
         if: matrix.os != 'windows-latest'
@@ -84,7 +124,7 @@ jobs:
           fi
 
       - name: Check test results
-        if: steps.run_tests.outcome == 'failure'
+        if: steps.run_tests.outcome == 'failure' || steps.run_init_tests.outcome == 'failure'
         run: |
-          echo "Job failed because some tool tests failed. Please check the logs above for details."
+          echo "Job failed because some tests failed. Please check the logs above for details."
           exit 1
