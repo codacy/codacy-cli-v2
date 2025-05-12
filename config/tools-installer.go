@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"text/template"
 
@@ -167,7 +168,7 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 	cmd := exec.Command(packageManagerBinary, strings.Split(installCmd, " ")...)
 
 	// Special handling for ESLint installation in Linux (WSL) environment
-	if toolInfo.Name == "eslint" {
+	if toolInfo.Name == "eslint" && runtime.GOOS == "linux" {
 		// Get node binary directory to add to PATH
 		nodeBinary, exist := runtimeInfo.Binaries["node"]
 		if exist {
