@@ -7,6 +7,7 @@ import (
 
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/utils/logger"
+	"codacy/cli-v2/version"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -14,7 +15,7 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:     "codacy-cli",
-	Short:   "Codacy CLI - A command line interface for Codacy",
+	Short:   fmt.Sprintf("Codacy CLI v%s - A command line interface for Codacy", version.GetVersion()),
 	Long:    "",
 	Example: getExampleText(),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {

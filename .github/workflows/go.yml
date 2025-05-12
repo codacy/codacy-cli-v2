@@ -9,17 +9,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for git history
       - name: Set up Go
         uses: actions/setup-go@v4
+      - name: Set version info
+        id: version
+        run: |
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "development")
+          COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+          BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "COMMIT=${COMMIT}" >> $GITHUB_ENV
+          echo "BUILD_TIME=${BUILD_TIME}" >> $GITHUB_ENV
+          echo "LDFLAGS=-X 'codacy/cli-v2/version.Version=${VERSION}' -X 'codacy/cli-v2/version.GitCommit=${COMMIT}' -X 'codacy/cli-v2/version.BuildTime=${BUILD_TIME}'" >> $GITHUB_ENV
       - name: Build CLI for Linux
         run: |
-          GOOS=linux GOARCH=amd64 go build -o cli-v2-linux ./cli-v2.go
+          GOOS=linux GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o cli-v2-linux ./cli-v2.go
       - name: Build CLI for Windows
         run: |
-          GOOS=windows GOARCH=amd64 go build -o cli-v2.exe ./cli-v2.go
+          GOOS=windows GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o cli-v2.exe ./cli-v2.go
       - name: Build CLI for macOS
         run: |
-          GOOS=darwin GOARCH=amd64 go build -o cli-v2-macos ./cli-v2.go
+          GOOS=darwin GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o cli-v2-macos ./cli-v2.go
       - name: Upload CLI binaries
         uses: actions/upload-artifact@v4
         with:
