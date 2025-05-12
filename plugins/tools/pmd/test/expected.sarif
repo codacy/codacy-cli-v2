@@ -63,7 +63,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "/home/runner/work/codacy-cli-v2/codacy-cli-v2/plugins/tools/pmd/test/src/Test.java"
+                  "uri": "/plugins/tools/pmd/test/src/Test.java"
                 },
                 "region": {
                   "startLine": 2,
@@ -85,7 +85,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "/home/runner/work/codacy-cli-v2/codacy-cli-v2/plugins/tools/pmd/test/src/Test.java"
+                  "uri": "/plugins/tools/pmd/test/src/Test.java"
                 },
                 "region": {
                   "startLine": 5,

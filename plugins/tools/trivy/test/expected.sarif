@@ -72,7 +72,7 @@
       "columnKind": "utf16CodeUnits",
       "originalUriBaseIds": {
         "ROOTPATH": {
-          "uri": "file:///codacy-cli-v2/plugins/tools/trivy/test/src/"
+          "uri": "file:///plugins/tools/trivy/test/src/"
         }
       }
     }

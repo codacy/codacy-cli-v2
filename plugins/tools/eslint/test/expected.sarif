@@ -5,7 +5,7 @@
       "artifacts": [
         {
           "location": {
-            "uri": "file:///codacy-cli-v2/plugins/tools/eslint/test/src/Test.js"
+            "uri": "file:///plugins/tools/eslint/test/src/Test.js"
           }
         }
       ],
@@ -23,7 +23,7 @@
                   "physicalLocation": {
                     "artifactLocation": {
                       "index": 0,
-                      "uri": "file:///codacy-cli-v2/plugins/tools/eslint/test/src/Test.js"
+                      "uri": "file:///plugins/tools/eslint/test/src/Test.js"
                     },
                     "region": {
                       "startColumn": 1,

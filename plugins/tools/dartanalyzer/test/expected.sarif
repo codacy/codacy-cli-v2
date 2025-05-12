@@ -8,7 +8,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "/home/runner/work/codacy-cli-v2/codacy-cli-v2/plugins/tools/dartanalyzer/test/src/Test.dart"
+                  "uri": "/plugins/tools/dartanalyzer/test/src/Test.dart"
                 },
                 "region": {
                   "startLine": 2
@@ -26,7 +26,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "/home/runner/work/codacy-cli-v2/codacy-cli-v2/plugins/tools/dartanalyzer/test/src/Test.dart"
+                  "uri": "/plugins/tools/dartanalyzer/test/src/Test.dart"
                 },
                 "region": {
                   "startLine": 28
