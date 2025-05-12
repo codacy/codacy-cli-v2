@@ -186,12 +186,10 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 		}
 	}
 
-	logger.Debug("Installing tool", logrus.Fields{
-		"tool":    name,
-		"version": toolInfo.Version,
+	log.Printf("Installing %s v%s...\n", toolInfo.Name, toolInfo.Version)
+	logger.Debug("Running command", logrus.Fields{
+		"command": fmt.Sprintf("%s %s", packageManagerBinary, installCmd),
 	})
-
-	log.Printf("Running command: %s %s\n", packageManagerBinary, installCmd)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to install tool: %s: %w", string(output), err)
