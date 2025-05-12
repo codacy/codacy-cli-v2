@@ -178,11 +178,19 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 			pathSeparator := ":"
 			newPath := nodeDir + pathSeparator + currentPath
 			cmd.Env = append(os.Environ(), "PATH="+newPath)
-			log.Printf("Setting PATH environment for ESLint installation: %s\n", nodeDir)
+			logger.Debug("Setting PATH environment for ESLint installation", logrus.Fields{
+				"nodeDir":     nodeDir,
+				"currentPath": currentPath,
+				"newPath":     newPath,
+			})
 		}
 	}
 
-	log.Printf("Installing %s v%s...\n", toolInfo.Name, toolInfo.Version)
+	logger.Debug("Installing tool", logrus.Fields{
+		"tool":    name,
+		"version": toolInfo.Version,
+	})
+
 	log.Printf("Running command: %s %s\n", packageManagerBinary, installCmd)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
