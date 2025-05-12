@@ -166,15 +166,15 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 	// Execute the installation command using the package manager
 	cmd := exec.Command(packageManagerBinary, strings.Split(installCmd, " ")...)
 
-	// Special handling for ESLint installation in WSL environment
+	// Special handling for ESLint installation in Linux (WSL) environment
 	if toolInfo.Name == "eslint" {
 		// Get node binary directory to add to PATH
-		nodeBinary, ok := runtimeInfo.Binaries["node"]
-		if ok {
+		nodeBinary, exist := runtimeInfo.Binaries["node"]
+		if exist {
 			nodeDir := filepath.Dir(nodeBinary)
 			// Get current PATH
 			currentPath := os.Getenv("PATH")
-			// For WSL, always use Linux path separator
+			// For Linux (WSL), always use Linux path separator
 			pathSeparator := ":"
 			newPath := nodeDir + pathSeparator + currentPath
 			cmd.Env = append(os.Environ(), "PATH="+newPath)
