@@ -1,21 +1,28 @@
 rules:
-  - id: python.requests.security.no-http-url
-    pattern: requests.get("http://...")
-    message: "Insecure HTTP URL in requests.get()"
-    severity: WARNING
-    languages: [python]
-
-  - id: python.cryptography.bad-cryptography
+  - id: python.lang.security.audit.subprocess-shell-true.subprocess-shell-true
     pattern: |
-      from cryptography.fernet import Fernet
-      key = Fernet.generate_key()
-      f = Fernet(key)
-    message: "Using Fernet for encryption without proper key management"
+      subprocess.run(..., shell=True)
+    message: "Unsafe command execution with shell=True"
     severity: WARNING
     languages: [python]
 
-  - id: python.security.audit.avoid-assert
-    pattern: assert $X
-    message: "Use of assert statement in production code"
+  - id: python.lang.security.audit.hardcoded-password.hardcoded-password
+    pattern: |
+      $PASSWORD = "..."
+    message: "Hardcoded password detected"
     severity: WARNING
-    languages: [python] 
+    languages: [python]
+
+  - id: python.lang.security.audit.pickle.avoid-pickle
+    pattern: |
+      pickle.loads(...)
+    message: "Unsafe deserialization with pickle"
+    severity: WARNING
+    languages: [python]
+
+  - id: python.lang.security.audit.os-system.os-system
+    pattern: |
+      os.system(...)
+    message: "Unsafe command execution with os.system"
+    severity: WARNING
+    languages: [python]

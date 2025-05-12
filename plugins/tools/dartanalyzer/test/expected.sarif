@@ -1,0 +1,51 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "results": [
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/plugins/tools/dartanalyzer/test/src/Test.dart"
+                },
+                "region": {
+                  "startLine": 2
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Unused import: 'dart:math'."
+          },
+          "ruleId": "UNUSED_IMPORT"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/plugins/tools/dartanalyzer/test/src/Test.dart"
+                },
+                "region": {
+                  "startLine": 28
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "'oldFunction' is deprecated and shouldn't be used."
+          },
+          "ruleId": "DEPRECATED_MEMBER_USE_FROM_SAME_PACKAGE"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "dartanalyzer"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

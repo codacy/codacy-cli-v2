@@ -1,0 +1,54 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "artifacts": [
+        {
+          "location": {
+            "uri": "file:///plugins/tools/eslint/test/src/Test.js"
+          }
+        }
+      ],
+      "invocations": [
+        {
+          "executionSuccessful": false,
+          "toolConfigurationNotifications": [
+            {
+              "descriptor": {
+                "id": "ESL0999"
+              },
+              "level": "error",
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "index": 0,
+                      "uri": "file:///plugins/tools/eslint/test/src/Test.js"
+                    },
+                    "region": {
+                      "startColumn": 1,
+                      "startLine": 49
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: 'with' in strict mode"
+              }
+            }
+          ]
+        }
+      ],
+      "results": [],
+      "tool": {
+        "driver": {
+          "informationUri": "https://eslint.org",
+          "name": "ESLint",
+          "rules": [],
+          "version": "8.57.0"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

@@ -1,0 +1,282 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "toolExecutionNotifications": []
+        }
+      ],
+      "results": [
+        {
+          "fingerprints": {
+            "matchBasedId/v1": "d68b4b5aa90adf170c15bd2f15e46001e617fb546c1f75c00cb31e0294e948f00f38ae86c9dc5b943eb415eb6b1b152f55a6c8e1ce45174821189099b69c499a_0"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test_file.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "endColumn": 26,
+                  "endLine": 14,
+                  "snippet": {
+                    "text": "    user_input = \"ls -la\""
+                  },
+                  "startColumn": 5,
+                  "startLine": 14
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Hardcoded password detected"
+          },
+          "properties": {},
+          "ruleId": "codacy.tools-configs.python.lang.security.audit.hardcoded-password.hardcoded-password"
+        },
+        {
+          "fingerprints": {
+            "matchBasedId/v1": "5c6d33cba2da3f1092652370087a5fe5eb394bc1675e593c3cef420f2a26e97bea82e0caa8741a5c13a09ca85f1e1015deb2928958516de72c2fcddb84acc215_0"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test_file.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "endColumn": 26,
+                  "endLine": 15,
+                  "snippet": {
+                    "text": "    os.system(user_input)  # semgrep: python.lang.security.audit.subprocess-shell-true.subprocess-shell-true"
+                  },
+                  "startColumn": 5,
+                  "startLine": 15
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Unsafe command execution with os.system"
+          },
+          "properties": {},
+          "ruleId": "codacy.tools-configs.python.lang.security.audit.os-system.os-system"
+        },
+        {
+          "fingerprints": {
+            "matchBasedId/v1": "912dfe82da41aeee9a4a4c9c195d94f60e63458f1094080e0e24585c6f7894c5822ca61ad89cd45cd56d30f0016802a9e87805d429e4fd751c6917e003c3c3f7_0"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test_file.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "endColumn": 43,
+                  "endLine": 16,
+                  "snippet": {
+                    "text": "    subprocess.run(user_input, shell=True)  # semgrep: python.lang.security.audit.subprocess-shell-true.subprocess-shell-true"
+                  },
+                  "startColumn": 5,
+                  "startLine": 16
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Unsafe command execution with shell=True"
+          },
+          "properties": {},
+          "ruleId": "codacy.tools-configs.python.lang.security.audit.subprocess-shell-true.subprocess-shell-true"
+        },
+        {
+          "fingerprints": {
+            "matchBasedId/v1": "fb709112486f440290f4ceb370b2530e2dc80ac719854debf8ef1cd92d493ff791afaadf0240b41f9365d69fef012c8b8a04e2a1b67ff651ff621d8c93d1bfda_0"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test_file.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "endColumn": 37,
+                  "endLine": 20,
+                  "snippet": {
+                    "text": "    password = \"mysecretpassword123\"  # semgrep: python.lang.security.audit.hardcoded-password.hardcoded-password"
+                  },
+                  "startColumn": 5,
+                  "startLine": 20
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Hardcoded password detected"
+          },
+          "properties": {},
+          "ruleId": "codacy.tools-configs.python.lang.security.audit.hardcoded-password.hardcoded-password"
+        },
+        {
+          "fingerprints": {
+            "matchBasedId/v1": "ab899bcac588e9ca6eb62e2f3622c585458008ecbd31be21c538a80b2f34238826af6d34710506d190469ec9e2e6068fd0dc05f2f1e483fcc32dfa5dbce29a11_0"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test_file.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "endColumn": 43,
+                  "endLine": 26,
+                  "snippet": {
+                    "text": "    data = b\"cos\\nsystem\\n(S'ls -la'\\ntR.\""
+                  },
+                  "startColumn": 5,
+                  "startLine": 26
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Hardcoded password detected"
+          },
+          "properties": {},
+          "ruleId": "codacy.tools-configs.python.lang.security.audit.hardcoded-password.hardcoded-password"
+        },
+        {
+          "fingerprints": {
+            "matchBasedId/v1": "129aec3858c4c532da6214fac11e10c87bc7789d07f1651dc6e82f1d62ccfb29cc6e3fdd44320f3b06bad930ffa2bf454f75d03768ebfc8aed12191cbc3496b7_0"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test_file.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "endColumn": 23,
+                  "endLine": 27,
+                  "snippet": {
+                    "text": "    pickle.loads(data)  # semgrep: python.lang.security.audit.pickle.avoid-pickle"
+                  },
+                  "startColumn": 5,
+                  "startLine": 27
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Unsafe deserialization with pickle"
+          },
+          "properties": {},
+          "ruleId": "codacy.tools-configs.python.lang.security.audit.pickle.avoid-pickle"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "Semgrep OSS",
+          "rules": [
+            {
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "fullDescription": {
+                "text": "Unsafe command execution with os.system"
+              },
+              "help": {
+                "markdown": "Unsafe command execution with os.system",
+                "text": "Unsafe command execution with os.system"
+              },
+              "id": "codacy.tools-configs.python.lang.security.audit.os-system.os-system",
+              "name": "codacy.tools-configs.python.lang.security.audit.os-system.os-system",
+              "properties": {
+                "precision": "very-high",
+                "tags": []
+              },
+              "shortDescription": {
+                "text": "Semgrep Finding: codacy.tools-configs.python.lang.security.audit.os-system.os-system"
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "fullDescription": {
+                "text": "Unsafe deserialization with pickle"
+              },
+              "help": {
+                "markdown": "Unsafe deserialization with pickle",
+                "text": "Unsafe deserialization with pickle"
+              },
+              "id": "codacy.tools-configs.python.lang.security.audit.pickle.avoid-pickle",
+              "name": "codacy.tools-configs.python.lang.security.audit.pickle.avoid-pickle",
+              "properties": {
+                "precision": "very-high",
+                "tags": []
+              },
+              "shortDescription": {
+                "text": "Semgrep Finding: codacy.tools-configs.python.lang.security.audit.pickle.avoid-pickle"
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "fullDescription": {
+                "text": "Hardcoded password detected"
+              },
+              "help": {
+                "markdown": "Hardcoded password detected",
+                "text": "Hardcoded password detected"
+              },
+              "id": "codacy.tools-configs.python.lang.security.audit.hardcoded-password.hardcoded-password",
+              "name": "codacy.tools-configs.python.lang.security.audit.hardcoded-password.hardcoded-password",
+              "properties": {
+                "precision": "very-high",
+                "tags": []
+              },
+              "shortDescription": {
+                "text": "Semgrep Finding: codacy.tools-configs.python.lang.security.audit.hardcoded-password.hardcoded-password"
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "fullDescription": {
+                "text": "Unsafe command execution with shell=True"
+              },
+              "help": {
+                "markdown": "Unsafe command execution with shell=True",
+                "text": "Unsafe command execution with shell=True"
+              },
+              "id": "codacy.tools-configs.python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+              "name": "codacy.tools-configs.python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+              "properties": {
+                "precision": "very-high",
+                "tags": []
+              },
+              "shortDescription": {
+                "text": "Semgrep Finding: codacy.tools-configs.python.lang.security.audit.subprocess-shell-true.subprocess-shell-true"
+              }
+            }
+          ],
+          "semanticVersion": "1.78.0"
+        }
+      }
+    }
+  ]
+}
