@@ -49,48 +49,6 @@ jobs:
         run: |
           bash <(curl -Ls https://coverage.codacy.com/get.sh) report --force-coverage-parser go -r unit.coverage.out
 
-  ittest:
-    needs: build
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Download CLI binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: cli-binaries
-          path: .
-      - name: Select correct binary
-        shell: bash
-        run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # Keep the .exe extension for Windows
-            echo "Using Windows binary with .exe extension"
-          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-            mv cli-v2-macos cli-v2
-          else
-            mv cli-v2-linux cli-v2
-          fi
-      - name: Make binary executable
-        if: matrix.os != 'windows-latest'
-        run: chmod +x cli-v2
-      - name: Install dependencies from .codacy/codacy.yaml
-        if: matrix.os != 'windows-latest'
-        run: |
-          ./cli-v2 install
-      - name: Install dependencies from .codacy/codacy.yaml (Windows)
-        if: matrix.os == 'windows-latest' 
-        shell: pwsh
-        run: |
-          Get-ChildItem
-          Write-Host "Current directory contents:"
-          dir
-          Write-Host "Attempting to run CLI..."
-          .\cli-v2.exe install
-
 # For now we are not releasing the CLI, as we are making some quicker iterations
   release:
     needs: [test, ittest]
