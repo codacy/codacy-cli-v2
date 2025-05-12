@@ -8,6 +8,7 @@ fi
 
 TOOL_NAME=$1
 TOOL_DIR="plugins/tools/$TOOL_NAME/test/src"
+TEST_DIR="plugins/tools/$TOOL_NAME/test"
 CLI_PATH="$(pwd)/cli-v2"
 
 # Check if tool directory exists
@@ -36,7 +37,7 @@ cd "$TOOL_DIR"
 sed -i 's|file:///home/runner/work/codacy-cli-v2/|file:///|g' actual.sarif
 
 # Sort all fields in both files, handling null rules array
-jq --sort-keys 'if .runs[0].tool.driver.rules == null then . else .runs[0].tool.driver.rules |= sort_by(.id) end' expected.sarif > expected.sorted.json
+jq --sort-keys 'if .runs[0].tool.driver.rules == null then . else .runs[0].tool.driver.rules |= sort_by(.id) end' "$TEST_DIR/expected.sarif" > expected.sorted.json
 jq --sort-keys 'if .runs[0].tool.driver.rules == null then . else .runs[0].tool.driver.rules |= sort_by(.id) end' actual.sarif > actual.sorted.json
 
 # Run diff and capture its exit code
