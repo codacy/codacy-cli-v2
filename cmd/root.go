@@ -4,17 +4,20 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/utils/logger"
+	"codacy/cli-v2/version"
 
 	"github.com/fatih/color"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
 	Use:     "codacy-cli",
-	Short:   "Codacy CLI - A command line interface for Codacy",
+	Short:   fmt.Sprintf("Codacy CLI v%s - A command line interface for Codacy", version.GetVersion()),
 	Long:    "",
 	Example: getExampleText(),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -23,6 +26,16 @@ var rootCmd = &cobra.Command{
 		if err := logger.Initialize(logsDir); err != nil {
 			fmt.Printf("Warning: Failed to initialize file logger: %v\n", err)
 		}
+
+		// Create a masked version of the full command for logging
+		maskedArgs := maskSensitiveArgs(os.Args)
+
+		// Log the command being executed with its arguments and flags
+		logger.Info("Executing CLI command", logrus.Fields{
+			"command":      cmd.Name(),
+			"full_command": maskedArgs,
+			"args":         args,
+		})
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// Check if .codacy directory exists
@@ -121,4 +134,38 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 ` + color.New(color.FgCyan).Sprint("For more information and examples, visit:") + `
 https://github.com/codacy/codacy-cli-v2
 `)
+}
+
+// maskSensitiveArgs creates a copy of the arguments with sensitive values masked
+func maskSensitiveArgs(args []string) []string {
+	maskedArgs := make([]string, len(args))
+	copy(maskedArgs, args)
+
+	sensitiveFlags := map[string]bool{
+		"--api-token":        true,
+		"--repository-token": true,
+		"--project-token":    true,
+		"--codacy-api-token": true,
+	}
+
+	for i, arg := range maskedArgs {
+		// Skip the first argument (program name)
+		if i == 0 {
+			continue
+		}
+
+		// Handle --flag=value format
+		for flag := range sensitiveFlags {
+			if strings.HasPrefix(arg, flag+"=") {
+				maskedArgs[i] = flag + "=***"
+				break
+			}
+		}
+
+		// Handle --flag value format
+		if sensitiveFlags[arg] && i < len(maskedArgs)-1 {
+			maskedArgs[i+1] = "***"
+		}
+	}
+	return maskedArgs
 }

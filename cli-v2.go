@@ -5,6 +5,7 @@ import (
 	"codacy/cli-v2/config"
 	config_file "codacy/cli-v2/config-file"
 	"codacy/cli-v2/utils/logger"
+	"codacy/cli-v2/version"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -22,8 +23,10 @@ func main() {
 		fmt.Printf("Failed to initialize logger: %v\n", err)
 	}
 
-	// Log startup message
-	logger.Debug("Starting Codacy CLI.", logrus.Fields{})
+	// Log startup message and version
+	logger.Info("Starting Codacy CLI", logrus.Fields{
+		"version": version.GetVersion(),
+	})
 
 	// This also setup the config global !
 	configErr := config_file.ReadConfigFile(config.Config.ProjectConfigFile())
