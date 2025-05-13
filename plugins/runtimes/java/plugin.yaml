@@ -15,4 +15,6 @@ download:
     "linux": "linux"
 binaries:
   - name: java
-    path: "Contents/Home/bin/java" 
+    path:
+      darwin: "Contents/Home/bin/java"
+      linux: "bin/java" 
