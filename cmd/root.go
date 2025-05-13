@@ -10,7 +10,9 @@ import (
 	"codacy/cli-v2/version"
 
 	"github.com/fatih/color"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var rootCmd = &cobra.Command{
@@ -24,6 +26,37 @@ var rootCmd = &cobra.Command{
 		if err := logger.Initialize(logsDir); err != nil {
 			fmt.Printf("Warning: Failed to initialize file logger: %v\n", err)
 		}
+
+		// Create a map to store all flags and their values
+		flags := make(map[string]string)
+		cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			if flag.Changed {
+				// Mask sensitive values
+				value := flag.Value.String()
+				switch flag.Name {
+				case "api-token", "repository-token", "project-token", "codacy-api-token":
+					value = "***"
+				}
+				flags[flag.Name] = value
+			}
+		})
+
+		// Create a masked version of the full command for logging
+		maskedArgs := make([]string, len(os.Args))
+		copy(maskedArgs, os.Args)
+		for i, arg := range maskedArgs {
+			if i > 0 && (arg == "--api-token" || arg == "--repository-token" ||
+				arg == "--project-token" || arg == "--codacy-api-token") && i < len(maskedArgs)-1 {
+				maskedArgs[i+1] = "***"
+			}
+		}
+
+		// Log the command being executed with its arguments and flags
+		logger.Info("Executing CLI command", logrus.Fields{
+			"command":      cmd.Name(),
+			"full_command": maskedArgs,
+			"args":         args,
+		})
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// Check if .codacy directory exists
