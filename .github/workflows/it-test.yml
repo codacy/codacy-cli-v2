@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for git history
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -45,7 +47,6 @@ jobs:
       - name: Make binary executable
         if: matrix.os != 'windows-latest'
         run: chmod +x cli-v2
-
 
       - name: Run tool tests
         if: matrix.os != 'windows-latest'
