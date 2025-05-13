@@ -13,7 +13,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 var rootCmd = &cobra.Command{
@@ -27,20 +26,6 @@ var rootCmd = &cobra.Command{
 		if err := logger.Initialize(logsDir); err != nil {
 			fmt.Printf("Warning: Failed to initialize file logger: %v\n", err)
 		}
-
-		// Create a map to store all flags and their values
-		flags := make(map[string]string)
-		cmd.Flags().VisitAll(func(flag *pflag.Flag) {
-			if flag.Changed {
-				// Mask sensitive values
-				value := flag.Value.String()
-				switch flag.Name {
-				case "api-token", "repository-token", "project-token", "codacy-api-token":
-					value = "***"
-				}
-				flags[flag.Name] = value
-			}
-		})
 
 		// Create a masked version of the full command for logging
 		maskedArgs := maskSensitiveArgs(os.Args)
