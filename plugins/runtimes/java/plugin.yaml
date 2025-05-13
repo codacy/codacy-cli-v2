@@ -4,7 +4,6 @@ download:
   url_template: "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jdk_{{.Arch}}_{{.OS}}_hotspot_17.0.10_7.{{.Extension}}"
   file_name_template: "jdk-17.0.10+7"
   extension:
-    windows: "zip"
     default: "tar.gz"
   arch_mapping:
     "386": "x86-32"
@@ -14,8 +13,6 @@ download:
   os_mapping:
     "darwin": "mac"
     "linux": "linux"
-    "windows": "windows"
 binaries:
   - name: java
-    path: "bin/java"
-    windows_path: "bin/java.exe" 
+    path: "bin/java" 

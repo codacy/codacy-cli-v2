@@ -18,9 +18,8 @@ var toolsFS embed.FS
 
 // ToolBinary represents a binary executable provided by the tool
 type ToolBinary struct {
-	Name        string `yaml:"name"`
-	Path        string `yaml:"path"`
-	WindowsPath string `yaml:"windows_path,omitempty"`
+	Name string `yaml:"name"`
+	Path string `yaml:"path"`
 }
 
 // Formatter represents a supported output format
@@ -52,9 +51,8 @@ type RuntimeBinaries struct {
 	Execution      string `yaml:"execution"`
 }
 
-// ExtensionConfig defines the file extension based on OS
+// ExtensionConfig defines the file extension
 type ExtensionConfig struct {
-	Windows string `yaml:"windows"`
 	Default string `yaml:"default"`
 }
 
@@ -190,14 +188,8 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 
 		// Process binary paths
 		for _, binary := range pluginConfig.Binaries {
-			// Use Windows-specific path if available and on Windows
-			binaryPath := binary.Path
-			if runtime.GOOS == "windows" && binary.WindowsPath != "" {
-				binaryPath = binary.WindowsPath
-			}
-
 			// Process template variables in binary path
-			tmpl, err := template.New("binary_path").Parse(binaryPath)
+			tmpl, err := template.New("binary_path").Parse(binary.Path)
 			if err != nil {
 				return nil, fmt.Errorf("error parsing binary path template for %s: %w", config.Name, err)
 			}
@@ -212,7 +204,7 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 				return nil, fmt.Errorf("error executing binary path template for %s: %w", config.Name, err)
 			}
 
-			binaryPath = filepath.Join(installDir, buf.String())
+			binaryPath := filepath.Join(installDir, buf.String())
 			info.Binaries[binary.Name] = binaryPath
 		}
 
@@ -284,9 +276,6 @@ func getMappedOS(osMapping map[string]string, goos string) string {
 
 // getExtension returns the appropriate file extension based on the OS
 func getExtension(extensionConfig ExtensionConfig, goos string) string {
-	if goos == "windows" {
-		return extensionConfig.Windows
-	}
 	return extensionConfig.Default
 }
 

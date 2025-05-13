@@ -14,4 +14,3 @@ environment:
 binaries:
   - name: pmd
     path: pmd-bin-{{.Version}}/bin/run.sh
-    windows_path: pmd-bin-{{.Version}}/bin/pmd.bat
