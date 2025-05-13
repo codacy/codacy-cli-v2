@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"text/template"
 
 	"gopkg.in/yaml.v3"
@@ -309,19 +310,27 @@ func getFileName(fileNameTemplate string, version string, mappedArch string, goo
 
 // getDownloadURL generates the download URL based on the template
 func getDownloadURL(urlTemplate string, fileName string, version string, mappedArch string, mappedOS string, extension string) string {
+	// Extract major version from version string (e.g. "17.0.10" -> "17")
+	majorVersion := version
+	if idx := strings.Index(version, "."); idx != -1 {
+		majorVersion = version[:idx]
+	}
+
 	// Prepare template data
 	data := struct {
-		Version   string
-		FileName  string
-		OS        string
-		Arch      string
-		Extension string
+		Version      string
+		MajorVersion string
+		FileName     string
+		OS           string
+		Arch         string
+		Extension    string
 	}{
-		Version:   version,
-		FileName:  fileName,
-		OS:        mappedOS,
-		Arch:      mappedArch,
-		Extension: extension,
+		Version:      version,
+		MajorVersion: majorVersion,
+		FileName:     fileName,
+		OS:           mappedOS,
+		Arch:         mappedArch,
+		Extension:    extension,
 	}
 
 	// Execute template substitution for URL

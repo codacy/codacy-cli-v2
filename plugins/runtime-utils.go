@@ -48,6 +48,7 @@ type extensionConfig struct {
 // templateData holds the data to be used in template substitution
 type templateData struct {
 	Version        string
+	MajorVersion   string
 	FileName       string
 	OS             string
 	Arch           string
@@ -182,9 +183,16 @@ func (p *runtimePlugin) getFileName(version string) string {
 	mappedOS := p.getMappedOS(goos)
 	releaseVersion := p.getReleaseVersion()
 
+	// Extract major version from version string (e.g. "17.0.10" -> "17")
+	majorVersion := version
+	if idx := strings.Index(version, "."); idx != -1 {
+		majorVersion = version[:idx]
+	}
+
 	// Prepare template data
 	data := templateData{
 		Version:        version,
+		MajorVersion:   majorVersion,
 		OS:             mappedOS,
 		Arch:           mappedArch,
 		ReleaseVersion: releaseVersion,
@@ -227,9 +235,16 @@ func (p *runtimePlugin) getDownloadURL(version string) string {
 
 	releaseVersion := p.getReleaseVersion()
 
+	// Extract major version from version string (e.g. "17.0.10" -> "17")
+	majorVersion := version
+	if idx := strings.Index(version, "."); idx != -1 {
+		majorVersion = version[:idx]
+	}
+
 	// Prepare template data
 	data := templateData{
 		Version:        version,
+		MajorVersion:   majorVersion,
 		FileName:       fileName,
 		OS:             mappedOS,
 		Arch:           mappedArch,

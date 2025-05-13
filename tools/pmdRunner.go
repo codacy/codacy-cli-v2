@@ -2,6 +2,7 @@ package tools
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/utils/logger"
 	"fmt"
 	"io"
 	"os"
@@ -9,6 +10,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 // RunPmd executes PMD static code analyzer with the specified options
@@ -95,38 +98,64 @@ func RunPmd(repositoryToAnalyseDirectory string, pmdBinary string, pathsToCheck 
 		// Get Java runtime info
 		javaRuntime := config.Runtimes()["java"]
 		if javaRuntime != nil {
+			logger.Debug("Setting up Java environment", logrus.Fields{
+				"javaHome": javaRuntime.InstallDir,
+			})
+
 			// Get current environment
 			env := os.Environ()
 
 			// Set JAVA_HOME to Java runtime install directory
-			env = append(env, fmt.Sprintf("JAVA_HOME=%s", javaRuntime.InstallDir))
+			javaHome := fmt.Sprintf("JAVA_HOME=%s", javaRuntime.InstallDir)
+			env = append(env, javaHome)
 
-			// Add Java bin directory to PATH
-			javaBinDir := filepath.Join(javaRuntime.InstallDir, "bin")
-			pathEnv := ""
-			for _, e := range env {
-				if strings.HasPrefix(e, "PATH=") {
-					pathEnv = e[5:] // Remove "PATH=" prefix
-					break
-				}
+			// Get Java binary path from runtime configuration
+			javaBinary := javaRuntime.Binaries["java"]
+			javaBinDir := filepath.Dir(javaBinary)
+
+			// Check if Java binary exists
+			if _, err := os.Stat(javaBinary); err != nil {
+				logger.Error("Java binary not found", logrus.Fields{
+					"expectedPath": javaBinary,
+					"error":        err,
+				})
+				return fmt.Errorf("java binary not found at %s: %w", javaBinary, err)
 			}
-			if pathEnv == "" {
-				pathEnv = os.Getenv("PATH")
-			}
+
+			// Get current PATH
+			pathEnv := os.Getenv("PATH")
 
 			// On Windows, use semicolon as path separator
 			pathSeparator := ":"
-			if strings.Contains(pathEnv, ";") {
+			if runtime.GOOS == "windows" {
 				pathSeparator = ";"
 			}
 
 			// Add Java bin directory to the beginning of PATH
-			env = append(env, fmt.Sprintf("PATH=%s%s%s", javaBinDir, pathSeparator, pathEnv))
+			newPath := fmt.Sprintf("PATH=%s%s%s", javaBinDir, pathSeparator, pathEnv)
+			env = append(env, newPath)
+
+			logger.Debug("Updated environment variables", logrus.Fields{
+				"javaHome":   javaHome,
+				"path":       newPath,
+				"binDir":     javaBinDir,
+				"javaBinary": javaBinary,
+			})
 
 			// Set the environment for the command
 			cmd.Env = env
+		} else {
+			logger.Warn("Java runtime not found in configuration")
+			return fmt.Errorf("java runtime not found in configuration")
 		}
+	} else {
+		logger.Warn("PMD tool info not found in configuration")
+		return fmt.Errorf("pmd tool info not found in configuration")
 	}
+
+	logger.Debug("Running PMD command", logrus.Fields{
+		"command": cmd.String(),
+	})
 
 	err := cmd.Run()
 	if err != nil {

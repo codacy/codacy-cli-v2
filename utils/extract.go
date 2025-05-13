@@ -8,12 +8,31 @@ import (
 	"path/filepath"
 
 	"github.com/mholt/archiver/v4"
+	"github.com/sirupsen/logrus"
 )
 
 func ExtractTarGz(archive *os.File, targetDir string) error {
 	format := archiver.CompressedArchive{
 		Compression: archiver.Gz{},
 		Archival:    archiver.Tar{},
+	}
+
+	// Create target directory with proper permissions
+	if err := os.MkdirAll(targetDir, DefaultDirPerms); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"directory": targetDir,
+			"error":     err,
+		}).Error("Failed to create target directory")
+		return fmt.Errorf("failed to create target directory: %w", err)
+	}
+
+	// Ensure target directory has proper permissions
+	if err := os.Chmod(targetDir, DefaultDirPerms); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"directory": targetDir,
+			"error":     err,
+		}).Error("Failed to set target directory permissions")
+		return fmt.Errorf("failed to set target directory permissions: %w", err)
 	}
 
 	// Create a map to store symlinks for later creation
@@ -24,39 +43,82 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 
 		switch f.IsDir() {
 		case true:
-			// create a directory
-			err := os.MkdirAll(path, DefaultDirPerms)
-			if err != nil {
-				return err
+			// Create directory with proper permissions
+			if err := os.MkdirAll(path, DefaultDirPerms); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"directory": path,
+					"error":     err,
+				}).Error("Failed to create directory")
+				return fmt.Errorf("failed to create directory %s: %w", path, err)
+			}
+			// Ensure directory has proper permissions
+			if err := os.Chmod(path, DefaultDirPerms); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"directory": path,
+					"error":     err,
+				}).Error("Failed to set directory permissions")
+				return fmt.Errorf("failed to set directory permissions for %s: %w", path, err)
 			}
 
 		case false:
-			// if is a symlink, store it for later
+			// If it's a symlink, store it for later
 			if f.LinkTarget != "" {
 				symlinks[path] = f.LinkTarget
 				return nil
 			}
 
-			// Ensure parent directory exists
-			err := os.MkdirAll(filepath.Dir(path), DefaultDirPerms)
-			if err != nil {
-				return err
+			// Ensure parent directory exists with proper permissions
+			parentDir := filepath.Dir(path)
+			if err := os.MkdirAll(parentDir, DefaultDirPerms); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"directory": parentDir,
+					"error":     err,
+				}).Error("Failed to create parent directory")
+				return fmt.Errorf("failed to create parent directory %s: %w", parentDir, err)
+			}
+			if err := os.Chmod(parentDir, DefaultDirPerms); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"directory": parentDir,
+					"error":     err,
+				}).Error("Failed to set parent directory permissions")
+				return fmt.Errorf("failed to set parent directory permissions for %s: %w", parentDir, err)
 			}
 
-			// write a file
-			w, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, f.Mode())
+			// Create file with proper permissions
+			fileMode := os.FileMode(DefaultFilePerms)
+			if f.Mode()&0111 != 0 { // If the file is executable in the archive
+				fileMode = os.FileMode(DefaultDirPerms) // Set executable bits using DefaultDirPerms
+			}
+			w, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, fileMode)
 			if err != nil {
-				return err
+				logrus.WithFields(logrus.Fields{
+					"file":  path,
+					"error": err,
+				}).Error("Failed to create file")
+				return fmt.Errorf("failed to create file %s: %w", path, err)
 			}
 
-			stream, _ := f.Open()
-			defer stream.Close()
+			stream, err := f.Open()
+			if err != nil {
+				w.Close()
+				return fmt.Errorf("failed to open file stream for %s: %w", path, err)
+			}
 
 			_, err = io.Copy(w, stream)
-			if err != nil {
-				return err
-			}
+			stream.Close()
 			w.Close()
+			if err != nil {
+				return fmt.Errorf("failed to copy file contents for %s: %w", path, err)
+			}
+
+			// Ensure file has proper permissions
+			if err := os.Chmod(path, fileMode); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"file":  path,
+					"error": err,
+				}).Error("Failed to set file permissions")
+				return fmt.Errorf("failed to set file permissions for %s: %w", path, err)
+			}
 		}
 
 		return nil
@@ -64,7 +126,7 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 
 	err := format.Extract(context.Background(), archive, nil, handler)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to extract archive: %w", err)
 	}
 
 	// Create symlinks after all files have been extracted
@@ -72,15 +134,30 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 		// Remove any existing file/symlink
 		os.Remove(path)
 
-		// Ensure parent directory exists
-		err := os.MkdirAll(filepath.Dir(path), DefaultDirPerms)
-		if err != nil {
-			return err
+		// Ensure parent directory exists with proper permissions
+		parentDir := filepath.Dir(path)
+		if err := os.MkdirAll(parentDir, DefaultDirPerms); err != nil {
+			logrus.WithFields(logrus.Fields{
+				"directory": parentDir,
+				"error":     err,
+			}).Error("Failed to create symlink parent directory")
+			return fmt.Errorf("failed to create symlink parent directory %s: %w", parentDir, err)
+		}
+		if err := os.Chmod(parentDir, DefaultDirPerms); err != nil {
+			logrus.WithFields(logrus.Fields{
+				"directory": parentDir,
+				"error":     err,
+			}).Error("Failed to set symlink parent directory permissions")
+			return fmt.Errorf("failed to set symlink parent directory permissions for %s: %w", parentDir, err)
 		}
 
 		// Create the symlink
-		err = os.Symlink(target, path)
-		if err != nil {
+		if err := os.Symlink(target, path); err != nil {
+			logrus.WithFields(logrus.Fields{
+				"path":   path,
+				"target": target,
+				"error":  err,
+			}).Error("Failed to create symlink")
 			return fmt.Errorf("failed to create symlink %s -> %s: %w", path, target, err)
 		}
 	}
@@ -92,50 +169,140 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 func ExtractZip(zipPath string, targetDir string) error {
 	format := archiver.Zip{}
 
+	// Create target directory with proper permissions
+	if err := os.MkdirAll(targetDir, DefaultDirPerms); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"directory": targetDir,
+			"error":     err,
+		}).Error("Failed to create target directory")
+		return fmt.Errorf("failed to create target directory: %w", err)
+	}
+
+	// Ensure target directory has proper permissions
+	if err := os.Chmod(targetDir, DefaultDirPerms); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"directory": targetDir,
+			"error":     err,
+		}).Error("Failed to set target directory permissions")
+		return fmt.Errorf("failed to set target directory permissions: %w", err)
+	}
+
 	handler := func(ctx context.Context, f archiver.File) error {
 		path := filepath.Join(targetDir, f.NameInArchive)
 
 		switch f.IsDir() {
 		case true:
-			// create a directory
-			err := os.MkdirAll(path, DefaultDirPerms)
-			if err != nil {
-				return err
+			// Create directory with proper permissions
+			if err := os.MkdirAll(path, DefaultDirPerms); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"directory": path,
+					"error":     err,
+				}).Error("Failed to create directory")
+				return fmt.Errorf("failed to create directory %s: %w", path, err)
+			}
+			// Ensure directory has proper permissions
+			if err := os.Chmod(path, DefaultDirPerms); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"directory": path,
+					"error":     err,
+				}).Error("Failed to set directory permissions")
+				return fmt.Errorf("failed to set directory permissions for %s: %w", path, err)
 			}
 
 		case false:
-			// if is a symlink
+			// If it's a symlink
 			if f.LinkTarget != "" {
+				// Remove any existing file/symlink
 				os.Remove(path)
-				err := os.Symlink(f.LinkTarget, path)
-				if err != nil {
-					return err
+
+				// Ensure parent directory exists with proper permissions
+				parentDir := filepath.Dir(path)
+				if err := os.MkdirAll(parentDir, DefaultDirPerms); err != nil {
+					logrus.WithFields(logrus.Fields{
+						"directory": parentDir,
+						"error":     err,
+					}).Error("Failed to create symlink parent directory")
+					return fmt.Errorf("failed to create symlink parent directory %s: %w", parentDir, err)
+				}
+				if err := os.Chmod(parentDir, DefaultDirPerms); err != nil {
+					logrus.WithFields(logrus.Fields{
+						"directory": parentDir,
+						"error":     err,
+					}).Error("Failed to set symlink parent directory permissions")
+					return fmt.Errorf("failed to set symlink parent directory permissions for %s: %w", parentDir, err)
+				}
+
+				// Create the symlink
+				if err := os.Symlink(f.LinkTarget, path); err != nil {
+					logrus.WithFields(logrus.Fields{
+						"path":   path,
+						"target": f.LinkTarget,
+						"error":  err,
+					}).Error("Failed to create symlink")
+					return fmt.Errorf("failed to create symlink %s -> %s: %w", path, f.LinkTarget, err)
 				}
 				return nil
 			}
 
-			// ensure parent directory exists
-			err := os.MkdirAll(filepath.Dir(path), DefaultDirPerms)
-			if err != nil {
-				return err
+			// Ensure parent directory exists with proper permissions
+			parentDir := filepath.Dir(path)
+			if err := os.MkdirAll(parentDir, DefaultDirPerms); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"directory": parentDir,
+					"error":     err,
+				}).Error("Failed to create parent directory")
+				return fmt.Errorf("failed to create parent directory %s: %w", parentDir, err)
+			}
+			if err := os.Chmod(parentDir, DefaultDirPerms); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"directory": parentDir,
+					"error":     err,
+				}).Error("Failed to set parent directory permissions")
+				return fmt.Errorf("failed to set parent directory permissions for %s: %w", parentDir, err)
 			}
 
-			// write a file
-			w, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, f.Mode())
-			if err != nil {
-				return err
+			// Create file with proper permissions
+			fileMode := os.FileMode(DefaultFilePerms)
+			if f.Mode()&0111 != 0 { // If the file is executable in the archive
+				fileMode = os.FileMode(DefaultDirPerms) // Set executable bits using DefaultDirPerms
 			}
-			defer w.Close()
+			w, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, fileMode)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"file":  path,
+					"error": err,
+				}).Error("Failed to create file")
+				return fmt.Errorf("failed to create file %s: %w", path, err)
+			}
 
 			stream, err := f.Open()
 			if err != nil {
-				return err
+				w.Close()
+				logrus.WithFields(logrus.Fields{
+					"file":  path,
+					"error": err,
+				}).Error("Failed to open file stream")
+				return fmt.Errorf("failed to open file stream for %s: %w", path, err)
 			}
-			defer stream.Close()
 
 			_, err = io.Copy(w, stream)
+			stream.Close()
+			w.Close()
 			if err != nil {
-				return err
+				logrus.WithFields(logrus.Fields{
+					"file":  path,
+					"error": err,
+				}).Error("Failed to copy file contents")
+				return fmt.Errorf("failed to copy file contents for %s: %w", path, err)
+			}
+
+			// Ensure file has proper permissions
+			if err := os.Chmod(path, fileMode); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"file":  path,
+					"error": err,
+				}).Error("Failed to set file permissions")
+				return fmt.Errorf("failed to set file permissions for %s: %w", path, err)
 			}
 		}
 
@@ -144,13 +311,21 @@ func ExtractZip(zipPath string, targetDir string) error {
 
 	file, err := os.Open(zipPath)
 	if err != nil {
-		return err
+		logrus.WithFields(logrus.Fields{
+			"file":  zipPath,
+			"error": err,
+		}).Error("Failed to open zip file")
+		return fmt.Errorf("failed to open zip file %s: %w", zipPath, err)
 	}
 	defer file.Close()
 
 	err = format.Extract(context.Background(), file, nil, handler)
 	if err != nil {
-		return err
+		logrus.WithFields(logrus.Fields{
+			"file":  zipPath,
+			"error": err,
+		}).Error("Failed to extract zip archive")
+		return fmt.Errorf("failed to extract zip archive %s: %w", zipPath, err)
 	}
 	return nil
 }

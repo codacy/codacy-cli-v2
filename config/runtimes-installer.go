@@ -47,20 +47,15 @@ func InstallRuntimes(config *ConfigType) error {
 
 // InstallRuntime installs a specific runtime
 func InstallRuntime(name string, runtimeInfo *plugins.RuntimeInfo) error {
-	// Check if the runtime is already installed
-	if isRuntimeInstalled(runtimeInfo) {
-		logger.Info("Runtime already installed", logrus.Fields{
-			"runtime": name,
-			"version": runtimeInfo.Version,
-		})
-		fmt.Printf("Runtime %s v%s is already installed\n", name, runtimeInfo.Version)
-		return nil
-	}
-
 	// Download and extract the runtime
 	err := downloadAndExtractRuntime(runtimeInfo)
 	if err != nil {
 		return fmt.Errorf("failed to download and extract runtime %s: %w", name, err)
+	}
+
+	// Verify that the runtime binaries are available
+	if !isRuntimeInstalled(runtimeInfo) {
+		return fmt.Errorf("runtime %s was extracted but binaries are not available", name)
 	}
 
 	return nil
@@ -71,18 +66,30 @@ func isRuntimeInstalled(runtimeInfo *plugins.RuntimeInfo) bool {
 	// If there are no binaries, check the install directory
 	if len(runtimeInfo.Binaries) == 0 {
 		_, err := os.Stat(runtimeInfo.InstallDir)
-		return err == nil
+		if err != nil {
+			logger.Debug("Runtime install directory not found", logrus.Fields{
+				"directory": runtimeInfo.InstallDir,
+				"error":     err,
+			})
+			return false
+		}
+		return true
 	}
 
 	// Check if at least one binary exists
-	for _, binaryPath := range runtimeInfo.Binaries {
+	for binaryName, binaryPath := range runtimeInfo.Binaries {
 		_, err := os.Stat(binaryPath)
-		if err == nil {
-			return true
+		if err != nil {
+			logger.Debug("Runtime binary not found", logrus.Fields{
+				"binary": binaryName,
+				"path":   binaryPath,
+				"error":  err,
+			})
+			return false
 		}
 	}
 
-	return false
+	return true
 }
 
 // downloadAndExtractRuntime downloads and extracts a runtime
@@ -138,6 +145,19 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 
 	if err != nil {
 		return fmt.Errorf("failed to extract runtime: %w", err)
+	}
+
+	// Ensure binaries have executable permissions
+	for _, binaryPath := range runtimeInfo.Binaries {
+		fullPath := filepath.Join(Config.RuntimesDirectory(), filepath.Base(runtimeInfo.InstallDir), binaryPath)
+		if err := os.Chmod(fullPath, utils.DefaultDirPerms); err != nil {
+			logger.Debug("Failed to set binary permissions", logrus.Fields{
+				"binary": binaryPath,
+				"path":   fullPath,
+				"error":  err,
+			})
+			return fmt.Errorf("failed to set binary permissions for %s: %w", binaryPath, err)
+		}
 	}
 
 	logger.Debug("Runtime extraction completed", logrus.Fields{

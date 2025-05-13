@@ -1,8 +1,8 @@
 name: java
 description: Java Runtime Environment
 download:
-  url_template: "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jdk_{{.Arch}}_{{.OS}}_hotspot_17.0.10_7.{{.Extension}}"
-  file_name_template: "jdk-17.0.10+7"
+  url_template: "https://github.com/adoptium/temurin{{.MajorVersion}}-binaries/releases/download/jdk-{{.Version}}%2B7/OpenJDK{{.MajorVersion}}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{.Version}}_7.{{.Extension}}"
+  file_name_template: "jdk-{{.Version}}+7"
   extension:
     default: "tar.gz"
   arch_mapping:
@@ -15,4 +15,4 @@ download:
     "linux": "linux"
 binaries:
   - name: java
-    path: "bin/java" 
+    path: "Contents/Home/bin/java" 
