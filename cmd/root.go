@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/utils/logger"
@@ -42,14 +43,7 @@ var rootCmd = &cobra.Command{
 		})
 
 		// Create a masked version of the full command for logging
-		maskedArgs := make([]string, len(os.Args))
-		copy(maskedArgs, os.Args)
-		for i, arg := range maskedArgs {
-			if i > 0 && (arg == "--api-token" || arg == "--repository-token" ||
-				arg == "--project-token" || arg == "--codacy-api-token") && i < len(maskedArgs)-1 {
-				maskedArgs[i+1] = "***"
-			}
-		}
+		maskedArgs := maskSensitiveArgs(os.Args)
 
 		// Log the command being executed with its arguments and flags
 		logger.Info("Executing CLI command", logrus.Fields{
@@ -155,4 +149,38 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 ` + color.New(color.FgCyan).Sprint("For more information and examples, visit:") + `
 https://github.com/codacy/codacy-cli-v2
 `)
+}
+
+// maskSensitiveArgs creates a copy of the arguments with sensitive values masked
+func maskSensitiveArgs(args []string) []string {
+	maskedArgs := make([]string, len(args))
+	copy(maskedArgs, args)
+
+	sensitiveFlags := map[string]bool{
+		"--api-token":        true,
+		"--repository-token": true,
+		"--project-token":    true,
+		"--codacy-api-token": true,
+	}
+
+	for i, arg := range maskedArgs {
+		// Skip the first argument (program name)
+		if i == 0 {
+			continue
+		}
+
+		// Handle --flag=value format
+		for flag := range sensitiveFlags {
+			if strings.HasPrefix(arg, flag+"=") {
+				maskedArgs[i] = flag + "=***"
+				break
+			}
+		}
+
+		// Handle --flag value format
+		if sensitiveFlags[arg] && i < len(maskedArgs)-1 {
+			maskedArgs[i+1] = "***"
+		}
+	}
+	return maskedArgs
 }
