@@ -22,7 +22,7 @@ builds:
       - -X codacy/cli-v2/version.Os={{.Os}}
       - -X codacy/cli-v2/version.Arch={{.Arch}}
       - -X codacy/cli-v2/version.GoVersion={{.Env.GOVERSION}}
-    binary: cli-v2
+    binary: codacy-cli-v2
 
 archives:
   - format: tar.gz
