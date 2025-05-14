@@ -75,8 +75,8 @@ var initCmd = &cobra.Command{
 			if err != nil {
 				log.Fatal(err)
 			}
-			createGitIgnoreFile()
 		}
+		createGitIgnoreFile()
 		fmt.Println()
 		fmt.Println("✅ Successfully initialized Codacy configuration!")
 		fmt.Println()
