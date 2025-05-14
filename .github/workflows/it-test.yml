@@ -32,7 +32,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest] # [windows-latest] removed for now
+        os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false  
     steps:
       - name: Checkout code
@@ -68,25 +68,26 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: chmod +x cli-v2
 
-      - name: Run init command tests
-        if: matrix.os != 'windows-latest'
+      - name: Install yq
+        if: matrix.os == 'windows-latest'
+        run: |
+          winget install mikefarah.yq
+
+      - name: Run init tests
         id: run_init_tests
         continue-on-error: true
-        shell: bash
+        shell: ${{ matrix.os == 'windows-latest' && 'pwsh' || 'bash' }}
         env:
           CODACY_API_TOKEN: ${{ secrets.CODACY_API_TOKEN }}
         run: |
-          # Make the script executable
-          chmod +x integration-tests/run.sh
-          
-          # Run the init command tests
-          echo "Running init command integration tests..."
-          ./integration-tests/run.sh || {
-            echo "❌ Init command tests failed"
-            echo "::error::Init command tests failed. Please check the logs above for details."
-            exit 1
-          }
-          echo "✅ Init command tests passed successfully!"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # Run PowerShell script on Windows
+            ./integration-tests/run.ps1
+          else
+            # Run Bash script on Unix/Linux
+            chmod +x integration-tests/run.sh
+            ./integration-tests/run.sh
+          fi
 
       - name: Run tool tests
         if: matrix.os != 'windows-latest'
@@ -124,7 +125,7 @@ jobs:
           fi
 
       - name: Check test results
-        if: steps.run_tests.outcome == 'failure' || steps.run_init_tests.outcome == 'failure'
+        if: failure()
         run: |
           echo "Job failed because some tests failed. Please check the logs above for details."
           exit 1
