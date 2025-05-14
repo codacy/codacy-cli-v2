@@ -3,10 +3,10 @@ package codacyclient
 import (
 	"codacy/cli-v2/domain"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -20,7 +20,7 @@ func getRequest(url string, initFlags domain.InitFlags) ([]byte, error) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("api-token", initFlags.ApiToken)
@@ -28,15 +28,13 @@ func getRequest(url string, initFlags domain.InitFlags) ([]byte, error) {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		fmt.Printf("Error sending request: %v\n", err)
-		return nil, err
+		return nil, fmt.Errorf("error sending request: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		fmt.Println("Error:", url)
-		return nil, errors.New("Failed in request to " + url)
+		return nil, fmt.Errorf("request to %s failed with status %d", url, resp.StatusCode)
 	}
 
 	// Read the response body
@@ -66,11 +64,14 @@ func handlePaginationGeneric[T any](
 	for {
 		pageURL := baseURL
 		if !firstRequest && cursor != "" {
-			if pageURL[len(pageURL)-1] == '?' || pageURL[len(pageURL)-1] == '&' {
-				pageURL += fmt.Sprintf("cursor=%s", cursor)
-			} else {
-				pageURL += fmt.Sprintf("&cursor=%s", cursor)
+			u, err := url.Parse(pageURL)
+			if err != nil {
+				return nil, err
 			}
+			q := u.Query()
+			q.Set("cursor", cursor)
+			u.RawQuery = q.Encode()
+			pageURL = u.String()
 		}
 		firstRequest = false
 

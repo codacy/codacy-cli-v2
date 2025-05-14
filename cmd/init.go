@@ -54,7 +54,7 @@ var initCmd = &cobra.Command{
 
 		if cliLocalMode {
 			fmt.Println()
-			fmt.Println("ℹ️  No project token was specified, skipping fetch configurations")
+			fmt.Println("ℹ️  No project token was specified, fetching codacy default configurations")
 			noTools := []tools.Tool{}
 			err := createConfigurationFiles(noTools, cliLocalMode)
 			if err != nil {
@@ -555,7 +555,6 @@ func createLizardConfigFile(toolsConfigDir string, patternConfiguration []domain
 			patterns[i] = pattern.PatternDefinition
 		}
 
-		fmt.Println("Lizard configuration created based on Codacy settings")
 	}
 
 	content, err := lizard.CreateLizardConfig(patterns)
@@ -588,37 +587,30 @@ func buildDefaultConfigurationFiles(toolsConfigDir string) error {
 			if err != nil {
 				return fmt.Errorf("failed to write eslint config: %v", err)
 			}
-			fmt.Println("ESLint configuration created. Ignoring plugin rules. ESLint plugins are not supported yet.")
 		case Trivy:
 			if err := createTrivyConfigFile(patternsConfig, toolsConfigDir); err != nil {
 				return fmt.Errorf("failed to create default Trivy configuration: %w", err)
 			}
-			fmt.Println("Trivy configuration created")
 		case PMD:
 			if err := createPMDConfigFile(patternsConfig, toolsConfigDir); err != nil {
 				return fmt.Errorf("failed to create default PMD configuration: %w", err)
 			}
-			fmt.Println("PMD configuration created")
 		case PyLint:
 			if err := createPylintConfigFile(patternsConfig, toolsConfigDir); err != nil {
 				return fmt.Errorf("failed to create default Pylint configuration: %w", err)
 			}
-			fmt.Println("Pylint configuration created")
 		case DartAnalyzer:
 			if err := createDartAnalyzerConfigFile(patternsConfig, toolsConfigDir); err != nil {
 				return fmt.Errorf("failed to create default Dart Analyzer configuration: %w", err)
 			}
-			fmt.Println("Dart Analyzer configuration created")
 		case Semgrep:
 			if err := createSemgrepConfigFile(patternsConfig, toolsConfigDir); err != nil {
 				return fmt.Errorf("failed to create default Semgrep configuration: %w", err)
 			}
-			fmt.Println("Semgrep configuration created")
 		case Lizard:
 			if err := createLizardConfigFile(toolsConfigDir, patternsConfig); err != nil {
 				return fmt.Errorf("failed to create default Lizard configuration: %w", err)
 			}
-			fmt.Println("Lizard configuration created")
 		}
 	}
 
@@ -635,6 +627,7 @@ const (
 	Lizard       string = "76348462-84b3-409a-90d3-955e90abfb87"
 )
 
+// AvailableTools lists all tool UUIDs supported by Codacy CLI.
 var AvailableTools = []string{
 	ESLint,
 	Trivy,
