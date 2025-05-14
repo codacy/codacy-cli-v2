@@ -88,7 +88,13 @@ function Compare-Files {
         $dirname = $_.Name
         if ($dirname -eq "logs") { return }
         
-        $actualSubDir = Join-Path $actualDir $dirname
+        # Handle .codacy directory specially
+        if ($dirname -eq ".codacy") {
+            $actualSubDir = $actualDir
+        } else {
+            $actualSubDir = Join-Path $actualDir $dirname
+        }
+        
         if (-not (Test-Path $actualSubDir)) {
             Write-Host "❌ Directory $label/$dirname does not exist in actual output"
             Write-Host "Expected: $($_.FullName)"

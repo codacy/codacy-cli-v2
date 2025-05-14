@@ -78,13 +78,16 @@ jobs:
 
       - name: Run init tests on Windows
         if: matrix.os == 'windows-latest'
-        id: run_init_tests_windows
-        continue-on-error: true
         shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          & ./integration-tests/run.ps1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Integration tests failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
         env:
           CODACY_API_TOKEN: ${{ secrets.CODACY_API_TOKEN }}
-        run: |
-          ./integration-tests/run.ps1
 
       - name: Run init tests on Unix
         if: matrix.os != 'windows-latest'
