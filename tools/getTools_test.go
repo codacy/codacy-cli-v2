@@ -14,39 +14,45 @@ func TestFilterToolsByConfigUsage(t *testing.T) {
 		expectedTools []string
 	}{
 		{
-			name: "tools with UsesConfigFile=true should be filtered out",
+			name: "tools with UsesConfigurationFile=true should be filtered out",
 			inputTools: []Tool{
 				{
 					Uuid: "eslint-uuid",
 					Name: "eslint",
 					Settings: struct {
-						Enabled        bool `json:"isEnabled"`
-						UsesConfigFile bool `json:"hasConfigurationFile"`
+						Enabled               bool `json:"isEnabled"`
+						HasConfigurationFile  bool `json:"hasConfigurationFile"`
+						UsesConfigurationFile bool `json:"usesConfigurationFile"`
 					}{
-						Enabled:        true,
-						UsesConfigFile: true,
+						Enabled:               true,
+						HasConfigurationFile:  true,
+						UsesConfigurationFile: true,
 					},
 				},
 				{
 					Uuid: "trivy-uuid",
 					Name: "trivy",
 					Settings: struct {
-						Enabled        bool `json:"isEnabled"`
-						UsesConfigFile bool `json:"hasConfigurationFile"`
+						Enabled               bool `json:"isEnabled"`
+						HasConfigurationFile  bool `json:"hasConfigurationFile"`
+						UsesConfigurationFile bool `json:"usesConfigurationFile"`
 					}{
-						Enabled:        true,
-						UsesConfigFile: false,
+						Enabled:               true,
+						HasConfigurationFile:  false,
+						UsesConfigurationFile: false,
 					},
 				},
 				{
 					Uuid: "pylint-uuid",
 					Name: "pylint",
 					Settings: struct {
-						Enabled        bool `json:"isEnabled"`
-						UsesConfigFile bool `json:"hasConfigurationFile"`
+						Enabled               bool `json:"isEnabled"`
+						HasConfigurationFile  bool `json:"hasConfigurationFile"`
+						UsesConfigurationFile bool `json:"usesConfigurationFile"`
 					}{
-						Enabled:        true,
-						UsesConfigFile: false,
+						Enabled:               true,
+						HasConfigurationFile:  false,
+						UsesConfigurationFile: false,
 					},
 				},
 			},
@@ -60,22 +66,26 @@ func TestFilterToolsByConfigUsage(t *testing.T) {
 					Uuid: "eslint-uuid",
 					Name: "eslint",
 					Settings: struct {
-						Enabled        bool `json:"isEnabled"`
-						UsesConfigFile bool `json:"hasConfigurationFile"`
+						Enabled               bool `json:"isEnabled"`
+						HasConfigurationFile  bool `json:"hasConfigurationFile"`
+						UsesConfigurationFile bool `json:"usesConfigurationFile"`
 					}{
-						Enabled:        true,
-						UsesConfigFile: true,
+						Enabled:               true,
+						HasConfigurationFile:  true,
+						UsesConfigurationFile: true,
 					},
 				},
 				{
 					Uuid: "trivy-uuid",
 					Name: "trivy",
 					Settings: struct {
-						Enabled        bool `json:"isEnabled"`
-						UsesConfigFile bool `json:"hasConfigurationFile"`
+						Enabled               bool `json:"isEnabled"`
+						HasConfigurationFile  bool `json:"hasConfigurationFile"`
+						UsesConfigurationFile bool `json:"usesConfigurationFile"`
 					}{
-						Enabled:        true,
-						UsesConfigFile: true,
+						Enabled:               true,
+						HasConfigurationFile:  true,
+						UsesConfigurationFile: true,
 					},
 				},
 			},
@@ -89,22 +99,26 @@ func TestFilterToolsByConfigUsage(t *testing.T) {
 					Uuid: "eslint-uuid",
 					Name: "eslint",
 					Settings: struct {
-						Enabled        bool `json:"isEnabled"`
-						UsesConfigFile bool `json:"hasConfigurationFile"`
+						Enabled               bool `json:"isEnabled"`
+						HasConfigurationFile  bool `json:"hasConfigurationFile"`
+						UsesConfigurationFile bool `json:"usesConfigurationFile"`
 					}{
-						Enabled:        true,
-						UsesConfigFile: false,
+						Enabled:               true,
+						HasConfigurationFile:  true,
+						UsesConfigurationFile: false,
 					},
 				},
 				{
 					Uuid: "pylint-uuid",
 					Name: "pylint",
 					Settings: struct {
-						Enabled        bool `json:"isEnabled"`
-						UsesConfigFile bool `json:"hasConfigurationFile"`
+						Enabled               bool `json:"isEnabled"`
+						HasConfigurationFile  bool `json:"hasConfigurationFile"`
+						UsesConfigurationFile bool `json:"usesConfigurationFile"`
 					}{
-						Enabled:        true,
-						UsesConfigFile: false,
+						Enabled:               true,
+						HasConfigurationFile:  false,
+						UsesConfigurationFile: false,
 					},
 				},
 			},
@@ -134,10 +148,10 @@ func TestFilterToolsByConfigUsage(t *testing.T) {
 				assert.True(t, found, "Expected tool %s not found in filtered results", expectedTool)
 			}
 
-			// Verify no tools with UsesConfigFile=true are in the result
+			// Verify no tools with UsesConfigurationFile=true are in the result
 			for _, tool := range result {
-				assert.False(t, tool.Settings.UsesConfigFile,
-					"Tool %s with UsesConfigFile=true should not be in filtered results", tool.Name)
+				assert.False(t, tool.Settings.UsesConfigurationFile,
+					"Tool %s with UsesConfigurationFile=true should not be in filtered results", tool.Name)
 			}
 		})
 	}
