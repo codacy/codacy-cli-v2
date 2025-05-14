@@ -66,6 +66,9 @@ jobs:
         run: |
           git tag ${{ steps.generate-version.outputs.version }}
           git push --tags "https://codacy:${{ secrets.GITHUB_TOKEN }}@github.com/codacy/codacy-cli-v2"
+      - name: Get Go version
+        id: go-version
+        run: echo "VERSION=$(go version | cut -d' ' -f3)" >> $GITHUB_OUTPUT
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
         with:
@@ -74,3 +77,4 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOVERSION: ${{ steps.go-version.outputs.VERSION }}

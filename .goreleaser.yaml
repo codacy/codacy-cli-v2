@@ -21,7 +21,7 @@ builds:
       - -X codacy/cli-v2/version.BuildTime={{.Date}}
       - -X codacy/cli-v2/version.Os={{.Os}}
       - -X codacy/cli-v2/version.Arch={{.Arch}}
-      - -X codacy/cli-v2/version.GoVersion={{.Runtime.Version}}
+      - -X codacy/cli-v2/version.GoVersion={{.Env.GOVERSION}}
     binary: cli-v2
 
 archives:
