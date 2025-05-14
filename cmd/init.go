@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -180,25 +181,41 @@ func configFileTemplate(tools []tools.Tool) string {
 	var sb strings.Builder
 	sb.WriteString("runtimes:\n")
 
+	// Create a slice to store runtimes for sorting
+	var runtimes []string
+
 	// Only include runtimes needed by the enabled tools
 	if len(tools) > 0 {
 		if needsNode {
-			sb.WriteString("    - node@22.2.0\n")
+			runtimes = append(runtimes, "node@22.2.0")
 		}
 		if needsPython {
-			sb.WriteString("    - python@3.11.11\n")
+			runtimes = append(runtimes, "python@3.11.11")
 		}
 		if needsDart {
-			sb.WriteString("    - dart@3.7.2\n")
+			runtimes = append(runtimes, "dart@3.7.2")
 		}
 	} else {
 		// In local mode with no tools specified, include all runtimes
-		sb.WriteString("    - node@22.2.0\n")
-		sb.WriteString("    - python@3.11.11\n")
-		sb.WriteString("    - dart@3.7.2\n")
+		runtimes = []string{
+			"node@22.2.0",
+			"python@3.11.11",
+			"dart@3.7.2",
+		}
+	}
+
+	// Sort runtimes alphabetically
+	slices.Sort(runtimes)
+
+	// Write sorted runtimes
+	for _, runtime := range runtimes {
+		sb.WriteString(fmt.Sprintf("    - %s\n", runtime))
 	}
 
 	sb.WriteString("tools:\n")
+
+	// Create a slice to store tools for sorting
+	var toolEntries []string
 
 	// If we have tools from the API (enabled tools), use only those
 	if len(tools) > 0 {
@@ -215,18 +232,30 @@ func configFileTemplate(tools []tools.Tool) string {
 
 		for uuid, name := range uuidToName {
 			if toolsMap[uuid] {
-				sb.WriteString(fmt.Sprintf("    - %s@%s\n", name, toolVersions[uuid]))
+				toolEntries = append(toolEntries, fmt.Sprintf("%s@%s", name, toolVersions[uuid]))
 			}
 		}
 	} else {
 		// If no tools were specified (local mode), include all defaults
-		sb.WriteString(fmt.Sprintf("    - eslint@%s\n", defaultVersions[ESLint]))
-		sb.WriteString(fmt.Sprintf("    - trivy@%s\n", defaultVersions[Trivy]))
-		sb.WriteString(fmt.Sprintf("    - pylint@%s\n", defaultVersions[PyLint]))
-		sb.WriteString(fmt.Sprintf("    - pmd@%s\n", defaultVersions[PMD]))
-		sb.WriteString(fmt.Sprintf("    - dartanalyzer@%s\n", defaultVersions[DartAnalyzer]))
-		sb.WriteString(fmt.Sprintf("    - semgrep@%s\n", defaultVersions[Semgrep]))
-		sb.WriteString(fmt.Sprintf("    - lizard@%s\n", defaultVersions[Lizard]))
+		for uuid, name := range map[string]string{
+			ESLint:       "eslint",
+			Trivy:        "trivy",
+			PyLint:       "pylint",
+			PMD:          "pmd",
+			DartAnalyzer: "dartanalyzer",
+			Semgrep:      "semgrep",
+			Lizard:       "lizard",
+		} {
+			toolEntries = append(toolEntries, fmt.Sprintf("%s@%s", name, defaultVersions[uuid]))
+		}
+	}
+
+	// Sort tools alphabetically
+	slices.Sort(toolEntries)
+
+	// Write sorted tools
+	for _, tool := range toolEntries {
+		sb.WriteString(fmt.Sprintf("    - %s\n", tool))
 	}
 
 	return sb.String()
