@@ -135,18 +135,18 @@ type Tool struct {
 	Name     string `json:"name"`
 	Version  string `json:"version"`
 	Settings struct {
-		Enabled        bool `json:"isEnabled"`
-		UsesConfigFile bool `json:"hasConfigurationFile"`
+		Enabled               bool `json:"isEnabled"`
+		HasConfigurationFile  bool `json:"hasConfigurationFile"`
+		UsesConfigurationFile bool `json:"usesConfigurationFile"`
 	} `json:"settings"`
 }
 
 // FilterToolsByConfigUsage filters out tools that use their own configuration files
-// Returns only tools that need configuration to be generated for them (UsesConfigFile = false)
+// Returns only tools that need configuration to be generated for them (UsesConfigurationFile = false)
 func FilterToolsByConfigUsage(tools []Tool) []Tool {
 	var filtered []Tool
 	for _, tool := range tools {
-
-		if !tool.Settings.UsesConfigFile {
+		if !tool.Settings.UsesConfigurationFile {
 			filtered = append(filtered, tool)
 		} else {
 			fmt.Printf("Skipping config generation for %s - configured to use repo's config file\n", tool.Name)

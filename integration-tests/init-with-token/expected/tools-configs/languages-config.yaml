@@ -1,0 +1,19 @@
+tools:
+    - name: pylint
+      languages: [Python]
+      extensions: [.py]
+    - name: lizard
+      languages: [Java, JavaScript, Python]
+      extensions: [.java, .js, .jsm, .jsx, .mjs, .py, .vue]
+    - name: pmd
+      languages: [Java, JavaScript]
+      extensions: [.java, .js, .jsm, .jsx, .mjs, .vue]
+    - name: eslint
+      languages: [JavaScript]
+      extensions: [.js, .jsm, .jsx, .mjs, .vue]
+    - name: trivy
+      languages: [Multiple]
+      extensions: []
+    - name: semgrep
+      languages: [Java, JavaScript, JSON, Python]
+      extensions: [.java, .js, .jsm, .json, .jsx, .mjs, .py, .vue]

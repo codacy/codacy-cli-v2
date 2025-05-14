@@ -75,8 +75,8 @@ var initCmd = &cobra.Command{
 			if err != nil {
 				log.Fatal(err)
 			}
-			createGitIgnoreFile()
 		}
+		createGitIgnoreFile()
 		fmt.Println()
 		fmt.Println("✅ Successfully initialized Codacy configuration!")
 		fmt.Println()
@@ -95,12 +95,7 @@ func createGitIgnoreFile() error {
 	}
 	defer gitIgnoreFile.Close()
 
-	content := `# Codacy CLI 
-tools-configs/
-.gitignore
-cli-config.yaml
-logs/
-`
+	content := "# Codacy CLI\ntools-configs/\n.gitignore\ncli-config.yaml\nlogs/\n"
 	if _, err := gitIgnoreFile.WriteString(content); err != nil {
 		return fmt.Errorf("failed to write to .gitignore file: %w", err)
 	}
@@ -275,6 +270,8 @@ func buildRepositoryConfigurationFiles(token string) error {
 		PyLint:       "pylint",
 		PMD:          "pmd",
 		DartAnalyzer: "dartanalyzer",
+		Lizard:       "lizard",
+		Semgrep:      "semgrep",
 	}
 
 	// Generate languages configuration based on API tools response
@@ -384,45 +381,48 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 			if err != nil {
 				return fmt.Errorf("failed to create Trivy config: %v", err)
 			}
+			fmt.Println("Trivy configuration created based on Codacy settings")
 		} else {
 			err := createDefaultTrivyConfigFile(toolsConfigDir)
 			if err != nil {
 				return fmt.Errorf("failed to create default Trivy config: %v", err)
 			}
 		}
-		fmt.Println("Trivy configuration created based on Codacy settings")
 	case PMD:
 		if len(patternConfiguration) > 0 {
 			err := createPMDConfigFile(patternConfiguration, toolsConfigDir)
 			if err != nil {
 				return fmt.Errorf("failed to create PMD config: %v", err)
 			}
+
+			fmt.Println("PMD configuration created based on Codacy settings")
 		} else {
 			err := createDefaultPMDConfigFile(toolsConfigDir)
 			if err != nil {
 				return fmt.Errorf("failed to create default PMD config: %v", err)
 			}
 		}
-		fmt.Println("PMD configuration created based on Codacy settings")
+
 	case PyLint:
 		if len(patternConfiguration) > 0 {
 			err := createPylintConfigFile(patternConfiguration, toolsConfigDir)
 			if err != nil {
 				return fmt.Errorf("failed to create Pylint config: %v", err)
 			}
+			fmt.Println("Pylint configuration created based on Codacy settings")
 		} else {
 			err := createDefaultPylintConfigFile(toolsConfigDir)
 			if err != nil {
 				return fmt.Errorf("failed to create default Pylint config: %v", err)
 			}
 		}
-		fmt.Println("Pylint configuration created based on Codacy settings")
 	case DartAnalyzer:
 		if len(patternConfiguration) > 0 {
 			err := createDartAnalyzerConfigFile(patternConfiguration, toolsConfigDir)
 			if err != nil {
 				return fmt.Errorf("failed to create Dart Analyzer config: %v", err)
 			}
+			fmt.Println("Dart configuration created based on Codacy settings")
 		}
 	case Semgrep:
 		if len(patternConfiguration) > 0 {
@@ -430,6 +430,7 @@ func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain
 			if err != nil {
 				return fmt.Errorf("failed to create Semgrep config: %v", err)
 			}
+			fmt.Println("Semgrep configuration created based on Codacy settings")
 		}
 	case Lizard:
 		createLizardConfigFile(toolsConfigDir, patternConfiguration)
@@ -541,7 +542,6 @@ func createLizardConfigFile(toolsConfigDir string, patternConfiguration []domain
 	var patterns []domain.PatternDefinition
 
 	if len(patternConfiguration) == 0 {
-		fmt.Println("Using default Lizard configuration")
 		var err error
 		patterns, err = tools.FetchDefaultEnabledPatterns(Lizard)
 		if err != nil {

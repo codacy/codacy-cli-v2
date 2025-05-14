@@ -1,0 +1,40 @@
+patterns:
+    Lizard_ccn-minor:
+        category: Complexity
+        description: Check the Cyclomatic Complexity value of a function or logic block. If the threshold is not met, raise a Minor issue. The default threshold is 5.
+        explanation: |-
+            # Minor Cyclomatic Complexity control
+
+            Check the Cyclomatic Complexity value of a function or logic block. If the threshold is not met, raise a Minor issue. The default threshold is 4.
+        id: Lizard_ccn-minor
+        level: Info
+        severityLevel: Info
+        threshold: 5
+        timeToFix: 5
+        title: Minor Cyclomatic Complexity control
+    Lizard_nloc-critical:
+        category: Complexity
+        description: Check the number of lines of code (without comments) in a function or logic block. If the threshold is not met, raise a Critical issue. The default threshold is 100.
+        explanation: |-
+            # Critical NLOC control - Number of Lines of Code (without comments)
+
+            Check the number of lines of code (without comments) in a function or logic block. If the threshold is not met, raise a Critical issue. The default threshold is 100.
+        id: Lizard_nloc-critical
+        level: Error
+        severityLevel: Error
+        threshold: 100
+        timeToFix: 5
+        title: Critical NLOC control - Number of Lines of Code (without comments)
+    Lizard_nloc-medium:
+        category: Complexity
+        description: Check the number of lines of code (without comments) in a function. If the threshold is not met, raise a Medium issue. The default threshold is 50.
+        explanation: |-
+            # Medium NLOC control - Number of Lines of Code (without comments)
+
+            Check the number of lines of code (without comments) in a function. If the threshold is not met, raise a Medium issue. The default threshold is 50.
+        id: Lizard_nloc-medium
+        level: Warning
+        severityLevel: Warning
+        threshold: 50
+        timeToFix: 5
+        title: Medium NLOC control - Number of Lines of Code (without comments)

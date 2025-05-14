@@ -101,40 +101,29 @@ func TestFilterRulesFromFile(t *testing.T) {
 
 // TestGetSemgrepConfig tests the GetSemgrepConfig function
 func TestGetSemgrepConfig(t *testing.T) {
-	// Override the function to find rules.yaml to use our test file
-	originalRulesFilePath := filepath.Join("plugins", "tools", "semgrep", "rules.yaml")
-
 	// Create a temporary rules file
 	tempDir := t.TempDir()
 	testRulesFile := filepath.Join(tempDir, "rules.yaml")
 	err := os.WriteFile(testRulesFile, []byte(sampleRulesYAML), 0644)
 	assert.NoError(t, err)
 
-	// Create a backup of the original file if it exists
-	backupFilePath := ""
-	if _, err := os.Stat(originalRulesFilePath); err == nil {
-		backupFilePath = originalRulesFilePath + ".bak"
-		err = os.Rename(originalRulesFilePath, backupFilePath)
-		assert.NoError(t, err)
+	// Create a mock executable path that points to our temp directory
+	originalGetExecutablePath := getExecutablePath
+	getExecutablePath = func() (string, error) {
+		return filepath.Join(tempDir, "test-executable"), nil
 	}
-
-	// Ensure the directory exists
-	err = os.MkdirAll(filepath.Dir(originalRulesFilePath), 0755)
-	assert.NoError(t, err)
-
-	// Copy our test file to the location
-	testFileContent, err := os.ReadFile(testRulesFile)
-	assert.NoError(t, err)
-	err = os.WriteFile(originalRulesFilePath, testFileContent, 0644)
-	assert.NoError(t, err)
-
-	// Clean up after the test
 	defer func() {
-		os.Remove(originalRulesFilePath)
-		if backupFilePath != "" {
-			os.Rename(backupFilePath, originalRulesFilePath)
-		}
+		getExecutablePath = originalGetExecutablePath
 	}()
+
+	// Create the plugins directory structure
+	pluginsDir := filepath.Join(tempDir, "plugins", "tools", "semgrep")
+	err = os.MkdirAll(pluginsDir, 0755)
+	assert.NoError(t, err)
+
+	// Copy our test file to the plugins directory
+	err = os.WriteFile(filepath.Join(pluginsDir, "rules.yaml"), []byte(sampleRulesYAML), 0644)
+	assert.NoError(t, err)
 
 	// Test with valid configuration
 	config := []domain.PatternConfiguration{
@@ -162,40 +151,29 @@ func TestGetSemgrepConfig(t *testing.T) {
 
 // TestGetDefaultSemgrepConfig tests the GetDefaultSemgrepConfig function
 func TestGetDefaultSemgrepConfig(t *testing.T) {
-	// Override the function to find rules.yaml to use our test file
-	originalRulesFilePath := filepath.Join("plugins", "tools", "semgrep", "rules.yaml")
-
 	// Create a temporary rules file
 	tempDir := t.TempDir()
 	testRulesFile := filepath.Join(tempDir, "rules.yaml")
 	err := os.WriteFile(testRulesFile, []byte(sampleRulesYAML), 0644)
 	assert.NoError(t, err)
 
-	// Create a backup of the original file if it exists
-	backupFilePath := ""
-	if _, err := os.Stat(originalRulesFilePath); err == nil {
-		backupFilePath = originalRulesFilePath + ".bak"
-		err = os.Rename(originalRulesFilePath, backupFilePath)
-		assert.NoError(t, err)
+	// Create a mock executable path that points to our temp directory
+	originalGetExecutablePath := getExecutablePath
+	getExecutablePath = func() (string, error) {
+		return filepath.Join(tempDir, "test-executable"), nil
 	}
-
-	// Ensure the directory exists
-	err = os.MkdirAll(filepath.Dir(originalRulesFilePath), 0755)
-	assert.NoError(t, err)
-
-	// Copy our test file to the location
-	testFileContent, err := os.ReadFile(testRulesFile)
-	assert.NoError(t, err)
-	err = os.WriteFile(originalRulesFilePath, testFileContent, 0644)
-	assert.NoError(t, err)
-
-	// Clean up after the test
 	defer func() {
-		os.Remove(originalRulesFilePath)
-		if backupFilePath != "" {
-			os.Rename(backupFilePath, originalRulesFilePath)
-		}
+		getExecutablePath = originalGetExecutablePath
 	}()
+
+	// Create the plugins directory structure
+	pluginsDir := filepath.Join(tempDir, "plugins", "tools", "semgrep")
+	err = os.MkdirAll(pluginsDir, 0755)
+	assert.NoError(t, err)
+
+	// Copy our test file to the plugins directory
+	err = os.WriteFile(filepath.Join(pluginsDir, "rules.yaml"), []byte(sampleRulesYAML), 0644)
+	assert.NoError(t, err)
 
 	// Test getting default config
 	result, err := GetDefaultSemgrepConfig()
@@ -207,7 +185,7 @@ func TestGetDefaultSemgrepConfig(t *testing.T) {
 	assert.Equal(t, 3, len(parsedRules.Rules))
 
 	// Test when rules.yaml doesn't exist
-	os.Remove(originalRulesFilePath)
+	os.Remove(filepath.Join(pluginsDir, "rules.yaml"))
 	_, err = GetDefaultSemgrepConfig()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "rules.yaml not found")
