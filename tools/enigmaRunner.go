@@ -2,6 +2,7 @@ package tools
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,10 +33,10 @@ func RunEnigma(workDirectory string, installationDirectory string, binary string
 	}
 
 	if configExists != "" {
-		println("Config file found, using it")
+		log.Println("Config file found, using it")
 		args = append(args, "--configuration-file", configExists)
 	} else {
-		println("No config file found, using tool defaults")
+		log.Println("No config file found, using tool defaults")
 
 	}
 

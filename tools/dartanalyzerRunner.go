@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -41,9 +42,9 @@ func RunDartAnalyzer(workDirectory string, installationDirectory string, binary 
 	}
 
 	if !configExists {
-		fmt.Println("No config file found, using tool defaults")
+		log.Println("No config file found, using tool defaults")
 	} else {
-		fmt.Println("Config file found, using it")
+		log.Println("Config file found, using it")
 	}
 
 	// For SARIF output, we need to capture the output and transform it
