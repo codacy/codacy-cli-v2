@@ -73,21 +73,26 @@ jobs:
         run: |
           winget install mikefarah.yq
 
-      - name: Run init tests
-        id: run_init_tests
+      - name: Run init tests on Windows
+        if: matrix.os == 'windows-latest'
+        id: run_init_tests_windows
         continue-on-error: true
-        shell: ${{ matrix.os == 'windows-latest' && 'pwsh' || 'bash' }}
+        shell: pwsh
         env:
           CODACY_API_TOKEN: ${{ secrets.CODACY_API_TOKEN }}
         run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # Run PowerShell script on Windows
-            ./integration-tests/run.ps1
-          else
-            # Run Bash script on Unix/Linux
-            chmod +x integration-tests/run.sh
-            ./integration-tests/run.sh
-          fi
+          ./integration-tests/run.ps1
+
+      - name: Run init tests on Unix
+        if: matrix.os != 'windows-latest'
+        id: run_init_tests_unix
+        continue-on-error: true
+        shell: bash
+        env:
+          CODACY_API_TOKEN: ${{ secrets.CODACY_API_TOKEN }}
+        run: |
+          chmod +x integration-tests/run.sh
+          ./integration-tests/run.sh
 
       - name: Run tool tests
         if: matrix.os != 'windows-latest'
