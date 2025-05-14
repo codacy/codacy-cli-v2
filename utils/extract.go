@@ -31,6 +31,9 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 		return fmt.Errorf("failed to set target directory permissions: %w", err)
 	}
 
+	// Create a map to store symlinks for later creation
+	symlinks := make(map[string]string)
+
 	handler := func(ctx context.Context, f archiver.File) error {
 		path := filepath.Join(targetDir, f.NameInArchive)
 
@@ -44,6 +47,12 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 			}
 
 		case false:
+			// if is a symlink, store it for later
+			if f.LinkTarget != "" {
+				symlinks[path] = f.LinkTarget
+				return nil
+			}
+
 			parentDir := filepath.Dir(path)
 			if err := os.MkdirAll(parentDir, constants.DefaultDirPerms); err != nil {
 				return fmt.Errorf("failed to create parent directory %s: %w", parentDir, err)
@@ -92,6 +101,22 @@ func ExtractTarGz(archive *os.File, targetDir string) error {
 		return fmt.Errorf("failed to extract archive: %w", err)
 	}
 
+	// Create symlinks after all files have been extracted
+	for path, target := range symlinks {
+		// Remove any existing file/symlink
+		os.Remove(path)
+
+		// Ensure parent directory exists
+		if err := os.MkdirAll(filepath.Dir(path), constants.DefaultDirPerms); err != nil {
+			return fmt.Errorf("failed to create parent directory for symlink %s: %w", path, err)
+		}
+
+		// Create the symlink
+		if err := os.Symlink(target, path); err != nil {
+			return fmt.Errorf("failed to create symlink %s -> %s: %w", path, target, err)
+		}
+	}
+
 	return nil
 }
 
@@ -124,6 +149,15 @@ func ExtractZip(zipPath string, targetDir string) error {
 			}
 
 		case false:
+			// if is a symlink
+			if f.LinkTarget != "" {
+				os.Remove(path)
+				if err := os.Symlink(f.LinkTarget, path); err != nil {
+					return fmt.Errorf("failed to create symlink %s -> %s: %w", path, f.LinkTarget, err)
+				}
+				return nil
+			}
+
 			parentDir := filepath.Dir(path)
 			if err := os.MkdirAll(parentDir, constants.DefaultDirPerms); err != nil {
 				return fmt.Errorf("failed to create parent directory %s: %w", parentDir, err)
