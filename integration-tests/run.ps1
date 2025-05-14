@@ -1,7 +1,7 @@
 # Stop on first error
 $ErrorActionPreference = "Stop"
 
-# Get the absolute path of the script's directory
+# Get the absolute path of the script's directory and CLI path
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 $CLI_PATH = Join-Path (Get-Location) "cli-v2.exe"
 
@@ -15,34 +15,22 @@ if (-not $env:CODACY_API_TOKEN) {
 
 # Function to normalize and sort configuration values
 function Normalize-Config {
-    param (
-        [string]$file
-    )
+    param ([string]$file)
     
     $ext = [System.IO.Path]::GetExtension($file).TrimStart('.')
     
     switch ($ext) {
-        { $_ -in @('yaml', 'yml') } {
-            # For YAML files, use yq to sort
-            # Note: Requires yq to be installed on Windows
-            yq e '.' $file | Sort-Object
-        }
+        { $_ -in @('yaml', 'yml') } { yq e '.' $file | Sort-Object }
         { $_ -in @('rc', 'conf', 'ini', 'xml') } {
-            # For other config files, sort values after '=' and keep other lines
             Get-Content $file | ForEach-Object {
                 if ($_ -match '^[^#].*=.*,') {
                     $parts = $_ -split '='
                     $values = $parts[1] -split ',' | Sort-Object
                     "$($parts[0])=$($values -join ',')"
-                } else {
-                    $_
-                }
+                } else { $_ }
             } | Sort-Object
         }
-        default {
-            # For other files, just sort
-            Get-Content $file | Sort-Object
-        }
+        default { Get-Content $file | Sort-Object }
     }
 }
 
@@ -53,13 +41,11 @@ function Compare-Files {
         [string]$label
     )
     
-    # Compare files in current directory
+    # Compare files
     Get-ChildItem -Path $expectedDir -File | ForEach-Object {
-        $filename = $_.Name
-        $actualFile = Join-Path $actualDir $filename
-        
+        $actualFile = Join-Path $actualDir $_.Name
         if (-not (Test-Path $actualFile)) {
-            Write-Host "❌ $label/$filename does not exist in actual output"
+            Write-Host "❌ $label/$($_.Name) does not exist in actual output"
             Write-Host "Expected: $($_.FullName)"
             Write-Host "Actual should be: $actualFile"
             exit 1
@@ -69,7 +55,7 @@ function Compare-Files {
         $actualContent = Normalize-Config $actualFile
         
         if (Compare-Object $expectedContent $actualContent) {
-            Write-Host "❌ $label/$filename does not match expected"
+            Write-Host "❌ $label/$($_.Name) does not match expected"
             Write-Host "=== Expected (normalized) ==="
             $expectedContent
             Write-Host "=== Actual (normalized) ==="
@@ -78,30 +64,21 @@ function Compare-Files {
             Compare-Object $expectedContent $actualContent
             Write-Host "==================="
             exit 1
-        } else {
-            Write-Host "✅ $label/$filename matches expected"
         }
+        Write-Host "✅ $label/$($_.Name) matches expected"
     }
     
     # Compare subdirectories
-    Get-ChildItem -Path $expectedDir -Directory | ForEach-Object {
-        $dirname = $_.Name
-        if ($dirname -eq "logs") { return }
-        
-        # Handle .codacy directory specially
-        if ($dirname -eq ".codacy") {
-            $actualSubDir = $actualDir
-        } else {
-            $actualSubDir = Join-Path $actualDir $dirname
-        }
+    Get-ChildItem -Path $expectedDir -Directory | Where-Object { $_.Name -ne "logs" } | ForEach-Object {
+        $actualSubDir = if ($_.Name -eq ".codacy") { $actualDir } else { Join-Path $actualDir $_.Name }
         
         if (-not (Test-Path $actualSubDir)) {
-            Write-Host "❌ Directory $label/$dirname does not exist in actual output"
+            Write-Host "❌ Directory $label/$($_.Name) does not exist in actual output"
             Write-Host "Expected: $($_.FullName)"
             Write-Host "Actual should be: $actualSubDir"
             exit 1
         }
-        Compare-Files $_.FullName $actualSubDir "$label/$dirname"
+        Compare-Files $_.FullName $actualSubDir "$label/$($_.Name)"
     }
 }
 
@@ -118,17 +95,10 @@ function Run-InitTest {
         exit 1
     }
     
-    # Store the original location
     $originalLocation = Get-Location
-    
     try {
-        # Change to the test directory
         Set-Location $testDir
-        
-        # Remove existing .codacy directory if it exists
-        if (Test-Path ".codacy") {
-            Remove-Item -Recurse -Force ".codacy"
-        }
+        if (Test-Path ".codacy") { Remove-Item -Recurse -Force ".codacy" }
         
         if ($useToken) {
             if (-not $env:CODACY_API_TOKEN) {
@@ -140,25 +110,20 @@ function Run-InitTest {
             & $CLI_PATH init
         }
         
-        # Compare files using relative paths
         Compare-Files "expected" ".codacy" "Test $testName"
         Write-Host "✅ Test $testName completed successfully"
         Write-Host "----------------------------------------"
     }
     finally {
-        # Always return to the original location
         Set-Location $originalLocation
     }
 }
 
-# Run both tests
+# Run tests
 Write-Host "Starting integration tests..."
 Write-Host "----------------------------------------"
 
-# Test 1: Init without token
 Run-InitTest (Join-Path $SCRIPT_DIR "init-without-token") "init-without-token" $false
-
-# Test 2: Init with token
 Run-InitTest (Join-Path $SCRIPT_DIR "init-with-token") "init-with-token" $true
 
 Write-Host "All tests completed successfully! 🎉" 
