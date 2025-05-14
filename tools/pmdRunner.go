@@ -119,7 +119,10 @@ func RunPmd(repositoryToAnalyseDirectory string, pmdBinary string, pathsToCheck 
 					"expectedPath": javaBinary,
 					"error":        err,
 				})
-				return fmt.Errorf("java binary not found at %s: %w", javaBinary, err)
+
+				// This fallback going to be removed in the future https://codacy.atlassian.net/browse/PLUTO-1421
+				fmt.Printf("⚠️ Warning: Java binary not found at %s: %v\n", javaBinary, err)
+				fmt.Println("⚠️ Trying to continue with the default Java runtime")
 			}
 
 			// Get current PATH
