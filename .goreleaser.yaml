@@ -1,0 +1,51 @@
+project_name: codacy-cli-v2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X codacy/cli-v2/version.Version={{.Version}}
+      - -X codacy/cli-v2/version.GitCommit={{.ShortCommit}}
+      - -X codacy/cli-v2/version.BuildTime={{.Date}}
+      - -X codacy/cli-v2/version.Os={{.Os}}
+      - -X codacy/cli-v2/version.Arch={{.Arch}}
+      - -X codacy/cli-v2/version.GoVersion={{.Env.GOVERSION}}
+    binary: cli-v2
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+    format_overrides:
+      - goos: windows
+        format: zip
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - Merge pull request
+      - Merge branch
+
+release:
+  github:
+    owner: codacy
+    name: codacy-cli-v2 
