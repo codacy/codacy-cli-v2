@@ -112,24 +112,37 @@ function Run-InitTest {
         exit 1
     }
     
-    Set-Location $testDir
-    if (Test-Path ".codacy") {
-        Remove-Item -Recurse -Force ".codacy"
-    }
+    # Store the original location
+    $originalLocation = Get-Location
     
-    if ($useToken) {
-        if (-not $env:CODACY_API_TOKEN) {
-            Write-Host "❌ Skipping token-based test: CODACY_API_TOKEN not set"
-            return
+    try {
+        # Change to the test directory
+        Set-Location $testDir
+        
+        # Remove existing .codacy directory if it exists
+        if (Test-Path ".codacy") {
+            Remove-Item -Recurse -Force ".codacy"
         }
-        & $CLI_PATH init --api-token $env:CODACY_API_TOKEN --organization troubleshoot-codacy-dev --provider gh --repository codacy-cli-test
-    } else {
-        & $CLI_PATH init
+        
+        if ($useToken) {
+            if (-not $env:CODACY_API_TOKEN) {
+                Write-Host "❌ Skipping token-based test: CODACY_API_TOKEN not set"
+                return
+            }
+            & $CLI_PATH init --api-token $env:CODACY_API_TOKEN --organization troubleshoot-codacy-dev --provider gh --repository codacy-cli-test
+        } else {
+            & $CLI_PATH init
+        }
+        
+        # Compare files using relative paths
+        Compare-Files "expected" ".codacy" "Test $testName"
+        Write-Host "✅ Test $testName completed successfully"
+        Write-Host "----------------------------------------"
     }
-    
-    Compare-Files "expected" ".codacy" "Test $testName"
-    Write-Host "✅ Test $testName completed successfully"
-    Write-Host "----------------------------------------"
+    finally {
+        # Always return to the original location
+        Set-Location $originalLocation
+    }
 }
 
 # Run both tests
