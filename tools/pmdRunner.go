@@ -120,33 +120,41 @@ func RunPmd(repositoryToAnalyseDirectory string, pmdBinary string, pathsToCheck 
 					"error":        err,
 				})
 
+				// Not throwing - Fallback to the default Java runtime
 				// This fallback going to be removed in the future https://codacy.atlassian.net/browse/PLUTO-1421
 				fmt.Printf("⚠️ Warning: Java binary not found at %s: %v\n", javaBinary, err)
 				fmt.Println("⚠️ Trying to continue with the default Java runtime")
+				logger.Warn("Java binary not found. Continuing with the default Java runtime", logrus.Fields{
+					"expectedPath": javaBinary,
+					"error":        err,
+				})
+			} else {
+				// When java binary is found, we need to add it to the PATH
+
+				// Get current PATH
+				pathEnv := os.Getenv("PATH")
+
+				// On Windows, use semicolon as path separator
+				pathSeparator := ":"
+				if runtime.GOOS == "windows" {
+					pathSeparator = ";"
+				}
+
+				// Add Java bin directory to the beginning of PATH
+				newPath := fmt.Sprintf("PATH=%s%s%s", javaBinDir, pathSeparator, pathEnv)
+				env = append(env, newPath)
+
+				logger.Debug("Updated environment variables", logrus.Fields{
+					"javaHome":   javaHome,
+					"path":       newPath,
+					"binDir":     javaBinDir,
+					"javaBinary": javaBinary,
+				})
+
+				// Set the environment for the command
+				cmd.Env = env
 			}
 
-			// Get current PATH
-			pathEnv := os.Getenv("PATH")
-
-			// On Windows, use semicolon as path separator
-			pathSeparator := ":"
-			if runtime.GOOS == "windows" {
-				pathSeparator = ";"
-			}
-
-			// Add Java bin directory to the beginning of PATH
-			newPath := fmt.Sprintf("PATH=%s%s%s", javaBinDir, pathSeparator, pathEnv)
-			env = append(env, newPath)
-
-			logger.Debug("Updated environment variables", logrus.Fields{
-				"javaHome":   javaHome,
-				"path":       newPath,
-				"binDir":     javaBinDir,
-				"javaBinary": javaBinary,
-			})
-
-			// Set the environment for the command
-			cmd.Env = env
 		} else {
 			logger.Warn("Java runtime not found in configuration")
 			return fmt.Errorf("java runtime not found in configuration")
