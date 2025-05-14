@@ -7,6 +7,7 @@ alwaysApply: true
 # Your rule content
 
 ## Key Rules
+- avoid code copy pasting and duplication, refactor to function eagerly when possible  
 - use fulnames like e.g. feature, instaed of feat 
 - run go build after each code modification to see if app compiles
 - remove dead unused code

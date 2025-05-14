@@ -196,6 +196,14 @@ func (p *runtimePlugin) getExtension(goos string) string {
 	return p.Config.Download.Extension.Default
 }
 
+// getMajorVersion extracts the major version from a version string (e.g. "17.0.10" -> "17")
+func (p *runtimePlugin) getMajorVersion(version string) string {
+	if idx := strings.Index(version, "."); idx != -1 {
+		return version[:idx]
+	}
+	return version
+}
+
 // GetFileName generates the filename based on the template in plugin.yaml
 func (p *runtimePlugin) getFileName(version string) string {
 	goos := runtime.GOOS
@@ -206,16 +214,10 @@ func (p *runtimePlugin) getFileName(version string) string {
 	mappedOS := p.getMappedOS(goos)
 	releaseVersion := p.getReleaseVersion()
 
-	// Extract major version from version string (e.g. "17.0.10" -> "17")
-	majorVersion := version
-	if idx := strings.Index(version, "."); idx != -1 {
-		majorVersion = version[:idx]
-	}
-
 	// Prepare template data
 	data := templateData{
 		Version:        version,
-		MajorVersion:   majorVersion,
+		MajorVersion:   p.getMajorVersion(version),
 		OS:             mappedOS,
 		Arch:           mappedArch,
 		ReleaseVersion: releaseVersion,
@@ -258,16 +260,10 @@ func (p *runtimePlugin) getDownloadURL(version string) string {
 
 	releaseVersion := p.getReleaseVersion()
 
-	// Extract major version from version string (e.g. "17.0.10" -> "17")
-	majorVersion := version
-	if idx := strings.Index(version, "."); idx != -1 {
-		majorVersion = version[:idx]
-	}
-
 	// Prepare template data
 	data := templateData{
 		Version:        version,
-		MajorVersion:   majorVersion,
+		MajorVersion:   p.getMajorVersion(version),
 		FileName:       fileName,
 		OS:             mappedOS,
 		Arch:           mappedArch,
