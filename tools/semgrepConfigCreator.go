@@ -15,6 +15,10 @@ type semgrepRulesFile struct {
 	Rules []map[string]interface{} `yaml:"rules"`
 }
 
+// getExecutablePath is a variable that holds the function to get the executable path
+// This is used for testing purposes
+var getExecutablePath = os.Executable
+
 // FilterRulesFromFile extracts enabled rules from a rules.yaml file based on configuration
 func FilterRulesFromFile(rulesFilePath string, config []domain.PatternConfiguration) ([]byte, error) {
 	// Read the rules.yaml file
@@ -66,7 +70,7 @@ func FilterRulesFromFile(rulesFilePath string, config []domain.PatternConfigurat
 // GetSemgrepConfig gets the Semgrep configuration based on the pattern configuration
 func GetSemgrepConfig(config []domain.PatternConfiguration) ([]byte, error) {
 	// Get the executable's directory
-	execPath, err := os.Executable()
+	execPath, err := getExecutablePath()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get executable path: %w", err)
 	}
@@ -88,7 +92,7 @@ func GetSemgrepConfig(config []domain.PatternConfiguration) ([]byte, error) {
 // GetDefaultSemgrepConfig gets the default Semgrep configuration
 func GetDefaultSemgrepConfig() ([]byte, error) {
 	// Get the executable's directory
-	execPath, err := os.Executable()
+	execPath, err := getExecutablePath()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get executable path: %w", err)
 	}
