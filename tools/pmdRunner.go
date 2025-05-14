@@ -4,7 +4,6 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/utils/logger"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,46 +27,17 @@ import (
 //   - error: nil if analysis succeeds or violations found, error otherwise
 func RunPmd(repositoryToAnalyseDirectory string, pmdBinary string, pathsToCheck []string, outputFile string, outputFormat string, config config.ConfigType) error {
 	var cmd *exec.Cmd
+
 	if runtime.GOOS == "windows" {
 		cmd = exec.Command(pmdBinary) // On Windows, don't add "pmd" subcommand
 	} else {
 		cmd = exec.Command(pmdBinary, "pmd") // On Unix, use "pmd" subcommand
 	}
 
-	// Check for ruleset file in tools-configs directory
-	configFile, exists := ConfigFileExists(config, "ruleset.xml")
-	if !exists {
-		// If no ruleset exists, copy the default ruleset
-		defaultRuleset := filepath.Join("tools", "pmd", "default-ruleset.xml")
-		targetRuleset := filepath.Join(config.ToolsConfigDirectory(), "ruleset.xml")
-
-		// Ensure tools config directory exists
-		if err := os.MkdirAll(config.ToolsConfigDirectory(), 0755); err != nil {
-			return fmt.Errorf("failed to create tools config directory: %w", err)
-		}
-
-		// Copy default ruleset
-		src, err := os.Open(defaultRuleset)
-		if err != nil {
-			return fmt.Errorf("failed to open default ruleset: %w", err)
-		}
-		defer src.Close()
-
-		dst, err := os.Create(targetRuleset)
-		if err != nil {
-			return fmt.Errorf("failed to create target ruleset: %w", err)
-		}
-		defer dst.Close()
-
-		if _, err := io.Copy(dst, src); err != nil {
-			return fmt.Errorf("failed to copy default ruleset: %w", err)
-		}
-
-		configFile = targetRuleset
+	// Add config file from tools-configs directory if it exists
+	if configFile, exists := ConfigFileExists(config, "ruleset.xml"); exists {
+		cmd.Args = append(cmd.Args, "-R", configFile)
 	}
-
-	// Add ruleset file to command arguments
-	cmd.Args = append(cmd.Args, "-R", configFile)
 
 	// Add source directories (comma-separated list for PMD)
 	if len(pathsToCheck) > 0 {
