@@ -47,6 +47,17 @@ func InstallRuntimes(config *ConfigType) error {
 
 // InstallRuntime installs a specific runtime
 func InstallRuntime(name string, runtimeInfo *plugins.RuntimeInfo) error {
+
+	// Check if the runtime is already installed
+	if isRuntimeInstalled(runtimeInfo) {
+		logger.Info("Runtime already installed", logrus.Fields{
+			"runtime": name,
+			"version": runtimeInfo.Version,
+		})
+		fmt.Printf("Runtime %s v%s is already installed\n", name, runtimeInfo.Version)
+		return nil
+	}
+
 	// Download and extract the runtime
 	err := downloadAndExtractRuntime(runtimeInfo)
 	if err != nil {
@@ -55,6 +66,10 @@ func InstallRuntime(name string, runtimeInfo *plugins.RuntimeInfo) error {
 
 	// Verify that the runtime binaries are available
 	if !isRuntimeInstalled(runtimeInfo) {
+		logger.Error("Runtime binaries not found after extraction", logrus.Fields{
+			"runtime": name,
+			"version": runtimeInfo.Version,
+		})
 		return fmt.Errorf("runtime %s was extracted but binaries are not available", name)
 	}
 

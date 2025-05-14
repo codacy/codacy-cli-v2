@@ -9,7 +9,8 @@ alwaysApply: true
 ## Key Rules
 - use fulnames like e.g. feature, instaed of feat 
 - run go build after each code modification to see if app compiles
-- remove dead unused code 
+- remove dead unused code
+- look for constants like file permissons in `constants` folder 
 
 ## Code Style Guidelines
 - **Imports**: Standard lib first, external packages second, internal last
@@ -24,4 +25,4 @@ alwaysApply: true
 - `cmd/`: CLI command implementations
 - `config/`: Configuration handling
 - `tools/`: Tool-specific implementations
-- `utils/`: Utility functions and static - look for static like default file permisson here
+- `utils/`: Utility functions
