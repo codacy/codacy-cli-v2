@@ -73,6 +73,7 @@ jobs:
         shell: pwsh
         run: |
           choco install yq -y
+          Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
           refreshenv
 
       - name: Run init tests on Windows
