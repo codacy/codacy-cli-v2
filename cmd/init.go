@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	codacyclient "codacy/cli-v2/codacy-client"
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/tools"
@@ -23,20 +24,13 @@ import (
 
 const CodacyApiBase = "https://app.codacy.com"
 
-type InitFlags struct {
-	apiToken     string
-	provider     string
-	organization string
-	repository   string
-}
-
-var initFlags InitFlags
+var initFlags domain.InitFlags
 
 func init() {
-	initCmd.Flags().StringVar(&initFlags.apiToken, "api-token", "", "optional codacy api token, if defined configurations will be fetched from codacy")
-	initCmd.Flags().StringVar(&initFlags.provider, "provider", "", "provider (gh/bb/gl) to fetch configurations from codacy, required when api-token is provided")
-	initCmd.Flags().StringVar(&initFlags.organization, "organization", "", "remote organization name to fetch configurations from codacy, required when api-token is provided")
-	initCmd.Flags().StringVar(&initFlags.repository, "repository", "", "remote repository name to fetch configurations from codacy, required when api-token is provided")
+	initCmd.Flags().StringVar(&initFlags.ApiToken, "api-token", "", "optional codacy api token, if defined configurations will be fetched from codacy")
+	initCmd.Flags().StringVar(&initFlags.Provider, "provider", "", "provider (gh/bb/gl) to fetch configurations from codacy, required when api-token is provided")
+	initCmd.Flags().StringVar(&initFlags.Organization, "organization", "", "remote organization name to fetch configurations from codacy, required when api-token is provided")
+	initCmd.Flags().StringVar(&initFlags.Repository, "repository", "", "remote repository name to fetch configurations from codacy, required when api-token is provided")
 	rootCmd.AddCommand(initCmd)
 }
 
@@ -56,7 +50,7 @@ var initCmd = &cobra.Command{
 			log.Fatalf("Failed to create tools-configs directory: %v", err)
 		}
 
-		cliLocalMode := len(initFlags.apiToken) == 0
+		cliLocalMode := len(initFlags.ApiToken) == 0
 
 		if cliLocalMode {
 			fmt.Println()
@@ -71,7 +65,7 @@ var initCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 		} else {
-			err := buildRepositoryConfigurationFiles(initFlags.apiToken)
+			err := buildRepositoryConfigurationFiles(initFlags.ApiToken)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -265,7 +259,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 		Timeout: 10 * time.Second,
 	}
 
-	apiTools, err := tools.GetRepositoryTools(CodacyApiBase, token, initFlags.provider, initFlags.organization, initFlags.repository)
+	apiTools, err := tools.GetRepositoryTools(CodacyApiBase, token, initFlags.Provider, initFlags.Organization, initFlags.Repository)
 	if err != nil {
 		return err
 	}
@@ -282,7 +276,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 	}
 
 	// Generate languages configuration based on API tools response
-	if err := tools.CreateLanguagesConfigFile(apiTools, toolsConfigDir, uuidToName, token, initFlags.provider, initFlags.organization, initFlags.repository); err != nil {
+	if err := tools.CreateLanguagesConfigFile(apiTools, toolsConfigDir, uuidToName, token, initFlags.Provider, initFlags.Organization, initFlags.Repository); err != nil {
 		return fmt.Errorf("failed to create languages configuration file: %w", err)
 	}
 
@@ -300,9 +294,9 @@ func buildRepositoryConfigurationFiles(token string) error {
 
 		url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns?enabled=true&limit=1000",
 			CodacyApiBase,
-			initFlags.provider,
-			initFlags.organization,
-			initFlags.repository,
+			initFlags.Provider,
+			initFlags.Organization,
+			initFlags.Repository,
 			tool.Uuid)
 
 		// Create a new GET request
@@ -493,6 +487,7 @@ func createDefaultTrivyConfigFile(toolsConfigDir string) error {
 // createDefaultEslintConfigFile creates a default eslint.config.mjs configuration file
 func createDefaultEslintConfigFile(toolsConfigDir string) error {
 	// Use empty tool configuration to get default settings
+	//
 	emptyConfig := []domain.PatternConfiguration{}
 	content := tools.CreateEslintConfig(emptyConfig)
 
@@ -573,16 +568,59 @@ func createLizardConfigFile(toolsConfigDir string, patternConfiguration []domain
 
 // buildDefaultConfigurationFiles creates default configuration files for all tools
 func buildDefaultConfigurationFiles(toolsConfigDir string) error {
-	// Create default Lizard configuration
-	if err := createLizardConfigFile(toolsConfigDir, []domain.PatternConfiguration{}); err != nil {
-		return fmt.Errorf("failed to create default Lizard configuration: %w", err)
-	}
 
-	// Add other default tool configurations here as needed
-	// For example:
-	// if err := createDefaultEslintConfigFile(toolsConfigDir); err != nil {
-	//     return fmt.Errorf("failed to create default ESLint configuration: %w", err)
-	// }
+	for _, tool := range AvailableTools {
+		patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(initFlags, tool)
+		if err != nil {
+			return fmt.Errorf("failed to get default tool patterns config: %w", err)
+		}
+		switch tool {
+		case ESLint:
+			eslintConfigurationString := tools.CreateEslintConfig(patternsConfig)
+
+			eslintConfigFile, err := os.Create(filepath.Join(toolsConfigDir, "eslint.config.mjs"))
+			if err != nil {
+				return fmt.Errorf("failed to create eslint config file: %v", err)
+			}
+			defer eslintConfigFile.Close()
+
+			_, err = eslintConfigFile.WriteString(eslintConfigurationString)
+			if err != nil {
+				return fmt.Errorf("failed to write eslint config: %v", err)
+			}
+			fmt.Println("ESLint configuration created. Ignoring plugin rules. ESLint plugins are not supported yet.")
+		case Trivy:
+			if err := createTrivyConfigFile(patternsConfig, toolsConfigDir); err != nil {
+				return fmt.Errorf("failed to create default Trivy configuration: %w", err)
+			}
+			fmt.Println("Trivy configuration created")
+		case PMD:
+			if err := createPMDConfigFile(patternsConfig, toolsConfigDir); err != nil {
+				return fmt.Errorf("failed to create default PMD configuration: %w", err)
+			}
+			fmt.Println("PMD configuration created")
+		case PyLint:
+			if err := createPylintConfigFile(patternsConfig, toolsConfigDir); err != nil {
+				return fmt.Errorf("failed to create default Pylint configuration: %w", err)
+			}
+			fmt.Println("Pylint configuration created")
+		case DartAnalyzer:
+			if err := createDartAnalyzerConfigFile(patternsConfig, toolsConfigDir); err != nil {
+				return fmt.Errorf("failed to create default Dart Analyzer configuration: %w", err)
+			}
+			fmt.Println("Dart Analyzer configuration created")
+		case Semgrep:
+			if err := createSemgrepConfigFile(patternsConfig, toolsConfigDir); err != nil {
+				return fmt.Errorf("failed to create default Semgrep configuration: %w", err)
+			}
+			fmt.Println("Semgrep configuration created")
+		case Lizard:
+			if err := createLizardConfigFile(toolsConfigDir, patternsConfig); err != nil {
+				return fmt.Errorf("failed to create default Lizard configuration: %w", err)
+			}
+			fmt.Println("Lizard configuration created")
+		}
+	}
 
 	return nil
 }
@@ -596,3 +634,13 @@ const (
 	Semgrep      string = "6792c561-236d-41b7-ba5e-9d6bee0d548b"
 	Lizard       string = "76348462-84b3-409a-90d3-955e90abfb87"
 )
+
+var AvailableTools = []string{
+	ESLint,
+	Trivy,
+	PMD,
+	PyLint,
+	DartAnalyzer,
+	Semgrep,
+	Lizard,
+}
