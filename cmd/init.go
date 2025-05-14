@@ -95,12 +95,7 @@ func createGitIgnoreFile() error {
 	}
 	defer gitIgnoreFile.Close()
 
-	content := `# Codacy CLI 
-tools-configs/
-.gitignore
-cli-config.yaml
-logs/
-`
+	content := "# Codacy CLI\ntools-configs/\n.gitignore\ncli-config.yaml\nlogs/\n"
 	if _, err := gitIgnoreFile.WriteString(content); err != nil {
 		return fmt.Errorf("failed to write to .gitignore file: %w", err)
 	}
