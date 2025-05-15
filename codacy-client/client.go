@@ -13,7 +13,7 @@ import (
 const timeout = 10 * time.Second
 const CodacyApiBase = "https://app.codacy.com"
 
-func getRequest(url string, initFlags domain.InitFlags) ([]byte, error) {
+func getRequest(url string, apiToken string) ([]byte, error) {
 	client := &http.Client{
 		Timeout: timeout,
 	}
@@ -23,7 +23,9 @@ func getRequest(url string, initFlags domain.InitFlags) ([]byte, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("api-token", initFlags.ApiToken)
+	if apiToken != "" {
+		req.Header.Set("api-token", apiToken)
+	}
 
 	resp, err := client.Do(req)
 
@@ -52,7 +54,7 @@ func GetPage[T any](
 	initFlags domain.InitFlags,
 	parser func([]byte) ([]T, string, error),
 ) ([]T, string, error) {
-	response, err := getRequest(url, initFlags)
+	response, err := getRequest(url, initFlags.ApiToken)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get page: %w", err)
 	}
@@ -147,4 +149,65 @@ func GetRepositoryToolPatterns(initFlags domain.InitFlags, toolUUID string) ([]d
 		initFlags.Repository,
 		toolUUID)
 	return getAllPages(baseURL, initFlags, parsePatternConfigurations)
+}
+
+func GetRepositoryTools(initFlags domain.InitFlags) ([]domain.Tool, error) {
+	baseURL := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools",
+		CodacyApiBase,
+		initFlags.Provider,
+		initFlags.Organization,
+		initFlags.Repository)
+
+	bodyResponse, err := getRequest(baseURL, initFlags.ApiToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository tools: %w", err)
+	}
+
+	var toolsResponse domain.ToolsResponse
+
+	err = json.Unmarshal(bodyResponse, &toolsResponse)
+	if err != nil {
+		fmt.Println("Error unmarshaling response:", err)
+		return nil, err
+	}
+
+	return toolsResponse.Data, nil
+}
+
+func GetToolsVersions() ([]domain.Tool, error) {
+	baseURL := fmt.Sprintf("%s/api/v3/tools", CodacyApiBase)
+
+	bodyResponse, err := getRequest(baseURL, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tool versions: %w", err)
+	}
+
+	var toolsResponse domain.ToolsResponse
+	err = json.Unmarshal(bodyResponse, &toolsResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return toolsResponse.Data, nil
+}
+
+func GetRepositoryLanguages(initFlags domain.InitFlags) ([]domain.Language, error) {
+	baseURL := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/settings/languages",
+		CodacyApiBase,
+		initFlags.Provider,
+		initFlags.Organization,
+		initFlags.Repository)
+
+	bodyResponse, err := getRequest(baseURL, initFlags.ApiToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository languages: %w", err)
+	}
+
+	var languagesResponse domain.LanguagesResponse
+	err = json.Unmarshal(bodyResponse, &languagesResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return languagesResponse.Languages, nil
 }
