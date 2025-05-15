@@ -2,6 +2,7 @@ package tools
 
 import (
 	"codacy/cli-v2/plugins"
+	"codacy/cli-v2/utils/logger"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 func enrichToolsWithVersion(tools []Tool) ([]Tool, error) {
@@ -118,16 +121,24 @@ func GetRepositoryTools(codacyBase string, apiToken string, provider string, org
 
 	// Filter enabled tools
 	var enabledTools []Tool
+	var unsupportedTools []string
+
 	for _, tool := range response.Data {
 		if tool.Settings.Enabled {
 			toolName := strings.ToLower(tool.Name)
-			fmt.Printf("Checking tool %s (lowercase: %s)\n", tool.Name, toolName)
 			if _, exists := supportedTools[toolName]; exists {
 				enabledTools = append(enabledTools, tool)
 			} else {
-				fmt.Printf("Tool %s not found in supported tools\n", tool.Name)
+				unsupportedTools = append(unsupportedTools, tool.Name)
 			}
 		}
+	}
+
+	// Log unsupported tools once
+	if len(unsupportedTools) > 0 {
+		logger.Warn("Some tools are not supported", logrus.Fields{
+			"unsupported_tools": strings.Join(unsupportedTools, ", "),
+		})
 	}
 
 	return enrichToolsWithVersion(enabledTools)

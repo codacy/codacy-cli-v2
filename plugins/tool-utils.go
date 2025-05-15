@@ -70,6 +70,7 @@ type DownloadConfig struct {
 type ToolPluginConfig struct {
 	Name            string             `yaml:"name"`
 	Description     string             `yaml:"description"`
+	DefaultVersion  string             `yaml:"default_version"`
 	Runtime         string             `yaml:"runtime"`
 	RuntimeBinaries RuntimeBinaries    `yaml:"runtime_binaries"`
 	Installation    InstallationConfig `yaml:"installation"`
@@ -378,4 +379,40 @@ func GetSupportedTools() (map[string]struct{}, error) {
 	}
 
 	return supportedTools, nil
+}
+
+// GetToolVersions returns a map of tool names to their default versions
+func GetToolVersions() map[string]string {
+	versions := make(map[string]string)
+
+	// Read the tools directory from embedded filesystem
+	entries, err := toolsFS.ReadDir("tools")
+	if err != nil {
+		return versions
+	}
+
+	// Process each tool directory
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		tool := entry.Name()
+		pluginPath := fmt.Sprintf("tools/%s/plugin.yaml", tool)
+		data, err := toolsFS.ReadFile(pluginPath)
+		if err != nil {
+			continue
+		}
+
+		var config ToolPluginConfig
+		if err := yaml.Unmarshal(data, &config); err != nil {
+			continue
+		}
+
+		if config.DefaultVersion != "" {
+			versions[tool] = config.DefaultVersion
+		}
+	}
+
+	return versions
 }

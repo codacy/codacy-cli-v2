@@ -159,16 +159,8 @@ func configFileTemplate(tools []tools.Tool) string {
 	// Track needed runtimes
 	neededRuntimes := make(map[string]bool)
 
-	// Default versions
-	defaultVersions := map[string]string{
-		ESLint:       "9.3.0",
-		Trivy:        "0.59.1",
-		PyLint:       "3.3.6",
-		PMD:          "6.55.0",
-		DartAnalyzer: "3.7.2",
-		Semgrep:      "1.78.0",
-		Lizard:       "1.17.19",
-	}
+	// Get tool versions from plugin configurations
+	defaultVersions := plugins.GetToolVersions()
 
 	// Get runtime versions all at once
 	runtimeVersions := plugins.GetRuntimeVersions()
@@ -179,28 +171,11 @@ func configFileTemplate(tools []tools.Tool) string {
 		if tool.Version != "" {
 			toolVersions[tool.Uuid] = tool.Version
 		} else {
-			toolVersions[tool.Uuid] = defaultVersions[tool.Uuid]
+			toolName := toolNameMap[tool.Uuid]
+			if defaultVersion, ok := defaultVersions[toolName]; ok {
+				toolVersions[tool.Uuid] = defaultVersion
+			}
 		}
-	}
-
-	// Convert tools to ToolConfig format
-	var toolConfigs []plugins.ToolConfig
-	for _, tool := range tools {
-		toolName := toolNameMap[tool.Uuid]
-		if toolName == "" {
-			log.Printf("Warning: Unknown tool UUID %s", tool.Uuid)
-			continue
-		}
-
-		version := tool.Version
-		if version == "" {
-			version = defaultVersions[tool.Uuid]
-		}
-
-		toolConfigs = append(toolConfigs, plugins.ToolConfig{
-			Name:    toolName,
-			Version: version,
-		})
 	}
 
 	// Process tools to get their configurations
@@ -212,18 +187,6 @@ func configFileTemplate(tools []tools.Tool) string {
 			continue
 		}
 		runtimeInfos[runtime] = runtimeInfo
-	}
-
-	toolInfos, err := plugins.ProcessTools(toolConfigs, os.TempDir(), runtimeInfos)
-	if err != nil {
-		log.Printf("Warning: Failed to process tool configurations: %v", err)
-	} else {
-		// Get required runtimes from tool configurations
-		for _, info := range toolInfos {
-			if info.Runtime != "" {
-				neededRuntimes[info.Runtime] = true
-			}
-		}
 	}
 
 	// Start building the YAML content
@@ -277,28 +240,33 @@ func configFileTemplate(tools []tools.Tool) string {
 			// Find the UUID for this tool name to get its version
 			for uuid, toolName := range toolNameMap {
 				if toolName == name && toolsMap[uuid] {
-					sb.WriteString(fmt.Sprintf("    - %s@%s\n", name, toolVersions[uuid]))
+					version := toolVersions[uuid]
+					sb.WriteString(fmt.Sprintf("    - %s@%s\n", name, version))
 					break
 				}
 			}
 		}
 	} else {
-		// If no tools were specified (local mode), include all defaults in sorted order
-		tools := []struct {
-			name string
-			uuid string
-		}{
-			{"dartanalyzer", DartAnalyzer},
-			{"eslint", ESLint},
-			{"lizard", Lizard},
-			{"pmd", PMD},
-			{"pylint", PyLint},
-			{"semgrep", Semgrep},
-			{"trivy", Trivy},
+		// If no tools were specified (local mode), include all tools in sorted order
+		var sortedTools []string
+		for _, name := range []string{
+			"dartanalyzer",
+			"eslint",
+			"lizard",
+			"pmd",
+			"pylint",
+			"semgrep",
+			"trivy",
+		} {
+			if version, ok := defaultVersions[name]; ok {
+				sortedTools = append(sortedTools, fmt.Sprintf("%s@%s", name, version))
+			}
 		}
+		sort.Strings(sortedTools)
 
-		for _, tool := range tools {
-			sb.WriteString(fmt.Sprintf("    - %s@%s\n", tool.name, defaultVersions[tool.uuid]))
+		// Write sorted tools
+		for _, tool := range sortedTools {
+			sb.WriteString(fmt.Sprintf("    - %s\n", tool))
 		}
 	}
 

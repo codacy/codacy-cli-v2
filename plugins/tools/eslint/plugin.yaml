@@ -1,5 +1,6 @@
 name: eslint
-description: ESLint JavaScript linter
+description: ESLint is a tool for identifying and reporting on patterns found in ECMAScript/JavaScript code.
+default_version: 9.3.0
 runtime: node
 runtime_binaries:
   package_manager: npm
