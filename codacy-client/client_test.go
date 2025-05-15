@@ -19,7 +19,7 @@ func TestGetRequest_Success(t *testing.T) {
 	defer ts.Close()
 
 	initFlags := domain.InitFlags{ApiToken: "dummy"}
-	resp, err := getRequest(ts.URL, initFlags)
+	resp, err := getRequest(ts.URL, initFlags.ApiToken)
 	assert.NoError(t, err)
 	assert.Contains(t, string(resp), "ok")
 }
@@ -31,7 +31,7 @@ func TestGetRequest_Failure(t *testing.T) {
 	defer ts.Close()
 
 	initFlags := domain.InitFlags{ApiToken: "dummy"}
-	_, err := getRequest(ts.URL, initFlags)
+	_, err := getRequest(ts.URL, initFlags.ApiToken)
 	assert.Error(t, err)
 }
 

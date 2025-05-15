@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"codacy/cli-v2/domain"
+
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 )
@@ -276,7 +278,7 @@ func TestCreateLanguagesConfigFile_ExtensionsFromRepository(t *testing.T) {
 	CodacyApiBase = server.URL
 	defer func() { CodacyApiBase = oldBase }()
 
-	apiTools := []Tool{
+	apiTools := []domain.Tool{
 		{Uuid: "eslint-uuid"},
 		{Uuid: "pylint-uuid"},
 		{Uuid: "pmd-uuid"},
