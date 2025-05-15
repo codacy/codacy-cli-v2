@@ -140,6 +140,7 @@ func configFileTemplate(tools []tools.Tool) string {
 	needsNode := false
 	needsPython := false
 	needsDart := false
+	needsJava := false
 
 	// Default versions
 	defaultVersions := map[string]string{
@@ -168,6 +169,8 @@ func configFileTemplate(tools []tools.Tool) string {
 			needsPython = true
 		} else if tool.Uuid == DartAnalyzer {
 			needsDart = true
+		} else if tool.Uuid == PMD {
+			needsJava = true
 		}
 	}
 
@@ -186,11 +189,15 @@ func configFileTemplate(tools []tools.Tool) string {
 		if needsDart {
 			sb.WriteString("    - dart@3.7.2\n")
 		}
+		if needsJava {
+			sb.WriteString("    - java@17.0.10\n")
+		}
 	} else {
 		// In local mode with no tools specified, include all runtimes
 		sb.WriteString("    - node@22.2.0\n")
 		sb.WriteString("    - python@3.11.11\n")
 		sb.WriteString("    - dart@3.7.2\n")
+		sb.WriteString("    - java@17.0.10\n")
 	}
 
 	sb.WriteString("tools:\n")
