@@ -117,7 +117,9 @@ func GetRepositoryTools(codacyBase string, apiToken string, provider string, org
 	}
 
 	// Print supported tools for debugging
-	fmt.Println("Supported tools:", supportedTools)
+	logger.Info("Supported tools:", logrus.Fields{
+		"supported_tools": supportedTools,
+	})
 
 	// Filter enabled tools
 	var enabledTools []Tool
