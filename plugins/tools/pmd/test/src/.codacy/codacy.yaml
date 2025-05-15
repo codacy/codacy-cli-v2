@@ -1,3 +1,4 @@
 runtimes:
+    - java@17.0.10
 tools:
     - pmd@6.55.0

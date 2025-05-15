@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"text/template"
 
 	"gopkg.in/yaml.v3"
@@ -50,9 +52,8 @@ type RuntimeBinaries struct {
 	Execution      string `yaml:"execution"`
 }
 
-// ExtensionConfig defines the file extension based on OS
+// ExtensionConfig defines the file extension
 type ExtensionConfig struct {
-	Windows string `yaml:"windows"`
 	Default string `yaml:"default"`
 }
 
@@ -73,6 +74,7 @@ type ToolPluginConfig struct {
 	RuntimeBinaries RuntimeBinaries    `yaml:"runtime_binaries"`
 	Installation    InstallationConfig `yaml:"installation"`
 	Download        DownloadConfig     `yaml:"download"`
+	Environment     map[string]string  `yaml:"environment"`
 	Binaries        []ToolBinary       `yaml:"binaries"`
 	Formatters      []Formatter        `yaml:"formatters"`
 	OutputOptions   OutputOptions      `yaml:"output_options"`
@@ -107,6 +109,8 @@ type ToolInfo struct {
 	DownloadURL string
 	FileName    string
 	Extension   string
+	// Environment variables
+	Environment map[string]string
 }
 
 // ProcessTools processes a list of tool configurations and returns a map of tool information
@@ -158,6 +162,8 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 			// Store raw command templates (processing will happen later)
 			InstallCommand:  pluginConfig.Installation.Command,
 			RegistryCommand: pluginConfig.Installation.RegistryTemplate,
+			// Store environment variables
+			Environment: make(map[string]string),
 		}
 
 		// Handle download configuration for directly downloaded tools
@@ -208,6 +214,39 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 			info.Formatters[formatter.Name] = formatter.Flag
 		}
 
+		// Process environment variables
+		if len(pluginConfig.Environment) > 0 {
+			// Get runtime install directory if needed
+			var runtimeInstallDir string
+			if info.Runtime != "" {
+				if runtime, ok := runtimes[info.Runtime]; ok {
+					runtimeInstallDir = runtime.InstallDir
+				}
+			}
+
+			// Process each environment variable
+			for key, tmplStr := range pluginConfig.Environment {
+				tmpl, err := template.New("env").Parse(tmplStr)
+				if err != nil {
+					return nil, fmt.Errorf("error parsing environment template for %s: %w", config.Name, err)
+				}
+
+				var buf bytes.Buffer
+				err = tmpl.Execute(&buf, struct {
+					RuntimeInstallDir string
+					Path              string
+				}{
+					RuntimeInstallDir: runtimeInstallDir,
+					Path:              os.Getenv("PATH"),
+				})
+				if err != nil {
+					return nil, fmt.Errorf("error executing environment template for %s: %w", config.Name, err)
+				}
+
+				info.Environment[key] = buf.String()
+			}
+		}
+
 		result[config.Name] = info
 	}
 
@@ -238,9 +277,6 @@ func getMappedOS(osMapping map[string]string, goos string) string {
 
 // getExtension returns the appropriate file extension based on the OS
 func getExtension(extensionConfig ExtensionConfig, goos string) string {
-	if goos == "windows" {
-		return extensionConfig.Windows
-	}
 	return extensionConfig.Default
 }
 
@@ -274,19 +310,27 @@ func getFileName(fileNameTemplate string, version string, mappedArch string, goo
 
 // getDownloadURL generates the download URL based on the template
 func getDownloadURL(urlTemplate string, fileName string, version string, mappedArch string, mappedOS string, extension string) string {
+	// Extract major version from version string (e.g. "17.0.10" -> "17")
+	majorVersion := version
+	if idx := strings.Index(version, "."); idx != -1 {
+		majorVersion = version[:idx]
+	}
+
 	// Prepare template data
 	data := struct {
-		Version   string
-		FileName  string
-		OS        string
-		Arch      string
-		Extension string
+		Version      string
+		MajorVersion string
+		FileName     string
+		OS           string
+		Arch         string
+		Extension    string
 	}{
-		Version:   version,
-		FileName:  fileName,
-		OS:        mappedOS,
-		Arch:      mappedArch,
-		Extension: extension,
+		Version:      version,
+		MajorVersion: majorVersion,
+		FileName:     fileName,
+		OS:           mappedOS,
+		Arch:         mappedArch,
+		Extension:    extension,
 	}
 
 	// Execute template substitution for URL

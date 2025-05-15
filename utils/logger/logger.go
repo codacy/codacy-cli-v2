@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"codacy/cli-v2/utils"
+	"codacy/cli-v2/constants"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -66,7 +66,7 @@ func Initialize(logsDir string) error {
 	fileLogger = logrus.New()
 
 	// Create logs directory if it doesn't exist
-	if err := os.MkdirAll(logsDir, utils.DefaultDirPerms); err != nil {
+	if err := os.MkdirAll(logsDir, constants.DefaultDirPerms); err != nil {
 		return fmt.Errorf("failed to create logs directory: %w", err)
 	}
 
@@ -74,7 +74,7 @@ func Initialize(logsDir string) error {
 	logFile := filepath.Join(logsDir, "codacy-cli.log")
 
 	// Try to create/open the log file to test permissions
-	f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, utils.DefaultFilePerms)
+	f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, constants.DefaultFilePerms)
 	if err != nil {
 		return fmt.Errorf("failed to create/open log file: %w", err)
 	}

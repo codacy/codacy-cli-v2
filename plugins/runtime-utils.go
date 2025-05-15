@@ -17,8 +17,14 @@ var pluginsFS embed.FS
 
 // binary represents a binary executable provided by the runtime
 type binary struct {
-	Name string `yaml:"name"`
-	Path string `yaml:"path"`
+	Name string      `yaml:"name"`
+	Path interface{} `yaml:"path"` // Can be either string or map[string]string
+}
+
+// binaryPath represents OS-specific paths for a binary
+type binaryPath struct {
+	Darwin string `yaml:"darwin"`
+	Linux  string `yaml:"linux"`
 }
 
 // pluginConfig holds the structure of the plugin.yaml file
@@ -48,6 +54,7 @@ type extensionConfig struct {
 // templateData holds the data to be used in template substitution
 type templateData struct {
 	Version        string
+	MajorVersion   string
 	FileName       string
 	OS             string
 	Arch           string
@@ -118,14 +125,31 @@ func processRuntime(config RuntimeConfig, runtimesDir string) (*RuntimeInfo, err
 
 	// Process binary paths
 	for _, binary := range plugin.Config.Binaries {
-		binaryPath := path.Join(installDir, binary.Path)
+		var binaryPath string
 
-		// Add file extension for Windows executables
-		if runtime.GOOS == "windows" && !strings.HasSuffix(binaryPath, ".exe") {
-			binaryPath += ".exe"
+		switch path := binary.Path.(type) {
+		case string:
+			// If path is a simple string, use it directly
+			binaryPath = path
+		case map[string]interface{}:
+			// If path is a map, get the OS-specific path
+			if osPath, ok := path[runtime.GOOS]; ok {
+				binaryPath = osPath.(string)
+			} else {
+				return nil, fmt.Errorf("no binary path specified for OS %s", runtime.GOOS)
+			}
+		default:
+			return nil, fmt.Errorf("invalid path format for binary %s", binary.Name)
 		}
 
-		info.Binaries[binary.Name] = binaryPath
+		fullPath := path.Join(installDir, binaryPath)
+
+		// Add file extension for Windows executables
+		if runtime.GOOS == "windows" && !strings.HasSuffix(fullPath, ".exe") {
+			fullPath += ".exe"
+		}
+
+		info.Binaries[binary.Name] = fullPath
 	}
 
 	return info, nil
@@ -172,6 +196,14 @@ func (p *runtimePlugin) getExtension(goos string) string {
 	return p.Config.Download.Extension.Default
 }
 
+// getMajorVersion extracts the major version from a version string (e.g. "17.0.10" -> "17")
+func (p *runtimePlugin) getMajorVersion(version string) string {
+	if idx := strings.Index(version, "."); idx != -1 {
+		return version[:idx]
+	}
+	return version
+}
+
 // GetFileName generates the filename based on the template in plugin.yaml
 func (p *runtimePlugin) getFileName(version string) string {
 	goos := runtime.GOOS
@@ -185,6 +217,7 @@ func (p *runtimePlugin) getFileName(version string) string {
 	// Prepare template data
 	data := templateData{
 		Version:        version,
+		MajorVersion:   p.getMajorVersion(version),
 		OS:             mappedOS,
 		Arch:           mappedArch,
 		ReleaseVersion: releaseVersion,
@@ -230,6 +263,7 @@ func (p *runtimePlugin) getDownloadURL(version string) string {
 	// Prepare template data
 	data := templateData{
 		Version:        version,
+		MajorVersion:   p.getMajorVersion(version),
 		FileName:       fileName,
 		OS:             mappedOS,
 		Arch:           mappedArch,

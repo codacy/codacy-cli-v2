@@ -1,0 +1,20 @@
+name: java
+description: Java Runtime Environment
+download:
+  url_template: "https://github.com/adoptium/temurin{{.MajorVersion}}-binaries/releases/download/jdk-{{.Version}}%2B7/OpenJDK{{.MajorVersion}}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{.Version}}_7.{{.Extension}}"
+  file_name_template: "jdk-{{.Version}}+7"
+  extension:
+    default: "tar.gz"
+  arch_mapping:
+    "386": "x86-32"
+    "amd64": "x64"
+    "arm": "arm"
+    "arm64": "aarch64"
+  os_mapping:
+    "darwin": "mac"
+    "linux": "linux"
+binaries:
+  - name: java
+    path:
+      darwin: "Contents/Home/bin/java"
+      linux: "bin/java" 
