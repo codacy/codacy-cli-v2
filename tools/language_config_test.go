@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	codacyclient "codacy/cli-v2/codacy-client"
 	"codacy/cli-v2/domain"
 
 	"github.com/stretchr/testify/assert"
@@ -274,9 +275,9 @@ func TestCreateLanguagesConfigFile_ExtensionsFromRepository(t *testing.T) {
 	defer server.Close()
 
 	// Patch CodacyApiBase to use the test server
-	oldBase := CodacyApiBase
-	CodacyApiBase = server.URL
-	defer func() { CodacyApiBase = oldBase }()
+	oldBase := codacyclient.CodacyApiBase
+	codacyclient.CodacyApiBase = server.URL
+	defer func() { codacyclient.CodacyApiBase = oldBase }()
 
 	apiTools := []domain.Tool{
 		{Uuid: "eslint-uuid"},
@@ -289,14 +290,20 @@ func TestCreateLanguagesConfigFile_ExtensionsFromRepository(t *testing.T) {
 		"pmd-uuid":    "pmd",
 	}
 
-	err := CreateLanguagesConfigFile(apiTools, tempDir, toolIDMap, "test-token", "gh", "org", "repo")
+	initFlags := domain.InitFlags{
+		ApiToken:     "test-token",
+		Provider:     "gh",
+		Organization: "org",
+		Repository:   "repo",
+	}
+	err := CreateLanguagesConfigFile(apiTools, tempDir, toolIDMap, initFlags)
 	assert.NoError(t, err)
 
 	// Read and unmarshal the generated YAML
 	data, err := os.ReadFile(tempDir + "/languages-config.yaml")
 	assert.NoError(t, err)
 
-	var config LanguagesConfig
+	var config domain.LanguagesConfig
 	err = yaml.Unmarshal(data, &config)
 	assert.NoError(t, err)
 
@@ -309,11 +316,11 @@ func TestCreateLanguagesConfigFile_ExtensionsFromRepository(t *testing.T) {
 	assert.ElementsMatch(t, []string{".cls", ".app", ".trigger", ".scala", ".rb", ".gemspec", ".js", ".jsx", ".vue"}, pmd.Extensions)
 }
 
-func findTool(tools []ToolLanguageInfo, name string) ToolLanguageInfo {
+func findTool(tools []domain.ToolLanguageInfo, name string) domain.ToolLanguageInfo {
 	for _, t := range tools {
 		if t.Name == name {
 			return t
 		}
 	}
-	return ToolLanguageInfo{}
+	return domain.ToolLanguageInfo{}
 }
