@@ -3,19 +3,21 @@ package tools
 import (
 	"testing"
 
+	"codacy/cli-v2/domain"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFilterToolsByConfigUsage(t *testing.T) {
 	tests := []struct {
 		name          string
-		inputTools    []Tool
+		inputTools    []domain.Tool
 		expectedCount int
 		expectedTools []string
 	}{
 		{
 			name: "tools with UsesConfigurationFile=true should be filtered out",
-			inputTools: []Tool{
+			inputTools: []domain.Tool{
 				{
 					Uuid: "eslint-uuid",
 					Name: "eslint",
@@ -61,7 +63,7 @@ func TestFilterToolsByConfigUsage(t *testing.T) {
 		},
 		{
 			name: "all tools using config should be filtered out",
-			inputTools: []Tool{
+			inputTools: []domain.Tool{
 				{
 					Uuid: "eslint-uuid",
 					Name: "eslint",
@@ -94,7 +96,7 @@ func TestFilterToolsByConfigUsage(t *testing.T) {
 		},
 		{
 			name: "no tools using config should all pass through",
-			inputTools: []Tool{
+			inputTools: []domain.Tool{
 				{
 					Uuid: "eslint-uuid",
 					Name: "eslint",
