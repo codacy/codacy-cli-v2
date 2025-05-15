@@ -29,10 +29,11 @@ type binaryPath struct {
 
 // pluginConfig holds the structure of the plugin.yaml file
 type pluginConfig struct {
-	Name        string         `yaml:"name"`
-	Description string         `yaml:"description"`
-	Download    downloadConfig `yaml:"download"`
-	Binaries    []binary       `yaml:"binaries"`
+	Name           string         `yaml:"name"`
+	Description    string         `yaml:"description"`
+	Download       downloadConfig `yaml:"download"`
+	Binaries       []binary       `yaml:"binaries"`
+	DefaultVersion string         `yaml:"default_version"`
 }
 
 // downloadConfig holds the download configuration from the plugin.yaml
@@ -305,4 +306,40 @@ func (p *runtimePlugin) getMappedOS(goos string) string {
 	}
 	// Return the original OS if no mapping exists
 	return goos
+}
+
+// GetRuntimeVersions returns a map of runtime names to their default versions
+func GetRuntimeVersions() map[string]string {
+	versions := make(map[string]string)
+
+	// Read the runtimes directory from embedded filesystem
+	entries, err := pluginsFS.ReadDir("runtimes")
+	if err != nil {
+		return versions
+	}
+
+	// Process each runtime directory
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		runtime := entry.Name()
+		pluginPath := fmt.Sprintf("runtimes/%s/plugin.yaml", runtime)
+		data, err := pluginsFS.ReadFile(pluginPath)
+		if err != nil {
+			continue
+		}
+
+		var config pluginConfig
+		if err := yaml.Unmarshal(data, &config); err != nil {
+			continue
+		}
+
+		if config.DefaultVersion != "" {
+			versions[runtime] = config.DefaultVersion
+		}
+	}
+
+	return versions
 }

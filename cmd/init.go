@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 const CodacyApiBase = "https://app.codacy.com"
@@ -152,44 +151,6 @@ type RuntimePluginConfig struct {
 	DefaultVersion string `yaml:"default_version"`
 }
 
-func getRuntimeVersions() map[string]string {
-	versions := make(map[string]string)
-
-	// Read the runtimes directory
-	entries, err := os.ReadDir("plugins/runtimes")
-	if err != nil {
-		log.Printf("Warning: Could not read runtimes directory: %v", err)
-		return versions
-	}
-
-	// Process each runtime directory
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-
-		runtime := entry.Name()
-		pluginPath := fmt.Sprintf("plugins/runtimes/%s/plugin.yaml", runtime)
-		data, err := os.ReadFile(pluginPath)
-		if err != nil {
-			log.Printf("Warning: Could not read plugin file for runtime %s: %v", runtime, err)
-			continue
-		}
-
-		var config RuntimePluginConfig
-		if err := yaml.Unmarshal(data, &config); err != nil {
-			log.Printf("Warning: Could not parse plugin file for runtime %s: %v", runtime, err)
-			continue
-		}
-
-		if config.DefaultVersion != "" {
-			versions[runtime] = config.DefaultVersion
-		}
-	}
-
-	return versions
-}
-
 func configFileTemplate(tools []tools.Tool) string {
 	// Maps to track which tools are enabled
 	toolsMap := make(map[string]bool)
@@ -210,7 +171,7 @@ func configFileTemplate(tools []tools.Tool) string {
 	}
 
 	// Get runtime versions all at once
-	runtimeVersions := getRuntimeVersions()
+	runtimeVersions := plugins.GetRuntimeVersions()
 
 	// Build map of enabled tools with their versions
 	for _, tool := range tools {
