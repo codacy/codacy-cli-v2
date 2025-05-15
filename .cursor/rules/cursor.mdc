@@ -1,7 +1,7 @@
 ---
 description: 
-globs: 
-alwaysApply: true
+globs: *.*
+alwaysApply: false
 ---
 
 # Your rule content

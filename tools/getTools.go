@@ -113,12 +113,19 @@ func GetRepositoryTools(codacyBase string, apiToken string, provider string, org
 		return nil, err
 	}
 
+	// Print supported tools for debugging
+	fmt.Println("Supported tools:", supportedTools)
+
 	// Filter enabled tools
 	var enabledTools []Tool
 	for _, tool := range response.Data {
 		if tool.Settings.Enabled {
-			if _, exists := supportedTools[strings.ToLower(tool.Name)]; exists {
+			toolName := strings.ToLower(tool.Name)
+			fmt.Printf("Checking tool %s (lowercase: %s)\n", tool.Name, toolName)
+			if _, exists := supportedTools[toolName]; exists {
 				enabledTools = append(enabledTools, tool)
+			} else {
+				fmt.Printf("Tool %s not found in supported tools\n", tool.Name)
 			}
 		}
 	}

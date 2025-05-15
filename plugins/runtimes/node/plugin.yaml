@@ -1,5 +1,6 @@
 name: node
 description: Node.js JavaScript runtime
+default_version: "22.2.0"
 download:
   url_template: "https://nodejs.org/dist/v{{.Version}}/{{.FileName}}.{{.Extension}}"
   file_name_template: "node-v{{.Version}}-{{.OS}}-{{.Arch}}"

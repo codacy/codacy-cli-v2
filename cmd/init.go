@@ -3,6 +3,7 @@ package cmd
 import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
+	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/tools/lizard"
 	"codacy/cli-v2/tools/pylint"
@@ -15,10 +16,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 const CodacyApiBase = "https://app.codacy.com"
@@ -131,16 +134,69 @@ func createConfigurationFiles(tools []tools.Tool, cliLocalMode bool) error {
 	return nil
 }
 
+// Map tool UUIDs to their names
+var toolNameMap = map[string]string{
+	ESLint:       "eslint",
+	Trivy:        "trivy",
+	PyLint:       "pylint",
+	PMD:          "pmd",
+	DartAnalyzer: "dartanalyzer",
+	Semgrep:      "semgrep",
+	Lizard:       "lizard",
+}
+
+// RuntimePluginConfig holds the structure of the runtime plugin.yaml file
+type RuntimePluginConfig struct {
+	Name           string `yaml:"name"`
+	Description    string `yaml:"description"`
+	DefaultVersion string `yaml:"default_version"`
+}
+
+func getRuntimeVersions() map[string]string {
+	versions := make(map[string]string)
+
+	// Read the runtimes directory
+	entries, err := os.ReadDir("plugins/runtimes")
+	if err != nil {
+		log.Printf("Warning: Could not read runtimes directory: %v", err)
+		return versions
+	}
+
+	// Process each runtime directory
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		runtime := entry.Name()
+		pluginPath := fmt.Sprintf("plugins/runtimes/%s/plugin.yaml", runtime)
+		data, err := os.ReadFile(pluginPath)
+		if err != nil {
+			log.Printf("Warning: Could not read plugin file for runtime %s: %v", runtime, err)
+			continue
+		}
+
+		var config RuntimePluginConfig
+		if err := yaml.Unmarshal(data, &config); err != nil {
+			log.Printf("Warning: Could not parse plugin file for runtime %s: %v", runtime, err)
+			continue
+		}
+
+		if config.DefaultVersion != "" {
+			versions[runtime] = config.DefaultVersion
+		}
+	}
+
+	return versions
+}
+
 func configFileTemplate(tools []tools.Tool) string {
 	// Maps to track which tools are enabled
 	toolsMap := make(map[string]bool)
 	toolVersions := make(map[string]string)
 
 	// Track needed runtimes
-	needsNode := false
-	needsPython := false
-	needsDart := false
-	needsJava := false
+	neededRuntimes := make(map[string]bool)
 
 	// Default versions
 	defaultVersions := map[string]string{
@@ -153,6 +209,9 @@ func configFileTemplate(tools []tools.Tool) string {
 		Lizard:       "1.17.19",
 	}
 
+	// Get runtime versions all at once
+	runtimeVersions := getRuntimeVersions()
+
 	// Build map of enabled tools with their versions
 	for _, tool := range tools {
 		toolsMap[tool.Uuid] = true
@@ -161,16 +220,48 @@ func configFileTemplate(tools []tools.Tool) string {
 		} else {
 			toolVersions[tool.Uuid] = defaultVersions[tool.Uuid]
 		}
+	}
 
-		// Check if tool needs a runtime
-		if tool.Uuid == ESLint {
-			needsNode = true
-		} else if tool.Uuid == PyLint || tool.Uuid == Lizard {
-			needsPython = true
-		} else if tool.Uuid == DartAnalyzer {
-			needsDart = true
-		} else if tool.Uuid == PMD {
-			needsJava = true
+	// Convert tools to ToolConfig format
+	var toolConfigs []plugins.ToolConfig
+	for _, tool := range tools {
+		toolName := toolNameMap[tool.Uuid]
+		if toolName == "" {
+			log.Printf("Warning: Unknown tool UUID %s", tool.Uuid)
+			continue
+		}
+
+		version := tool.Version
+		if version == "" {
+			version = defaultVersions[tool.Uuid]
+		}
+
+		toolConfigs = append(toolConfigs, plugins.ToolConfig{
+			Name:    toolName,
+			Version: version,
+		})
+	}
+
+	// Process tools to get their configurations
+	runtimeInfos := make(map[string]*plugins.RuntimeInfo)
+	for runtime, version := range runtimeVersions {
+		runtimeInfo, err := processRuntime(runtime, version)
+		if err != nil {
+			log.Printf("Warning: Failed to process runtime %s: %v", runtime, err)
+			continue
+		}
+		runtimeInfos[runtime] = runtimeInfo
+	}
+
+	toolInfos, err := plugins.ProcessTools(toolConfigs, os.TempDir(), runtimeInfos)
+	if err != nil {
+		log.Printf("Warning: Failed to process tool configurations: %v", err)
+	} else {
+		// Get required runtimes from tool configurations
+		for _, info := range toolInfos {
+			if info.Runtime != "" {
+				neededRuntimes[info.Runtime] = true
+			}
 		}
 	}
 
@@ -180,58 +271,98 @@ func configFileTemplate(tools []tools.Tool) string {
 
 	// Only include runtimes needed by the enabled tools
 	if len(tools) > 0 {
-		if needsNode {
-			sb.WriteString("    - node@22.2.0\n")
+		// Create a sorted slice of runtimes
+		var sortedRuntimes []string
+		for runtime := range runtimeVersions {
+			if neededRuntimes[runtime] {
+				sortedRuntimes = append(sortedRuntimes, runtime)
+			}
 		}
-		if needsPython {
-			sb.WriteString("    - python@3.11.11\n")
-		}
-		if needsDart {
-			sb.WriteString("    - dart@3.7.2\n")
-		}
-		if needsJava {
-			sb.WriteString("    - java@17.0.10\n")
+		sort.Strings(sortedRuntimes)
+
+		// Write sorted runtimes
+		for _, runtime := range sortedRuntimes {
+			sb.WriteString(fmt.Sprintf("    - %s@%s\n", runtime, runtimeVersions[runtime]))
 		}
 	} else {
 		// In local mode with no tools specified, include all runtimes
-		sb.WriteString("    - node@22.2.0\n")
-		sb.WriteString("    - python@3.11.11\n")
-		sb.WriteString("    - dart@3.7.2\n")
-		sb.WriteString("    - java@17.0.10\n")
+		var sortedRuntimes []string
+		for runtime := range runtimeVersions {
+			sortedRuntimes = append(sortedRuntimes, runtime)
+		}
+		sort.Strings(sortedRuntimes)
+
+		// Write sorted runtimes
+		for _, runtime := range sortedRuntimes {
+			sb.WriteString(fmt.Sprintf("    - %s@%s\n", runtime, runtimeVersions[runtime]))
+		}
 	}
 
 	sb.WriteString("tools:\n")
 
 	// If we have tools from the API (enabled tools), use only those
 	if len(tools) > 0 {
-		// Add only the tools that are in the API response (enabled tools)
-		uuidToName := map[string]string{
-			ESLint:       "eslint",
-			Trivy:        "trivy",
-			PyLint:       "pylint",
-			PMD:          "pmd",
-			DartAnalyzer: "dartanalyzer",
-			Semgrep:      "semgrep",
-			Lizard:       "lizard",
-		}
-
-		for uuid, name := range uuidToName {
+		// Create a sorted slice of tool names
+		var sortedTools []string
+		for uuid, name := range toolNameMap {
 			if toolsMap[uuid] {
-				sb.WriteString(fmt.Sprintf("    - %s@%s\n", name, toolVersions[uuid]))
+				sortedTools = append(sortedTools, name)
+			}
+		}
+		sort.Strings(sortedTools)
+
+		// Write sorted tools
+		for _, name := range sortedTools {
+			// Find the UUID for this tool name to get its version
+			for uuid, toolName := range toolNameMap {
+				if toolName == name && toolsMap[uuid] {
+					sb.WriteString(fmt.Sprintf("    - %s@%s\n", name, toolVersions[uuid]))
+					break
+				}
 			}
 		}
 	} else {
-		// If no tools were specified (local mode), include all defaults
-		sb.WriteString(fmt.Sprintf("    - eslint@%s\n", defaultVersions[ESLint]))
-		sb.WriteString(fmt.Sprintf("    - trivy@%s\n", defaultVersions[Trivy]))
-		sb.WriteString(fmt.Sprintf("    - pylint@%s\n", defaultVersions[PyLint]))
-		sb.WriteString(fmt.Sprintf("    - pmd@%s\n", defaultVersions[PMD]))
-		sb.WriteString(fmt.Sprintf("    - dartanalyzer@%s\n", defaultVersions[DartAnalyzer]))
-		sb.WriteString(fmt.Sprintf("    - semgrep@%s\n", defaultVersions[Semgrep]))
-		sb.WriteString(fmt.Sprintf("    - lizard@%s\n", defaultVersions[Lizard]))
+		// If no tools were specified (local mode), include all defaults in sorted order
+		tools := []struct {
+			name string
+			uuid string
+		}{
+			{"dartanalyzer", DartAnalyzer},
+			{"eslint", ESLint},
+			{"lizard", Lizard},
+			{"pmd", PMD},
+			{"pylint", PyLint},
+			{"semgrep", Semgrep},
+			{"trivy", Trivy},
+		}
+
+		for _, tool := range tools {
+			sb.WriteString(fmt.Sprintf("    - %s@%s\n", tool.name, defaultVersions[tool.uuid]))
+		}
 	}
 
 	return sb.String()
+}
+
+func processRuntime(name, version string) (*plugins.RuntimeInfo, error) {
+	configs := []plugins.RuntimeConfig{
+		{
+			Name:    name,
+			Version: version,
+		},
+	}
+
+	runtimeInfos, err := plugins.ProcessRuntimes(configs, os.TempDir())
+	if err != nil {
+		return nil, err
+	}
+
+	info, ok := runtimeInfos[name]
+	if !ok {
+		return nil, fmt.Errorf("runtime %s not found in processed runtimes", name)
+	}
+
+	return info, nil
 }
 
 func cliConfigFileTemplate(cliLocalMode bool) string {
