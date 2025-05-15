@@ -35,27 +35,59 @@ func TestGetRequest_Failure(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestHandlePaginationGeneric(t *testing.T) {
+func TestGetPageAndGetAllPages(t *testing.T) {
 	type testItem struct{ Value int }
-	pages := [][]testItem{
-		{{Value: 1}, {Value: 2}},
-		{{Value: 3}},
+	serverPages := []struct {
+		data   []testItem
+		cursor string
+	}{
+		{[]testItem{{Value: 1}, {Value: 2}}, "next"},
+		{[]testItem{{Value: 3}}, ""},
 	}
 	calls := 0
-	fetchPage := func(url string) ([]testItem, string, error) {
-		if calls < len(pages) {
-			page := pages[calls]
-			calls++
-			if calls < len(pages) {
-				return page, "next", nil
-			}
-			return page, "", nil
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		resp := map[string]interface{}{
+			"data":       serverPages[calls].data,
+			"pagination": map[string]interface{}{"cursor": serverPages[calls].cursor},
 		}
-		return nil, "", nil
+		calls++
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer ts.Close()
+
+	initFlags := domain.InitFlags{ApiToken: "dummy"}
+
+	parser := func(body []byte) ([]testItem, string, error) {
+		var objmap map[string]json.RawMessage
+		if err := json.Unmarshal(body, &objmap); err != nil {
+			return nil, "", err
+		}
+		var items []testItem
+		if err := json.Unmarshal(objmap["data"], &items); err != nil {
+			return nil, "", err
+		}
+		var pagination struct {
+			Cursor string `json:"cursor"`
+		}
+		if objmap["pagination"] != nil {
+			_ = json.Unmarshal(objmap["pagination"], &pagination)
+		}
+		return items, pagination.Cursor, nil
 	}
-	results, err := handlePaginationGeneric[testItem]("base", "", fetchPage)
+
+	// Test GetPage
+	calls = 0
+	items, cursor, err := GetPage[testItem](ts.URL, initFlags, parser)
 	assert.NoError(t, err)
-	assert.Len(t, results, 3)
+	assert.Len(t, items, 2)
+	assert.Equal(t, "next", cursor)
+
+	// Test getAllPages
+	calls = 0
+	allItems, err := getAllPages[testItem](ts.URL, initFlags, parser)
+	assert.NoError(t, err)
+	assert.Len(t, allItems, 3)
 }
 
 func TestGetDefaultToolPatternsConfig_Empty(t *testing.T) {
