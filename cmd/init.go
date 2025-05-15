@@ -255,17 +255,18 @@ func configFileTemplate(tools []tools.Tool) string {
 	} else {
 		// If no tools were specified (local mode), include all tools in sorted order
 		var sortedTools []string
-		for _, name := range []string{
-			"dartanalyzer",
-			"eslint",
-			"lizard",
-			"pmd",
-			"pylint",
-			"semgrep",
-			"trivy",
-		} {
-			if version, ok := defaultVersions[name]; ok {
-				sortedTools = append(sortedTools, fmt.Sprintf("%s@%s", name, version))
+
+		// Get supported tools from plugin system
+		supportedTools, err := plugins.GetSupportedTools()
+		if err != nil {
+			log.Printf("Warning: failed to get supported tools: %v", err)
+			return sb.String()
+		}
+
+		// Convert map keys to slice and sort them
+		for toolName := range supportedTools {
+			if version, ok := defaultVersions[toolName]; ok {
+				sortedTools = append(sortedTools, fmt.Sprintf("%s@%s", toolName, version))
 			}
 		}
 		sort.Strings(sortedTools)
