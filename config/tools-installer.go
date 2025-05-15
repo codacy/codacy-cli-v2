@@ -58,7 +58,7 @@ func InstallTools(config *ConfigType, registry string) error {
 // InstallTool installs a specific tool
 func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error {
 	// Check if the tool is already installed
-	if isToolInstalled(toolInfo) {
+	if Config.IsToolInstalled(name, toolInfo) {
 		logger.Info("Tool already installed", logrus.Fields{
 			"tool":    name,
 			"version": toolInfo.Version,

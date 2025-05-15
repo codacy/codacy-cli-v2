@@ -24,14 +24,14 @@ func TestIsRuntimeInstalled(t *testing.T) {
 	}
 
 	// Test when the install directory doesn't exist
-	assert.False(t, isRuntimeInstalled(runtimeInfoNoBinaries))
+	assert.False(t, Config.IsRuntimeInstalled("test-runtime", runtimeInfoNoBinaries))
 
 	// Create the install directory
 	err = os.MkdirAll(runtimeInfoNoBinaries.InstallDir, utils.DefaultDirPerms)
 	assert.NoError(t, err)
 
 	// Test when the install directory exists
-	assert.True(t, isRuntimeInstalled(runtimeInfoNoBinaries))
+	assert.True(t, Config.IsRuntimeInstalled("test-runtime", runtimeInfoNoBinaries))
 
 	// Create a mock RuntimeInfo with binaries
 	binPath := filepath.Join(tempDir, "test-runtime-bin")
@@ -45,12 +45,12 @@ func TestIsRuntimeInstalled(t *testing.T) {
 	}
 
 	// Test when the binary doesn't exist
-	assert.False(t, isRuntimeInstalled(runtimeInfoWithBinaries))
+	assert.False(t, Config.IsRuntimeInstalled("test-runtime", runtimeInfoWithBinaries))
 
 	// Create a mock binary file
 	_, err = os.Create(binPath)
 	assert.NoError(t, err)
 
 	// Test when the binary exists
-	assert.True(t, isRuntimeInstalled(runtimeInfoWithBinaries))
+	assert.True(t, Config.IsRuntimeInstalled("test-runtime", runtimeInfoWithBinaries))
 }

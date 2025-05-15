@@ -1,5 +1,6 @@
 name: pmd
-description: PMD - An extensible cross-language static code analyzer
+description: PMD is a source code analyzer that finds common programming flaws like unused variables, empty catch blocks, unnecessary object creation, and so forth.
+default_version: 6.55.0
 runtime: java
 runtime_binaries:
   execution: java

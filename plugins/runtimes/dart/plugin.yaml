@@ -1,5 +1,6 @@
 name: dart
 description: Dart runtime
+default_version: "3.7.2"
 download:
   url_template: "https://storage.googleapis.com/dart-archive/channels/stable/release/{{.Version}}/sdk/dartsdk-{{.OS}}-{{.Arch}}-release.{{.Extension}}"
   file_name_template: "dart-sdk"

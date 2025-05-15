@@ -4,6 +4,7 @@ import (
 	codacyclient "codacy/cli-v2/codacy-client"
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
+	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/tools/lizard"
 	"codacy/cli-v2/tools/pylint"
@@ -12,6 +13,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -151,27 +153,40 @@ func createConfigurationFiles(tools []domain.Tool, cliLocalMode bool) error {
 	return nil
 }
 
+// Map tool UUIDs to their names
+var toolNameMap = map[string]string{
+	ESLint:       "eslint",
+	Trivy:        "trivy",
+	PyLint:       "pylint",
+	PMD:          "pmd",
+	DartAnalyzer: "dartanalyzer",
+	Semgrep:      "semgrep",
+	Lizard:       "lizard",
+}
+
+// RuntimePluginConfig holds the structure of the runtime plugin.yaml file
+type RuntimePluginConfig struct {
+	Name           string `yaml:"name"`
+	Description    string `yaml:"description"`
+	DefaultVersion string `yaml:"default_version"`
+}
+
 func configFileTemplate(tools []domain.Tool) string {
 	// Maps to track which tools are enabled
 	toolsMap := make(map[string]bool)
 	toolVersions := make(map[string]string)
 
 	// Track needed runtimes
-	needsNode := false
-	needsPython := false
-	needsDart := false
-	needsJava := false
+	neededRuntimes := make(map[string]bool)
 
-	// Default versions
-	defaultVersions := map[string]string{
-		ESLint:       "8.57.0",
-		Trivy:        "0.59.1",
-		PyLint:       "3.3.6",
-		PMD:          "6.55.0",
-		DartAnalyzer: "3.7.2",
-		Semgrep:      "1.78.0",
-		Lizard:       "1.17.19",
-	}
+	// Get tool versions from plugin configurations
+	defaultVersions := plugins.GetToolVersions()
+
+	// Get runtime versions all at once
+	runtimeVersions := plugins.GetRuntimeVersions()
+
+	// Get tool runtime dependencies
+	runtimeDependencies := plugins.GetToolRuntimeDependencies()
 
 	// Build map of enabled tools with their versions
 	for _, tool := range tools {
@@ -179,18 +194,24 @@ func configFileTemplate(tools []domain.Tool) string {
 		if tool.Version != "" {
 			toolVersions[tool.Uuid] = tool.Version
 		} else {
-			toolVersions[tool.Uuid] = defaultVersions[tool.Uuid]
+			toolName := toolNameMap[tool.Uuid]
+			if defaultVersion, ok := defaultVersions[toolName]; ok {
+				toolVersions[tool.Uuid] = defaultVersion
+			}
 		}
 
-		// Check if tool needs a runtime
-		if tool.Uuid == ESLint {
-			needsNode = true
-		} else if tool.Uuid == PyLint || tool.Uuid == Lizard {
-			needsPython = true
-		} else if tool.Uuid == DartAnalyzer {
-			needsDart = true
-		} else if tool.Uuid == PMD {
-			needsJava = true
+		// Get the tool's runtime dependency
+		toolName := toolNameMap[tool.Uuid]
+		if toolName != "" {
+			if runtime, ok := runtimeDependencies[toolName]; ok {
+				// Handle special case for dartanalyzer which can use either dart or flutter
+				if toolName == "dartanalyzer" {
+					// For now, default to dart runtime
+					neededRuntimes["dart"] = true
+				} else {
+					neededRuntimes[runtime] = true
+				}
+			}
 		}
 	}
 
@@ -200,55 +221,101 @@ func configFileTemplate(tools []domain.Tool) string {
 
 	// Only include runtimes needed by the enabled tools
 	if len(tools) > 0 {
-		if needsNode {
-			sb.WriteString("    - node@22.2.0\n")
+		// Create a sorted slice of runtimes
+		var sortedRuntimes []string
+		for runtime := range neededRuntimes {
+			sortedRuntimes = append(sortedRuntimes, runtime)
 		}
-		if needsPython {
-			sb.WriteString("    - python@3.11.11\n")
-		}
-		if needsDart {
-			sb.WriteString("    - dart@3.7.2\n")
-		}
-		if needsJava {
-			sb.WriteString("    - java@17.0.10\n")
+		sort.Strings(sortedRuntimes)
+
+		// Write sorted runtimes
+		for _, runtime := range sortedRuntimes {
+			sb.WriteString(fmt.Sprintf("    - %s@%s\n", runtime, runtimeVersions[runtime]))
 		}
 	} else {
-		// In local mode with no tools specified, include all runtimes
-		sb.WriteString("    - node@22.2.0\n")
-		sb.WriteString("    - python@3.11.11\n")
-		sb.WriteString("    - dart@3.7.2\n")
-		sb.WriteString("    - java@17.0.10\n")
+		// In local mode with no tools specified, include only the necessary runtimes
+		supportedTools, err := plugins.GetSupportedTools()
+		if err != nil {
+			log.Printf("Warning: failed to get supported tools: %v", err)
+			return sb.String()
+		}
+
+		// Get runtimes needed by supported tools
+		for toolName := range supportedTools {
+			if runtime, ok := runtimeDependencies[toolName]; ok {
+				if toolName == "dartanalyzer" {
+					neededRuntimes["dart"] = true
+				} else {
+					neededRuntimes[runtime] = true
+				}
+			}
+		}
+
+		// Create a sorted slice of runtimes
+		var sortedRuntimes []string
+		for runtime := range neededRuntimes {
+			sortedRuntimes = append(sortedRuntimes, runtime)
+		}
+		sort.Strings(sortedRuntimes)
+
+		// Write sorted runtimes
+		for _, runtime := range sortedRuntimes {
+			sb.WriteString(fmt.Sprintf("    - %s@%s\n", runtime, runtimeVersions[runtime]))
+		}
 	}
 
 	sb.WriteString("tools:\n")
 
 	// If we have tools from the API (enabled tools), use only those
 	if len(tools) > 0 {
-		// Add only the tools that are in the API response (enabled tools)
-		uuidToName := map[string]string{
-			ESLint:       "eslint",
-			Trivy:        "trivy",
-			PyLint:       "pylint",
-			PMD:          "pmd",
-			DartAnalyzer: "dartanalyzer",
-			Semgrep:      "semgrep",
-			Lizard:       "lizard",
-		}
-
-		for uuid, name := range uuidToName {
+		// Create a sorted slice of tool names
+		var sortedTools []string
+		for uuid, name := range toolNameMap {
 			if toolsMap[uuid] {
-				sb.WriteString(fmt.Sprintf("    - %s@%s\n", name, toolVersions[uuid]))
+				sortedTools = append(sortedTools, name)
+			}
+		}
+		sort.Strings(sortedTools)
+
+		// Write sorted tools
+		for _, name := range sortedTools {
+			// Find the UUID for this tool name to get its version
+			for uuid, toolName := range toolNameMap {
+				if toolName == name && toolsMap[uuid] {
+					version := toolVersions[uuid]
+					sb.WriteString(fmt.Sprintf("    - %s@%s\n", name, version))
+					break
+				}
 			}
 		}
 	} else {
-		// If no tools were specified (local mode), include all defaults
-		sb.WriteString(fmt.Sprintf("    - eslint@%s\n", defaultVersions[ESLint]))
-		sb.WriteString(fmt.Sprintf("    - trivy@%s\n", defaultVersions[Trivy]))
-		sb.WriteString(fmt.Sprintf("    - pylint@%s\n", defaultVersions[PyLint]))
-		sb.WriteString(fmt.Sprintf("    - pmd@%s\n", defaultVersions[PMD]))
-		sb.WriteString(fmt.Sprintf("    - dartanalyzer@%s\n", defaultVersions[DartAnalyzer]))
-		sb.WriteString(fmt.Sprintf("    - semgrep@%s\n", defaultVersions[Semgrep]))
-		sb.WriteString(fmt.Sprintf("    - lizard@%s\n", defaultVersions[Lizard]))
+		// If no tools were specified (local mode), include all tools in sorted order
+		var sortedTools []string
+
+		// Get supported tools from plugin system
+		supportedTools, err := plugins.GetSupportedTools()
+		if err != nil {
+			log.Printf("Warning: failed to get supported tools: %v", err)
+			return sb.String()
+		}
+
+		// Convert map keys to slice and sort them
+		for toolName := range supportedTools {
+			if version, ok := defaultVersions[toolName]; ok {
+				// Skip tools without a version
+				if version != "" {
+					sortedTools = append(sortedTools, toolName)
+				}
+			}
+		}
+		sort.Strings(sortedTools)
+
+		// Write sorted tools
+		for _, toolName := range sortedTools {
+			if version, ok := defaultVersions[toolName]; ok {
+				sb.WriteString(fmt.Sprintf("    - %s@%s\n", toolName, version))
+			}
+		}
 	}
 
 	return sb.String()
