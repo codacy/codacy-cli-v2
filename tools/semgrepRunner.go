@@ -2,29 +2,11 @@ package tools
 
 import (
 	"codacy/cli-v2/config"
-	"codacy/cli-v2/utils"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 )
-
-// filterRuleDefinitions removes rule definitions from SARIF output
-func filterRuleDefinitions(sarifData []byte) ([]byte, error) {
-	var report utils.SarifReport
-	if err := json.Unmarshal(sarifData, &report); err != nil {
-		return nil, fmt.Errorf("failed to parse SARIF data: %w", err)
-	}
-
-	// Remove rules from each run
-	for i := range report.Runs {
-		report.Runs[i].Tool.Driver.Rules = nil
-	}
-
-	// Marshal back to JSON with indentation
-	return json.MarshalIndent(report, "", "  ")
-}
 
 // RunSemgrep executes Semgrep analysis on the specified directory
 func RunSemgrep(workDirectory string, binary string, files []string, outputFile string, outputFormat string) error {
@@ -38,17 +20,9 @@ func RunSemgrep(workDirectory string, binary string, files []string, outputFile 
 
 	cmdArgs = append(cmdArgs, "--disable-version-check")
 
-	// Create a temporary file for SARIF output if needed
-	var tempFile string
+	// Add output format if specified
 	if outputFormat == "sarif" {
-		tmpFile, err := os.CreateTemp("", "semgrep-*.sarif")
-		if err != nil {
-			return fmt.Errorf("failed to create temporary file: %w", err)
-		}
-		tempFile = tmpFile.Name()
-		tmpFile.Close()
-		defer os.Remove(tempFile)
-		cmdArgs = append(cmdArgs, "--sarif", "--output", tempFile)
+		cmdArgs = append(cmdArgs, "--sarif")
 	}
 
 	// Define possible Semgrep config file names
@@ -73,8 +47,8 @@ func RunSemgrep(workDirectory string, binary string, files []string, outputFile 
 	cmd := exec.Command(binary, cmdArgs...)
 	cmd.Dir = workDirectory
 
-	if outputFormat != "sarif" && outputFile != "" {
-		// If output file is specified and not SARIF, create it and redirect output
+	if outputFile != "" {
+		// If output file is specified, create it and redirect output
 		var outputWriter *os.File
 		var err error
 		outputWriter, err = os.Create(filepath.Clean(outputFile))
@@ -83,7 +57,7 @@ func RunSemgrep(workDirectory string, binary string, files []string, outputFile 
 		}
 		defer outputWriter.Close()
 		cmd.Stdout = outputWriter
-	} else if outputFormat != "sarif" {
+	} else {
 		cmd.Stdout = os.Stdout
 	}
 	cmd.Stderr = os.Stderr
@@ -93,30 +67,6 @@ func RunSemgrep(workDirectory string, binary string, files []string, outputFile 
 		// Semgrep returns non-zero exit code when it finds issues, which is expected
 		if _, ok := err.(*exec.ExitError); !ok {
 			return fmt.Errorf("failed to run semgrep: %w", err)
-		}
-	}
-
-	// If SARIF output was requested, process it
-	if outputFormat == "sarif" {
-		// Read the temporary SARIF file
-		sarifData, err := os.ReadFile(tempFile)
-		if err != nil {
-			return fmt.Errorf("failed to read SARIF output: %w", err)
-		}
-
-		// Filter out rule definitions
-		filteredData, err := filterRuleDefinitions(sarifData)
-		if err != nil {
-			return fmt.Errorf("failed to filter SARIF output: %w", err)
-		}
-
-		// Write the filtered output
-		if outputFile != "" {
-			if err := os.WriteFile(outputFile, filteredData, 0644); err != nil {
-				return fmt.Errorf("failed to write filtered SARIF output: %w", err)
-			}
-		} else {
-			fmt.Println(string(filteredData))
 		}
 	}
 

@@ -204,8 +204,14 @@ func MergeSarifOutputs(inputFiles []string, outputFile string) error {
 			return fmt.Errorf("failed to read SARIF file %s: %w", file, err)
 		}
 
+		// Filter out rule definitions from each input file
+		filteredData, err := FilterRuleDefinitions(data)
+		if err != nil {
+			return fmt.Errorf("failed to filter rules from SARIF file %s: %w", file, err)
+		}
+
 		var sarif SimpleSarifReport
-		if err := json.Unmarshal(data, &sarif); err != nil {
+		if err := json.Unmarshal(filteredData, &sarif); err != nil {
 			return fmt.Errorf("failed to parse SARIF file %s: %w", file, err)
 		}
 
@@ -226,4 +232,20 @@ func MergeSarifOutputs(inputFiles []string, outputFile string) error {
 	}
 
 	return nil
+}
+
+// FilterRuleDefinitions removes rule definitions from SARIF output
+func FilterRuleDefinitions(sarifData []byte) ([]byte, error) {
+	var report SarifReport
+	if err := json.Unmarshal(sarifData, &report); err != nil {
+		return nil, fmt.Errorf("failed to parse SARIF data: %w", err)
+	}
+
+	// Remove rules from each run
+	for i := range report.Runs {
+		report.Runs[i].Tool.Driver.Rules = nil
+	}
+
+	// Marshal back to JSON with indentation
+	return json.MarshalIndent(report, "", "  ")
 }
