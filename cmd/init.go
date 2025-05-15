@@ -203,10 +203,8 @@ func configFileTemplate(tools []tools.Tool) string {
 	if len(tools) > 0 {
 		// Create a sorted slice of runtimes
 		var sortedRuntimes []string
-		for runtime := range runtimeVersions {
-			if neededRuntimes[runtime] {
-				sortedRuntimes = append(sortedRuntimes, runtime)
-			}
+		for runtime := range neededRuntimes {
+			sortedRuntimes = append(sortedRuntimes, runtime)
 		}
 		sort.Strings(sortedRuntimes)
 
@@ -215,9 +213,27 @@ func configFileTemplate(tools []tools.Tool) string {
 			sb.WriteString(fmt.Sprintf("    - %s@%s\n", runtime, runtimeVersions[runtime]))
 		}
 	} else {
-		// In local mode with no tools specified, include all runtimes
+		// In local mode with no tools specified, include only the necessary runtimes
+		supportedTools, err := plugins.GetSupportedTools()
+		if err != nil {
+			log.Printf("Warning: failed to get supported tools: %v", err)
+			return sb.String()
+		}
+
+		// Get runtimes needed by supported tools
+		for toolName := range supportedTools {
+			if runtime, ok := runtimeDependencies[toolName]; ok {
+				if toolName == "dartanalyzer" {
+					neededRuntimes["dart"] = true
+				} else {
+					neededRuntimes[runtime] = true
+				}
+			}
+		}
+
+		// Create a sorted slice of runtimes
 		var sortedRuntimes []string
-		for runtime := range runtimeVersions {
+		for runtime := range neededRuntimes {
 			sortedRuntimes = append(sortedRuntimes, runtime)
 		}
 		sort.Strings(sortedRuntimes)
@@ -266,14 +282,19 @@ func configFileTemplate(tools []tools.Tool) string {
 		// Convert map keys to slice and sort them
 		for toolName := range supportedTools {
 			if version, ok := defaultVersions[toolName]; ok {
-				sortedTools = append(sortedTools, fmt.Sprintf("%s@%s", toolName, version))
+				// Skip tools without a version
+				if version != "" {
+					sortedTools = append(sortedTools, toolName)
+				}
 			}
 		}
 		sort.Strings(sortedTools)
 
 		// Write sorted tools
-		for _, tool := range sortedTools {
-			sb.WriteString(fmt.Sprintf("    - %s\n", tool))
+		for _, toolName := range sortedTools {
+			if version, ok := defaultVersions[toolName]; ok {
+				sb.WriteString(fmt.Sprintf("    - %s@%s\n", toolName, version))
+			}
 		}
 	}
 
