@@ -279,27 +279,6 @@ func configFileTemplate(tools []tools.Tool) string {
 	return sb.String()
 }
 
-func processRuntime(name, version string) (*plugins.RuntimeInfo, error) {
-	configs := []plugins.RuntimeConfig{
-		{
-			Name:    name,
-			Version: version,
-		},
-	}
-
-	runtimeInfos, err := plugins.ProcessRuntimes(configs, os.TempDir())
-	if err != nil {
-		return nil, err
-	}
-
-	info, ok := runtimeInfos[name]
-	if !ok {
-		return nil, fmt.Errorf("runtime %s not found in processed runtimes", name)
-	}
-
-	return info, nil
-}
-
 func cliConfigFileTemplate(cliLocalMode bool) string {
 	var cliModeString string
 
