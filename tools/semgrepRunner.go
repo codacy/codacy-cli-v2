@@ -2,6 +2,7 @@ package tools
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/utils"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,25 +10,9 @@ import (
 	"path/filepath"
 )
 
-// SarifReport represents the structure of a SARIF report
-type SarifReport struct {
-	Version string `json:"version"`
-	Schema  string `json:"$schema"`
-	Runs    []struct {
-		Tool struct {
-			Driver struct {
-				Name  string `json:"name"`
-				Rules []any  `json:"rules,omitempty"`
-			} `json:"driver"`
-		} `json:"tool"`
-		Results     []any `json:"results"`
-		Invocations []any `json:"invocations,omitempty"`
-	} `json:"runs"`
-}
-
 // filterRuleDefinitions removes rule definitions from SARIF output
 func filterRuleDefinitions(sarifData []byte) ([]byte, error) {
-	var report SarifReport
+	var report utils.SarifReport
 	if err := json.Unmarshal(sarifData, &report); err != nil {
 		return nil, fmt.Errorf("failed to parse SARIF data: %w", err)
 	}
