@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/domain"
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/utils"
 	"os"
@@ -243,4 +244,30 @@ func TestInitCommand_NoToken(t *testing.T) {
 		_, err := os.Stat(filePath)
 		assert.NoError(t, err, "Expected config file %s to be created", file)
 	}
+}
+
+func TestCreateLizardConfigFile_EmptyAndNonEmpty(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Case 1: Empty patternConfiguration
+	err := createLizardConfigFile(tempDir, []domain.PatternConfiguration{})
+	assert.NoError(t, err, "Should not error with empty patternConfiguration")
+	lizardFile := filepath.Join(tempDir, "lizard.yaml")
+	_, err = os.Stat(lizardFile)
+	assert.NoError(t, err, "lizard.yaml should be created for empty input")
+
+	// Case 2: Non-empty patternConfiguration
+	patterns := []domain.PatternConfiguration{
+		{
+			PatternDefinition: domain.PatternDefinition{
+				Id:      "Lizard_1",
+				Enabled: true,
+			},
+		},
+	}
+	err = createLizardConfigFile(tempDir, patterns)
+	assert.NoError(t, err, "Should not error with non-empty patternConfiguration")
+	content, err := os.ReadFile(lizardFile)
+	assert.NoError(t, err, "Should be able to read lizard.yaml")
+	assert.NotEmpty(t, content, "lizard.yaml should not be empty for non-empty input")
 }

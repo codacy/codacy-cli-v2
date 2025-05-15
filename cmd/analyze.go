@@ -402,10 +402,7 @@ func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 		}
 	} else {
 		fmt.Println("No configuration file found for Lizard, using default patterns, run init with repository token to get a custom configuration")
-		patterns, err = tools.FetchDefaultEnabledPatterns(Lizard)
-		if err != nil {
-			return fmt.Errorf("failed to fetch default patterns: %v", err)
-		}
+		patterns = []domain.PatternDefinition{}
 	}
 
 	return lizard.RunLizard(workDirectory, lizardBinary, pathsToCheck, outputFile, outputFormat, patterns)
