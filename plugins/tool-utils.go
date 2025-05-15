@@ -14,6 +14,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const toolPluginYamlPathTemplate = "tools/%s/plugin.yaml"
+
 //go:embed tools/*/plugin.yaml
 var toolsFS embed.FS
 
@@ -120,7 +122,7 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 
 	for _, config := range configs {
 		// Load the tool plugin - always use forward slashes for embedded filesystem paths (for windows support)
-		pluginPath := fmt.Sprintf("tools/%s/plugin.yaml", config.Name)
+		pluginPath := fmt.Sprintf(toolPluginYamlPathTemplate, config.Name)
 
 		// Read from embedded filesystem
 		data, err := toolsFS.ReadFile(pluginPath)
@@ -367,7 +369,7 @@ func GetSupportedTools() (map[string]struct{}, error) {
 
 		toolName := entry.Name()
 		// Always use forward slashes for embedded filesystem paths
-		pluginPath := fmt.Sprintf("tools/%s/plugin.yaml", toolName)
+		pluginPath := fmt.Sprintf(toolPluginYamlPathTemplate, toolName)
 
 		// Check if plugin.yaml exists
 		_, err := toolsFS.ReadFile(pluginPath)
@@ -398,7 +400,7 @@ func GetToolVersions() map[string]string {
 		}
 
 		tool := entry.Name()
-		pluginPath := fmt.Sprintf("tools/%s/plugin.yaml", tool)
+		pluginPath := fmt.Sprintf(toolPluginYamlPathTemplate, tool)
 		data, err := toolsFS.ReadFile(pluginPath)
 		if err != nil {
 			continue
@@ -415,4 +417,40 @@ func GetToolVersions() map[string]string {
 	}
 
 	return versions
+}
+
+// GetToolRuntimeDependencies returns a map of tool names to their runtime dependencies
+func GetToolRuntimeDependencies() map[string]string {
+	dependencies := make(map[string]string)
+
+	// Read the tools directory from embedded filesystem
+	entries, err := toolsFS.ReadDir("tools")
+	if err != nil {
+		return dependencies
+	}
+
+	// Process each tool directory
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		tool := entry.Name()
+		pluginPath := fmt.Sprintf(toolPluginYamlPathTemplate, tool)
+		data, err := toolsFS.ReadFile(pluginPath)
+		if err != nil {
+			continue
+		}
+
+		var config ToolPluginConfig
+		if err := yaml.Unmarshal(data, &config); err != nil {
+			continue
+		}
+
+		if config.Runtime != "" {
+			dependencies[tool] = config.Runtime
+		}
+	}
+
+	return dependencies
 }

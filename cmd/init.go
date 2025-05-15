@@ -165,6 +165,9 @@ func configFileTemplate(tools []tools.Tool) string {
 	// Get runtime versions all at once
 	runtimeVersions := plugins.GetRuntimeVersions()
 
+	// Get tool runtime dependencies
+	runtimeDependencies := plugins.GetToolRuntimeDependencies()
+
 	// Build map of enabled tools with their versions
 	for _, tool := range tools {
 		toolsMap[tool.Uuid] = true
@@ -176,17 +179,20 @@ func configFileTemplate(tools []tools.Tool) string {
 				toolVersions[tool.Uuid] = defaultVersion
 			}
 		}
-	}
 
-	// Process tools to get their configurations
-	runtimeInfos := make(map[string]*plugins.RuntimeInfo)
-	for runtime, version := range runtimeVersions {
-		runtimeInfo, err := processRuntime(runtime, version)
-		if err != nil {
-			log.Printf("Warning: Failed to process runtime %s: %v", runtime, err)
-			continue
+		// Get the tool's runtime dependency
+		toolName := toolNameMap[tool.Uuid]
+		if toolName != "" {
+			if runtime, ok := runtimeDependencies[toolName]; ok {
+				// Handle special case for dartanalyzer which can use either dart or flutter
+				if toolName == "dartanalyzer" {
+					// For now, default to dart runtime
+					neededRuntimes["dart"] = true
+				} else {
+					neededRuntimes[runtime] = true
+				}
+			}
 		}
-		runtimeInfos[runtime] = runtimeInfo
 	}
 
 	// Start building the YAML content
