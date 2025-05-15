@@ -11,7 +11,8 @@ import (
 )
 
 const timeout = 10 * time.Second
-const CodacyApiBase = "https://app.codacy.com"
+
+var CodacyApiBase = "https://app.codacy.com"
 
 func getRequest(url string, apiToken string) ([]byte, error) {
 	client := &http.Client{
