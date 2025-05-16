@@ -1,5 +1,6 @@
 name: lizard
-description: Lizard code complexity analyzer
+description: Lizard is an extensible Cyclomatic Complexity Analyzer for many programming languages.
+default_version: 1.17.19
 runtime: python
 runtime_binaries:
   package_manager: python3

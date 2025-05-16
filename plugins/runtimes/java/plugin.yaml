@@ -1,5 +1,6 @@
 name: java
 description: Java Runtime Environment
+default_version: "17.0.10"
 download:
   url_template: "https://github.com/adoptium/temurin{{.MajorVersion}}-binaries/releases/download/jdk-{{.Version}}%2B7/OpenJDK{{.MajorVersion}}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{.Version}}_7.{{.Extension}}"
   file_name_template: "jdk-{{.Version}}+7"

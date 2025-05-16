@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"text/template"
 
 	"gopkg.in/yaml.v3"
 )
+
+const toolPluginYamlPathTemplate = "tools/%s/plugin.yaml"
 
 //go:embed tools/*/plugin.yaml
 var toolsFS embed.FS
@@ -52,24 +53,11 @@ type RuntimeBinaries struct {
 	Execution      string `yaml:"execution"`
 }
 
-// ExtensionConfig defines the file extension
-type ExtensionConfig struct {
-	Default string `yaml:"default"`
-}
-
-// DownloadConfig holds the download configuration for directly downloading tools
-type DownloadConfig struct {
-	URLTemplate      string            `yaml:"url_template"`
-	FileNameTemplate string            `yaml:"file_name_template"`
-	Extension        ExtensionConfig   `yaml:"extension"`
-	ArchMapping      map[string]string `yaml:"arch_mapping"`
-	OSMapping        map[string]string `yaml:"os_mapping"`
-}
-
 // ToolPluginConfig holds the structure of the tool plugin.yaml file
 type ToolPluginConfig struct {
 	Name            string             `yaml:"name"`
 	Description     string             `yaml:"description"`
+	DefaultVersion  string             `yaml:"default_version"`
 	Runtime         string             `yaml:"runtime"`
 	RuntimeBinaries RuntimeBinaries    `yaml:"runtime_binaries"`
 	Installation    InstallationConfig `yaml:"installation"`
@@ -119,7 +107,7 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 
 	for _, config := range configs {
 		// Load the tool plugin - always use forward slashes for embedded filesystem paths (for windows support)
-		pluginPath := fmt.Sprintf("tools/%s/plugin.yaml", config.Name)
+		pluginPath := fmt.Sprintf(toolPluginYamlPathTemplate, config.Name)
 
 		// Read from embedded filesystem
 		data, err := toolsFS.ReadFile(pluginPath)
@@ -169,26 +157,28 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 		// Handle download configuration for directly downloaded tools
 		if pluginConfig.Download.URLTemplate != "" {
 			// Get the mapped architecture
-			mappedArch := getMappedArch(pluginConfig.Download.ArchMapping, runtime.GOARCH)
+			mappedArch := GetMappedArch(pluginConfig.Download.ArchMapping, runtime.GOARCH)
 
 			// Get the mapped OS
-			mappedOS := getMappedOS(pluginConfig.Download.OSMapping, runtime.GOOS)
+			mappedOS := GetMappedOS(pluginConfig.Download.OSMapping, runtime.GOOS)
 
 			// Get the appropriate extension
-			extension := getExtension(pluginConfig.Download.Extension, runtime.GOOS)
+			extension := GetExtension(pluginConfig.Download.Extension, runtime.GOOS)
 			info.Extension = extension
 
 			// Get the filename using the template
-			fileName := getFileName(pluginConfig.Download.FileNameTemplate, config.Version, mappedArch, runtime.GOOS)
+			fileName := GetFileName(pluginConfig.Download.FileNameTemplate, config.Version, mappedArch, runtime.GOOS)
 			info.FileName = fileName
 
 			// Get the download URL using the template
-			downloadURL := getDownloadURL(pluginConfig.Download.URLTemplate, fileName, config.Version, mappedArch, mappedOS, extension)
+			downloadURL := GetDownloadURL(pluginConfig.Download.URLTemplate, fileName, config.Version, mappedArch, mappedOS, extension, pluginConfig.Download.ReleaseVersion)
 			info.DownloadURL = downloadURL
 		}
 
 		// Process binary paths
 		for _, binary := range pluginConfig.Binaries {
+			var binaryPath string
+
 			// Process template variables in binary path
 			tmpl, err := template.New("binary_path").Parse(binary.Path)
 			if err != nil {
@@ -197,15 +187,28 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 
 			var buf bytes.Buffer
 			err = tmpl.Execute(&buf, struct {
-				Version string
+				Version    string
+				InstallDir string
 			}{
-				Version: config.Version,
+				Version:    config.Version,
+				InstallDir: installDir,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("error executing binary path template for %s: %w", config.Name, err)
 			}
 
-			binaryPath := filepath.Join(installDir, buf.String())
+			binaryPath = buf.String()
+
+			// If the binary path is relative, join it with the install directory
+			if !path.IsAbs(binaryPath) {
+				binaryPath = path.Join(installDir, binaryPath)
+			}
+
+			// Add file extension for Windows executables
+			if runtime.GOOS == "windows" && !strings.HasSuffix(binaryPath, ".exe") {
+				binaryPath += ".exe"
+			}
+
 			info.Binaries[binary.Name] = binaryPath
 		}
 
@@ -215,36 +218,30 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 		}
 
 		// Process environment variables
-		if len(pluginConfig.Environment) > 0 {
-			// Get runtime install directory if needed
-			var runtimeInstallDir string
-			if info.Runtime != "" {
-				if runtime, ok := runtimes[info.Runtime]; ok {
-					runtimeInstallDir = runtime.InstallDir
-				}
+		for key, value := range pluginConfig.Environment {
+			// Process template variables in environment value
+			tmpl, err := template.New("env_value").Parse(value)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing environment value template for %s: %w", config.Name, err)
 			}
 
-			// Process each environment variable
-			for key, tmplStr := range pluginConfig.Environment {
-				tmpl, err := template.New("env").Parse(tmplStr)
-				if err != nil {
-					return nil, fmt.Errorf("error parsing environment template for %s: %w", config.Name, err)
-				}
-
-				var buf bytes.Buffer
-				err = tmpl.Execute(&buf, struct {
-					RuntimeInstallDir string
-					Path              string
-				}{
-					RuntimeInstallDir: runtimeInstallDir,
-					Path:              os.Getenv("PATH"),
-				})
-				if err != nil {
-					return nil, fmt.Errorf("error executing environment template for %s: %w", config.Name, err)
-				}
-
-				info.Environment[key] = buf.String()
+			var buf bytes.Buffer
+			err = tmpl.Execute(&buf, struct {
+				Version           string
+				InstallDir        string
+				RuntimeInstallDir string
+				Path              string
+			}{
+				Version:           config.Version,
+				InstallDir:        installDir,
+				RuntimeInstallDir: runtimes[toolRuntime].InstallDir,
+				Path:              os.Getenv("PATH"),
+			})
+			if err != nil {
+				return nil, fmt.Errorf("error executing environment value template for %s: %w", config.Name, err)
 			}
+
+			info.Environment[key] = buf.String()
 		}
 
 		result[config.Name] = info
@@ -253,129 +250,29 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 	return result, nil
 }
 
-// Helper functions for processing download configuration
-
-// getMappedArch returns the architecture mapping for the current system
-func getMappedArch(archMapping map[string]string, goarch string) string {
-	// Check if there's a mapping for this architecture
-	if mappedArch, ok := archMapping[goarch]; ok {
-		return mappedArch
-	}
-	// Return the original architecture if no mapping exists
-	return goarch
-}
-
-// getMappedOS returns the OS mapping for the current system
-func getMappedOS(osMapping map[string]string, goos string) string {
-	// Check if there's a mapping for this OS
-	if mappedOS, ok := osMapping[goos]; ok {
-		return mappedOS
-	}
-	// Return the original OS if no mapping exists
-	return goos
-}
-
-// getExtension returns the appropriate file extension based on the OS
-func getExtension(extensionConfig ExtensionConfig, goos string) string {
-	return extensionConfig.Default
-}
-
-// getFileName generates the filename based on the template
-func getFileName(fileNameTemplate string, version string, mappedArch string, goos string) string {
-	// Prepare template data
-	data := struct {
-		Version string
-		OS      string
-		Arch    string
-	}{
-		Version: version,
-		OS:      goos,
-		Arch:    mappedArch,
-	}
-
-	// Execute template substitution for filename
-	tmpl, err := template.New("filename").Parse(fileNameTemplate)
-	if err != nil {
-		return ""
-	}
-
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, data)
-	if err != nil {
-		return ""
-	}
-
-	return buf.String()
-}
-
-// getDownloadURL generates the download URL based on the template
-func getDownloadURL(urlTemplate string, fileName string, version string, mappedArch string, mappedOS string, extension string) string {
-	// Extract major version from version string (e.g. "17.0.10" -> "17")
-	majorVersion := version
-	if idx := strings.Index(version, "."); idx != -1 {
-		majorVersion = version[:idx]
-	}
-
-	// Prepare template data
-	data := struct {
-		Version      string
-		MajorVersion string
-		FileName     string
-		OS           string
-		Arch         string
-		Extension    string
-	}{
-		Version:      version,
-		MajorVersion: majorVersion,
-		FileName:     fileName,
-		OS:           mappedOS,
-		Arch:         mappedArch,
-		Extension:    extension,
-	}
-
-	// Execute template substitution for URL
-	tmpl, err := template.New("url").Parse(urlTemplate)
-	if err != nil {
-		return ""
-	}
-
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, data)
-	if err != nil {
-		return ""
-	}
-
-	return buf.String()
-}
-
-// GetSupportedTools returns a map of supported tool names based on the tools folder
+// GetSupportedTools returns a map of supported tool names
 func GetSupportedTools() (map[string]struct{}, error) {
-	supportedTools := make(map[string]struct{})
-
-	// Read all directories in the tools folder
 	entries, err := toolsFS.ReadDir("tools")
 	if err != nil {
-		return nil, fmt.Errorf("failed to read tools directory: %w", err)
+		return nil, fmt.Errorf("error reading tools directory: %w", err)
 	}
 
-	// For each directory, check if it has a plugin.yaml file
+	tools := make(map[string]struct{})
 	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
+		if entry.IsDir() {
+			tools[entry.Name()] = struct{}{}
 		}
-
-		toolName := entry.Name()
-		// Always use forward slashes for embedded filesystem paths
-		pluginPath := fmt.Sprintf("tools/%s/plugin.yaml", toolName)
-
-		// Check if plugin.yaml exists
-		_, err := toolsFS.ReadFile(pluginPath)
-		if err != nil {
-			continue // Skip if no plugin.yaml
-		}
-
-		supportedTools[toolName] = struct{}{}
 	}
 
-	return supportedTools, nil
+	return tools, nil
+}
+
+// GetToolVersions returns a map of tool names to their default versions
+func GetToolVersions() map[string]string {
+	return GetPluginManager().GetToolVersions()
+}
+
+// GetToolRuntimeDependencies returns a map of tool names to their runtime dependencies
+func GetToolRuntimeDependencies() map[string]string {
+	return GetPluginManager().GetToolRuntimeDependencies()
 }
