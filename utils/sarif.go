@@ -243,7 +243,9 @@ func FilterRulesFromSarif(sarifData []byte) ([]byte, error) {
 			if runMap, ok := run.(map[string]interface{}); ok {
 				if tool, ok := runMap["tool"].(map[string]interface{}); ok {
 					if driver, ok := tool["driver"].(map[string]interface{}); ok {
-						driver["rules"] = nil
+						if _, exists := driver["rules"]; exists {
+							driver["rules"] = nil
+						}
 					}
 				}
 			}
@@ -251,5 +253,10 @@ func FilterRulesFromSarif(sarifData []byte) ([]byte, error) {
 	}
 
 	// Marshal back to JSON with indentation
-	return json.MarshalIndent(report, "", "  ")
+	filteredData, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal filtered SARIF: %w", err)
+	}
+
+	return filteredData, nil
 }
