@@ -243,9 +243,8 @@ func FilterRulesFromSarif(sarifData []byte) ([]byte, error) {
 			if runMap, ok := run.(map[string]interface{}); ok {
 				if tool, ok := runMap["tool"].(map[string]interface{}); ok {
 					if driver, ok := tool["driver"].(map[string]interface{}); ok {
-						if _, exists := driver["rules"]; exists {
-							driver["rules"] = nil
-						}
+						// Always set rules to null to maintain consistent output format
+						driver["rules"] = nil
 					}
 				}
 			}
