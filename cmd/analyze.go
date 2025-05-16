@@ -482,20 +482,23 @@ var analyzeCmd = &cobra.Command{
 				log.Fatalf("Failed to merge SARIF outputs: %v", err)
 			}
 
+			// Filter rules from the merged SARIF output
+			sarifData, err := os.ReadFile(tmpOutputFile)
+			if err != nil {
+				log.Fatalf("Failed to read merged SARIF output: %v", err)
+			}
+
+			filteredData, err := utils.FilterRulesFromSarif(sarifData)
+			if err != nil {
+				log.Fatalf("Failed to filter rules from SARIF: %v", err)
+			}
+
 			if outputFile != "" {
-				// copy tmpOutputFile to outputFile
-				content, err := os.ReadFile(tmpOutputFile)
-				if err != nil {
-					log.Fatalf("Failed to read merged SARIF output: %v", err)
-				}
-				os.WriteFile(outputFile, content, utils.DefaultFilePerms)
+				// Write filtered SARIF to output file
+				os.WriteFile(outputFile, filteredData, utils.DefaultFilePerms)
 			} else {
-				// println the output file content
-				content, err := os.ReadFile(tmpOutputFile)
-				if err != nil {
-					log.Fatalf("Failed to read merged SARIF output: %v", err)
-				}
-				fmt.Println(string(content))
+				// Print the filtered SARIF output
+				fmt.Println(string(filteredData))
 			}
 		} else {
 			// Run tools without merging outputs
