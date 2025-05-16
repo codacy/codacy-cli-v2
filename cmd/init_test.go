@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools"
+	"codacy/cli-v2/utils"
 	"os"
 	"path/filepath"
 	"testing"
@@ -161,7 +163,7 @@ func TestCleanConfigDirectory(t *testing.T) {
 
 	for _, file := range testFiles {
 		filePath := filepath.Join(tempDir, file)
-		err := os.WriteFile(filePath, []byte("test content"), 0644)
+		err := os.WriteFile(filePath, []byte("test content"), utils.DefaultFilePerms)
 		assert.NoError(t, err, "Failed to create test file: %s", filePath)
 	}
 
@@ -178,4 +180,67 @@ func TestCleanConfigDirectory(t *testing.T) {
 	files, err = os.ReadDir(tempDir)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(files), "Expected 0 files after cleaning, got %d", len(files))
+}
+
+func TestInitCommand_NoToken(t *testing.T) {
+	tempDir := t.TempDir()
+	originalWD, err := os.Getwd()
+	assert.NoError(t, err, "Failed to get current working directory")
+	defer os.Chdir(originalWD)
+
+	// Use the real plugins/tools/semgrep/rules.yaml file
+	rulesPath := filepath.Join("plugins", "tools", "semgrep", "rules.yaml")
+	if _, err := os.Stat(rulesPath); os.IsNotExist(err) {
+		t.Skip("plugins/tools/semgrep/rules.yaml not found; skipping test")
+	}
+
+	// Change to the temp directory to simulate a new project
+	err = os.Chdir(tempDir)
+	assert.NoError(t, err, "Failed to change working directory to tempDir")
+
+	// Simulate running init with no token
+	initFlags.ApiToken = ""
+	initFlags.Provider = ""
+	initFlags.Organization = ""
+	initFlags.Repository = ""
+
+	// Call the Run logic from initCmd
+	if err := config.Config.CreateLocalCodacyDir(); err != nil {
+		t.Fatalf("Failed to create local codacy directory: %v", err)
+	}
+
+	toolsConfigDir := config.Config.ToolsConfigDirectory()
+	if err := os.MkdirAll(toolsConfigDir, utils.DefaultFilePerms); err != nil {
+		t.Fatalf("Failed to create tools-configs directory: %v", err)
+	}
+
+	cliLocalMode := len(initFlags.ApiToken) == 0
+	if cliLocalMode {
+		noTools := []tools.Tool{}
+		err := createConfigurationFiles(noTools, cliLocalMode)
+		assert.NoError(t, err, "createConfigurationFiles should not return an error")
+		if err := buildDefaultConfigurationFiles(toolsConfigDir); err != nil {
+			t.Fatalf("Failed to build default configuration files: %v", err)
+		}
+	}
+
+	// Assert that the expected config files are created
+	codacyDir := config.Config.LocalCodacyDirectory()
+	expectedFiles := []string{
+		"tools-configs/eslint.config.mjs",
+		"tools-configs/trivy.yaml",
+		"tools-configs/ruleset.xml",
+		"tools-configs/pylint.rc",
+		"tools-configs/analysis_options.yaml",
+		"tools-configs/semgrep.yaml",
+		"tools-configs/lizard.yaml",
+		"codacy.yaml",
+		"cli-config.yaml",
+	}
+
+	for _, file := range expectedFiles {
+		filePath := filepath.Join(codacyDir, file)
+		_, err := os.Stat(filePath)
+		assert.NoError(t, err, "Expected config file %s to be created", file)
+	}
 }
