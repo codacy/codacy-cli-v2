@@ -68,16 +68,9 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: chmod +x cli-v2
 
-      - name: Install yq on Windows
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          choco install yq -y
-          Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
-          refreshenv
-
       - name: Run init tests on Windows
         if: matrix.os == 'windows-latest'
+        id: run_init_tests_windows
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -102,7 +95,7 @@ jobs:
 
       - name: Run tool tests
         if: matrix.os != 'windows-latest'
-        id: run_tests
+        id: run_tool_tests_unix
         continue-on-error: true
         shell: bash
         run: |
@@ -136,7 +129,30 @@ jobs:
           fi
 
       - name: Check test results
-        if: failure()
+        if: always()
+        shell: bash
         run: |
-          echo "Job failed because some tests failed. Please check the logs above for details."
-          exit 1
+          FAILED=false
+          
+          # Check init tests on Windows
+          if [ "${{ matrix.os }}" = "windows-latest" ] && [ "${{ steps.run_init_tests_windows.outcome }}" = "failure" ]; then
+            echo "❌ Init tests failed on Windows"
+            FAILED=true
+          fi
+          
+          # Check init tests on Unix
+          if [ "${{ matrix.os }}" != "windows-latest" ] && [ "${{ steps.run_init_tests_unix.outcome }}" = "failure" ]; then
+            echo "❌ Init tests failed on Unix"
+            FAILED=true
+          fi
+          
+          # Check tool tests on Unix
+          if [ "${{ matrix.os }}" != "windows-latest" ] && [ "${{ steps.run_tool_tests_unix.outcome }}" = "failure" ]; then
+            echo "❌ Tool tests failed on Unix"
+            FAILED=true
+          fi
+          
+          if [ "$FAILED" = true ]; then
+            echo "Job failed because some tests failed. Please check the logs above for details."
+            exit 1
+          fi

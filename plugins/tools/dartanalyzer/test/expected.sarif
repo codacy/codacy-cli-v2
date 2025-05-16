@@ -42,7 +42,8 @@
       ],
       "tool": {
         "driver": {
-          "name": "dartanalyzer"
+          "name": "dartanalyzer",
+          "rules": null
         }
       }
     }

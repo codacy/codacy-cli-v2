@@ -1,5 +1,4 @@
 {
-  "version": "2.1.0",
   "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
   "runs": [
     {
@@ -188,95 +187,11 @@
       "tool": {
         "driver": {
           "name": "Semgrep OSS",
-          "rules": [
-            {
-              "defaultConfiguration": {
-                "level": "warning"
-              },
-              "fullDescription": {
-                "text": "Unsafe command execution with os.system"
-              },
-              "help": {
-                "markdown": "Unsafe command execution with os.system",
-                "text": "Unsafe command execution with os.system"
-              },
-              "id": "codacy.tools-configs.python.lang.security.audit.os-system.os-system",
-              "name": "codacy.tools-configs.python.lang.security.audit.os-system.os-system",
-              "properties": {
-                "precision": "very-high",
-                "tags": []
-              },
-              "shortDescription": {
-                "text": "Semgrep Finding: codacy.tools-configs.python.lang.security.audit.os-system.os-system"
-              }
-            },
-            {
-              "defaultConfiguration": {
-                "level": "warning"
-              },
-              "fullDescription": {
-                "text": "Unsafe deserialization with pickle"
-              },
-              "help": {
-                "markdown": "Unsafe deserialization with pickle",
-                "text": "Unsafe deserialization with pickle"
-              },
-              "id": "codacy.tools-configs.python.lang.security.audit.pickle.avoid-pickle",
-              "name": "codacy.tools-configs.python.lang.security.audit.pickle.avoid-pickle",
-              "properties": {
-                "precision": "very-high",
-                "tags": []
-              },
-              "shortDescription": {
-                "text": "Semgrep Finding: codacy.tools-configs.python.lang.security.audit.pickle.avoid-pickle"
-              }
-            },
-            {
-              "defaultConfiguration": {
-                "level": "warning"
-              },
-              "fullDescription": {
-                "text": "Hardcoded password detected"
-              },
-              "help": {
-                "markdown": "Hardcoded password detected",
-                "text": "Hardcoded password detected"
-              },
-              "id": "codacy.tools-configs.python.lang.security.audit.hardcoded-password.hardcoded-password",
-              "name": "codacy.tools-configs.python.lang.security.audit.hardcoded-password.hardcoded-password",
-              "properties": {
-                "precision": "very-high",
-                "tags": []
-              },
-              "shortDescription": {
-                "text": "Semgrep Finding: codacy.tools-configs.python.lang.security.audit.hardcoded-password.hardcoded-password"
-              }
-            },
-            {
-              "defaultConfiguration": {
-                "level": "warning"
-              },
-              "fullDescription": {
-                "text": "Unsafe command execution with shell=True"
-              },
-              "help": {
-                "markdown": "Unsafe command execution with shell=True",
-                "text": "Unsafe command execution with shell=True"
-              },
-              "id": "codacy.tools-configs.python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
-              "name": "codacy.tools-configs.python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
-              "properties": {
-                "precision": "very-high",
-                "tags": []
-              },
-              "shortDescription": {
-                "text": "Semgrep Finding: codacy.tools-configs.python.lang.security.audit.subprocess-shell-true.subprocess-shell-true"
-              }
-            }
-          ],
+          "rules": null,
           "semanticVersion": "1.78.0"
         }
       }
     }
-  ]
+  ],
+  "version": "2.1.0"
 }

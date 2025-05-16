@@ -8,35 +8,7 @@
           "fullName": "Trivy Vulnerability Scanner",
           "informationUri": "https://github.com/aquasecurity/trivy",
           "name": "Trivy",
-          "rules": [
-            {
-              "id": "CVE-2024-21538",
-              "name": "LanguageSpecificPackageVulnerability",
-              "shortDescription": {
-                "text": "cross-spawn: regular expression denial of service"
-              },
-              "fullDescription": {
-                "text": "Versions of the package cross-spawn before 7.0.5 are vulnerable to Regular Expression Denial of Service (ReDoS) due to improper input sanitization. An attacker can increase the CPU usage and crash the program by crafting a very large and well crafted string."
-              },
-              "defaultConfiguration": {
-                "level": "error"
-              },
-              "helpUri": "https://avd.aquasec.com/nvd/cve-2024-21538",
-              "help": {
-                "text": "Vulnerability CVE-2024-21538\nSeverity: HIGH\nPackage: cross-spawn\nFixed Version: 7.0.5, 6.0.6\nLink: [CVE-2024-21538](https://avd.aquasec.com/nvd/cve-2024-21538)\nVersions of the package cross-spawn before 7.0.5 are vulnerable to Regular Expression Denial of Service (ReDoS) due to improper input sanitization. An attacker can increase the CPU usage and crash the program by crafting a very large and well crafted string.",
-                "markdown": "**Vulnerability CVE-2024-21538**\n| Severity | Package | Fixed Version | Link |\n| --- | --- | --- | --- |\n|HIGH|cross-spawn|7.0.5, 6.0.6|[CVE-2024-21538](https://avd.aquasec.com/nvd/cve-2024-21538)|\n\nVersions of the package cross-spawn before 7.0.5 are vulnerable to Regular Expression Denial of Service (ReDoS) due to improper input sanitization. An attacker can increase the CPU usage and crash the program by crafting a very large and well crafted string."
-              },
-              "properties": {
-                "precision": "very-high",
-                "security-severity": "7.5",
-                "tags": [
-                  "vulnerability",
-                  "security",
-                  "HIGH"
-                ]
-              }
-            }
-          ],
+          "rules": null,
           "version": "0.59.1"
         }
       },

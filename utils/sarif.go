@@ -204,14 +204,8 @@ func MergeSarifOutputs(inputFiles []string, outputFile string) error {
 			return fmt.Errorf("failed to read SARIF file %s: %w", file, err)
 		}
 
-		// Filter out rule definitions from each input file
-		filteredData, err := FilterRuleDefinitions(data)
-		if err != nil {
-			return fmt.Errorf("failed to filter rules from SARIF file %s: %w", file, err)
-		}
-
 		var sarif SimpleSarifReport
-		if err := json.Unmarshal(filteredData, &sarif); err != nil {
+		if err := json.Unmarshal(data, &sarif); err != nil {
 			return fmt.Errorf("failed to parse SARIF file %s: %w", file, err)
 		}
 
@@ -234,18 +228,34 @@ func MergeSarifOutputs(inputFiles []string, outputFile string) error {
 	return nil
 }
 
-// FilterRuleDefinitions removes rule definitions from SARIF output
-func FilterRuleDefinitions(sarifData []byte) ([]byte, error) {
-	var report SarifReport
+// FilterRulesFromSarif removes rule definitions from SARIF output if needed
+// This should be called separately after MergeSarifOutputs if rule filtering is required
+func FilterRulesFromSarif(sarifData []byte) ([]byte, error) {
+	// Use a map to preserve all fields during unmarshaling
+	var report map[string]interface{}
 	if err := json.Unmarshal(sarifData, &report); err != nil {
 		return nil, fmt.Errorf("failed to parse SARIF data: %w", err)
 	}
 
-	// Remove rules from each run
-	for i := range report.Runs {
-		report.Runs[i].Tool.Driver.Rules = nil
+	// Navigate to the runs array and remove rules from each run
+	if runs, ok := report["runs"].([]interface{}); ok {
+		for _, run := range runs {
+			if runMap, ok := run.(map[string]interface{}); ok {
+				if tool, ok := runMap["tool"].(map[string]interface{}); ok {
+					if driver, ok := tool["driver"].(map[string]interface{}); ok {
+						// Always set rules to null to maintain consistent output format
+						driver["rules"] = nil
+					}
+				}
+			}
+		}
 	}
 
 	// Marshal back to JSON with indentation
-	return json.MarshalIndent(report, "", "  ")
+	filteredData, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal filtered SARIF: %w", err)
+	}
+
+	return filteredData, nil
 }

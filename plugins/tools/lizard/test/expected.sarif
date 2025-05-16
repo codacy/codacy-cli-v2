@@ -8,52 +8,7 @@
           "name": "Lizard",
           "version": "1.17.10",
           "informationUri": "https://github.com/terryyin/lizard",
-          "rules": [
-            {
-              "id": "Lizard_ccn-medium",
-              "shortDescription": {
-                "text": "Check the Cyclomatic Complexity value of a function or logic block. If the threshold is not met, raise a Medium issue. The default threshold is 8."
-              },
-              "properties": {
-                "tags": [
-                  "warning"
-                ]
-              }
-            },
-            {
-              "id": "Lizard_file-nloc-medium",
-              "shortDescription": {
-                "text": "Check the number of lines of code (without comments) in a file. If the threshold is not met, raise a Medium issue. The default threshold is 500."
-              },
-              "properties": {
-                "tags": [
-                  "warning"
-                ]
-              }
-            },
-            {
-              "id": "Lizard_nloc-medium",
-              "shortDescription": {
-                "text": "Check the number of lines of code (without comments) in a function. If the threshold is not met, raise a Medium issue. The default threshold is 50."
-              },
-              "properties": {
-                "tags": [
-                  "warning"
-                ]
-              }
-            },
-            {
-              "id": "Lizard_parameter-count-medium",
-              "shortDescription": {
-                "text": "Check the number of parameters sent to a function. If the threshold is not met, raise a Medium issue. The default threshold is 8."
-              },
-              "properties": {
-                "tags": [
-                  "warning"
-                ]
-              }
-            }
-          ]
+          "rules": null
         }
       },
       "results": [

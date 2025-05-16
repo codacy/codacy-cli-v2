@@ -20,7 +20,45 @@ function Normalize-Config {
     $ext = [System.IO.Path]::GetExtension($file).TrimStart('.')
     
     switch ($ext) {
-        { $_ -in @('yaml', 'yml') } { yq e '.' $file | Sort-Object }
+        { $_ -in @('yaml', 'yml') } {
+            # For YAML files, preserve structure and sort within sections
+            $content = Get-Content $file
+            $output = @()
+            $currentSection = ""
+            $sectionContent = @()
+            
+            foreach ($line in $content) {
+                $line = $line.Trim()
+                if ($line -match '^(\w+):$') {
+                    # If we have a previous section, sort and add its content
+                    if ($currentSection -and $sectionContent.Count -gt 0) {
+                        $output += $currentSection
+                        $output += ($sectionContent | Sort-Object)
+                        $sectionContent = @()
+                    }
+                    $currentSection = $line
+                }
+                elseif ($line -match '^\s*-\s*') {
+                    $sectionContent += $line
+                }
+                elseif ($line -match '\S') {
+                    $output += $line
+                }
+            }
+            
+            # Add the last section
+            if ($currentSection -and $sectionContent.Count -gt 0) {
+                $output += $currentSection
+                $output += ($sectionContent | Sort-Object)
+            }
+            
+            # Add empty line at the end if the original had one
+            if ($content[-1] -match '^\s*$') {
+                $output += ""
+            }
+            
+            $output
+        }
         { $_ -in @('rc', 'conf', 'ini', 'xml') } {
             Get-Content $file | ForEach-Object {
                 if ($_ -match '^[^#].*=.*,') {
@@ -54,14 +92,16 @@ function Compare-Files {
         $expectedContent = Normalize-Config $_.FullName
         $actualContent = Normalize-Config $actualFile
         
-        if (Compare-Object $expectedContent $actualContent) {
+        # Compare line by line
+        $diff = Compare-Object $expectedContent $actualContent -PassThru
+        if ($diff) {
             Write-Host "❌ $label/$($_.Name) does not match expected"
             Write-Host "=== Expected (normalized) ==="
             $expectedContent
             Write-Host "=== Actual (normalized) ==="
             $actualContent
             Write-Host "=== Diff ==="
-            Compare-Object $expectedContent $actualContent
+            $diff
             Write-Host "==================="
             exit 1
         }
@@ -70,7 +110,7 @@ function Compare-Files {
     
     # Compare subdirectories
     Get-ChildItem -Path $expectedDir -Directory | Where-Object { $_.Name -ne "logs" } | ForEach-Object {
-        $actualSubDir = if ($_.Name -eq ".codacy") { $actualDir } else { Join-Path $actualDir $_.Name }
+        $actualSubDir = Join-Path $actualDir $_.Name
         
         if (-not (Test-Path $actualSubDir)) {
             Write-Host "❌ Directory $label/$($_.Name) does not exist in actual output"

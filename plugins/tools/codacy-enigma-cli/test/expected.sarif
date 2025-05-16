@@ -5,7 +5,8 @@
     {
       "tool": {
         "driver": {
-          "name": "codacy-enigma-cli"
+          "name": "codacy-enigma-cli",
+          "rules": null
         }
       },
       "results": [

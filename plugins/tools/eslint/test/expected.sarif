@@ -44,7 +44,7 @@
         "driver": {
           "informationUri": "https://eslint.org",
           "name": "ESLint",
-          "rules": [],
+          "rules": null,
           "version": "8.57.0"
         }
       }
