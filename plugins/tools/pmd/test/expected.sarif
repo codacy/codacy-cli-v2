@@ -16,7 +16,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "./Test.java"
+                  "uri": "/plugins/tools/pmd/test/src/Test.java"
                 },
                 "region": {
                   "endColumn": 30,
@@ -38,7 +38,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "./Test.java"
+                  "uri": "/plugins/tools/pmd/test/src/Test.java"
                 },
                 "region": {
                   "endColumn": 16,
