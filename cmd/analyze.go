@@ -488,7 +488,7 @@ var analyzeCmd = &cobra.Command{
 				log.Fatalf("Failed to read merged SARIF output: %v", err)
 			}
 
-			filteredData, err := utils.FilterRuleDefinitions(sarifData)
+			filteredData, err := utils.FilterRulesFromSarif(sarifData)
 			if err != nil {
 				log.Fatalf("Failed to filter rules from SARIF: %v", err)
 			}
