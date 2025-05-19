@@ -24,5 +24,4 @@ type PatternConfiguration struct {
 	PatternDefinition PatternDefinition `json:"patternDefinition"`
 	Parameters        []ParameterConfiguration
 	Enabled           bool `json:"enabled"`
-	IsCustom          bool `json:"isCustom"`
 }
