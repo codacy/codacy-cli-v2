@@ -541,19 +541,10 @@ func cleanConfigDirectory(toolsConfigDir string) error {
 }
 
 func createLizardConfigFile(toolsConfigDir string, patternConfiguration []domain.PatternConfiguration) error {
-	var patterns []domain.PatternDefinition
 
-	if len(patternConfiguration) == 0 {
-		var err error
-		patterns, err = tools.FetchDefaultEnabledPatterns(Lizard)
-		if err != nil {
-			return err
-		}
-	} else {
-		patterns = make([]domain.PatternDefinition, len(patternConfiguration))
-		for i, pattern := range patternConfiguration {
-			patterns[i] = pattern.PatternDefinition
-		}
+	patterns := make([]domain.PatternDefinition, len(patternConfiguration))
+	for i, pattern := range patternConfiguration {
+		patterns[i] = pattern.PatternDefinition
 
 	}
 
