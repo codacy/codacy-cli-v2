@@ -116,8 +116,8 @@ func generateRuleXML(rule Rule) (string, error) {
 	// Generate rule with parameters
 	var params strings.Builder
 	for _, param := range rule.Parameters {
-		// Skip enabled, version, and parameters with empty values
-		if param.Name != "enabled" && param.Name != "version" && param.Value != "" {
+		// Skip enabled and version parameters, but include all others
+		if param.Name != "enabled" && param.Name != "version" {
 			params.WriteString(fmt.Sprintf(`
             <property name="%s" value="%s"/>`, param.Name, param.Value))
 		}
@@ -128,10 +128,12 @@ func generateRuleXML(rule Rule) (string, error) {
 		return fmt.Sprintf(`    <rule ref="%s"/>`, pmdRef), nil
 	}
 
-	return fmt.Sprintf(`    <rule ref="%s">
+	result := fmt.Sprintf(`    <rule ref="%s">
         <properties>%s
         </properties>
-    </rule>`, pmdRef, params.String()), nil
+    </rule>`, pmdRef, params.String())
+
+	return result, nil
 }
 
 // ConvertToPMDRuleset converts Codacy rules to PMD ruleset format
@@ -191,49 +193,26 @@ func CreatePmdConfig(configuration []domain.PatternConfiguration) string {
 		patternEnabled := true
 		var parameters []Parameter
 
-		// Create a map of default values from pattern definition
-		defaultValues := make(map[string]string)
-		for _, defParam := range pattern.PatternDefinition.Parameters {
-			if defParam.Default != "" {
-				defaultValues[defParam.Name] = defParam.Default
-			}
-		}
-
-		// Process user-defined parameters first
-		paramMap := make(map[string]string)
+		// Process user-defined parameters
 		for _, param := range pattern.Parameters {
 			if param.Name == "enabled" && param.Value == "false" {
 				patternEnabled = false
 				break
-			} else if param.Name != "enabled" {
-				// Store non-enabled parameters
+			} else if param.Name != "enabled" && param.Name != "version" {
+				// Check for a value - use Value if not empty, otherwise use Default
 				paramValue := param.Value
-
-				// If value is empty but we have a default, use the default
-				if paramValue == "" && defaultValues[param.Name] != "" {
-					paramValue = defaultValues[param.Name]
+				if paramValue == "" && param.Default != "" {
+					paramValue = param.Default
 				}
 
-				// Only add parameters with non-empty values
+				// Add parameter if it has a value
 				if paramValue != "" {
-					paramMap[param.Name] = paramValue
+					parameters = append(parameters, Parameter{
+						Name:  param.Name,
+						Value: paramValue,
+					})
 				}
 			}
-		}
-
-		// Also include default parameters that weren't specified in user parameters
-		for name, value := range defaultValues {
-			if _, exists := paramMap[name]; !exists {
-				paramMap[name] = value
-			}
-		}
-
-		// Convert parameter map to slice
-		for name, value := range paramMap {
-			parameters = append(parameters, Parameter{
-				Name:  name,
-				Value: value,
-			})
 		}
 
 		// Apply prefix to pattern ID if needed
