@@ -2,7 +2,6 @@ package tools
 
 import (
 	"encoding/xml"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -295,9 +294,6 @@ func TestNonEmptyParameterValue(t *testing.T) {
 
 	obtainedConfig := CreatePmdConfig(config)
 
-	// Debug output
-	fmt.Printf("Generated XML:\n%s\n", obtainedConfig)
-
 	var ruleset PMDRuleset
 	err := xml.Unmarshal([]byte(obtainedConfig), &ruleset)
 	assert.NoError(t, err)
@@ -342,12 +338,7 @@ func TestExactJsonStructure(t *testing.T) {
 		},
 	}
 
-	fmt.Println("Test input:")
-	fmt.Printf("Parameters: %+v\n", config[0].Parameters)
-
 	obtainedConfig := CreatePmdConfig(config)
-	fmt.Println("Generated XML:")
-	fmt.Println(obtainedConfig)
 
 	var ruleset PMDRuleset
 	err := xml.Unmarshal([]byte(obtainedConfig), &ruleset)
