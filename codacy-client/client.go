@@ -12,6 +12,7 @@ import (
 
 const timeout = 10 * time.Second
 
+// CodacyApiBase is the base URL for the Codacy API
 var CodacyApiBase = "https://app.codacy.com"
 
 func getRequest(url string, apiToken string) ([]byte, error) {
@@ -113,17 +114,17 @@ func parsePatternConfigurations(response []byte) ([]domain.PatternConfiguration,
 		return nil, "", fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	var patterns []domain.PatternDefinition
-	if err := json.Unmarshal(objmap["data"], &patterns); err != nil {
+	var patternResponses []domain.PatternResponse
+	if err := json.Unmarshal(objmap["data"], &patternResponses); err != nil {
 		return nil, "", fmt.Errorf("failed to unmarshal patterns: %w", err)
 	}
 
-	patternConfigurations := make([]domain.PatternConfiguration, len(patterns))
-	for i, pattern := range patterns {
+	patternConfigurations := make([]domain.PatternConfiguration, len(patternResponses))
+	for i, patternResp := range patternResponses {
 		patternConfigurations[i] = domain.PatternConfiguration{
-			PatternDefinition: pattern,
-			Parameters:        pattern.Parameters,
-			Enabled:           pattern.Enabled,
+			PatternDefinition: patternResp.PatternDefinition,
+			Parameters:        patternResp.Parameters,
+			Enabled:           patternResp.Enabled,
 		}
 	}
 
@@ -137,11 +138,13 @@ func parsePatternConfigurations(response []byte) ([]domain.PatternConfiguration,
 	return patternConfigurations, pagination.Cursor, nil
 }
 
+// GetDefaultToolPatternsConfig fetches the default patterns for a tool
 func GetDefaultToolPatternsConfig(initFlags domain.InitFlags, toolUUID string) ([]domain.PatternConfiguration, error) {
 	baseURL := fmt.Sprintf("%s/api/v3/tools/%s/patterns?enabled=true", CodacyApiBase, toolUUID)
 	return getAllPages(baseURL, initFlags, parsePatternConfigurations)
 }
 
+// GetRepositoryToolPatterns fetches the patterns for a tool in a repository
 func GetRepositoryToolPatterns(initFlags domain.InitFlags, toolUUID string) ([]domain.PatternConfiguration, error) {
 	baseURL := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns?enabled=true",
 		CodacyApiBase,
@@ -149,9 +152,12 @@ func GetRepositoryToolPatterns(initFlags domain.InitFlags, toolUUID string) ([]d
 		initFlags.Organization,
 		initFlags.Repository,
 		toolUUID)
-	return getAllPages(baseURL, initFlags, parsePatternConfigurations)
+
+	result, err := getAllPages(baseURL, initFlags, parsePatternConfigurations)
+	return result, err
 }
 
+// GetRepositoryTools fetches the tools for a repository
 func GetRepositoryTools(initFlags domain.InitFlags) ([]domain.Tool, error) {
 	baseURL := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools",
 		CodacyApiBase,
@@ -175,6 +181,7 @@ func GetRepositoryTools(initFlags domain.InitFlags) ([]domain.Tool, error) {
 	return toolsResponse.Data, nil
 }
 
+// GetToolsVersions fetches the tools versions
 func GetToolsVersions() ([]domain.Tool, error) {
 	baseURL := fmt.Sprintf("%s/api/v3/tools", CodacyApiBase)
 
@@ -192,6 +199,7 @@ func GetToolsVersions() ([]domain.Tool, error) {
 	return toolsResponse.Data, nil
 }
 
+// GetRepositoryLanguages fetches the languages for a repository
 func GetRepositoryLanguages(initFlags domain.InitFlags) ([]domain.Language, error) {
 	baseURL := fmt.Sprintf("%s/api/v3/organizations/%s/%s/repositories/%s/settings/languages",
 		CodacyApiBase,

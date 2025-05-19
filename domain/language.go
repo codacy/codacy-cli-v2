@@ -1,5 +1,6 @@
 package domain
 
+// Language represents a language in the Codacy API
 type Language struct {
 	Name           string   `json:"name"`
 	CodacyDefaults []string `json:"codacyDefaults"`
@@ -8,6 +9,7 @@ type Language struct {
 	Detected       bool     `json:"detected"`
 }
 
+// LanguagesResponse represents the structure of the languages response
 type LanguagesResponse struct {
 	Languages []Language `json:"languages"`
 }

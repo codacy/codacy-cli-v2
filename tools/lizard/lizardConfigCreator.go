@@ -74,26 +74,23 @@ func getThresholdFromParams(params []domain.ParameterConfiguration) int {
 // getMetricTypeFromPatternId extracts the metric type from the pattern ID
 func getMetricTypeFromPatternId(patternID string) string {
 	// Pattern IDs are in the format "Lizard_metric-severity"
+
 	parts := strings.Split(patternID, "_")
 	if len(parts) != 2 {
 		fmt.Printf("Warning: Invalid pattern ID format: %s\n", patternID)
 		return ""
 	}
 
-	// Extract the metric type from the second part
-	// For patterns like "file-nloc-critical", we need to get "file-nloc"
+	// Extract the metric parts from the second part
 	metricParts := strings.Split(parts[1], "-")
 	if len(metricParts) < 2 {
 		fmt.Printf("Warning: Invalid metric format: %s\n", parts[1])
 		return ""
 	}
 
-	// Handle compound metric types
-	metricType := metricParts[0]
-	if len(metricParts) > 2 {
-		// For patterns like "file-nloc-critical", combine "file" and "nloc"
-		metricType = metricParts[0] + "-" + metricParts[1]
-	}
+	// The last part is always the severity (medium, critical, etc.)
+	// Everything before that is the metric type
+	metricType := strings.Join(metricParts[:len(metricParts)-1], "-")
 
 	// Validating that the metric type is one of the known types
 	switch metricType {
