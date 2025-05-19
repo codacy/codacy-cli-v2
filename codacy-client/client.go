@@ -193,7 +193,7 @@ func GetToolsVersions() ([]domain.Tool, error) {
 }
 
 func GetRepositoryLanguages(initFlags domain.InitFlags) ([]domain.Language, error) {
-	baseURL := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/settings/languages",
+	baseURL := fmt.Sprintf("%s/api/v3/organizations/%s/%s/repositories/%s/settings/languages",
 		CodacyApiBase,
 		initFlags.Provider,
 		initFlags.Organization,
