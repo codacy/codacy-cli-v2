@@ -4,7 +4,7 @@ runtimes:
     - dart@3.7.2
     - java@17.0.10
 tools:
-    - eslint@9.3.0
+    - eslint@8.57.0
     - trivy@0.59.1
     - pylint@3.3.6
     - pmd@6.55.0

@@ -53,22 +53,66 @@ func CreateEslintConfig(configuration []domain.PatternConfiguration) string {
 
 		parametersString := ""
 
+		// Find default value for unnamedParam if needed
+		defaultUnnamedParamValue := ""
+		for _, paramDef := range patternConfiguration.PatternDefinition.Parameters {
+			if paramDef.Name == "unnamedParam" {
+				defaultUnnamedParamValue = paramDef.Default
+				break
+			}
+		}
+
+		// Process parameters
+		foundUnnamedParam := false
 		for _, parameter := range patternConfiguration.Parameters {
 			if parameter.Name == "unnamedParam" {
-				parametersString += quoteWhenIsNotJson(parameter.Value)
+				foundUnnamedParam = true
+				// If value is empty but we have a default, use the default
+				if parameter.Value == "" && defaultUnnamedParamValue != "" {
+					parametersString += quoteWhenIsNotJson(defaultUnnamedParamValue)
+				} else if parameter.Value != "" {
+					parametersString += quoteWhenIsNotJson(parameter.Value)
+				}
 			}
+		}
+
+		// If we found an unnamed param with empty value but have a default, use it
+		if foundUnnamedParam && parametersString == "" && defaultUnnamedParamValue != "" {
+			parametersString += quoteWhenIsNotJson(defaultUnnamedParamValue)
 		}
 
 		// build named parameters json object
 		namedParametersString := ""
 		for _, parameter := range patternConfiguration.Parameters {
 			if parameter.Name != "unnamedParam" {
+				paramValue := parameter.Value
+
+				// If value is empty, look for default in pattern definition
+				if paramValue == "" {
+					for _, paramDef := range patternConfiguration.PatternDefinition.Parameters {
+						if paramDef.Name == parameter.Name && paramDef.Default != "" {
+							paramValue = paramDef.Default
+							break
+						}
+					}
+				}
+
+				// Skip only if both value and default are empty
+				if paramValue == "" {
+					continue
+				}
+
 				if len(namedParametersString) == 0 {
 					namedParametersString += "{"
 				} else {
 					namedParametersString += ", "
 				}
-				namedParametersString += fmt.Sprintf("\"%s\": %s", parameter.Name, quoteWhenIsNotJson(parameter.Value))
+
+				if paramValue == "true" || paramValue == "false" {
+					namedParametersString += fmt.Sprintf("\"%s\": %s", parameter.Name, paramValue)
+				} else {
+					namedParametersString += fmt.Sprintf("\"%s\": %s", parameter.Name, quoteWhenIsNotJson(paramValue))
+				}
 			}
 		}
 		if len(namedParametersString) > 0 {
@@ -84,7 +128,7 @@ func CreateEslintConfig(configuration []domain.PatternConfiguration) string {
 		result += "          "
 
 		if parametersString == "" {
-			result += fmt.Sprintf(`"%s": "error",`, rule)
+			result += fmt.Sprintf(`"%s": ["error"],`, rule)
 			result += "\n"
 		} else {
 			result += fmt.Sprintf(`"%s": ["error", %s],`, rule, parametersString)
