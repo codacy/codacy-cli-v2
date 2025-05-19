@@ -179,3 +179,207 @@ func TestCreatePmdConfigEmpty(t *testing.T) {
 	assert.Contains(t, obtainedConfig, `<rule ref="category/java/bestpractices.xml/AvoidReassigningParameters"/>`, "XML should contain expected rules")
 	assert.Contains(t, obtainedConfig, `<rule ref="category/java/codestyle.xml/ClassNamingConventions">`, "XML should contain rules with properties")
 }
+
+func TestCreatePmdConfigEmptyParameterValues(t *testing.T) {
+	config := []domain.PatternConfiguration{
+		{
+			PatternDefinition: domain.PatternDefinition{
+				Id: "java/codestyle/ClassNamingConventions",
+			},
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:  "enabled",
+					Value: "true",
+				},
+				{
+					Name:  "testClassPattern",
+					Value: "", // Empty value should be skipped
+				},
+				{
+					Name:  "abstractClassPattern",
+					Value: "Abstract.*", // Non-empty value should be included
+				},
+				{
+					Name:  "classPattern",
+					Value: "", // Empty value should be skipped
+				},
+			},
+		},
+	}
+
+	obtainedConfig := CreatePmdConfig(config)
+
+	var ruleset PMDRuleset
+	err := xml.Unmarshal([]byte(obtainedConfig), &ruleset)
+	if err != nil {
+		t.Fatalf("Failed to parse generated XML: %v", err)
+	}
+
+	// Find the ClassNamingConventions rule
+	var classNamingRule *PMDRule
+	for i, rule := range ruleset.Rules {
+		if strings.Contains(rule.Ref, "ClassNamingConventions") {
+			classNamingRule = &ruleset.Rules[i]
+			break
+		}
+	}
+
+	// Rule should exist
+	assert.NotNil(t, classNamingRule, "ClassNamingConventions rule should exist")
+
+	// Properties should exist
+	assert.NotNil(t, classNamingRule.Properties, "Properties section should exist")
+
+	// Should only contain the non-empty parameter
+	foundAbstractPattern := false
+	for _, prop := range classNamingRule.Properties.Properties {
+		// Should not find empty value parameters
+		assert.NotEqual(t, "testClassPattern", prop.Name, "Empty parameter should be skipped")
+		assert.NotEqual(t, "classPattern", prop.Name, "Empty parameter should be skipped")
+
+		// Should find non-empty parameter
+		if prop.Name == "abstractClassPattern" {
+			foundAbstractPattern = true
+			assert.Equal(t, "Abstract.*", prop.Value)
+		}
+	}
+
+	assert.True(t, foundAbstractPattern, "Non-empty parameter should be included")
+}
+
+func TestCreatePmdConfigWithDefaultParameterValues(t *testing.T) {
+	config := []domain.PatternConfiguration{
+		{
+			PatternDefinition: domain.PatternDefinition{
+				Id: "PMD_category_pom_errorprone_InvalidDependencyTypes",
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:    "validTypes",
+						Default: "pom,jar,maven-plugin,ejb,war,ear,rar,par",
+					},
+				},
+			},
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:  "enabled",
+					Value: "true",
+				},
+				{
+					Name:  "validTypes",
+					Value: "", // Empty value should use default
+				},
+			},
+		},
+	}
+
+	obtainedConfig := CreatePmdConfig(config)
+
+	var ruleset PMDRuleset
+	err := xml.Unmarshal([]byte(obtainedConfig), &ruleset)
+	if err != nil {
+		t.Fatalf("Failed to parse generated XML: %v", err)
+	}
+
+	// Find the InvalidDependencyTypes rule
+	var found bool
+	for _, rule := range ruleset.Rules {
+		if strings.Contains(rule.Ref, "InvalidDependencyTypes") {
+			found = true
+			// Rule should have properties
+			assert.NotNil(t, rule.Properties, "Rule should have properties")
+
+			// Properties should contain validTypes with default value
+			foundParam := false
+			for _, prop := range rule.Properties.Properties {
+				if prop.Name == "validTypes" {
+					foundParam = true
+					assert.Equal(t, "pom,jar,maven-plugin,ejb,war,ear,rar,par", prop.Value, "Property should use default value")
+				}
+			}
+			assert.True(t, foundParam, "validTypes parameter should be included with default value")
+		}
+	}
+	assert.True(t, found, "InvalidDependencyTypes rule should exist")
+}
+
+func TestDefaultParametersIncludedWhenNotSpecified(t *testing.T) {
+	config := []domain.PatternConfiguration{
+		{
+			PatternDefinition: domain.PatternDefinition{
+				Id: "PMD_category_ecmascript_codestyle_AssignmentInOperand",
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:    "allowWhile",
+						Default: "false",
+					},
+					{
+						Name:    "allowIf",
+						Default: "false",
+					},
+					{
+						Name:    "allowTernaryResults",
+						Default: "false",
+					},
+					{
+						Name:    "allowTernary",
+						Default: "false",
+					},
+					{
+						Name:    "allowFor",
+						Default: "false",
+					},
+					{
+						Name:    "allowIncrementDecrement",
+						Default: "false",
+					},
+				},
+			},
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:  "enabled",
+					Value: "true",
+				},
+				// No other parameters specified - should use defaults
+			},
+		},
+	}
+
+	obtainedConfig := CreatePmdConfig(config)
+
+	var ruleset PMDRuleset
+	err := xml.Unmarshal([]byte(obtainedConfig), &ruleset)
+	if err != nil {
+		t.Fatalf("Failed to parse generated XML: %v", err)
+	}
+
+	// Find the AssignmentInOperand rule
+	var found bool
+	for _, rule := range ruleset.Rules {
+		if strings.Contains(rule.Ref, "AssignmentInOperand") {
+			found = true
+			// Rule should have properties
+			assert.NotNil(t, rule.Properties, "Rule should have properties")
+
+			// Check all the default parameters are included
+			expectedParams := map[string]string{
+				"allowWhile":              "false",
+				"allowIf":                 "false",
+				"allowTernaryResults":     "false",
+				"allowTernary":            "false",
+				"allowFor":                "false",
+				"allowIncrementDecrement": "false",
+			}
+
+			for _, prop := range rule.Properties.Properties {
+				expectedValue, exists := expectedParams[prop.Name]
+				assert.True(t, exists, "Unexpected parameter: %s", prop.Name)
+				assert.Equal(t, expectedValue, prop.Value, "Parameter %s has wrong value", prop.Name)
+				delete(expectedParams, prop.Name)
+			}
+
+			// All expected parameters should have been found
+			assert.Empty(t, expectedParams, "Not all default parameters were included")
+		}
+	}
+	assert.True(t, found, "AssignmentInOperand rule should exist")
+}
