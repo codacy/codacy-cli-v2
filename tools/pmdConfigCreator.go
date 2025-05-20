@@ -116,16 +116,24 @@ func generateRuleXML(rule Rule) (string, error) {
 	// Generate rule with parameters
 	var params strings.Builder
 	for _, param := range rule.Parameters {
-		if param.Name != "enabled" && param.Name != "version" { // Skip enabled and version parameters
+		// Skip enabled and version parameters, but include all others
+		if param.Name != "enabled" && param.Name != "version" {
 			params.WriteString(fmt.Sprintf(`
             <property name="%s" value="%s"/>`, param.Name, param.Value))
 		}
 	}
 
-	return fmt.Sprintf(`    <rule ref="%s">
+	// If no parameters left after filtering, just output the rule without properties
+	if params.Len() == 0 {
+		return fmt.Sprintf(`    <rule ref="%s"/>`, pmdRef), nil
+	}
+
+	result := fmt.Sprintf(`    <rule ref="%s">
         <properties>%s
         </properties>
-    </rule>`, pmdRef, params.String()), nil
+    </rule>`, pmdRef, params.String())
+
+	return result, nil
 }
 
 // ConvertToPMDRuleset converts Codacy rules to PMD ruleset format
@@ -185,16 +193,25 @@ func CreatePmdConfig(configuration []domain.PatternConfiguration) string {
 		patternEnabled := true
 		var parameters []Parameter
 
+		// Process user-defined parameters
 		for _, param := range pattern.Parameters {
 			if param.Name == "enabled" && param.Value == "false" {
 				patternEnabled = false
 				break
-			} else if param.Name != "enabled" {
-				// Store non-enabled parameters
-				parameters = append(parameters, Parameter{
-					Name:  param.Name,
-					Value: param.Value,
-				})
+			} else if param.Name != "enabled" && param.Name != "version" {
+				// Check for a value - use Value if not empty, otherwise use Default
+				paramValue := param.Value
+				if paramValue == "" && param.Default != "" {
+					paramValue = param.Default
+				}
+
+				// Add parameter if it has a value
+				if paramValue != "" {
+					parameters = append(parameters, Parameter{
+						Name:  param.Name,
+						Value: paramValue,
+					})
+				}
 			}
 		}
 

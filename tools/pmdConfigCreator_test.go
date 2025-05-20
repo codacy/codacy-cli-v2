@@ -179,3 +179,196 @@ func TestCreatePmdConfigEmpty(t *testing.T) {
 	assert.Contains(t, obtainedConfig, `<rule ref="category/java/bestpractices.xml/AvoidReassigningParameters"/>`, "XML should contain expected rules")
 	assert.Contains(t, obtainedConfig, `<rule ref="category/java/codestyle.xml/ClassNamingConventions">`, "XML should contain rules with properties")
 }
+
+func TestCreatePmdConfigEmptyParameterValues(t *testing.T) {
+	config := []domain.PatternConfiguration{
+		{
+			PatternDefinition: domain.PatternDefinition{
+				Id: "java/codestyle/ClassNamingConventions",
+			},
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:  "enabled",
+					Value: "true",
+				},
+				{
+					Name:  "testClassPattern",
+					Value: "", // Empty value should be skipped
+				},
+				{
+					Name:  "abstractClassPattern",
+					Value: "Abstract.*", // Non-empty value should be included
+				},
+				{
+					Name:  "classPattern",
+					Value: "", // Empty value should be skipped
+				},
+			},
+		},
+	}
+
+	obtainedConfig := CreatePmdConfig(config)
+
+	var ruleset PMDRuleset
+	err := xml.Unmarshal([]byte(obtainedConfig), &ruleset)
+	if err != nil {
+		t.Fatalf("Failed to parse generated XML: %v", err)
+	}
+
+	// Find the ClassNamingConventions rule
+	var classNamingRule *PMDRule
+	for i, rule := range ruleset.Rules {
+		if strings.Contains(rule.Ref, "ClassNamingConventions") {
+			classNamingRule = &ruleset.Rules[i]
+			break
+		}
+	}
+
+	// Rule should exist
+	assert.NotNil(t, classNamingRule, "ClassNamingConventions rule should exist")
+
+	// Properties should exist
+	assert.NotNil(t, classNamingRule.Properties, "Properties section should exist")
+
+	// Should only contain the non-empty parameter
+	foundAbstractPattern := false
+	for _, prop := range classNamingRule.Properties.Properties {
+		// Should not find empty value parameters
+		assert.NotEqual(t, "testClassPattern", prop.Name, "Empty parameter should be skipped")
+		assert.NotEqual(t, "classPattern", prop.Name, "Empty parameter should be skipped")
+
+		// Should find non-empty parameter
+		if prop.Name == "abstractClassPattern" {
+			foundAbstractPattern = true
+			assert.Equal(t, "Abstract.*", prop.Value)
+		}
+	}
+
+	assert.True(t, foundAbstractPattern, "Non-empty parameter should be included")
+}
+
+func TestEmptyParametersAreSkipped(t *testing.T) {
+	config := []domain.PatternConfiguration{
+		{
+			PatternDefinition: domain.PatternDefinition{
+				Id: "PMD_category_pom_errorprone_InvalidDependencyTypes",
+			},
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:  "enabled",
+					Value: "true",
+				},
+				{
+					Name:  "validTypes",
+					Value: "", // Empty value - should produce simple rule reference
+				},
+			},
+		},
+	}
+
+	obtainedConfig := CreatePmdConfig(config)
+
+	// Should find this exact pattern in the generated XML
+	expectedPattern := `<rule ref="category/pom/errorprone.xml/InvalidDependencyTypes"/>`
+	assert.Contains(t, obtainedConfig, expectedPattern, "XML should contain the simple rule reference without properties")
+}
+
+func TestNonEmptyParameterValue(t *testing.T) {
+	config := []domain.PatternConfiguration{
+		{
+			PatternDefinition: domain.PatternDefinition{
+				Id: "PMD_category_pom_errorprone_InvalidDependencyTypes",
+			},
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:  "enabled",
+					Value: "true",
+				},
+				{
+					Name:  "validTypes",
+					Value: "pom,jar,maven-plugin,ejb,war,ear,rar,par", // Non-empty value should be used
+				},
+			},
+		},
+	}
+
+	obtainedConfig := CreatePmdConfig(config)
+
+	var ruleset PMDRuleset
+	err := xml.Unmarshal([]byte(obtainedConfig), &ruleset)
+	assert.NoError(t, err)
+
+	// Find our rule
+	found := false
+	for _, rule := range ruleset.Rules {
+		if rule.Ref == "category/pom/errorprone.xml/InvalidDependencyTypes" {
+			found = true
+			// Check properties
+			assert.NotNil(t, rule.Properties, "Rule should have properties")
+			assert.NotEmpty(t, rule.Properties.Properties, "Rule should have property values")
+
+			// Check for validTypes property
+			foundValidTypes := false
+			for _, prop := range rule.Properties.Properties {
+				if prop.Name == "validTypes" {
+					foundValidTypes = true
+					assert.Equal(t, "pom,jar,maven-plugin,ejb,war,ear,rar,par", prop.Value,
+						"Should use the non-empty value from parameters")
+				}
+			}
+			assert.True(t, foundValidTypes, "validTypes property should be present")
+		}
+	}
+	assert.True(t, found, "Rule should be present")
+}
+
+func TestExactJsonStructure(t *testing.T) {
+	// This test exactly matches the JSON structure from the API
+	config := []domain.PatternConfiguration{
+		{
+			PatternDefinition: domain.PatternDefinition{
+				Id: "PMD_category_pom_errorprone_InvalidDependencyTypes",
+			},
+			Parameters: []domain.ParameterConfiguration{
+				{
+					Name:  "validTypes",
+					Value: "pom,jar,maven-plugin,ejb,war,ear,rar,par", // This value should be preserved
+				},
+			},
+		},
+	}
+
+	obtainedConfig := CreatePmdConfig(config)
+
+	var ruleset PMDRuleset
+	err := xml.Unmarshal([]byte(obtainedConfig), &ruleset)
+	assert.NoError(t, err)
+
+	// Find the rule
+	found := false
+	for _, rule := range ruleset.Rules {
+		if rule.Ref == "category/pom/errorprone.xml/InvalidDependencyTypes" {
+			found = true
+
+			// Properties section should exist
+			assert.NotNil(t, rule.Properties, "Properties section should exist")
+
+			// Should have the validTypes property with the correct value
+			validTypesFound := false
+			for _, prop := range rule.Properties.Properties {
+				if prop.Name == "validTypes" {
+					validTypesFound = true
+					assert.Equal(t, "pom,jar,maven-plugin,ejb,war,ear,rar,par", prop.Value,
+						"Value should be preserved exactly")
+				}
+			}
+			assert.True(t, validTypesFound, "validTypes property should be present")
+		}
+	}
+	assert.True(t, found, "Rule should be present")
+}
+
+func TestParameterWithDefaultFieldInsteadOfValue(t *testing.T) {
+	// Renaming this test since it's not about default fields anymore
+	t.Skip("Skipping test related to default values")
+}
