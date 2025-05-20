@@ -2,8 +2,10 @@ package lizard
 
 import (
 	"codacy/cli-v2/domain"
+	"codacy/cli-v2/utils"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -11,7 +13,7 @@ import (
 )
 
 // CreateLizardConfig generates a Lizard configuration file content based on the API configuration
-func CreateLizardConfig(patterns []domain.PatternDefinition) (string, error) {
+func CreateLizardConfig(toolsConfigDir string, patterns []domain.PatternDefinition) error {
 	patternInfo := make(map[string]map[string]interface{})
 
 	for _, pattern := range patterns {
@@ -45,10 +47,10 @@ func CreateLizardConfig(patterns []domain.PatternDefinition) (string, error) {
 
 	yamlData, err := yaml.Marshal(config)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal YAML: %w", err)
+		return fmt.Errorf("failed to marshal YAML: %w", err)
 	}
 
-	return string(yamlData), nil
+	return os.WriteFile(filepath.Join(toolsConfigDir, "lizard.yaml"), yamlData, utils.DefaultFilePerms)
 }
 
 // getThresholdFromParams extracts the threshold value from the parameters

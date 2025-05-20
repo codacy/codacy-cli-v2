@@ -299,86 +299,47 @@ func createToolFileConfigurations(tool domain.Tool, patternConfiguration []domai
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
 	switch tool.Uuid {
 	case ESLint:
-		if len(patternConfiguration) > 0 {
-			eslintConfigurationString := tools.CreateEslintConfig(patternConfiguration)
-
-			eslintConfigFile, err := os.Create(filepath.Join(toolsConfigDir, "eslint.config.mjs"))
-			if err != nil {
-				return fmt.Errorf("failed to create eslint config file: %v", err)
-			}
-			defer eslintConfigFile.Close()
-
-			_, err = eslintConfigFile.WriteString(eslintConfigurationString)
-			if err != nil {
-				return fmt.Errorf("failed to write eslint config: %v", err)
-			}
-			fmt.Println("ESLint configuration created based on Codacy settings. Ignoring plugin rules. ESLint plugins are not supported yet.")
-		} else {
-			err := createDefaultEslintConfigFile(toolsConfigDir)
-			if err != nil {
-				return fmt.Errorf("failed to create default ESLint config: %v", err)
-			}
-			fmt.Println("Default ESLint configuration created")
+		err := tools.CreateEslintConfig(toolsConfigDir, patternConfiguration)
+		if err != nil {
+			return fmt.Errorf("failed to write eslint config: %v", err)
 		}
+		fmt.Println("ESLint configuration created based on Codacy settings. Ignoring plugin rules. ESLint plugins are not supported yet.")
 	case Trivy:
-		if len(patternConfiguration) > 0 {
-			err := createTrivyConfigFile(patternConfiguration, toolsConfigDir)
-			if err != nil {
-				return fmt.Errorf("failed to create Trivy config: %v", err)
-			}
-			fmt.Println("Trivy configuration created based on Codacy settings")
-		} else {
-			err := createDefaultTrivyConfigFile(toolsConfigDir)
-			if err != nil {
-				return fmt.Errorf("failed to create default Trivy config: %v", err)
-			}
+		err := createTrivyConfigFile(patternConfiguration, toolsConfigDir)
+		if err != nil {
+			return fmt.Errorf("failed to create Trivy config: %v", err)
 		}
+		fmt.Println("Trivy configuration created based on Codacy settings")
 	case PMD:
-		if len(patternConfiguration) > 0 {
-			err := createPMDConfigFile(patternConfiguration, toolsConfigDir)
-			if err != nil {
-				return fmt.Errorf("failed to create PMD config: %v", err)
-			}
-
-			fmt.Println("PMD configuration created based on Codacy settings")
-		} else {
-			err := createDefaultPMDConfigFile(toolsConfigDir)
-			if err != nil {
-				return fmt.Errorf("failed to create default PMD config: %v", err)
-			}
+		err := createPMDConfigFile(patternConfiguration, toolsConfigDir)
+		if err != nil {
+			return fmt.Errorf("failed to create PMD config: %v", err)
 		}
-
+		fmt.Println("PMD configuration created based on Codacy settings")
 	case PyLint:
-		if len(patternConfiguration) > 0 {
-			err := createPylintConfigFile(patternConfiguration, toolsConfigDir)
-			if err != nil {
-				return fmt.Errorf("failed to create Pylint config: %v", err)
-			}
-			fmt.Println("Pylint configuration created based on Codacy settings")
-		} else {
-			err := createDefaultPylintConfigFile(toolsConfigDir)
-			if err != nil {
-				return fmt.Errorf("failed to create default Pylint config: %v", err)
-			}
+		err := createPylintConfigFile(patternConfiguration, toolsConfigDir)
+		if err != nil {
+			return fmt.Errorf("failed to create Pylint config: %v", err)
 		}
+		fmt.Println("Pylint configuration created based on Codacy settings")
 	case DartAnalyzer:
-		if len(patternConfiguration) > 0 {
-			err := createDartAnalyzerConfigFile(patternConfiguration, toolsConfigDir)
-			if err != nil {
-				return fmt.Errorf("failed to create Dart Analyzer config: %v", err)
-			}
-			fmt.Println("Dart configuration created based on Codacy settings")
+		err := createDartAnalyzerConfigFile(patternConfiguration, toolsConfigDir)
+		if err != nil {
+			return fmt.Errorf("failed to create Dart Analyzer config: %v", err)
 		}
+		fmt.Println("Dart configuration created based on Codacy settings")
 	case Semgrep:
-		if len(patternConfiguration) > 0 {
-			err := createSemgrepConfigFile(patternConfiguration, toolsConfigDir)
-			if err != nil {
-				return fmt.Errorf("failed to create Semgrep config: %v", err)
-			}
-			fmt.Println("Semgrep configuration created based on Codacy settings")
+		err := createSemgrepConfigFile(patternConfiguration, toolsConfigDir)
+		if err != nil {
+			return fmt.Errorf("failed to create Semgrep config: %v", err)
 		}
+		fmt.Println("Semgrep configuration created based on Codacy settings")
 	case Lizard:
-		createLizardConfigFile(toolsConfigDir, patternConfiguration)
+		err := createLizardConfigFile(toolsConfigDir, patternConfiguration)
+		if err != nil {
+			return fmt.Errorf("failed to create Lizard config: %v", err)
+		}
+		fmt.Println("Lizard configuration created based on Codacy settings")
 	}
 	return nil
 }
@@ -388,18 +349,8 @@ func createPMDConfigFile(config []domain.PatternConfiguration, toolsConfigDir st
 	return os.WriteFile(filepath.Join(toolsConfigDir, "ruleset.xml"), []byte(pmdConfigurationString), utils.DefaultFilePerms)
 }
 
-func createDefaultPMDConfigFile(toolsConfigDir string) error {
-	content := tools.CreatePmdConfig([]domain.PatternConfiguration{})
-	return os.WriteFile(filepath.Join(toolsConfigDir, "ruleset.xml"), []byte(content), utils.DefaultFilePerms)
-}
-
 func createPylintConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
 	pylintConfigurationString := pylint.GeneratePylintRC(config)
-	return os.WriteFile(filepath.Join(toolsConfigDir, "pylint.rc"), []byte(pylintConfigurationString), utils.DefaultFilePerms)
-}
-
-func createDefaultPylintConfigFile(toolsConfigDir string) error {
-	pylintConfigurationString := pylint.GeneratePylintRCDefault()
 	return os.WriteFile(filepath.Join(toolsConfigDir, "pylint.rc"), []byte(pylintConfigurationString), utils.DefaultFilePerms)
 }
 
@@ -416,27 +367,6 @@ func createDartAnalyzerConfigFile(config []domain.PatternConfiguration, toolsCon
 
 	dartAnalyzerConfigurationString := tools.CreateDartAnalyzerConfig(config)
 	return os.WriteFile(filepath.Join(toolsConfigDir, "analysis_options.yaml"), []byte(dartAnalyzerConfigurationString), utils.DefaultFilePerms)
-}
-
-// createDefaultTrivyConfigFile creates a default trivy.yaml configuration file
-func createDefaultTrivyConfigFile(toolsConfigDir string) error {
-	// Use empty tool configuration to get default settings
-	emptyConfig := []domain.PatternConfiguration{}
-	content := tools.CreateTrivyConfig(emptyConfig)
-
-	// Write to file
-	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(content), utils.DefaultFilePerms)
-}
-
-// createDefaultEslintConfigFile creates a default eslint.config.mjs configuration file
-func createDefaultEslintConfigFile(toolsConfigDir string) error {
-	// Use empty tool configuration to get default settings
-	//
-	emptyConfig := []domain.PatternConfiguration{}
-	content := tools.CreateEslintConfig(emptyConfig)
-
-	// Write to file
-	return os.WriteFile(filepath.Join(toolsConfigDir, "eslint.config.mjs"), []byte(content), utils.DefaultFilePerms)
 }
 
 // SemgrepRulesFile represents the structure of the rules.yaml file
@@ -485,35 +415,20 @@ func cleanConfigDirectory(toolsConfigDir string) error {
 }
 
 func createLizardConfigFile(toolsConfigDir string, patternConfiguration []domain.PatternConfiguration) error {
-	var patterns []domain.PatternDefinition
+	patterns := make([]domain.PatternDefinition, len(patternConfiguration))
+	for i, pattern := range patternConfiguration {
+		patterns[i] = pattern.PatternDefinition
 
-	if len(patternConfiguration) == 0 {
-		patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(initFlags, Lizard)
-		if err != nil {
-			return err
-		}
-		patterns = make([]domain.PatternDefinition, len(patternsConfig))
-		for i, pattern := range patternsConfig {
-			patterns[i] = pattern.PatternDefinition
-		}
-	} else {
-		patterns = make([]domain.PatternDefinition, len(patternConfiguration))
-		for i, pattern := range patternConfiguration {
-			patterns[i] = pattern.PatternDefinition
-		}
 	}
-
-	content, err := lizard.CreateLizardConfig(patterns)
+	err := lizard.CreateLizardConfig(toolsConfigDir, patterns)
 	if err != nil {
 		return fmt.Errorf("failed to create Lizard configuration: %w", err)
 	}
-
-	return os.WriteFile(filepath.Join(toolsConfigDir, "lizard.yaml"), []byte(content), utils.DefaultFilePerms)
+	return nil
 }
 
 // buildDefaultConfigurationFiles creates default configuration files for all tools
 func buildDefaultConfigurationFiles(toolsConfigDir string) error {
-
 	for _, tool := range AvailableTools {
 		patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(initFlags, tool)
 		if err != nil {
@@ -521,17 +436,8 @@ func buildDefaultConfigurationFiles(toolsConfigDir string) error {
 		}
 		switch tool {
 		case ESLint:
-			eslintConfigurationString := tools.CreateEslintConfig(patternsConfig)
-
-			eslintConfigFile, err := os.Create(filepath.Join(toolsConfigDir, "eslint.config.mjs"))
-			if err != nil {
+			if err := tools.CreateEslintConfig(toolsConfigDir, patternsConfig); err != nil {
 				return fmt.Errorf("failed to create eslint config file: %v", err)
-			}
-			defer eslintConfigFile.Close()
-
-			_, err = eslintConfigFile.WriteString(eslintConfigurationString)
-			if err != nil {
-				return fmt.Errorf("failed to write eslint config: %v", err)
 			}
 		case Trivy:
 			if err := createTrivyConfigFile(patternsConfig, toolsConfigDir); err != nil {
@@ -559,7 +465,6 @@ func buildDefaultConfigurationFiles(toolsConfigDir string) error {
 			}
 		}
 	}
-
 	return nil
 }
 
