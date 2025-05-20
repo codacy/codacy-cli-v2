@@ -4,6 +4,8 @@ import (
 	"codacy/cli-v2/domain"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -19,7 +21,7 @@ func quoteWhenIsNotJson(value string) string {
 	}
 }
 
-func CreateEslintConfig(configuration []domain.PatternConfiguration) string {
+func CreateEslintConfig(toolsConfigDir string, configuration []domain.PatternConfiguration) error {
 	result := `export default [
     {
         rules: {
@@ -139,6 +141,16 @@ func CreateEslintConfig(configuration []domain.PatternConfiguration) string {
 	result += `        }
     }
 ];`
+	eslintConfigFile, err := os.Create(filepath.Join(toolsConfigDir, "eslint.config.mjs"))
+	if err != nil {
+		return fmt.Errorf("failed to create eslint config file: %v", err)
+	}
+	defer eslintConfigFile.Close()
 
-	return result
+	_, err = eslintConfigFile.WriteString(result)
+	if err != nil {
+		return fmt.Errorf("failed to write eslint config: %v", err)
+	}
+
+	return nil
 }
