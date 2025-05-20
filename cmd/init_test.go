@@ -24,7 +24,7 @@ func TestConfigFileTemplate(t *testing.T) {
 			expected: []string{
 				"node@22.2.0",
 				"python@3.11.11",
-				"eslint@9.3.0",
+				"eslint@8.57.0",
 				"trivy@0.59.1",
 				"pylint@3.3.6",
 				"pmd@6.55.0",

@@ -35,7 +35,7 @@ func TestCreateEslintConfigConfig1(t *testing.T) {
 		`export default [
     {
         rules: {
-          "semi": "error",
+          "semi": ["error"],
         }
     }
 ];`)
@@ -129,6 +129,74 @@ func TestCreateEslintConfigDoNotSupportPlugins(t *testing.T) {
 		`export default [
     {
         rules: {
+        }
+    }
+];`)
+}
+
+func TestCreateEslintConfigWithDefaultValues(t *testing.T) {
+	testConfig(t,
+		[]domain.PatternConfiguration{
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "ESLint8_no-fallthrough",
+					Parameters: []domain.ParameterConfiguration{
+						{
+							Name:    "commentPattern",
+							Default: "",
+						},
+						{
+							Name:    "allowEmptyCase",
+							Default: "false",
+						},
+					},
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "commentPattern",
+						Value: "", // Empty value with empty default - should be skipped
+					},
+					{
+						Name:  "allowEmptyCase",
+						Value: "", // Empty value with default "false" - should use default
+					},
+				},
+			},
+		},
+		`export default [
+    {
+        rules: {
+          "no-fallthrough": ["error", {"allowEmptyCase": false}],
+        }
+    }
+];`)
+}
+
+func TestCreateEslintConfigWithUnnamedDefaultValues(t *testing.T) {
+	testConfig(t,
+		[]domain.PatternConfiguration{
+			{
+				PatternDefinition: domain.PatternDefinition{
+					Id: "ESLint8_no-inner-declarations",
+					Parameters: []domain.ParameterConfiguration{
+						{
+							Name:    "unnamedParam",
+							Default: "functions",
+						},
+					},
+				},
+				Parameters: []domain.ParameterConfiguration{
+					{
+						Name:  "unnamedParam",
+						Value: "", // Empty value with default "functions" - should use default
+					},
+				},
+			},
+		},
+		`export default [
+    {
+        rules: {
+          "no-inner-declarations": ["error", "functions"],
         }
     }
 ];`)

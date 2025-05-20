@@ -138,7 +138,7 @@ func configFileTemplate(tools []tools.Tool) string {
 
 	// Default versions
 	defaultVersions := map[string]string{
-		ESLint:       "9.3.0",
+		ESLint:       "8.57.0",
 		Trivy:        "0.59.1",
 		PyLint:       "3.3.6",
 		PMD:          "6.55.0",

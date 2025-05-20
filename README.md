@@ -31,7 +31,7 @@ The tool is invoked using the `codacy-cli` command, and provides two main comman
   runtimes:
       - node@22.2.0
   tools:
-      - eslint@9.3.0
+      - eslint@8.57.0
   
 - **`codacy-cli install`**: Command to install the specified node and eslint versions before running analysis.
 

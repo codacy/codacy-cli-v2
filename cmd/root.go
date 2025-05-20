@@ -129,7 +129,7 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
   runtimes:
     - node@22.2.0
   tools:
-    - eslint@9.3.0
+    - eslint@8.57.0
 
 ` + color.New(color.FgCyan).Sprint("For more information and examples, visit:") + `
 https://github.com/codacy/codacy-cli-v2
