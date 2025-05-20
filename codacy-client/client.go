@@ -107,8 +107,33 @@ func getAllPages[T any](
 	return allResults, nil
 }
 
+// parseDefaultPatternConfigurations parses the response body into pattern configurations
+func parseDefaultPatternConfigurations(response []byte) ([]domain.PatternConfiguration, string, error) {
+	var objmap map[string]json.RawMessage
+	if err := json.Unmarshal(response, &objmap); err != nil {
+		return nil, "", fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	var patternResponses []domain.PatternDefinition
+	if err := json.Unmarshal(objmap["data"], &patternResponses); err != nil {
+		return nil, "", fmt.Errorf("failed to unmarshal patterns: %w", err)
+	}
+
+	patternConfigurations := make([]domain.PatternConfiguration, len(patternResponses))
+	for i, patternDef := range patternResponses {
+		patternConfigurations[i] = domain.PatternConfiguration{
+			PatternDefinition: patternDef,
+			Parameters:        patternDef.Parameters,
+			Enabled:           patternDef.Enabled,
+		}
+	}
+
+	return patternConfigurations, "", nil
+}
+
 // parsePatternConfigurations parses the response body into pattern configurations
 func parsePatternConfigurations(response []byte) ([]domain.PatternConfiguration, string, error) {
+
 	var objmap map[string]json.RawMessage
 	if err := json.Unmarshal(response, &objmap); err != nil {
 		return nil, "", fmt.Errorf("failed to unmarshal response: %w", err)
@@ -141,7 +166,8 @@ func parsePatternConfigurations(response []byte) ([]domain.PatternConfiguration,
 // GetDefaultToolPatternsConfig fetches the default patterns for a tool
 func GetDefaultToolPatternsConfig(initFlags domain.InitFlags, toolUUID string) ([]domain.PatternConfiguration, error) {
 	baseURL := fmt.Sprintf("%s/api/v3/tools/%s/patterns?enabled=true", CodacyApiBase, toolUUID)
-	return getAllPages(baseURL, initFlags, parsePatternConfigurations)
+
+	return getAllPages(baseURL, initFlags, parseDefaultPatternConfigurations)
 }
 
 // GetRepositoryToolPatterns fetches the patterns for a tool in a repository
