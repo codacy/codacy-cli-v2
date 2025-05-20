@@ -11,9 +11,11 @@ import (
 )
 
 const timeout = 10 * time.Second
-const CodacyApiBase = "https://app.codacy.com"
 
-func getRequest(url string, initFlags domain.InitFlags) ([]byte, error) {
+// CodacyApiBase is the base URL for the Codacy API
+var CodacyApiBase = "https://app.codacy.com"
+
+func getRequest(url string, apiToken string) ([]byte, error) {
 	client := &http.Client{
 		Timeout: timeout,
 	}
@@ -23,7 +25,9 @@ func getRequest(url string, initFlags domain.InitFlags) ([]byte, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("api-token", initFlags.ApiToken)
+	if apiToken != "" {
+		req.Header.Set("api-token", apiToken)
+	}
 
 	resp, err := client.Do(req)
 
@@ -52,7 +56,7 @@ func GetPage[T any](
 	initFlags domain.InitFlags,
 	parser func([]byte) ([]T, string, error),
 ) ([]T, string, error) {
-	response, err := getRequest(url, initFlags)
+	response, err := getRequest(url, initFlags.ApiToken)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get page: %w", err)
 	}
@@ -103,24 +107,49 @@ func getAllPages[T any](
 	return allResults, nil
 }
 
-// parsePatternConfigurations parses the response body into pattern configurations
-func parsePatternConfigurations(response []byte) ([]domain.PatternConfiguration, string, error) {
+// parseDefaultPatternConfigurations parses the response body into pattern configurations
+func parseDefaultPatternConfigurations(response []byte) ([]domain.PatternConfiguration, string, error) {
 	var objmap map[string]json.RawMessage
 	if err := json.Unmarshal(response, &objmap); err != nil {
 		return nil, "", fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	var patterns []domain.PatternDefinition
-	if err := json.Unmarshal(objmap["data"], &patterns); err != nil {
+	var patternResponses []domain.PatternDefinition
+	if err := json.Unmarshal(objmap["data"], &patternResponses); err != nil {
 		return nil, "", fmt.Errorf("failed to unmarshal patterns: %w", err)
 	}
 
-	patternConfigurations := make([]domain.PatternConfiguration, len(patterns))
-	for i, pattern := range patterns {
+	patternConfigurations := make([]domain.PatternConfiguration, len(patternResponses))
+	for i, patternDef := range patternResponses {
 		patternConfigurations[i] = domain.PatternConfiguration{
-			PatternDefinition: pattern,
-			Parameters:        pattern.Parameters,
-			Enabled:           pattern.Enabled,
+			PatternDefinition: patternDef,
+			Parameters:        patternDef.Parameters,
+			Enabled:           patternDef.Enabled,
+		}
+	}
+
+	return patternConfigurations, "", nil
+}
+
+// parsePatternConfigurations parses the response body into pattern configurations
+func parsePatternConfigurations(response []byte) ([]domain.PatternConfiguration, string, error) {
+
+	var objmap map[string]json.RawMessage
+	if err := json.Unmarshal(response, &objmap); err != nil {
+		return nil, "", fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	var patternResponses []domain.PatternResponse
+	if err := json.Unmarshal(objmap["data"], &patternResponses); err != nil {
+		return nil, "", fmt.Errorf("failed to unmarshal patterns: %w", err)
+	}
+
+	patternConfigurations := make([]domain.PatternConfiguration, len(patternResponses))
+	for i, patternResp := range patternResponses {
+		patternConfigurations[i] = domain.PatternConfiguration{
+			PatternDefinition: patternResp.PatternDefinition,
+			Parameters:        patternResp.Parameters,
+			Enabled:           patternResp.Enabled,
 		}
 	}
 
@@ -134,11 +163,14 @@ func parsePatternConfigurations(response []byte) ([]domain.PatternConfiguration,
 	return patternConfigurations, pagination.Cursor, nil
 }
 
+// GetDefaultToolPatternsConfig fetches the default patterns for a tool
 func GetDefaultToolPatternsConfig(initFlags domain.InitFlags, toolUUID string) ([]domain.PatternConfiguration, error) {
 	baseURL := fmt.Sprintf("%s/api/v3/tools/%s/patterns?enabled=true", CodacyApiBase, toolUUID)
-	return getAllPages(baseURL, initFlags, parsePatternConfigurations)
+
+	return getAllPages(baseURL, initFlags, parseDefaultPatternConfigurations)
 }
 
+// GetRepositoryToolPatterns fetches the patterns for a tool in a repository
 func GetRepositoryToolPatterns(initFlags domain.InitFlags, toolUUID string) ([]domain.PatternConfiguration, error) {
 	baseURL := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns?enabled=true",
 		CodacyApiBase,
@@ -146,5 +178,71 @@ func GetRepositoryToolPatterns(initFlags domain.InitFlags, toolUUID string) ([]d
 		initFlags.Organization,
 		initFlags.Repository,
 		toolUUID)
-	return getAllPages(baseURL, initFlags, parsePatternConfigurations)
+
+	result, err := getAllPages(baseURL, initFlags, parsePatternConfigurations)
+	return result, err
+}
+
+// GetRepositoryTools fetches the tools for a repository
+func GetRepositoryTools(initFlags domain.InitFlags) ([]domain.Tool, error) {
+	baseURL := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools",
+		CodacyApiBase,
+		initFlags.Provider,
+		initFlags.Organization,
+		initFlags.Repository)
+
+	bodyResponse, err := getRequest(baseURL, initFlags.ApiToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository tools: %w", err)
+	}
+
+	var toolsResponse domain.ToolsResponse
+
+	err = json.Unmarshal(bodyResponse, &toolsResponse)
+	if err != nil {
+		fmt.Println("Error unmarshaling response:", err)
+		return nil, err
+	}
+
+	return toolsResponse.Data, nil
+}
+
+// GetToolsVersions fetches the tools versions
+func GetToolsVersions() ([]domain.Tool, error) {
+	baseURL := fmt.Sprintf("%s/api/v3/tools", CodacyApiBase)
+
+	bodyResponse, err := getRequest(baseURL, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tool versions: %w", err)
+	}
+
+	var toolsResponse domain.ToolsResponse
+	err = json.Unmarshal(bodyResponse, &toolsResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return toolsResponse.Data, nil
+}
+
+// GetRepositoryLanguages fetches the languages for a repository
+func GetRepositoryLanguages(initFlags domain.InitFlags) ([]domain.Language, error) {
+	baseURL := fmt.Sprintf("%s/api/v3/organizations/%s/%s/repositories/%s/settings/languages",
+		CodacyApiBase,
+		initFlags.Provider,
+		initFlags.Organization,
+		initFlags.Repository)
+
+	bodyResponse, err := getRequest(baseURL, initFlags.ApiToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository languages: %w", err)
+	}
+
+	var languagesResponse domain.LanguagesResponse
+	err = json.Unmarshal(bodyResponse, &languagesResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return languagesResponse.Languages, nil
 }

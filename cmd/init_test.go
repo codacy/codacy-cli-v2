@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"codacy/cli-v2/config"
-	"codacy/cli-v2/tools"
+	"codacy/cli-v2/domain"
 	"codacy/cli-v2/utils"
 	"os"
 	"path/filepath"
@@ -14,13 +14,13 @@ import (
 func TestConfigFileTemplate(t *testing.T) {
 	tests := []struct {
 		name        string
-		tools       []tools.Tool
+		tools       []domain.Tool
 		expected    []string
 		notExpected []string
 	}{
 		{
 			name:  "empty tools list uses defaults",
-			tools: []tools.Tool{},
+			tools: []domain.Tool{},
 			expected: []string{
 				"node@22.2.0",
 				"python@3.11.11",
@@ -33,7 +33,7 @@ func TestConfigFileTemplate(t *testing.T) {
 		},
 		{
 			name: "only eslint enabled",
-			tools: []tools.Tool{
+			tools: []domain.Tool{
 				{
 					Uuid:    ESLint,
 					Name:    "eslint",
@@ -53,7 +53,7 @@ func TestConfigFileTemplate(t *testing.T) {
 		},
 		{
 			name: "only pylint enabled",
-			tools: []tools.Tool{
+			tools: []domain.Tool{
 				{
 					Uuid:    PyLint,
 					Name:    "pylint",
@@ -73,7 +73,7 @@ func TestConfigFileTemplate(t *testing.T) {
 		},
 		{
 			name: "eslint and trivy enabled",
-			tools: []tools.Tool{
+			tools: []domain.Tool{
 				{
 					Uuid:    ESLint,
 					Name:    "eslint",
@@ -98,7 +98,7 @@ func TestConfigFileTemplate(t *testing.T) {
 		},
 		{
 			name: "all tools enabled",
-			tools: []tools.Tool{
+			tools: []domain.Tool{
 				{
 					Uuid:    ESLint,
 					Name:    "eslint",
@@ -216,7 +216,7 @@ func TestInitCommand_NoToken(t *testing.T) {
 
 	cliLocalMode := len(initFlags.ApiToken) == 0
 	if cliLocalMode {
-		noTools := []tools.Tool{}
+		noTools := []domain.Tool{}
 		err := createConfigurationFiles(noTools, cliLocalMode)
 		assert.NoError(t, err, "createConfigurationFiles should not return an error")
 		if err := buildDefaultConfigurationFiles(toolsConfigDir); err != nil {

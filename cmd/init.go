@@ -8,21 +8,14 @@ import (
 	"codacy/cli-v2/tools/lizard"
 	"codacy/cli-v2/tools/pylint"
 	"codacy/cli-v2/utils"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 )
-
-const CodacyApiBase = "https://app.codacy.com"
 
 var initFlags domain.InitFlags
 
@@ -55,7 +48,7 @@ var initCmd = &cobra.Command{
 		if cliLocalMode {
 			fmt.Println()
 			fmt.Println("ℹ️  No project token was specified, fetching codacy default configurations")
-			noTools := []tools.Tool{}
+			noTools := []domain.Tool{}
 			err := createConfigurationFiles(noTools, cliLocalMode)
 			if err != nil {
 				log.Fatal(err)
@@ -97,7 +90,7 @@ func createGitIgnoreFile() error {
 	return nil
 }
 
-func createConfigurationFiles(tools []tools.Tool, cliLocalMode bool) error {
+func createConfigurationFiles(tools []domain.Tool, cliLocalMode bool) error {
 	configFile, err := os.Create(config.Config.ProjectConfigFile())
 	if err != nil {
 		return fmt.Errorf("failed to create project config file: %w", err)
@@ -125,7 +118,7 @@ func createConfigurationFiles(tools []tools.Tool, cliLocalMode bool) error {
 	return nil
 }
 
-func configFileTemplate(tools []tools.Tool) string {
+func configFileTemplate(tools []domain.Tool) string {
 	// Maps to track which tools are enabled
 	toolsMap := make(map[string]bool)
 	toolVersions := make(map[string]string)
@@ -255,11 +248,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 		return fmt.Errorf("failed to clean configuration directory: %w", err)
 	}
 
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	apiTools, err := tools.GetRepositoryTools(CodacyApiBase, token, initFlags.Provider, initFlags.Organization, initFlags.Repository)
+	apiTools, err := tools.GetRepositoryTools(initFlags)
 	if err != nil {
 		return err
 	}
@@ -276,7 +265,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 	}
 
 	// Generate languages configuration based on API tools response
-	if err := tools.CreateLanguagesConfigFile(apiTools, toolsConfigDir, uuidToName, token, initFlags.Provider, initFlags.Organization, initFlags.Repository); err != nil {
+	if err := tools.CreateLanguagesConfigFile(apiTools, toolsConfigDir, uuidToName, initFlags); err != nil {
 		return fmt.Errorf("failed to create languages configuration file: %w", err)
 	}
 
@@ -292,52 +281,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 	// Only generate config files for tools not using their own config file
 	for _, tool := range configuredToolsWithUI {
 
-		url := fmt.Sprintf("%s/api/v3/analysis/organizations/%s/%s/repositories/%s/tools/%s/patterns?enabled=true&limit=1000",
-			CodacyApiBase,
-			initFlags.Provider,
-			initFlags.Organization,
-			initFlags.Repository,
-			tool.Uuid)
-
-		// Create a new GET request
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			fmt.Println("Error:", err)
-			return err
-		}
-
-		// Set the headers
-		req.Header.Set("api-token", token)
-
-		// Send the request
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Println("Error:", err)
-			return err
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode >= 400 {
-			return errors.New("failed to get repository's configuration from Codacy API")
-		}
-
-		// Read the response body
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			fmt.Println("Error:", err)
-			return err
-		}
-
-		var objmap map[string]json.RawMessage
-		err = json.Unmarshal(body, &objmap)
-
-		if err != nil {
-			fmt.Println("Error unmarshaling response:", err)
-			return err
-		}
-
-		var apiToolConfigurations []domain.PatternConfiguration
-		err = json.Unmarshal(objmap["data"], &apiToolConfigurations)
+		apiToolConfigurations, err := codacyclient.GetRepositoryToolPatterns(initFlags, tool.Uuid)
 
 		if err != nil {
 			fmt.Println("Error unmarshaling tool configurations:", err)
@@ -351,7 +295,7 @@ func buildRepositoryConfigurationFiles(token string) error {
 }
 
 // map tool uuid to tool name
-func createToolFileConfigurations(tool tools.Tool, patternConfiguration []domain.PatternConfiguration) error {
+func createToolFileConfigurations(tool domain.Tool, patternConfiguration []domain.PatternConfiguration) error {
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
 	switch tool.Uuid {
 	case ESLint:
@@ -544,17 +488,19 @@ func createLizardConfigFile(toolsConfigDir string, patternConfiguration []domain
 	var patterns []domain.PatternDefinition
 
 	if len(patternConfiguration) == 0 {
-		var err error
-		patterns, err = tools.FetchDefaultEnabledPatterns(Lizard)
+		patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(initFlags, Lizard)
 		if err != nil {
 			return err
+		}
+		patterns = make([]domain.PatternDefinition, len(patternsConfig))
+		for i, pattern := range patternsConfig {
+			patterns[i] = pattern.PatternDefinition
 		}
 	} else {
 		patterns = make([]domain.PatternDefinition, len(patternConfiguration))
 		for i, pattern := range patternConfiguration {
 			patterns[i] = pattern.PatternDefinition
 		}
-
 	}
 
 	content, err := lizard.CreateLizardConfig(patterns)

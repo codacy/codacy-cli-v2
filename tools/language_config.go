@@ -1,39 +1,23 @@
 package tools
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
-	"time"
 
+	codacyclient "codacy/cli-v2/codacy-client"
+	"codacy/cli-v2/domain"
 	"codacy/cli-v2/utils"
 
 	"gopkg.in/yaml.v3"
 )
 
-var CodacyApiBase = "https://app.codacy.com"
-
-// ToolLanguageInfo contains language and extension information for a tool
-type ToolLanguageInfo struct {
-	Name       string   `yaml:"name"`
-	Languages  []string `yaml:"languages,flow"`
-	Extensions []string `yaml:"extensions,flow"`
-}
-
-// LanguagesConfig represents the structure of the languages configuration file
-type LanguagesConfig struct {
-	Tools []ToolLanguageInfo `yaml:"tools"`
-}
-
 // CreateLanguagesConfigFile creates languages-config.yaml based on API response
-func CreateLanguagesConfigFile(apiTools []Tool, toolsConfigDir string, toolIDMap map[string]string, apiToken string, provider string, organization string, repository string) error {
+func CreateLanguagesConfigFile(apiTools []domain.Tool, toolsConfigDir string, toolIDMap map[string]string, initFlags domain.InitFlags) error {
 	// Map tool names to their language/extension information
-	toolLanguageMap := map[string]ToolLanguageInfo{
+	toolLanguageMap := map[string]domain.ToolLanguageInfo{
 		"cppcheck": {
 			Name:       "cppcheck",
 			Languages:  []string{"C", "CPP"},
@@ -77,9 +61,9 @@ func CreateLanguagesConfigFile(apiTools []Tool, toolsConfigDir string, toolIDMap
 	}
 
 	// Build a list of tool language info for enabled tools
-	var configTools []ToolLanguageInfo
+	var configTools []domain.ToolLanguageInfo
 
-	repositoryLanguages, err := getRepositoryLanguages(apiToken, provider, organization, repository)
+	repositoryLanguages, err := getRepositoryLanguages(initFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get repository languages: %w", err)
 	}
@@ -135,7 +119,7 @@ func CreateLanguagesConfigFile(apiTools []Tool, toolsConfigDir string, toolIDMap
 	}
 
 	// Create the config structure
-	config := LanguagesConfig{
+	config := domain.LanguagesConfig{
 		Tools: configTools,
 	}
 
@@ -155,66 +139,17 @@ func CreateLanguagesConfigFile(apiTools []Tool, toolsConfigDir string, toolIDMap
 	return nil
 }
 
-func getRepositoryLanguages(apiToken string, provider string, organization string, repository string) (map[string][]string, error) {
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	url := fmt.Sprintf("%s/api/v3/organizations/%s/%s/repositories/%s/settings/languages",
-		CodacyApiBase,
-		provider,
-		organization,
-		repository)
-
-	// Create a new GET request
-	req, err := http.NewRequest("GET", url, nil)
+func getRepositoryLanguages(initFlags domain.InitFlags) (map[string][]string, error) {
+	response, err := codacyclient.GetRepositoryLanguages(initFlags)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set the API token header
-	req.Header.Set("api-token", apiToken)
-
-	// Send the request
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to get repository languages: status code %d", resp.StatusCode)
-	}
-
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Define the response structure
-	type LanguageResponse struct {
-		Name           string   `json:"name"`
-		CodacyDefaults []string `json:"codacyDefaults"`
-		Extensions     []string `json:"extensions"`
-		Enabled        bool     `json:"enabled"`
-		Detected       bool     `json:"detected"`
-	}
-
-	type LanguagesResponse struct {
-		Languages []LanguageResponse `json:"languages"`
-	}
-
-	var response LanguagesResponse
-	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		return nil, fmt.Errorf("failed to get repository languages: %w", err)
 	}
 
 	// Create map to store language name -> combined extensions
 	result := make(map[string][]string)
 
 	// Filter and process languages
-	for _, lang := range response.Languages {
+	for _, lang := range response {
 		if lang.Enabled && lang.Detected {
 			// Combine and deduplicate extensions
 			extensions := make(map[string]struct{})
