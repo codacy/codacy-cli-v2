@@ -21,6 +21,88 @@ func quoteWhenIsNotJson(value string) string {
 	}
 }
 
+func removePlugins(rule string) (string, bool) {
+	// Handle plugin rules (those containing _)
+	if strings.Contains(rule, "_") {
+		parts := strings.Split(rule, "_")
+		if len(parts) >= 2 {
+			// First part is the plugin name, last part is the rule name
+			plugin := parts[0]
+			ruleName := parts[len(parts)-1]
+
+			// Handle scoped packages
+			if strings.HasPrefix(plugin, "@") {
+				rule = fmt.Sprintf("%s/%s", plugin, ruleName)
+			} else {
+				// For non-scoped packages, add eslint-plugin- prefix
+				rule = fmt.Sprintf("%s/%s", "eslint-plugin-"+plugin, ruleName)
+			}
+		}
+	}
+
+	// Skip any rule that contains a plugin (contains "/")
+	if strings.Contains(rule, "/") {
+		return rule, true
+	}
+
+	return rule, false
+}
+
+func buildNamedParametersString(parameters []domain.ParameterConfiguration, patternDefinition domain.PatternDefinition) string {
+	namedParametersString := ""
+	for _, parameter := range parameters {
+		if parameter.Name != "unnamedParam" {
+			paramValue := parameter.Value
+
+			// If value is empty, look for default in pattern definition
+			if paramValue == "" {
+				for _, paramDef := range patternDefinition.Parameters {
+					if paramDef.Name == parameter.Name && paramDef.Default != "" {
+						paramValue = paramDef.Default
+						break
+					}
+				}
+			}
+
+			// Skip only if both value and default are empty
+			if paramValue == "" {
+				continue
+			}
+
+			if len(namedParametersString) == 0 {
+				namedParametersString += "{"
+			} else {
+				namedParametersString += ", "
+			}
+
+			if paramValue == "true" || paramValue == "false" {
+				namedParametersString += fmt.Sprintf("\"%s\": %s", parameter.Name, paramValue)
+			} else {
+				namedParametersString += fmt.Sprintf("\"%s\": %s", parameter.Name, quoteWhenIsNotJson(paramValue))
+			}
+		}
+	}
+	if len(namedParametersString) > 0 {
+		namedParametersString += "}"
+	}
+	return namedParametersString
+}
+
+func writeFile(filePath string, content string) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %v", err)
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(content)
+	if err != nil {
+		return fmt.Errorf("failed to write content: %v", err)
+	}
+
+	return nil
+}
+
 func CreateEslintConfig(toolsConfigDir string, configuration []domain.PatternConfiguration) error {
 	result := `export default [
     {
@@ -30,26 +112,8 @@ func CreateEslintConfig(toolsConfigDir string, configuration []domain.PatternCon
 	for _, patternConfiguration := range configuration {
 		rule := strings.TrimPrefix(patternConfiguration.PatternDefinition.Id, "ESLint8_")
 
-		// Handle plugin rules (those containing _)
-		if strings.Contains(rule, "_") {
-			parts := strings.Split(rule, "_")
-			if len(parts) >= 2 {
-				// First part is the plugin name, last part is the rule name
-				plugin := parts[0]
-				ruleName := parts[len(parts)-1]
-
-				// Handle scoped packages
-				if strings.HasPrefix(plugin, "@") {
-					rule = fmt.Sprintf("%s/%s", plugin, ruleName)
-				} else {
-					// For non-scoped packages, add eslint-plugin- prefix
-					rule = fmt.Sprintf("%s/%s", "eslint-plugin-"+plugin, ruleName)
-				}
-			}
-		}
-
-		// Skip any rule that contains a plugin (contains "/")
-		if strings.Contains(rule, "/") {
+		rule, skipRule := removePlugins(rule)
+		if skipRule {
 			continue
 		}
 
@@ -83,43 +147,8 @@ func CreateEslintConfig(toolsConfigDir string, configuration []domain.PatternCon
 			parametersString += quoteWhenIsNotJson(defaultUnnamedParamValue)
 		}
 
-		// build named parameters json object
-		namedParametersString := ""
-		for _, parameter := range patternConfiguration.Parameters {
-			if parameter.Name != "unnamedParam" {
-				paramValue := parameter.Value
-
-				// If value is empty, look for default in pattern definition
-				if paramValue == "" {
-					for _, paramDef := range patternConfiguration.PatternDefinition.Parameters {
-						if paramDef.Name == parameter.Name && paramDef.Default != "" {
-							paramValue = paramDef.Default
-							break
-						}
-					}
-				}
-
-				// Skip only if both value and default are empty
-				if paramValue == "" {
-					continue
-				}
-
-				if len(namedParametersString) == 0 {
-					namedParametersString += "{"
-				} else {
-					namedParametersString += ", "
-				}
-
-				if paramValue == "true" || paramValue == "false" {
-					namedParametersString += fmt.Sprintf("\"%s\": %s", parameter.Name, paramValue)
-				} else {
-					namedParametersString += fmt.Sprintf("\"%s\": %s", parameter.Name, quoteWhenIsNotJson(paramValue))
-				}
-			}
-		}
-		if len(namedParametersString) > 0 {
-			namedParametersString += "}"
-		}
+		// Use the new helper method to build named parameters JSON object
+		namedParametersString := buildNamedParametersString(patternConfiguration.Parameters, patternConfiguration.PatternDefinition)
 
 		if parametersString != "" && namedParametersString != "" {
 			parametersString = fmt.Sprintf("%s, %s", parametersString, namedParametersString)
@@ -141,16 +170,7 @@ func CreateEslintConfig(toolsConfigDir string, configuration []domain.PatternCon
 	result += `        }
     }
 ];`
-	eslintConfigFile, err := os.Create(filepath.Join(toolsConfigDir, "eslint.config.mjs"))
-	if err != nil {
-		return fmt.Errorf("failed to create eslint config file: %v", err)
-	}
-	defer eslintConfigFile.Close()
 
-	_, err = eslintConfigFile.WriteString(result)
-	if err != nil {
-		return fmt.Errorf("failed to write eslint config: %v", err)
-	}
-
-	return nil
+	eslintConfigFilePath := filepath.Join(toolsConfigDir, "eslint.config.mjs")
+	return writeFile(eslintConfigFilePath, result)
 }
