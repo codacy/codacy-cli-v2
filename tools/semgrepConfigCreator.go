@@ -2,9 +2,9 @@ package tools
 
 import (
 	"codacy/cli-v2/domain"
+	"codacy/cli-v2/plugins/tools/semgrep/embedded"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -20,17 +20,16 @@ type semgrepRulesFile struct {
 var getExecutablePath = os.Executable
 
 // FilterRulesFromFile extracts enabled rules from a rules.yaml file based on configuration
-func FilterRulesFromFile(rulesFilePath string, config []domain.PatternConfiguration) ([]byte, error) {
-	// Read the rules.yaml file
-	data, err := os.ReadFile(rulesFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read rules file: %w", err)
+func FilterRulesFromFile(rulesData []byte, config []domain.PatternConfiguration) ([]byte, error) {
+	// Parse the YAML data
+	var allRules semgrepRulesFile
+	if err := yaml.Unmarshal(rulesData, &allRules); err != nil {
+		return nil, fmt.Errorf("failed to parse rules file: %w", err)
 	}
 
-	// Parse the YAML file
-	var allRules semgrepRulesFile
-	if err := yaml.Unmarshal(data, &allRules); err != nil {
-		return nil, fmt.Errorf("failed to parse rules file: %w", err)
+	// If no configuration provided, return all rules
+	if len(config) == 0 {
+		return rulesData, nil
 	}
 
 	// Create a map of enabled pattern IDs for faster lookup
@@ -67,45 +66,14 @@ func FilterRulesFromFile(rulesFilePath string, config []domain.PatternConfigurat
 	return yaml.Marshal(filteredRules)
 }
 
-// GetSemgrepConfig gets the Semgrep configuration based on the pattern configuration
+// GetSemgrepConfig gets the Semgrep configuration based on the pattern configuration.
+// If no configuration is provided, returns all default rules.
 func GetSemgrepConfig(config []domain.PatternConfiguration) ([]byte, error) {
-	// Get the executable's directory
-	execPath, err := getExecutablePath()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get executable path: %w", err)
-	}
-	execDir := filepath.Dir(execPath)
-
-	// Get the default rules file location relative to the executable
-	rulesFile := filepath.Join(execDir, "plugins", "tools", "semgrep", "rules.yaml")
-
-	// Check if it exists and config is not empty
-	if _, err := os.Stat(rulesFile); err == nil && len(config) > 0 {
-		// Try to filter rules from the file
-		return FilterRulesFromFile(rulesFile, config)
-	}
-
-	// If rules.yaml doesn't exist or config is empty, return an error
-	return nil, fmt.Errorf("rules.yaml not found or empty configuration")
+	return FilterRulesFromFile(embedded.GetSemgrepRules(), config)
 }
 
 // GetDefaultSemgrepConfig gets the default Semgrep configuration
 func GetDefaultSemgrepConfig() ([]byte, error) {
-	// Get the executable's directory
-	execPath, err := getExecutablePath()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get executable path: %w", err)
-	}
-	execDir := filepath.Dir(execPath)
-
-	// Get the default rules file location relative to the executable
-	rulesFile := filepath.Join(execDir, "plugins", "tools", "semgrep", "rules.yaml")
-
-	// If the file exists, return its contents
-	if _, err := os.Stat(rulesFile); err == nil {
-		return os.ReadFile(rulesFile)
-	}
-
-	// Return an error if rules.yaml doesn't exist
-	return nil, fmt.Errorf("rules.yaml not found")
+	// Return the embedded rules
+	return embedded.GetSemgrepRules(), nil
 }
