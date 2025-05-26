@@ -23,7 +23,7 @@ normalize_config() {
       # For YAML files, use yq to sort
       yq e '.' "$file" | sort
       ;;
-    rc|conf|ini|xml)
+    rc|conf|ini)
       # For other config files, sort values after '=' and keep other lines
       awk -F'=' '
         /^[^#].*=.*,/ {
@@ -48,6 +48,20 @@ normalize_config() {
         }
         { print }
       ' "$file" | sort
+      ;;
+    xml)
+      # For XML files, ignore order of <rule ref=.../> lines and strip leading spaces
+      awk '
+        BEGIN { n = 0; end = ""; }
+        /^ *<rule ref=/ { rules[++n] = $0; next }
+        /^ *<\/ruleset>/ { end = $0; next }
+        { gsub(/^ +/, "", $0); print }
+        END {
+          n = asort(rules, sorted_rules)
+          for (i = 1; i <= n; i++) print sorted_rules[i]
+          if (end) print end
+        }
+      ' "$file"
       ;;
     *)
       # For other files, just sort

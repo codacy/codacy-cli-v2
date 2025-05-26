@@ -80,7 +80,7 @@ func TestCreatePmdConfig(t *testing.T) {
 	}
 
 	// Generate PMD config
-	generatedConfig := CreatePmdConfig(config)
+	generatedConfig := CreatePmd6Config(config)
 
 	// Read expected ruleset
 	expectedRulesetPath := filepath.Join("testdata", "repositories", "pmd", "expected-ruleset.xml")
@@ -125,7 +125,7 @@ func TestCreatePmdConfigWithDisabledRules(t *testing.T) {
 		},
 	}
 
-	obtainedConfig := CreatePmdConfig(config)
+	obtainedConfig := CreatePmd6Config(config)
 
 	var ruleset PMDRuleset
 	err := xml.Unmarshal([]byte(obtainedConfig), &ruleset)
@@ -171,7 +171,7 @@ func TestCreatePmdConfigEmpty(t *testing.T) {
 
 	config := []domain.PatternConfiguration{}
 
-	obtainedConfig := CreatePmdConfig(config)
+	obtainedConfig := CreatePmd6Config(config)
 
 	assert.Contains(t, obtainedConfig, `name="Default PMD Ruleset"`, "XML should contain the correct ruleset name")
 	assert.Contains(t, obtainedConfig, `xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"`, "XML should contain the correct xmlns")
@@ -207,7 +207,7 @@ func TestCreatePmdConfigEmptyParameterValues(t *testing.T) {
 		},
 	}
 
-	obtainedConfig := CreatePmdConfig(config)
+	obtainedConfig := CreatePmd6Config(config)
 
 	var ruleset PMDRuleset
 	err := xml.Unmarshal([]byte(obtainedConfig), &ruleset)
@@ -266,7 +266,7 @@ func TestEmptyParametersAreSkipped(t *testing.T) {
 		},
 	}
 
-	obtainedConfig := CreatePmdConfig(config)
+	obtainedConfig := CreatePmd6Config(config)
 
 	// Should find this exact pattern in the generated XML
 	expectedPattern := `<rule ref="category/pom/errorprone.xml/InvalidDependencyTypes"/>`
@@ -292,7 +292,7 @@ func TestNonEmptyParameterValue(t *testing.T) {
 		},
 	}
 
-	obtainedConfig := CreatePmdConfig(config)
+	obtainedConfig := CreatePmd6Config(config)
 
 	var ruleset PMDRuleset
 	err := xml.Unmarshal([]byte(obtainedConfig), &ruleset)
@@ -338,7 +338,7 @@ func TestExactJsonStructure(t *testing.T) {
 		},
 	}
 
-	obtainedConfig := CreatePmdConfig(config)
+	obtainedConfig := CreatePmd6Config(config)
 
 	var ruleset PMDRuleset
 	err := xml.Unmarshal([]byte(obtainedConfig), &ruleset)
