@@ -110,7 +110,10 @@ func CreateEslintConfig(toolsConfigDir string, configuration []domain.PatternCon
 `
 
 	for _, patternConfiguration := range configuration {
-		rule := strings.TrimPrefix(patternConfiguration.PatternDefinition.Id, "ESLint8_")
+		ruleId := patternConfiguration.PatternDefinition.Id
+		ruleId = strings.TrimPrefix(ruleId, "ESLint8_")
+		ruleId = strings.TrimPrefix(ruleId, "ESLint9_")
+		rule := ruleId
 
 		rule, skipRule := removePlugins(rule)
 		if skipRule {

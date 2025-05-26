@@ -19,6 +19,11 @@ function Normalize-Config {
     
     $ext = [System.IO.Path]::GetExtension($file).TrimStart('.')
     
+    if ($ext -eq 'xml') {
+        Normalize-XmlFile $file
+        return
+    }
+    
     switch ($ext) {
         { $_ -in @('yaml', 'yml') } {
             # For YAML files, preserve structure and sort within sections
@@ -70,6 +75,27 @@ function Normalize-Config {
         }
         default { Get-Content $file | Sort-Object }
     }
+}
+
+# Helper function to normalize XML files: strip leading spaces and sort <rule ref=.../> lines
+function Normalize-XmlFile {
+    param([string]$Path)
+    $lines = Get-Content $Path
+    $rules = @()
+    $output = @()
+    $endTag = $null
+
+    foreach ($line in $lines) {
+        $trimmed = $line.TrimStart()
+        if ($trimmed -match '^<rule ref=') {
+            $rules += $trimmed
+        } elseif ($trimmed -match '^</ruleset>') {
+            $endTag = $trimmed
+        } else {
+            $output += $trimmed
+        }
+    }
+    $output + ($rules | Sort-Object) + $endTag
 }
 
 function Compare-Files {
