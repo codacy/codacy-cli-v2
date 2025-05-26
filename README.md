@@ -94,13 +94,13 @@ Runs all configured tools, or a specific tool, on your codebase.
 
 ```bash
 # Run all tools
-tcodacy-cli analyze
+codacy-cli analyze
 
 # Run a specific tool (e.g., ESLint)
 codacy-cli analyze --tool eslint
 
 # Output results in SARIF format
-tcodacy-cli analyze --tool eslint --format sarif
+codacy-cli analyze --tool eslint --format sarif
 
 # Store results as SARIF in a file
 codacy-cli analyze -t eslint --format sarif -o eslint.sarif
