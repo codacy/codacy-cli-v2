@@ -82,6 +82,8 @@ function Compare-Files {
     # Compare files
     Get-ChildItem -Path $expectedDir -File | ForEach-Object {
         $actualFile = Join-Path $actualDir $_.Name
+
+        
         if (-not (Test-Path $actualFile)) {
             Write-Host "❌ $label/$($_.Name) does not exist in actual output"
             Write-Host "Expected: $($_.FullName)"

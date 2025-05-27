@@ -28,7 +28,16 @@ normalize_config() {
       awk -F'=' '
         /^[^#].*=.*,/ {
           split($2, values, ",")
-          asort(values)
+          # Sort values using a simple bubble sort
+          for (i=1; i<=length(values); i++) {
+            for (j=i+1; j<=length(values); j++) {
+              if (values[i] > values[j]) {
+                temp = values[i]
+                values[i] = values[j]
+                values[j] = temp
+              }
+            }
+          }
           printf "%s=", $1
           for (i=1; i<=length(values); i++) {
             if (i>1) printf ","
@@ -57,6 +66,7 @@ compare_files() {
     [ -f "$file" ] || continue
     filename=$(basename "$file")
     actual_file="$actual_dir/$filename"
+
     
     if [ ! -f "$actual_file" ]; then
       echo "❌ $label/$filename does not exist in actual output"

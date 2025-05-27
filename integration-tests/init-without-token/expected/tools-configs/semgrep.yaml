@@ -1,0 +1,3559 @@
+rules:
+    - id: apex.lang.security.ncino.dml.apexcsrfconstructor.apex-csrf-constructor
+      languages:
+        - apex
+      message: 'Having DML operations in Apex class constructor or initializers can have unexpected side effects: By just accessing a page, the DML statements would be executed and the database would be modified. Just querying the database is permitted.'
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-352: Cross-Site Request Forgery (CSRF)'
+        cwe2020-top25': true
+        cwe2021-top25': true
+        cwe2022-top25': true
+        impact: HIGH
+        likelihood: MEDIUM
+        owasp:
+            - A01:2021 - Broken Access Control
+        references:
+            - https://cwe.mitre.org/data/definitions/352.html
+        subcategory:
+            - vuln
+        technology:
+            - salesforce
+      min-version: 1.44.0
+      paths:
+        exclude:
+            - '*Test*'
+            - '*test*'
+      patterns:
+        - pattern-either:
+            - pattern-inside: public class $CLASSNAME {...}
+            - pattern-inside: private class $CLASSNAME {...}
+            - pattern-inside: public $SOME sharing class $CLASSNAME {...}
+            - pattern-inside: private $SOME sharing class $CLASSNAME {...}
+        - pattern-either:
+            - pattern-inside: public $CLASSNAME() {...}
+            - pattern-inside: private $CLASSNAME() {...}
+        - pattern-either:
+            - pattern: |
+                insert $DATA;
+            - pattern: |
+                update $DATA;
+            - pattern: |
+                upsert $DATA;
+            - pattern: |
+                delete $DATA;
+      severity: ERROR
+    - id: apex.lang.security.ncino.dml.apexcsrfstaticconstructor.apex-csrf-static-constructor
+      languages:
+        - generic
+      message: 'Having DML operations in Apex class constructor or initializers can have unexpected side effects: By just accessing a page, the DML statements would be executed and the database would be modified. Just querying the database is permitted.'
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-352: Cross-Site Request Forgery (CSRF)'
+        cwe2020-top25': true
+        cwe2021-top25': true
+        cwe2022-top25': true
+        impact: HIGH
+        likelihood: MEDIUM
+        owasp:
+            - A01:2021 - Broken Access Control
+        references:
+            - https://cwe.mitre.org/data/definitions/352.html
+        subcategory:
+            - vuln
+        technology:
+            - salesforce
+      min-version: 1.44.0
+      paths:
+        exclude:
+            - '*Test*'
+            - '*test*'
+      patterns:
+        - pattern-inside: static {...}
+        - pattern-either:
+            - pattern: |
+                insert $DATA;
+            - pattern: |
+                update $DATA;
+            - pattern: |
+                upsert $DATA;
+            - pattern: |
+                delete $DATA;
+      severity: ERROR
+    - id: apex.lang.security.ncino.endpoints.insecurehttprequest.insecure-http-request
+      languages:
+        - apex
+      message: The software transmits sensitive or security-critical data in cleartext in a communication channel that can be sniffed by unauthorized actors.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-319: Cleartext Transmission of Sensitive Information'
+        impact: MEDIUM
+        likelihood: LOW
+        references:
+            - https://cwe.mitre.org/data/definitions/319.html
+        subcategory:
+            - vuln
+        technology:
+            - salesforce
+      min-version: 1.44.0
+      paths:
+        exclude:
+            - '*Test*'
+            - '*test*'
+      patterns:
+        - pattern-regex: http[:][/][/]
+        - pattern-not-regex: //.*
+        - pattern-not-regex: '[*].*'
+      severity: ERROR
+    - id: apex.lang.security.ncino.endpoints.namedcredentialsconstantmatch.named-credentials-constant-match
+      languages:
+        - apex
+      message: Named Credentials (and callout endpoints) should be used instead of hard-coding credentials. 1. Hard-coded credentials are hard to maintain when mixed in with application code. 2. It is particularly hard to update hard-coded credentials when they are used amongst different classes. 3. Granting a developer access to the codebase means granting knowledge of credentials, and thus keeping a two-level access is not possible. 4. Using different credentials for different environments is troublesome and error-prone.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-540: Inclusion of Sensitive Information in Source Code'
+        impact: HIGH
+        likelihood: LOW
+        references:
+            - https://cwe.mitre.org/data/definitions/540.html
+        subcategory:
+            - vuln
+        technology:
+            - salesforce
+      min-version: 1.44.0
+      mode: taint
+      pattern-sinks:
+        - patterns:
+            - pattern: req.setHeader($X, ...);
+            - focus-metavariable: $X
+      pattern-sources:
+        - pattern: '...String $X = ''Authorization'';'
+      severity: ERROR
+    - id: apex.lang.security.ncino.endpoints.namedcredentialsstringmatch.named-credentials-string-match
+      languages:
+        - apex
+      message: Named Credentials (and callout endpoints) should be used instead of hard-coding credentials. 1. Hard-coded credentials are hard to maintain when mixed in with application code. 2. It is particularly hard to update hard-coded credentials when they are used amongst different classes. 3. Granting a developer access to the codebase means granting knowledge of credentials, and thus keeping a two-level access is not possible. 4. Using different credentials for different environments is troublesome and error-prone.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-540: Inclusion of Sensitive Information in Source Code'
+        impact: HIGH
+        likelihood: LOW
+        references:
+            - https://cwe.mitre.org/data/definitions/540.html
+        subcategory:
+            - vuln
+        technology:
+            - salesforce
+      min-version: 1.44.0
+      pattern: $REQUEST.setHeader('Authorization', $AUTHSTRING);
+      severity: ERROR
+    - id: apex.lang.security.ncino.injection.apexsoqlinjectionfromunescapedurlparam.soql-injection-unescaped-url-param
+      languages:
+        - apex
+      message: If a dynamic query must be used,leverage nFORCE Query Builder. In other programming languages, the related flaw is known as SQL injection. Apex doesn't use SQL, but uses its own database query language, SOQL. SOQL is much simpler and more limited in functionality than SQL. The risks are much lower for SOQL injection than for SQL injection, but the attacks are nearly identical to traditional SQL injection. SQL/SOQL injection takes user-supplied input and uses those values in a dynamic SOQL query. If the input isn't validated, it can include SOQL commands that effectively modify the SOQL statement and trick the application into performing unintended commands.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-943: Improper Neutralization of Special Elements in Data Query Logic'
+        impact: HIGH
+        likelihood: HIGH
+        owasp:
+            - A03:2021 - Injection
+        references:
+            - https://cwe.mitre.org/data/definitions/943.html
+        subcategory:
+            - vuln
+        technology:
+            - salesforce
+      min-version: 1.44.0
+      mode: taint
+      pattern-sanitizers:
+        - pattern: String.escapeSingleQuotes(...)
+      pattern-sinks:
+        - patterns:
+            - pattern: Database.query($SINK,...);
+            - focus-metavariable: $SINK
+      pattern-sources:
+        - by-side-effect: true
+          pattern: ApexPage.getCurrentPage().getParameters.get($URLPARAM);
+      severity: ERROR
+    - id: apex.lang.security.ncino.injection.apexsoqlinjectionunescapedparam.soql-injection-unescaped-param
+      languages:
+        - apex
+      message: If a dynamic query must be used,leverage nFORCE Query Builder. In other programming languages, the related flaw is known as SQL injection. Apex doesn't use SQL, but uses its own database query language, SOQL. SOQL is much simpler and more limited in functionality than SQL. The risks are much lower for SOQL injection than for SQL injection, but the attacks are nearly identical to traditional SQL injection. SQL/SOQL injection takes user-supplied input and uses those values in a dynamic SOQL query. If the input isn't validated, it can include SOQL commands that effectively modify the SOQL statement and trick the application into performing unintended commands.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-943: Improper Neutralization of Special Elements in Data Query Logic'
+        impact: HIGH
+        likelihood: HIGH
+        owasp:
+            - A03:2021 - Injection
+        references:
+            - https://cwe.mitre.org/data/definitions/943.html
+        subcategory:
+            - vuln
+        technology:
+            - salesforce
+      min-version: 1.44.0
+      mode: taint
+      pattern-sanitizers:
+        - pattern-either:
+            - pattern: String.escapeSingleQuotes($P)
+            - pattern: Database.query(<... String.escapeSingleQuotes($P) ...>)
+      pattern-sinks:
+        - pattern: Database.query(<... $P ...>)
+      pattern-sources:
+        - by-side-effect: true
+          patterns:
+            - pattern: $M(...,String $P,...) { ... }
+            - focus-metavariable: $P
+      severity: ERROR
+    - id: apex.lang.security.ncino.sharing.specifysharinglevel.specify-sharing-level
+      languages:
+        - apex
+      message: Every Apex class should have an explicit sharing mode declared. Use the `with sharing` or `without sharing` keywords on a class to specify whether sharing rules must be enforced. Use the `inherited sharing` keyword on an Apex class to run the class in the sharing mode of the class that called it.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-284: Improper Access Control'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A04:2021 - Insecure Design
+        references:
+            - https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_keywords_sharing.htm
+            - https://cwe.mitre.org/data/definitions/284.html
+            - https://owasp.org/Top10/A04_2021-Insecure_Design/
+        subcategory:
+            - vuln
+        technology:
+            - salesforce
+      min-version: 1.44.0
+      patterns:
+        - pattern-regex: (private|public|global).*\s(class)\s.*[{]
+        - pattern-not-regex: (private|public|global).*[with|without|inherited]\s[sharing].*\s(class)\s.*[{]
+        - pattern-not-regex: (private|public|global).*\s(class)\s.*(extends)\s(Exception).*[{]
+      severity: WARNING
+    - id: apex.lang.security.ncino.system.systemdebug.system-debug
+      languages:
+        - apex
+      message: In addition to debug statements potentially logging data excessively, debug statements also contribute to longer transactions and consume Apex CPU time even when debug logs are not being captured.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-489: Active Debug Code'
+            - 'CWE-779: Logging of Excessive Data'
+        impact: MEDIUM
+        likelihood: LOW
+        references:
+            - https://cwe.mitre.org/data/definitions/489.html
+            - https://cwe.mitre.org/data/definitions/779.html
+        subcategory:
+            - vuln
+        technology:
+            - vuln
+      min-version: 1.44.0
+      paths:
+        exclude:
+            - '*Test*'
+            - '*test*'
+      pattern: System.debug(...)
+      severity: WARNING
+    - id: bash.curl.security.curl-eval.curl-eval
+      languages:
+        - bash
+      message: Data is being eval'd from a `curl` command. An attacker with control of the server in the `curl` command could inject malicious code into the `eval`, resulting in a system comrpomise. Avoid eval'ing untrusted data if you can. If you must do this, consider checking the SHA sum of the content returned by the server to verify its integrity.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code (''Eval Injection'')'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A03:2021 - Injection
+        references:
+            - https://owasp.org/Top10/A03_2021-Injection
+        subcategory:
+            - vuln
+        technology:
+            - bash
+            - curl
+      mode: taint
+      pattern-sinks:
+        - pattern: eval ...
+      pattern-sources:
+        - pattern: |
+            $(curl ...)
+        - pattern: |
+            `curl ...`
+      severity: WARNING
+    - id: c.lang.security.insecure-use-gets-fn.insecure-use-gets-fn
+      languages:
+        - c
+        - cpp
+      message: Avoid 'gets()'. This function does not consider buffer boundaries and can lead to buffer overflows. Use 'fgets()' or 'gets_s()' instead.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-676: Use of Potentially Dangerous Function'
+        impact: HIGH
+        likelihood: LOW
+        references:
+            - https://us-cert.cisa.gov/bsi/articles/knowledge/coding-practices/fgets-and-gets_s
+        subcategory:
+            - audit
+        technology:
+            - c
+            - cpp
+      pattern: gets(...)
+      severity: ERROR
+    - id: c.lang.security.random-fd-exhaustion.random-fd-exhaustion
+      languages:
+        - c
+        - cpp
+      message: Call to 'read()' without error checking is susceptible to file descriptor exhaustion. Consider using the 'getrandom()' function.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-774: Allocation of File Descriptors or Handles Without Limits or Throttling'
+        impact: HIGH
+        likelihood: LOW
+        references:
+            - https://lwn.net/Articles/606141/
+        subcategory:
+            - audit
+        technology:
+            - c
+            - cpp
+      pattern-either:
+        - patterns:
+            - pattern: |
+                $FD = open("/dev/urandom", ...);
+                ...
+                read($FD, ...);
+            - pattern-not: |
+                $FD = open("/dev/urandom", ...);
+                ...
+                $BYTES_READ = read($FD, ...);
+        - patterns:
+            - pattern: |
+                $FD = open("/dev/random", ...);
+                ...
+                read($FD, ...);
+            - pattern-not: |
+                $FD = open("/dev/random", ...);
+                ...
+                $BYTES_READ = read($FD, ...);
+      severity: WARNING
+    - id: clojure.lang.security.documentbuilderfactory-xxe.documentbuilderfactory-xxe
+      languages:
+        - clojure
+      message: DOCTYPE declarations are enabled for javax.xml.parsers.SAXParserFactory. Without prohibiting external entity declarations, this is vulnerable to XML external entity attacks. Disable this by setting the feature "http://apache.org/xml/features/disallow-doctype-decl" to true. Alternatively, allow DOCTYPE declarations and only prohibit external entities declarations. This can be done by setting the features "http://xml.org/sax/features/external-general-entities" and "http://xml.org/sax/features/external-parameter-entities" to false.
+      metadata:
+        asvs:
+            control_id: 5.5.2 Insecue XML Deserialization
+            control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v55-deserialization-prevention
+            section: V5 Validation, Sanitization and Encoding
+            version: "4"
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-611: Improper Restriction of XML External Entity Reference'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: HIGH
+        likelihood: LOW
+        owasp:
+            - A04:2017 - XML External Entities (XXE)
+            - A05:2021 - Security Misconfiguration
+        references:
+            - https://semgrep.dev/blog/2022/xml-security-in-java
+            - https://semgrep.dev/docs/cheat-sheets/java-xxe/
+            - https://xerces.apache.org/xerces2-j/features.html
+        source-rule-url: https://github.com/clj-holmes/clj-holmes-rules/blob/main/security/xxe-clojure-xml/xxe-clojure-xml.yml
+        subcategory:
+            - vuln
+        technology:
+            - clojure
+            - xml
+      patterns:
+        - pattern-inside: |
+            (ns ... (:require [clojure.xml :as ...]))
+            ...
+        - pattern-either:
+            - pattern-inside: |
+                (def ... ... ( ... ))
+            - pattern-inside: |
+                (defn ... ... ( ... ))
+        - pattern-either:
+            - pattern: (clojure.xml/parse $INPUT)
+            - patterns:
+                - pattern-inside: |
+                    (doto (javax.xml.parsers.SAXParserFactory/newInstance) ...)
+                - pattern: (.setFeature "http://apache.org/xml/features/disallow-doctype-decl" false)
+                - pattern-not-inside: |
+                    (doto (javax.xml.parsers.SAXParserFactory/newInstance)
+                      ...
+                      (.setFeature "http://xml.org/sax/features/external-general-entities" false)
+                      ...
+                      (.setFeature "http://xml.org/sax/features/external-parameter-entities" false)
+                      ...)
+                - pattern-not-inside: |
+                    (doto (javax.xml.parsers.SAXParserFactory/newInstance)
+                      ...
+                      (.setFeature "http://xml.org/sax/features/external-parameter-entities" false)
+                      ...
+                      (.setFeature "http://xml.org/sax/features/external-general-entities" false)
+                      ...)
+      severity: ERROR
+    - id: clojure.lang.security.use-of-md5.use-of-md5
+      languages:
+        - clojure
+      message: MD5 hash algorithm detected. This is not collision resistant and leads to easily-cracked password hashes. Replace with current recommended hashing algorithms.
+      metadata:
+        author: Gabriel Marquet <gab.marquet@gmail.com>
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-328: Use of Weak Hash'
+        impact: HIGH
+        likelihood: MEDIUM
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+            - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+        source-rule-url: https://github.com/clj-holmes/clj-holmes-rules/blob/main/security/weak-hash-function-md5.yml
+        subcategory:
+            - vuln
+        technology:
+            - clojure
+      pattern-either:
+        - pattern: (MessageDigest/getInstance "MD5")
+        - pattern: (MessageDigest/getInstance MessageDigestAlgorithms/MD5)
+        - pattern: (MessageDigest/getInstance org.apache.commons.codec.digest.MessageDigestAlgorithms/MD5)
+        - pattern: (java.security.MessageDigest/getInstance "MD5")
+        - pattern: (java.security.MessageDigest/getInstance MessageDigestAlgorithms/MD5)
+        - pattern: (java.security.MessageDigest/getInstance org.apache.commons.codec.digest.MessageDigestAlgorithms/MD5)
+      severity: WARNING
+    - id: clojure.lang.security.use-of-sha1.use-of-sha1
+      languages:
+        - clojure
+      message: Detected SHA1 hash algorithm which is considered insecure. SHA1 is not collision resistant and is therefore not suitable as a cryptographic signature. Instead, use PBKDF2 for password hashing or SHA256 or SHA512 for other hash function applications.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+            - 'CWE-328: Use of Weak Hash'
+        impact: HIGH
+        likelihood: MEDIUM
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+            - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+        subcategory:
+            - vuln
+        technology:
+            - clojure
+      patterns:
+        - pattern-either:
+            - pattern: (MessageDigest/getInstance $ALGO)
+            - pattern: (java.security.MessageDigest/getInstance $ALGO)
+        - metavariable-regex:
+            metavariable: $ALGO
+            regex: (((org\.apache\.commons\.codec\.digest\.)?MessageDigestAlgorithms/)?"?(SHA-1|SHA1)"?)
+      severity: WARNING
+    - id: csharp.dotnet.security.audit.ldap-injection.ldap-injection
+      languages:
+        - csharp
+      message: LDAP queries are constructed dynamically on user-controlled input. This vulnerability in code could lead to an arbitrary LDAP query execution.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-90: Improper Neutralization of Special Elements used in an LDAP Query (''LDAP Injection'')'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A01:2017 - Injection
+            - A03:2021 - Injection
+        references:
+            - https://owasp.org/Top10/A03_2021-Injection/
+            - https://cwe.mitre.org/data/definitions/90
+            - https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html#safe-c-sharp-net-tba-example
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      mode: taint
+      options:
+        taint_unify_mvars: true
+      pattern-sanitizers:
+        - pattern-either:
+            - pattern: Regex.Replace($INPUT, ...)
+            - pattern: $ENCODER.LdapFilterEncode($INPUT)
+            - pattern: $ENCODER.LdapDistinguishedNameEncode($INPUT)
+      pattern-sinks:
+        - patterns:
+            - pattern-either:
+                - pattern: $S.Filter = ... + $INPUT + ...
+                - pattern: $S.Filter = String.Format(...,$INPUT)
+                - pattern: $S.Filter = String.Concat(...,$INPUT)
+      pattern-sources:
+        - patterns:
+            - focus-metavariable: $INPUT
+            - pattern-inside: $T $M($INPUT,...) {...}
+      severity: ERROR
+    - id: csharp.dotnet.security.audit.mass-assignment.mass-assignment
+      languages:
+        - csharp
+      message: Mass assignment or Autobinding vulnerability in code allows an attacker to execute over-posting attacks, which could create a new parameter in the binding request and manipulate the underlying object in the application.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A08:2021 - Software and Data Integrity Failures
+        references:
+            - https://cwe.mitre.org/data/definitions/915.html
+            - https://github.com/OWASP/API-Security/blob/master/2019/en/src/0xa6-mass-assignment.md
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      mode: taint
+      pattern-sinks:
+        - pattern: View(...)
+      pattern-sources:
+        - patterns:
+            - pattern-either:
+                - pattern: |
+                    public IActionResult $METHOD(..., $TYPE $ARG, ...){
+                      ...
+                    }
+                - pattern: |
+                    public ActionResult $METHOD(..., $TYPE $ARG, ...){
+                      ...
+                    }
+            - pattern-inside: |
+                using Microsoft.AspNetCore.Mvc;
+                ...
+            - pattern-not: |
+                public IActionResult $METHOD(..., [Bind(...)] $TYPE $ARG, ...){
+                  ...
+                }
+            - pattern-not: |
+                public ActionResult $METHOD(..., [Bind(...)] $TYPE $ARG, ...){
+                  ...
+                }
+            - focus-metavariable: $ARG
+      severity: WARNING
+    - id: csharp.dotnet.security.audit.missing-or-broken-authorization.missing-or-broken-authorization
+      languages:
+        - csharp
+      message: Anonymous access shouldn't be allowed unless explicit by design. Access control checks are missing and potentially can be bypassed. This finding violates the principle of least privilege or deny by default, where access should only be permitted for a specific set of roles or conforms to a custom policy or users.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-862: Missing Authorization'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        cwe2023-top25: true
+        impact: MEDIUM
+        likelihood: LOW
+        owasp:
+            - A01:2021 - Broken Access Control
+        references:
+            - https://owasp.org/Top10/A01_2021-Broken_Access_Control
+            - https://cwe.mitre.org/data/definitions/862.html
+            - https://docs.microsoft.com/en-us/aspnet/core/security/authorization/simple?view=aspnetcore-7.0
+        subcategory:
+            - vuln
+        technology:
+            - .net
+            - mvc
+      patterns:
+        - pattern: |
+            public class $CLASS : Controller {
+              ...
+            }
+        - pattern-inside: |
+            using Microsoft.AspNetCore.Mvc;
+            ...
+        - pattern-not: |
+            [AllowAnonymous]
+            public class $CLASS : Controller {
+              ...
+            }
+        - pattern-not: |
+            [Authorize]
+            public class $CLASS : Controller {
+              ...
+            }
+        - pattern-not: |
+            [Authorize(Roles = ...)]
+            public class $CLASS : Controller {
+              ...
+            }
+        - pattern-not: |
+            [Authorize(Policy = ...)]
+            public class $CLASS : Controller {
+              ...
+            }
+      severity: INFO
+    - id: csharp.dotnet.security.audit.open-directory-listing.open-directory-listing
+      languages:
+        - csharp
+      message: An open directory listing is potentially exposed, potentially revealing sensitive information to attackers.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-548: Exposure of Information Through Directory Listing'
+        impact: MEDIUM
+        likelihood: LOW
+        owasp:
+            - A06:2017 - Security Misconfiguration
+            - A01:2021 - Broken Access Control
+        references:
+            - https://cwe.mitre.org/data/definitions/548.html
+            - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
+            - https://docs.microsoft.com/en-us/aspnet/core/fundamentals/static-files?view=aspnetcore-7.0#directory-browsing
+        subcategory:
+            - vuln
+        technology:
+            - .net
+            - mvc
+      patterns:
+        - pattern-either:
+            - pattern: (IApplicationBuilder $APP).UseDirectoryBrowser(...);
+            - pattern: $BUILDER.Services.AddDirectoryBrowser(...);
+        - pattern-inside: |
+            public void Configure(...) {
+              ...
+            }
+      severity: INFO
+    - id: csharp.dotnet.security.audit.xpath-injection.xpath-injection
+      languages:
+        - csharp
+      message: XPath queries are constructed dynamically on user-controlled input. This vulnerability in code could lead to an XPath Injection exploitation.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-643: Improper Neutralization of Data within XPath Expressions (''XPath Injection'')'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A03:2021 - Injection
+        references:
+            - https://owasp.org/Top10/A03_2021-Injection/
+            - https://cwe.mitre.org/data/definitions/643.html
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      mode: taint
+      pattern-sinks:
+        - pattern-either:
+            - pattern: XPathExpression $EXPR = $NAV.Compile("..." + $INPUT + "...");
+            - pattern: var $EXPR = $NAV.Compile("..." + $INPUT + "...");
+            - pattern: XPathNodeIterator $NODE = $NAV.Select("..." + $INPUT + "...");
+            - pattern: var $NODE = $NAV.Select("..." + $INPUT + "...");
+            - pattern: Object $OBJ = $NAV.Evaluate("..." + $INPUT + "...");
+            - pattern: var $OBJ = $NAV.Evaluate("..." + $INPUT + "...");
+      pattern-sources:
+        - pattern-either:
+            - pattern: $T $M($INPUT,...) {...}
+            - pattern: |
+                $T $M(...) {
+                  ...
+                  string $INPUT;
+                }
+      severity: ERROR
+    - id: csharp.dotnet.security.razor-template-injection.razor-template-injection
+      languages:
+        - csharp
+      message: User-controllable string passed to Razor.Parse. This leads directly to code execution in the context of the process.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+        cwe2022-top25: true
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A03:2021 - Injection
+        references:
+            - https://clement.notin.org/blog/2020/04/15/Server-Side-Template-Injection-(SSTI)-in-ASP.NET-Razor/
+        subcategory:
+            - vuln
+        technology:
+            - .net
+            - razor
+            - asp
+      mode: taint
+      pattern-sanitizers:
+        - not_conflicting: true
+          pattern: $F(...)
+      pattern-sinks:
+        - pattern: |
+            Razor.Parse(...)
+      pattern-sources:
+        - patterns:
+            - focus-metavariable: $ARG
+            - pattern-inside: |
+                public ActionResult $METHOD(..., string $ARG,...){...}
+      severity: WARNING
+    - id: csharp.dotnet.security.use_deprecated_cipher_algorithm.use_deprecated_cipher_algorithm
+      languages:
+        - csharp
+      message: Usage of deprecated cipher algorithm detected. Use Aes or ChaCha20Poly1305 instead.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+        impact: MEDIUM
+        likelihood: HIGH
+        owasp:
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://learn.microsoft.com/en-gb/dotnet/api/system.security.cryptography.des?view=net-6.0#remarks
+            - https://learn.microsoft.com/en-gb/dotnet/api/system.security.cryptography.rc2?view=net-6.0#remarks
+            - https://learn.microsoft.com/en-gb/dotnet/api/system.security.cryptography.aes?view=net-6.0
+            - https://learn.microsoft.com/en-gb/dotnet/api/system.security.cryptography.chacha20poly1305?view=net-6.0
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      patterns:
+        - pattern: $KEYTYPE.Create(...);
+        - metavariable-pattern:
+            metavariable: $KEYTYPE
+            pattern-either:
+                - pattern: DES
+                - pattern: RC2
+      severity: ERROR
+    - id: csharp.dotnet.security.use_ecb_mode.use_ecb_mode
+      languages:
+        - csharp
+      message: Usage of the insecure ECB mode detected. You should use an authenticated encryption mode instead, which is implemented by the classes AesGcm or ChaCha20Poly1305.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+        impact: MEDIUM
+        likelihood: HIGH
+        owasp:
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://learn.microsoft.com/en-gb/dotnet/api/system.security.cryptography.chacha20poly1305?view=net-6.0
+            - https://learn.microsoft.com/en-gb/dotnet/api/system.security.cryptography.aesgcm?view=net-6.0
+            - https://learn.microsoft.com/en-gb/dotnet/api/system.security.cryptography.ciphermode?view=net-6.0
+            - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#cipher-modes
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      patterns:
+        - pattern-either:
+            - pattern: ($KEYTYPE $KEY).EncryptEcb(...);
+            - pattern: ($KEYTYPE $KEY).DecryptEcb(...);
+            - pattern: ($KEYTYPE $KEY).Mode = CipherMode.ECB;
+        - metavariable-pattern:
+            metavariable: $KEYTYPE
+            pattern-either:
+                - pattern: SymmetricAlgorithm
+                - pattern: Aes
+                - pattern: Rijndael
+                - pattern: DES
+                - pattern: TripleDES
+                - pattern: RC2
+      severity: WARNING
+    - id: csharp.dotnet.security.use_weak_rng_for_keygeneration.use_weak_rng_for_keygeneration
+      languages:
+        - csharp
+      message: You are using an insecure random number generator (RNG) to create a cryptographic key. System.Random must never be used for cryptographic purposes. Use System.Security.Cryptography.RandomNumberGenerator instead.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-338: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG)'
+        impact: MEDIUM
+        likelihood: HIGH
+        owasp:
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://learn.microsoft.com/en-us/dotnet/api/system.random?view=net-6.0#remarks
+            - https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.randomnumbergenerator?view=net-6.0
+            - https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.aesgcm?view=net-6.0#constructors
+            - https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.symmetricalgorithm.key?view=net-6.0#system-security-cryptography-symmetricalgorithm-key
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      mode: taint
+      pattern-sinks:
+        - pattern-either:
+            - patterns:
+                - pattern: ($KEYTYPE $CIPHER).Key = $SINK;
+                - focus-metavariable: $SINK
+                - metavariable-pattern:
+                    metavariable: $KEYTYPE
+                    pattern-either:
+                        - pattern: SymmetricAlgorithm
+                        - pattern: Aes
+                        - pattern: Rijndael
+                        - pattern: DES
+                        - pattern: TripleDES
+                        - pattern: RC2
+            - pattern: new AesGcm(...)
+            - pattern: new AesCcm(...)
+            - pattern: new ChaCha20Poly1305(...)
+      pattern-sources:
+        - patterns:
+            - pattern-inside: (System.Random $RNG).NextBytes($KEY); ...
+            - pattern: $KEY
+      severity: ERROR
+    - id: csharp.dotnet.security.use_weak_rsa_encryption_padding.use_weak_rsa_encryption_padding
+      languages:
+        - csharp
+      message: You are using the outdated PKCS#1 v1.5 encryption padding for your RSA key. Use the OAEP padding instead.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-780: Use of RSA Algorithm without OAEP'
+        impact: MEDIUM
+        likelihood: HIGH
+        owasp:
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://learn.microsoft.com/en-gb/dotnet/api/system.security.cryptography.rsapkcs1keyexchangeformatter
+            - https://learn.microsoft.com/en-gb/dotnet/api/system.security.cryptography.rsaoaepkeyexchangeformatter
+            - https://learn.microsoft.com/en-gb/dotnet/api/system.security.cryptography.rsapkcs1keyexchangedeformatter
+            - https://learn.microsoft.com/en-gb/dotnet/api/system.security.cryptography.rsaoaepkeyexchangedeformatter
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      pattern-either:
+        - pattern: (RSAPKCS1KeyExchangeFormatter $FORMATER).CreateKeyExchange(...);
+        - pattern: (RSAPKCS1KeyExchangeDeformatter $DEFORMATER).DecryptKeyExchange(...);
+      severity: WARNING
+    - id: csharp.lang.correctness.double.double-epsilon-equality.correctness-double-epsilon-equality
+      languages:
+        - csharp
+      message: Double.Epsilon is defined by .NET as the smallest value that can be added to or subtracted from a zero-value Double. It is unsuitable for equality comparisons of non-zero Double values. Furthermore, the value of Double.Epsilon is framework and processor architecture dependent. Wherever possible, developers should prefer the framework Equals() method over custom equality implementations.
+      metadata:
+        category: correctness
+        confidence: MEDIUM
+        references:
+            - https://docs.microsoft.com/en-us/dotnet/api/system.double?view=net-6.0#testing-for-equality
+            - https://docs.microsoft.com/en-us/dotnet/api/system.double.epsilon?view=net-6.0#platform-notes
+        technology:
+            - .net
+      patterns:
+        - pattern: |
+            $V1 - $V2
+        - pattern-either:
+            - pattern-inside: |
+                ... <= Double.Epsilon
+            - pattern-inside: |
+                Double.Epsilon <= ...
+        - pattern-not-inside: |
+            double $V1 = 0;
+            ...
+        - pattern-not-inside: |
+            double $V2 = 0;
+            ...
+        - pattern-not-inside: |
+            $V1 = 0;
+            ...
+        - pattern-not-inside: |
+            $V2 = 0;
+            ...
+      severity: WARNING
+    - id: csharp.lang.correctness.regioninfo.regioninfo-interop.correctness-regioninfo-interop
+      languages:
+        - csharp
+      message: Potential inter-process write of RegionInfo $RI via $PIPESTREAM $P that was instantiated with a two-character culture code $REGION.  Per .NET documentation, if you want to persist a RegionInfo object or communicate it between processes, you should instantiate it by using a full culture name rather than a two-letter ISO region code.
+      metadata:
+        category: correctness
+        confidence: MEDIUM
+        references:
+            - https://docs.microsoft.com/en-us/dotnet/api/system.globalization.regioninfo.twoletterisoregionname?view=net-6.0#remarks
+        technology:
+            - .net
+      patterns:
+        - pattern-either:
+            - pattern: |
+                $WRITER.Write($RI);
+            - pattern: |
+                $WRITER.WriteAsync($RI);
+            - pattern: |
+                $WRITER.WriteLine($RI);
+            - pattern: |
+                $WRITER.WriteLineAsync($RI);
+        - pattern-inside: |
+            RegionInfo $RI = new RegionInfo($REGION);
+            ...
+            using($PIPESTREAM $P = ...){
+              ...
+            }
+        - metavariable-regex:
+            metavariable: $REGION
+            regex: ^"\w{2}"$
+        - metavariable-regex:
+            metavariable: $PIPESTREAM
+            regex: (Anonymous|Named)Pipe(Server|Client)Stream
+      severity: WARNING
+    - fix: SslCertificateTrust.$METHOD($COLLECTION,false)
+      id: csharp.lang.correctness.sslcertificatetrust.sslcertificatetrust-handshake-no-trust.correctness-sslcertificatetrust-handshake-no-trust
+      languages:
+        - csharp
+      message: Sending the trusted CA list increases the size of the handshake request and can leak system configuration information.
+      metadata:
+        category: correctness
+        confidence: HIGH
+        cwe: 'CWE-200: Exposure of Sensitive Information to an Unauthorized Actor'
+        owasp: A03:2017 - Sensitive Data Exposure
+        references:
+            - https://docs.microsoft.com/en-us/dotnet/api/system.net.security.sslcertificatetrust.createforx509collection?view=net-6.0#remarks
+            - https://docs.microsoft.com/en-us/dotnet/api/system.net.security.sslcertificatetrust.createforx509store?view=net-6.0#remarks
+        technology:
+            - .net
+      patterns:
+        - pattern-either:
+            - pattern: SslCertificateTrust.$METHOD($COLLECTION,sendTrustInHandshake=true)
+            - pattern: SslCertificateTrust.$METHOD($COLLECTION,true)
+        - metavariable-regex:
+            metavariable: $METHOD
+            regex: CreateForX509(Collection|Store)
+      severity: WARNING
+    - fix: |
+        true
+      id: csharp.lang.security.ad.jwt-tokenvalidationparameters-no-expiry-validation.jwt-tokenvalidationparameters-no-expiry-validation
+      languages:
+        - csharp
+      message: The TokenValidationParameters.$LIFETIME is set to $FALSE, this means the JWT tokens lifetime is not validated. This can lead to an JWT token being used after it has expired, which has security implications. It is recommended to validate the JWT lifetime to ensure only valid tokens are used.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-613: Insufficient Session Expiration'
+        impact: MEDIUM
+        likelihood: HIGH
+        owasp:
+            - A02:2017 - Broken Authentication
+            - A07:2021 - Identification and Authentication Failures
+        references:
+            - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/
+            - https://cwe.mitre.org/data/definitions/613.html
+            - https://docs.microsoft.com/en-us/dotnet/api/microsoft.identitymodel.tokens.tokenvalidationparameters?view=azure-dotnet
+        subcategory:
+            - audit
+        technology:
+            - csharp
+      patterns:
+        - pattern-either:
+            - patterns:
+                - pattern: $LIFETIME = $FALSE
+                - pattern-inside: new TokenValidationParameters {...}
+            - patterns:
+                - pattern: |
+                    (TokenValidationParameters $OPTS). ... .$LIFETIME = $FALSE
+        - metavariable-regex:
+            metavariable: $LIFETIME
+            regex: (RequireExpirationTime|ValidateLifetime)
+        - metavariable-regex:
+            metavariable: $FALSE
+            regex: (false)
+        - focus-metavariable: $FALSE
+      severity: WARNING
+    - id: csharp.lang.security.cryptography.x509-subject-name-validation.x509-subject-name-validation
+      languages:
+        - csharp
+      message: Validating certificates based on subject name is bad practice. Use the X509Certificate2.Verify() method instead.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-295: Improper Certificate Validation'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A07:2021 - Identification and Authentication Failures
+        references:
+            - https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.issuernameregistry?view=netframework-4.8
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      patterns:
+        - pattern-inside: |
+            using System.IdentityModel.Tokens;
+            ...
+        - pattern-either:
+            - patterns:
+                - pattern-either:
+                    - pattern-inside: |
+                        X509SecurityToken $TOK = $RHS;
+                        ...
+                    - pattern-inside: |
+                        $T $M(..., X509SecurityToken $TOK, ...) {
+                            ...
+                        }
+                - metavariable-pattern:
+                    metavariable: $RHS
+                    pattern-either:
+                        - pattern: $T as X509SecurityToken
+                        - pattern: new X509SecurityToken(...)
+            - patterns:
+                - pattern-either:
+                    - pattern-inside: |
+                        X509Certificate2 $CERT = new X509Certificate2(...);
+                        ...
+                    - pattern-inside: |
+                        $T $M(..., X509Certificate2 $CERT, ...) {
+                            ...
+                        }
+                    - pattern-inside: |
+                        foreach (X509Certificate2 $CERT in $COLLECTION) {
+                            ...
+                        }
+        - patterns:
+            - pattern-either:
+                - pattern: String.Equals($NAME, "...")
+                - pattern: String.Equals("...", $NAME)
+                - pattern: $NAME.Equals("...")
+                - pattern: $NAME == "..."
+                - pattern: $NAME != "..."
+                - pattern: |
+                    "..." == $NAME
+                - pattern: |
+                    "..." != $NAME
+            - metavariable-pattern:
+                metavariable: $NAME
+                pattern-either:
+                    - pattern: $TOK.Certificate.SubjectName.Name
+                    - pattern: $CERT.SubjectName.Name
+                    - pattern: $CERT.GetNameInfo(...)
+      severity: WARNING
+    - fix: RequireSignedTokens = true
+      id: csharp.lang.security.cryptography.unsigned-security-token.unsigned-security-token
+      languages:
+        - csharp
+      message: Accepting unsigned security tokens as valid security tokens allows an attacker to remove its signature and potentially forge an identity. As a fix, set RequireSignedTokens to be true.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-347: Improper Verification of Cryptographic Signature'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://owasp.org/Top10/A01_2021-Broken_Access_Control/
+            - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
+            - https://cwe.mitre.org/data/definitions/347
+        subcategory:
+            - vuln
+        technology:
+            - csharp
+      patterns:
+        - pattern: RequireSignedTokens = false
+        - pattern-inside: |
+            new TokenValidationParameters {
+              ...
+            }
+      severity: ERROR
+    - id: csharp.lang.security.filesystem.unsafe-path-combine.unsafe-path-combine
+      languages:
+        - csharp
+      message: String argument $A is used to read or write data from a file via Path.Combine without direct sanitization via Path.GetFileName. If the path is user-supplied data this can lead to path traversal.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-22: Improper Limitation of a Pathname to a Restricted Directory (''Path Traversal'')'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        likelihood: LOW
+        owasp:
+            - A05:2017 - Broken Access Control
+            - A01:2021 - Broken Access Control
+        references:
+            - https://www.praetorian.com/blog/pathcombine-security-issues-in-aspnet-applications/
+            - https://docs.microsoft.com/en-us/dotnet/api/system.io.path.combine?view=net-6.0#remarks
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      mode: taint
+      pattern-sanitizers:
+        - pattern: |
+            Path.GetFileName(...)
+        - patterns:
+            - pattern-inside: |
+                $X = Path.GetFileName(...);
+                ...
+            - pattern: $X
+        - patterns:
+            - pattern: $X
+            - pattern-inside: |
+                if(<... Path.GetFileName($X) != $X ...>){
+                  ...
+                  throw new $EXCEPTION(...);
+                }
+                ...
+      pattern-sinks:
+        - patterns:
+            - focus-metavariable: $X
+            - pattern: |
+                File.$METHOD($X,...)
+            - metavariable-regex:
+                metavariable: $METHOD
+                regex: (?i)^(read|write)
+      pattern-sources:
+        - patterns:
+            - pattern: $A
+            - pattern-inside: |
+                Path.Combine(...,$A,...)
+            - pattern-inside: |
+                public $TYPE $M(...,$A,...){...}
+            - pattern-not-inside: |
+                <... Path.GetFileName($A) != $A ...>
+      severity: WARNING
+    - id: csharp.lang.security.http.http-listener-wildcard-bindings.http-listener-wildcard-bindings
+      languages:
+        - C#
+      message: The top level wildcard bindings $PREFIX leaves your application open to security vulnerabilities and give attackers more control over where traffic is routed. If you must use wildcards, consider using subdomain wildcard binding. For example, you can use "*.asdf.gov" if you own all of "asdf.gov".
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-706: Use of Incorrectly-Resolved Name or Reference'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A01:2021 - Broken Access Control
+        references:
+            - https://docs.microsoft.com/en-us/dotnet/api/system.net.httplistener?view=net-6.0
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      patterns:
+        - pattern-inside: |
+            using System.Net;
+            ...
+        - pattern: $LISTENER.Prefixes.Add("$PREFIX")
+        - metavariable-regex:
+            metavariable: $PREFIX
+            regex: (http|https)://(\*|\+)(.[a-zA-Z]{2,})?:[0-9]+
+      severity: WARNING
+    - id: csharp.lang.security.insecure-deserialization.binary-formatter.insecure-binaryformatter-deserialization
+      languages:
+        - C#
+      message: The BinaryFormatter type is dangerous and is not recommended for data processing. Applications should stop using BinaryFormatter as soon as possible, even if they believe the data they're processing to be trustworthy. BinaryFormatter is insecure and can't be made secure
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-502: Deserialization of Untrusted Data'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: HIGH
+        likelihood: MEDIUM
+        owasp:
+            - A08:2017 - Insecure Deserialization
+            - A08:2021 - Software and Data Integrity Failures
+        references:
+            - https://docs.microsoft.com/en-us/dotnet/standard/serialization/binaryformatter-security-guide
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      patterns:
+        - pattern-inside: |
+            using System.Runtime.Serialization.Formatters.Binary;
+            ...
+        - pattern: |
+            new BinaryFormatter();
+      severity: WARNING
+    - id: csharp.lang.security.insecure-deserialization.fs-pickler.insecure-fspickler-deserialization
+      languages:
+        - C#
+      message: The FsPickler is dangerous and is not recommended for data processing. Default configuration tend to insecure deserialization vulnerability.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-502: Deserialization of Untrusted Data'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: HIGH
+        likelihood: LOW
+        owasp:
+            - A08:2017 - Insecure Deserialization
+            - A08:2021 - Software and Data Integrity Failures
+        references:
+            - https://mbraceproject.github.io/FsPickler/tutorial.html#Disabling-Subtype-Resolution
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      patterns:
+        - pattern-inside: |
+            using MBrace.FsPickler.Json;
+            ...
+        - pattern: |
+            FsPickler.CreateJsonSerializer();
+      severity: WARNING
+    - id: csharp.lang.security.insecure-deserialization.los-formatter.insecure-losformatter-deserialization
+      languages:
+        - C#
+      message: The LosFormatter type is dangerous and is not recommended for data processing. Applications should stop using LosFormatter as soon as possible, even if they believe the data they're processing to be trustworthy. LosFormatter is insecure and can't be made secure
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-502: Deserialization of Untrusted Data'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: HIGH
+        likelihood: LOW
+        owasp:
+            - A08:2017 - Insecure Deserialization
+            - A08:2021 - Software and Data Integrity Failures
+        references:
+            - https://docs.microsoft.com/en-us/dotnet/api/system.web.ui.losformatter?view=netframework-4.8
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      patterns:
+        - pattern-inside: |
+            using System.Web.UI;
+            ...
+        - pattern: |
+            new LosFormatter();
+      severity: WARNING
+    - id: csharp.lang.security.insecure-deserialization.net-data-contract.insecure-netdatacontract-deserialization
+      languages:
+        - C#
+      message: The NetDataContractSerializer type is dangerous and is not recommended for data processing. Applications should stop using NetDataContractSerializer as soon as possible, even if they believe the data they're processing to be trustworthy. NetDataContractSerializer is insecure and can't be made secure
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-502: Deserialization of Untrusted Data'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: HIGH
+        likelihood: LOW
+        owasp:
+            - A08:2017 - Insecure Deserialization
+            - A08:2021 - Software and Data Integrity Failures
+        references:
+            - https://docs.microsoft.com/en-us/dotnet/api/system.runtime.serialization.netdatacontractserializer?view=netframework-4.8#security
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      patterns:
+        - pattern-inside: |
+            using System.Runtime.Serialization;
+            ...
+        - pattern: |
+            new NetDataContractSerializer();
+      severity: WARNING
+    - id: csharp.lang.security.insecure-deserialization.soap-formatter.insecure-soapformatter-deserialization
+      languages:
+        - C#
+      message: The SoapFormatter type is dangerous and is not recommended for data processing. Applications should stop using SoapFormatter as soon as possible, even if they believe the data they're processing to be trustworthy. SoapFormatter is insecure and can't be made secure
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-502: Deserialization of Untrusted Data'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: HIGH
+        likelihood: LOW
+        owasp:
+            - A08:2017 - Insecure Deserialization
+            - A08:2021 - Software and Data Integrity Failures
+        references:
+            - https://docs.microsoft.com/en-us/dotnet/api/system.runtime.serialization.formatters.soap.soapformatter?view=netframework-4.8#remarks
+        subcategory:
+            - vuln
+        technology:
+            - .net
+      patterns:
+        - pattern-inside: |
+            using System.Runtime.Serialization.Formatters.Soap;
+            ...
+        - pattern: |
+            new SoapFormatter();
+      severity: WARNING
+    - id: csharp.lang.security.regular-expression-dos.regular-expression-dos-infinite-timeout.regular-expression-dos-infinite-timeout
+      languages:
+        - C#
+      message: 'Specifying the regex timeout leaves the system vulnerable to a regex-based Denial of Service (DoS) attack. Consider setting the timeout to a short amount of time like 2 or 3 seconds. If you are sure you need an infinite timeout, double check that your context meets the conditions outlined in the "Notes to Callers" section at the bottom of this page: https://docs.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex.-ctor?view=net-6.0'
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-1333: Inefficient Regular Expression Complexity'
+        impact: MEDIUM
+        likelihood: LOW
+        owasp: A01:2017 - Injection
+        references:
+            - https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+            - https://docs.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex.infinitematchtimeout
+            - https://docs.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex.-ctor?view=net-6.0
+        subcategory:
+            - audit
+        technology:
+            - .net
+      patterns:
+        - pattern-inside: |
+            using System.Text.RegularExpressions;
+            ...
+        - pattern-either:
+            - pattern: new Regex(..., TimeSpan.InfiniteMatchTimeout)
+            - patterns:
+                - pattern: new Regex(..., TimeSpan.FromSeconds($TIME))
+                - metavariable-comparison:
+                    comparison: $TIME > 5
+                    metavariable: $TIME
+            - pattern: new Regex(..., TimeSpan.FromMinutes(...))
+            - pattern: new Regex(..., TimeSpan.FromHours(...))
+      severity: WARNING
+    - id: csharp.lang.security.regular-expression-dos.regular-expression-dos.regular-expression-dos
+      languages:
+        - C#
+      message: When using `System.Text.RegularExpressions` to process untrusted input, pass a timeout.  A malicious user can provide input to `RegularExpressions` that abuses the backtracking behaviour of this regular expression engine. This will lead to excessive CPU usage, causing a Denial-of-Service attack
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-1333: Inefficient Regular Expression Complexity'
+        impact: MEDIUM
+        likelihood: LOW
+        owasp: A01:2017 - Injection
+        references:
+            - https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+            - https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expressions#regular-expression-examples
+        subcategory:
+            - audit
+        technology:
+            - .net
+      patterns:
+        - pattern-inside: |
+            using System.Text.RegularExpressions;
+            ...
+        - pattern-either:
+            - pattern: |
+                public $T $F($X)
+                {
+                  Regex $Y = new Regex($P);
+                  ...
+                  $Y.Match($X);
+                }
+            - pattern: |
+                public $T $F($X)
+                {
+                  Regex $Y = new Regex($P, $O);
+                  ...
+                  $Y.Match($X);
+                }
+            - pattern: |
+                public $T $F($X)
+                {
+                  ... Regex.Match($X, $P);
+                }
+            - pattern: |
+                public $T $F($X)
+                {
+                  ... Regex.Match($X, $P, $O);
+                }
+      severity: WARNING
+    - id: csharp.lang.security.sqli.csharp-sqli.csharp-sqli
+      languages:
+        - csharp
+      message: Detected a formatted string in a SQL statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use a prepared statements instead. You can obtain a PreparedStatement using 'SqlCommand' and 'SqlParameter'.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: HIGH
+        likelihood: LOW
+        owasp:
+            - A01:2017 - Injection
+            - A03:2021 - Injection
+        references:
+            - https://owasp.org/Top10/A03_2021-Injection
+        subcategory:
+            - audit
+        technology:
+            - csharp
+      mode: taint
+      pattern-propagators:
+        - from: $X
+          pattern: (StringBuilder $B).$ANY(...,(string $X),...)
+          to: $B
+      pattern-sanitizers:
+        - by-side-effect: true
+          pattern-either:
+            - pattern: |
+                $CMD.Parameters.add(...)
+            - pattern: |
+                $CMD.Parameters[$IDX] = ...
+      pattern-sinks:
+        - patterns:
+            - pattern-either:
+                - patterns:
+                    - pattern: |
+                        new $PATTERN($CMD,...)
+                    - focus-metavariable: $CMD
+                - pattern: |
+                    $CMD.$PATTERN = ...;
+            - metavariable-regex:
+                metavariable: $PATTERN
+                regex: ^(SqlCommand|CommandText|OleDbCommand|OdbcCommand|OracleCommand)$
+      pattern-sources:
+        - patterns:
+            - pattern: |
+                (string $X)
+            - pattern-not: |
+                "..."
+      severity: ERROR
+    - id: csharp.lang.security.stacktrace-disclosure.stacktrace-disclosure
+      languages:
+        - csharp
+      message: Stacktrace information is displayed in a non-Development environment. Accidentally disclosing sensitive stack trace information in a production environment aids an attacker in reconnaissance and information gathering.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-209: Generation of Error Message Containing Sensitive Information'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A06:2017 - Security Misconfiguration
+            - A04:2021 - Insecure Design
+        references:
+            - https://cwe.mitre.org/data/definitions/209.html
+            - https://owasp.org/Top10/A04_2021-Insecure_Design/
+        subcategory:
+            - audit
+        technology:
+            - csharp
+      patterns:
+        - pattern: $APP.UseDeveloperExceptionPage(...);
+        - pattern-not-inside: "if ($ENV.IsDevelopment(...)) {\n  ... \n  $APP.UseDeveloperExceptionPage(...); \n  ...\n}\n"
+      severity: WARNING
+    - id: csharp.lang.security.xxe.xmldocument-unsafe-parser-override.xmldocument-unsafe-parser-override
+      languages:
+        - csharp
+      message: XmlReaderSettings found with DtdProcessing.Parse on an XmlReader handling a string argument from a public method. Enabling Document Type Definition (DTD) parsing may cause XML External Entity (XXE) injection if supplied with user-controllable data.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-611: Improper Restriction of XML External Entity Reference'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        likelihood: LOW
+        owasp:
+            - A04:2017 - XML External Entities (XXE)
+            - A05:2021 - Security Misconfiguration
+        references:
+            - https://www.jardinesoftware.net/2016/05/26/xxe-and-net/
+            - https://docs.microsoft.com/en-us/dotnet/api/system.xml.xmldocument.xmlresolver?view=net-6.0#remarks
+        subcategory:
+            - vuln
+        technology:
+            - .net
+            - xml
+      mode: taint
+      pattern-sinks:
+        - patterns:
+            - pattern: |
+                $XMLDOCUMENT.$METHOD(...)
+            - pattern-inside: "XmlDocument $XMLDOCUMENT = new XmlDocument(...);\n...\n$XMLDOCUMENT.XmlResolver = new XmlUrlResolver(...);\n...  \n"
+      pattern-sources:
+        - patterns:
+            - focus-metavariable: $ARG
+            - pattern-inside: |
+                public $T $M(...,string $ARG,...){...}
+      severity: WARNING
+    - id: csharp.lang.security.xxe.xmlreadersettings-unsafe-parser-override.xmlreadersettings-unsafe-parser-override
+      languages:
+        - csharp
+      message: XmlReaderSettings found with DtdProcessing.Parse on an XmlReader handling a string argument from a public method. Enabling Document Type Definition (DTD) parsing may cause XML External Entity (XXE) injection if supplied with user-controllable data.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-611: Improper Restriction of XML External Entity Reference'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        likelihood: LOW
+        owasp:
+            - A04:2017 - XML External Entities (XXE)
+            - A05:2021 - Security Misconfiguration
+        references:
+            - https://www.jardinesoftware.net/2016/05/26/xxe-and-net/
+            - https://docs.microsoft.com/en-us/dotnet/api/system.xml.xmldocument.xmlresolver?view=net-6.0#remarks
+        subcategory:
+            - vuln
+        technology:
+            - .net
+            - xml
+      mode: taint
+      pattern-sinks:
+        - patterns:
+            - pattern: |
+                XmlReader $READER = XmlReader.Create(...,$RS,...);
+            - pattern-inside: "XmlReaderSettings $RS = new XmlReaderSettings();\n...\n$RS.DtdProcessing = DtdProcessing.Parse;\n...        \n"
+      pattern-sources:
+        - patterns:
+            - focus-metavariable: $ARG
+            - pattern-inside: |
+                public $T $M(...,string $ARG,...){...}
+      severity: WARNING
+    - id: csharp.lang.security.xxe.xmltextreader-unsafe-defaults.xmltextreader-unsafe-defaults
+      languages:
+        - csharp
+      message: XmlReaderSettings found with DtdProcessing.Parse on an XmlReader handling a string argument from a public method. Enabling Document Type Definition (DTD) parsing may cause XML External Entity (XXE) injection if supplied with user-controllable data.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-611: Improper Restriction of XML External Entity Reference'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        likelihood: LOW
+        owasp:
+            - A04:2017 - XML External Entities (XXE)
+            - A05:2021 - Security Misconfiguration
+        references:
+            - https://www.jardinesoftware.net/2016/05/26/xxe-and-net/
+            - https://docs.microsoft.com/en-us/dotnet/api/system.xml.xmldocument.xmlresolver?view=net-6.0#remarks
+        subcategory:
+            - vuln
+        technology:
+            - .net
+            - xml
+      mode: taint
+      pattern-sinks:
+        - patterns:
+            - pattern: |
+                $READER.$METHOD(...)
+            - pattern-not-inside: |
+                $READER.DtdProcessing = DtdProcessing.Prohibit;
+                ...
+            - pattern-inside: |
+                XmlTextReader $READER = new XmlTextReader(...);
+                ...
+      pattern-sources:
+        - patterns:
+            - focus-metavariable: $ARG
+            - pattern-inside: |
+                public $T $M(...,string $ARG,...){...}
+      severity: WARNING
+    - id: dockerfile.security.last-user-is-root.last-user-is-root
+      languages:
+        - dockerfile
+      message: The last user in the container is 'root'. This is a security hazard because if an attacker gains control of the container they will have root access. Switch back to another user after running commands as 'root'.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-269: Improper Privilege Management'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A04:2021 - Insecure Design
+        references:
+            - https://github.com/hadolint/hadolint/wiki/DL3002
+        source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3002
+        subcategory:
+            - audit
+        technology:
+            - dockerfile
+      patterns:
+        - pattern: USER root
+        - pattern-not-inside:
+            patterns:
+                - pattern: |
+                    USER root
+                    ...
+                    USER $X
+                - metavariable-pattern:
+                    metavariable: $X
+                    patterns:
+                        - pattern-not: root
+      severity: ERROR
+    - fix: |
+        USER non-root
+        ENTRYPOINT $...VARS
+      id: dockerfile.security.missing-user-entrypoint.missing-user-entrypoint
+      languages:
+        - dockerfile
+      message: By not specifying a USER, a program in the container may run as 'root'. This is a security hazard. If an attacker can control a process running as root, they may have control over the container. Ensure that the last USER in a Dockerfile is a USER other than 'root'.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-269: Improper Privilege Management'
+        impact: MEDIUM
+        likelihood: LOW
+        owasp:
+            - A04:2021 - Insecure Design
+        references:
+            - https://owasp.org/Top10/A04_2021-Insecure_Design
+        subcategory:
+            - audit
+        technology:
+            - dockerfile
+      patterns:
+        - pattern: |
+            ENTRYPOINT $...VARS
+        - pattern-not-inside: |
+            USER $USER
+            ...
+      severity: ERROR
+    - fix: |
+        USER non-root
+        CMD $...VARS
+      id: dockerfile.security.missing-user.missing-user
+      languages:
+        - dockerfile
+      message: By not specifying a USER, a program in the container may run as 'root'. This is a security hazard. If an attacker can control a process running as root, they may have control over the container. Ensure that the last USER in a Dockerfile is a USER other than 'root'.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-269: Improper Privilege Management'
+        impact: MEDIUM
+        likelihood: LOW
+        owasp:
+            - A04:2021 - Insecure Design
+        references:
+            - https://owasp.org/Top10/A04_2021-Insecure_Design
+        subcategory:
+            - audit
+        technology:
+            - dockerfile
+      patterns:
+        - pattern: |
+            CMD $...VARS
+        - pattern-not-inside: |
+            USER $USER
+            ...
+      severity: ERROR
+    - id: dockerfile.security.no-sudo-in-dockerfile.no-sudo-in-dockerfile
+      languages:
+        - dockerfile
+      message: Avoid using sudo in Dockerfiles. Running processes as a non-root user can help  reduce the potential impact of configuration errors and security vulnerabilities.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-250: Execution with Unnecessary Privileges'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A05:2021 - Security Misconfiguration
+        references:
+            - https://cwe.mitre.org/data/definitions/250.html
+            - https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
+        subcategory:
+            - audit
+        technology:
+            - dockerfile
+      patterns:
+        - pattern: |
+            RUN sudo ...
+      severity: WARNING
+    - id: generic.secrets.security.detected-stripe-restricted-api-key.detected-stripe-restricted-api-key
+      languages:
+        - regex
+      message: Stripe Restricted API Key detected
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-798: Use of Hard-coded Credentials'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A07:2021 - Identification and Authentication Failures
+        references:
+            - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures
+        source-rule-url: https://github.com/dxa4481/truffleHogRegexes/blob/master/truffleHogRegexes/regexes.json
+        subcategory:
+            - audit
+        technology:
+            - secrets
+            - stripe
+      pattern-regex: rk_live_[0-9a-zA-Z]{24}
+      severity: ERROR
+    - id: generic.secrets.security.detected-username-and-password-in-uri.detected-username-and-password-in-uri
+      languages:
+        - generic
+      message: Username and password in URI detected
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-798: Use of Hard-coded Credentials'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+        likelihood: MEDIUM
+        owasp:
+            - A07:2021 - Identification and Authentication Failures
+        references:
+            - https://github.com/grab/secret-scanner/blob/master/scanner/signatures/pattern.go
+        subcategory:
+            - vuln
+        technology:
+            - secrets
+      patterns:
+        - pattern: $PROTOCOL://$...USERNAME:$...PASSWORD@$END
+        - metavariable-regex:
+            metavariable: $...USERNAME
+            regex: \A({?)([A-Za-z])([A-Za-z0-9_-]){5,31}(}?)\Z
+        - metavariable-regex:
+            metavariable: $...PASSWORD
+            regex: (?!.*[\s])(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]){6,32}
+        - metavariable-regex:
+            metavariable: $PROTOCOL
+            regex: (.*http.*)|(.*sql.*)|(.*ftp.*)|(.*smtp.*)
+      severity: ERROR
+    - id: generic.secrets.security.google-maps-apikeyleak.google-maps-apikeyleak
+      languages:
+        - generic
+      message: Detects potential Google Maps API keys in code
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-538: Insertion of Sensitive Information into Externally-Accessible File or Directory'
+        description: Detects potential Google Maps API keys in code
+        impact: HIGH
+        likelihood: MEDIUM
+        owasp:
+            - A3:2017 Sensitive Data Exposure
+        references:
+            - https://ozguralp.medium.com/unauthorized-google-maps-api-key-usage-cases-and-why-you-need-to-care-1ccb28bf21e
+        severity: MEDIUM
+        subcategory:
+            - audit
+        technology:
+            - Google Maps
+      patterns:
+        - pattern-regex: ^(AIza[0-9A-Za-z_-]{35}(?!\S))$
+      severity: WARNING
+    - id: generic.visualforce.security.ncino.html.usesriforcdns.use-sri-for-cdns
+      languages:
+        - generic
+      message: 'Consuming CDNs without including a SubResource Integrity (SRI) can expose your application and its users to compromised code. SRIs allow you to consume specific versions of content where if even a single byte is compromised, the resource will not be loaded. Add an integrity attribute to your <script> and <link> tags pointing to CDN content to ensure the resources have not been compromised. A crossorigin attribute should also be added. For a more thorough explanation along with explicit instructions on remediating, follow the directions from Mozilla here: https://developer.mozilla.org/en-US/blog/securing-cdn-using-sri-why-how/'
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-346: Origin Validation Error'
+        cwe2020-top25': true
+        cwe2021-top25': true
+        cwe2022-top25': true
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A07:2021 - Identification and Authentication Failures
+        references:
+            - https://cwe.mitre.org/data/definitions/352.html
+            - https://developer.mozilla.org/en-US/blog/securing-cdn-using-sri-why-how/
+        subcategory:
+            - vuln
+        technology:
+            - salesforce
+            - visualforce
+      paths:
+        include:
+            - '*.component'
+            - '*.page'
+      patterns:
+        - pattern-either:
+            - pattern: <link...href="$URL..."...>
+            - pattern: <script...src="$URL..."...>
+        - metavariable-regex:
+            metavariable: $URL
+            regex: http[A-Za-z0-9\/\.\-\:]
+        - pattern-not: <script...integrity="..."...src="..."...>
+        - pattern-not: <script...src="..."...integrity="..."...>
+        - pattern-not: <link...integrity="..."...href="..."...>
+        - pattern-not: <link...href="..."...integrity="..."...>
+      severity: WARNING
+    - id: generic.visualforce.security.ncino.vf.xssfromunescapedurlparam.xss-from-unescaped-url-param
+      languages:
+        - generic
+      message: To remediate this issue, ensure that all URL parameters are properly escaped before including them in scripts. Please update your code to use either the JSENCODE method to escape URL parameters or the escape="true" attribute on <apex:outputText> tags. Passing URL parameters directly into scripts and DOM sinks creates an opportunity for Cross-Site Scripting attacks. Cross-Site Scripting (XSS) attacks are a type of injection, in which malicious scripts are injected into otherwise benign and trusted websites. To remediate this issue, ensure that all URL parameters are properly escaped before including them in scripts.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        likelihood: HIGH
+        owasp:
+            - A07:2017 - Cross-Site Scripting (XSS)
+            - A03:2021 - Injection
+        references:
+            - https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/pages_security_tips_xss.htm
+        subcategory:
+            - vuln
+        technology:
+            - salesforce
+            - visualforce
+      paths:
+        include:
+            - '*.component'
+            - '*.page'
+      patterns:
+        - pattern-either:
+            - pattern: <apex:outputText...escape="false"...value="{!...CurrentPage.parameters.$URL_PARAM}".../>
+            - pattern: <apex:outputText...value="{!...CurrentPage.parameters.$URL_PARAM}"...escape="false".../>
+            - pattern: <script>...'{!...CurrentPage.parameters.$URL_PARAM}'...</script>
+        - pattern-not: <script>...'{!...JSENCODE(...CurrentPage.parameters.$URL_PARAM})'...</script>
+      severity: ERROR
+    - id: generic.visualforce.security.ncino.xml.cspheaderattribute.csp-header-attribute
+      languages:
+        - generic
+      message: Visualforce Pages must have the cspHeader attribute set to true. This attribute is available in API version 55 or higher.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        likelihood: HIGH
+        owasp:
+            - A07:2017 - Cross-Site Scripting (XSS)
+            - A03:2021 - Injection
+        references:
+            - https://help.salesforce.com/s/articleView?id=sf.csp_trusted_sites.htm&type=5
+        subcategory:
+            - vuln
+        technology:
+            - salesforce
+            - visualforce
+      paths:
+        include:
+            - '*.page'
+      patterns:
+        - pattern: <apex:page...>...</apex:page>
+        - pattern-not: <apex:page...cspHeader="true"...>...</apex:page>
+        - pattern-not: <apex:page...>...<!--deprecated-->...</apex:page>
+        - pattern-not: <apex:page...>...<!-- deprecated -->...</apex:page>
+      severity: INFO
+    - id: generic.visualforce.security.ncino.xml.visualforceapiversion.visualforce-page-api-version
+      languages:
+        - generic
+      message: Visualforce Pages must use API version 55 or higher for required use of the cspHeader attribute set to true.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        likelihood: HIGH
+        owasp:
+            - A07:2017 - Cross-Site Scripting (XSS)
+            - A03:2021 - Injection
+        references:
+            - https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_pages.htm
+        subcategory:
+            - vuln
+        technology:
+            - salesforce
+            - visualforce
+      paths:
+        include:
+            - '*.page-meta.xml'
+      patterns:
+        - pattern-inside: <apiVersion.../apiVersion>
+        - pattern-either:
+            - pattern-regex: '[>][0-9].[0-9][<]'
+            - pattern-regex: '[>][1-4][0-9].[0-9][<]'
+            - pattern-regex: '[>][5][0-4].[0-9][<]'
+      severity: WARNING
+    - id: go.aws-lambda.security.database-sqli.database-sqli
+      languages:
+        - go
+      message: Detected SQL statement that is tainted by `$EVENT` object. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. In order to prevent SQL injection, use parameterized queries or prepared statements instead. You can use prepared statements with the 'Prepare' and 'PrepareContext' calls.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        likelihood: HIGH
+        owasp:
+            - A01:2017 - Injection
+            - A03:2021 - Injection
+        references:
+            - https://pkg.go.dev/database/sql#DB.Query
+        subcategory:
+            - vuln
+        technology:
+            - aws-lambda
+            - database
+            - sql
+      mode: taint
+      pattern-sinks:
+        - patterns:
+            - focus-metavariable: $QUERY
+            - pattern-either:
+                - pattern: $DB.Exec($QUERY,...)
+                - pattern: $DB.ExecContent($QUERY,...)
+                - pattern: $DB.Query($QUERY,...)
+                - pattern: $DB.QueryContext($QUERY,...)
+                - pattern: $DB.QueryRow($QUERY,...)
+                - pattern: $DB.QueryRowContext($QUERY,...)
+            - pattern-inside: |
+                import "database/sql"
+                ...
+      pattern-sources:
+        - patterns:
+            - pattern-either:
+                - pattern-inside: |
+                    func $HANDLER($CTX $CTXTYPE, $EVENT $TYPE, ...) {...}
+                    ...
+                    lambda.Start($HANDLER, ...)
+                - patterns:
+                    - pattern-inside: |
+                        func $HANDLER($EVENT $TYPE) {...}
+                        ...
+                        lambda.Start($HANDLER, ...)
+                    - pattern-not-inside: |
+                        func $HANDLER($EVENT context.Context) {...}
+                        ...
+                        lambda.Start($HANDLER, ...)
+            - focus-metavariable: $EVENT
+      severity: WARNING
+    - id: go.aws-lambda.security.tainted-sql-string.tainted-sql-string
+      languages:
+        - go
+      message: Detected user input used to manually construct a SQL string. This is usually bad practice because manual construction could accidentally result in a SQL injection. An attacker could use a SQL injection to steal or modify contents of the database. Instead, use a parameterized query which is available by default in most database engines. Alternatively, consider using an object-relational mapper (ORM) such as Sequelize which will protect your queries.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        likelihood: HIGH
+        owasp:
+            - A01:2017 - Injection
+            - A03:2021 - Injection
+        references:
+            - https://owasp.org/www-community/attacks/SQL_Injection
+        subcategory:
+            - vuln
+        technology:
+            - aws-lambda
+      mode: taint
+      pattern-sanitizers:
+        - pattern: strconv.Atoi(...)
+      pattern-sinks:
+        - patterns:
+            - pattern-either:
+                - patterns:
+                    - pattern: |
+                        "$SQLSTR" + ...
+                    - metavariable-regex:
+                        metavariable: $SQLSTR
+                        regex: (?i)(\s*select|\s*delete|\s*insert|\s*create|\s*update|\s*alter|\s*drop).*
+                - patterns:
+                    - pattern-either:
+                        - pattern: fmt.Fprintf($F, "$SQLSTR", ...)
+                        - pattern: fmt.Sprintf("$SQLSTR", ...)
+                        - pattern: fmt.Printf("$SQLSTR", ...)
+                    - metavariable-regex:
+                        metavariable: $SQLSTR
+                        regex: \s*(?i)(select|delete|insert|create|update|alter|drop)\b.*%(v|s|q).*
+            - pattern-not-inside: |
+                log.$PRINT(...)
+      pattern-sources:
+        - patterns:
+            - pattern-either:
+                - pattern-inside: |
+                    func $HANDLER($CTX $CTXTYPE, $EVENT $TYPE, ...) {...}
+                    ...
+                    lambda.Start($HANDLER, ...)
+                - patterns:
+                    - pattern-inside: |
+                        func $HANDLER($EVENT $TYPE) {...}
+                        ...
+                        lambda.Start($HANDLER, ...)
+                    - pattern-not-inside: |
+                        func $HANDLER($EVENT context.Context) {...}
+                        ...
+                        lambda.Start($HANDLER, ...)
+            - focus-metavariable: $EVENT
+      severity: ERROR
+    - id: go.gorilla.security.audit.handler-assignment-from-multiple-sources.handler-assignment-from-multiple-sources
+      languages:
+        - go
+      message: 'Variable $VAR is assigned from two different sources: ''$Y'' and ''$R''. Make sure this is intended, as this could cause logic bugs if they are treated as they are the same object.'
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-289: Authentication Bypass by Alternate Name'
+        impact: MEDIUM
+        license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+        likelihood: LOW
+        references:
+            - https://cwe.mitre.org/data/definitions/289.html
+        subcategory:
+            - audit
+        technology:
+            - gorilla
+      mode: taint
+      pattern-sinks:
+        - patterns:
+            - pattern: |
+                $Y, err := store.Get(...)
+                ...
+                $VAR := $Y.Values[...]
+                ...
+                $VAR = $R
+            - focus-metavariable: $R
+        - patterns:
+            - pattern: |
+                $Y, err := store.Get(...)
+                ...
+                var $VAR $INT = $Y.Values["..."].($INT)
+                ...
+                $VAR = $R
+            - focus-metavariable: $R
+      pattern-sources:
+        - patterns:
+            - pattern-inside: |
+                func $HANDLER(..., $R *http.Request, ...) {
+                  ...
+                }
+            - focus-metavariable: $R
+            - pattern-either:
+                - pattern: $R.query
+      severity: WARNING
+    - fix-regex:
+        regex: (HttpOnly\s*:\s+)false
+        replacement: \1true
+      id: go.gorilla.security.audit.session-cookie-missing-httponly.session-cookie-missing-httponly
+      languages:
+        - go
+      message: A session cookie was detected without setting the 'HttpOnly' flag. The 'HttpOnly' flag for cookies instructs the browser to forbid client-side scripts from reading the cookie which mitigates XSS attacks. Set the 'HttpOnly' flag by setting 'HttpOnly' to 'true' in the Options struct.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-1004: Sensitive Cookie Without ''HttpOnly'' Flag'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A05:2021 - Security Misconfiguration
+        references:
+            - https://github.com/0c34/govwa/blob/139693e56406b5684d2a6ae22c0af90717e149b8/user/session/session.go#L69
+        subcategory:
+            - audit
+        technology:
+            - gorilla
+      patterns:
+        - pattern-not-inside: |
+            &sessions.Options{
+              ...,
+              HttpOnly: true,
+              ...,
+            }
+        - pattern: |
+            &sessions.Options{
+              ...,
+            }
+      severity: WARNING
+    - fix-regex:
+        regex: (Secure\s*:\s+)false
+        replacement: \1true
+      id: go.gorilla.security.audit.session-cookie-missing-secure.session-cookie-missing-secure
+      languages:
+        - go
+      message: A session cookie was detected without setting the 'Secure' flag. The 'secure' flag for cookies prevents the client from transmitting the cookie over insecure channels such as HTTP. Set the 'Secure' flag by setting 'Secure' to 'true' in the Options struct.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-614: Sensitive Cookie in HTTPS Session Without ''Secure'' Attribute'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A05:2021 - Security Misconfiguration
+        references:
+            - https://github.com/0c34/govwa/blob/139693e56406b5684d2a6ae22c0af90717e149b8/user/session/session.go#L69
+        subcategory:
+            - audit
+        technology:
+            - gorilla
+      patterns:
+        - pattern-not-inside: |
+            &sessions.Options{
+              ...,
+              Secure: true,
+              ...,
+            }
+        - pattern: |
+            &sessions.Options{
+              ...,
+            }
+      severity: WARNING
+    - fix-regex:
+        regex: (SameSite\s*:\s+)http.SameSiteNoneMode
+        replacement: \1http.SameSiteDefaultMode
+      id: go.gorilla.security.audit.session-cookie-samesitenone.session-cookie-samesitenone
+      languages:
+        - go
+      message: Found SameSiteNoneMode setting in Gorilla session options. Consider setting SameSite to Lax, Strict or Default for enhanced security.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-1275: Sensitive Cookie with Improper SameSite Attribute'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A05:2021 - Security Misconfiguration
+        references:
+            - https://pkg.go.dev/github.com/gorilla/sessions#Options
+        subcategory:
+            - audit
+        technology:
+            - gorilla
+      patterns:
+        - pattern-inside: |
+            &sessions.Options{
+              ...,
+              SameSite: http.SameSiteNoneMode,
+              ...,
+            }
+        - pattern: |
+            &sessions.Options{
+              ...,
+            }
+      severity: WARNING
+    - id: go.gorilla.security.audit.websocket-missing-origin-check.websocket-missing-origin-check
+      languages:
+        - go
+      message: 'The Origin header in the HTTP WebSocket handshake is used to guarantee that the connection accepted by the WebSocket is from a trusted origin domain. Failure to enforce can lead to Cross Site Request Forgery (CSRF). As per "gorilla/websocket" documentation: "A CheckOrigin function should carefully validate the request origin to prevent cross-site request forgery."'
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-352: Cross-Site Request Forgery (CSRF)'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A01:2021 - Broken Access Control
+        references:
+            - https://pkg.go.dev/github.com/gorilla/websocket#Upgrader
+        subcategory:
+            - audit
+        technology:
+            - gorilla
+      patterns:
+        - pattern-inside: |
+            import ("github.com/gorilla/websocket")
+            ...
+        - patterns:
+            - pattern-not-inside: |
+                $UPGRADER = websocket.Upgrader{..., CheckOrigin: $FN ,...}
+                ...
+            - pattern-not-inside: |
+                $UPGRADER.CheckOrigin = $FN2
+                ...
+            - pattern: |
+                $UPGRADER.Upgrade(...)
+      severity: WARNING
+    - id: go.gorm.security.audit.gorm-dangerous-methods-usage.gorm-dangerous-method-usage
+      languages:
+        - go
+      message: Detected usage of dangerous method $METHOD which does not escape inputs (see link in references). If the argument is user-controlled, this can lead to SQL injection. When using $METHOD function, do not trust user-submitted data and only allow approved list of input (possibly, use an allowlist approach).
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL Injection'')'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        interfile: true
+        likelihood: HIGH
+        owasp:
+            - A01:2017 - Injection
+            - A03:2021 - Injection
+        references:
+            - https://gorm.io/docs/security.html#SQL-injection-Methods
+            - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+        subcategory:
+            - vuln
+        technology:
+            - gorm
+      mode: taint
+      options:
+        interfile: true
+      pattern-sanitizers:
+        - pattern-either:
+            - pattern: strconv.Atoi(...)
+            - pattern: |
+                ($X: bool)
+      pattern-sinks:
+        - patterns:
+            - pattern-inside: |
+                import ("gorm.io/gorm")
+                ...
+            - patterns:
+                - pattern-inside: |
+                    func $VAL(..., $GORM *gorm.DB,... ) {
+                      ...
+                    }
+                - pattern-either:
+                    - pattern: |
+                        $GORM. ... .$METHOD($VALUE)
+                    - pattern: |
+                        $DB := $GORM. ... .$ANYTHING(...)
+                        ...
+                        $DB. ... .$METHOD($VALUE)
+            - focus-metavariable: $VALUE
+            - metavariable-regex:
+                metavariable: $METHOD
+                regex: ^(Order|Exec|Raw|Group|Having|Distinct|Select|Pluck)$
+      pattern-sources:
+        - patterns:
+            - pattern-either:
+                - pattern: |
+                    ($REQUEST : http.Request).$ANYTHING
+                - pattern: |
+                    ($REQUEST : *http.Request).$ANYTHING
+            - metavariable-regex:
+                metavariable: $ANYTHING
+                regex: ^(BasicAuth|Body|Cookie|Cookies|Form|FormValue|GetBody|Host|MultipartReader|ParseForm|ParseMultipartForm|PostForm|PostFormValue|Referer|RequestURI|Trailer|TransferEncoding|UserAgent|URL)$
+      severity: WARNING
+    - fix-regex:
+        regex: (.*)WithInsecure\(.*?\)
+        replacement: \1WithTransportCredentials(credentials.NewTLS(<your_tls_config_here>))
+      id: go.grpc.security.grpc-client-insecure-connection.grpc-client-insecure-connection
+      languages:
+        - go
+      message: 'Found an insecure gRPC connection using ''grpc.WithInsecure()''. This creates a connection without encryption to a gRPC server. A malicious attacker could tamper with the gRPC message, which could compromise the machine. Instead, establish a secure connection with an SSL certificate using the ''grpc.WithTransportCredentials()'' function. You can create a create credentials using a ''tls.Config{}'' struct with ''credentials.NewTLS()''. The final fix looks like this: ''grpc.WithTransportCredentials(credentials.NewTLS(<config>))''.'
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-300: Channel Accessible by Non-Endpoint'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A07:2021 - Identification and Authentication Failures
+        references:
+            - https://blog.gopheracademy.com/advent-2019/go-grps-and-tls/#connection-without-encryption
+        subcategory:
+            - audit
+        technology:
+            - grpc
+      pattern: $GRPC.Dial($ADDR, ..., $GRPC.WithInsecure(...), ...)
+      severity: ERROR
+    - id: go.grpc.security.grpc-server-insecure-connection.grpc-server-insecure-connection
+      languages:
+        - go
+      message: Found an insecure gRPC server without 'grpc.Creds()' or options with credentials. This allows for a connection without encryption to this server. A malicious attacker could tamper with the gRPC message, which could compromise the machine. Include credentials derived from an SSL certificate in order to create a secure gRPC connection. You can create credentials using 'credentials.NewServerTLSFromFile("cert.pem", "cert.key")'.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-300: Channel Accessible by Non-Endpoint'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A07:2021 - Identification and Authentication Failures
+        references:
+            - https://blog.gopheracademy.com/advent-2019/go-grps-and-tls/#connection-without-encryption
+        subcategory:
+            - audit
+        technology:
+            - grpc
+      mode: taint
+      pattern-sinks:
+        - pattern: grpc.NewServer($OPT, ...)
+          requires: OPTIONS and not CREDS
+        - pattern: grpc.NewServer()
+          requires: EMPTY_CONSTRUCTOR
+      pattern-sources:
+        - label: OPTIONS
+          pattern: grpc.ServerOption{ ... }
+        - label: CREDS
+          pattern: grpc.Creds(...)
+        - label: EMPTY_CONSTRUCTOR
+          pattern: grpc.NewServer()
+      severity: ERROR
+    - id: go.jwt-go.security.audit.jwt-parse-unverified.jwt-go-parse-unverified
+      languages:
+        - go
+      message: Detected the decoding of a JWT token without a verify step. Don't use `ParseUnverified` unless you know what you're doing This method parses the token but doesn't validate the signature. It's only ever useful in cases where you know the signature is valid (because it has been checked previously in the stack) and you want to extract values from it.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-345: Insufficient Verification of Data Authenticity'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A08:2021 - Software and Data Integrity Failures
+        references:
+            - https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures
+        source-rule-url: https://semgrep.dev/blog/2020/hardcoded-secrets-unverified-tokens-and-other-common-jwt-mistakes/
+        subcategory:
+            - audit
+        technology:
+            - jwt
+      patterns:
+        - pattern-inside: |
+            import "github.com/dgrijalva/jwt-go"
+            ...
+        - pattern: |
+            $JWT.ParseUnverified(...)
+      severity: WARNING
+    - id: go.jwt-go.security.jwt-none-alg.jwt-go-none-algorithm
+      languages:
+        - go
+      message: Detected use of the 'none' algorithm in a JWT token. The 'none' algorithm assumes the integrity of the token has already been verified. This would allow a malicious actor to forge a JWT token that will automatically be verified. Do not explicitly use the 'none' algorithm. Instead, use an algorithm such as 'HS256'.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+        source-rule-url: https://semgrep.dev/blog/2020/hardcoded-secrets-unverified-tokens-and-other-common-jwt-mistakes/
+        subcategory:
+            - audit
+        technology:
+            - jwt
+      patterns:
+        - pattern-either:
+            - pattern-inside: |
+                import "github.com/golang-jwt/jwt"
+                ...
+            - pattern-inside: |
+                import "github.com/dgrijalva/jwt-go"
+                ...
+        - pattern-either:
+            - pattern: |
+                jwt.SigningMethodNone
+            - pattern: jwt.UnsafeAllowNoneSignatureType
+      severity: ERROR
+    - id: go.jwt-go.security.jwt.hardcoded-jwt-key
+      languages:
+        - go
+      message: A hard-coded credential was detected. It is not recommended to store credentials in source-code, as this risks secrets being leaked and used by either an internal or external malicious adversary. It is recommended to use environment variables to securely provide credentials or retrieve credentials from a secure vault or HSM (Hardware Security Module).
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-798: Use of Hard-coded Credentials'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        interfile: true
+        likelihood: HIGH
+        owasp:
+            - A07:2021 - Identification and Authentication Failures
+        references:
+            - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+        subcategory:
+            - vuln
+        technology:
+            - jwt
+            - secrets
+      mode: taint
+      options:
+        interfile: true
+      pattern-sinks:
+        - patterns:
+            - pattern-either:
+                - pattern-inside: |
+                    $TOKEN.SignedString($F)
+            - focus-metavariable: $F
+      pattern-sources:
+        - patterns:
+            - pattern-inside: |
+                []byte("$F")
+      severity: WARNING
+    - id: go.lang.security.audit.crypto.bad_imports.insecure-module-used
+      languages:
+        - go
+      message: The package `net/http/cgi` is on the import blocklist.  The package is vulnerable to httpoxy attacks (CVE-2015-5386). It is recommended to use `net/http` or a web framework to build a web application instead.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://godoc.org/golang.org/x/crypto/sha3
+        source-rule-url: https://github.com/securego/gosec
+        subcategory:
+            - audit
+        technology:
+            - go
+      pattern-either:
+        - patterns:
+            - pattern-inside: |
+                import "net/http/cgi"
+                ...
+            - pattern: |
+                cgi.$FUNC(...)
+      severity: WARNING
+    - id: go.lang.security.audit.crypto.insecure_ssh.avoid-ssh-insecure-ignore-host-key
+      languages:
+        - go
+      message: Disabled host key verification detected. This allows man-in-the-middle attacks. Use the 'golang.org/x/crypto/ssh/knownhosts' package to do host key verification. See https://skarlso.github.io/2019/02/17/go-ssh-with-host-key-verification/ to learn more about the problem and how to fix it.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-322: Key Exchange without Entity Authentication'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://skarlso.github.io/2019/02/17/go-ssh-with-host-key-verification/
+            - https://gist.github.com/Skarlso/34321a230cf0245018288686c9e70b2d
+        source-rule-url: https://github.com/securego/gosec
+        subcategory:
+            - audit
+        technology:
+            - go
+      pattern: ssh.InsecureIgnoreHostKey()
+      severity: WARNING
+    - fix: |
+        crypto/rand
+      id: go.lang.security.audit.crypto.math_random.math-random-used
+      languages:
+        - go
+      message: Do not use `math/rand`. Use `crypto/rand` instead.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-338: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG)'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#secure-random-number-generation
+        subcategory:
+            - vuln
+        technology:
+            - go
+      patterns:
+        - pattern-either:
+            - pattern: |
+                import $RAND "$MATH"
+            - pattern: |
+                import "$MATH"
+        - metavariable-regex:
+            metavariable: $MATH
+            regex: ^(math/rand(\/v[0-9]+)*)$
+        - pattern-either:
+            - pattern-inside: |
+                ...
+                rand.$FUNC(...)
+            - pattern-inside: |
+                ...
+                $RAND.$FUNC(...)
+        - focus-metavariable:
+            - $MATH
+      severity: WARNING
+    - fix: |
+        tls.Config{ $...CONF, MinVersion: tls.VersionTLS13 }
+      id: go.lang.security.audit.crypto.missing-ssl-minversion.missing-ssl-minversion
+      languages:
+        - go
+      message: '`MinVersion` is missing from this TLS configuration.  By default, TLS 1.2 is currently used as the minimum when acting as a client, and TLS 1.0 when acting as a server. General purpose web applications should default to TLS 1.3 with all other protocols disabled.  Only where it is known that a web server must support legacy clients with unsupported an insecure browsers (such as Internet Explorer 10), it may be necessary to enable TLS 1.0 to provide support. Add `MinVersion: tls.VersionTLS13'' to the TLS configuration to bump the minimum version to TLS 1.3.'
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+        impact: LOW
+        likelihood: MEDIUM
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://golang.org/doc/go1.14#crypto/tls
+            - https://golang.org/pkg/crypto/tls/#:~:text=MinVersion
+            - https://www.us-cert.gov/ncas/alerts/TA14-290A
+        source-rule-url: https://github.com/securego/gosec/blob/master/rules/tls_config.go
+        subcategory:
+            - guardrail
+        technology:
+            - go
+      patterns:
+        - pattern: |
+            tls.Config{ $...CONF }
+        - pattern-not: |
+            tls.Config{..., MinVersion: ..., ...}
+      severity: WARNING
+    - fix-regex:
+        regex: VersionSSL30
+        replacement: VersionTLS13
+      id: go.lang.security.audit.crypto.ssl.ssl-v3-is-insecure
+      languages:
+        - go
+      message: SSLv3 is insecure because it has known vulnerabilities. Starting with go1.14, SSLv3 will be removed. Instead, use 'tls.VersionTLS13'.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+        impact: LOW
+        likelihood: MEDIUM
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://golang.org/doc/go1.14#crypto/tls
+            - https://www.us-cert.gov/ncas/alerts/TA14-290A
+        source-rule-url: https://github.com/securego/gosec/blob/master/rules/tls_config.go
+        subcategory:
+            - vuln
+        technology:
+            - go
+      pattern: 'tls.Config{..., MinVersion: $TLS.VersionSSL30, ...}'
+      severity: WARNING
+    - id: go.lang.security.audit.crypto.tls.tls-with-insecure-cipher
+      languages:
+        - go
+      message: Detected an insecure CipherSuite via the 'tls' module. This suite is considered weak. Use the function 'tls.CipherSuites()' to get a list of good cipher suites. See https://golang.org/pkg/crypto/tls/#InsecureCipherSuites for why and what other cipher suites to use.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+        impact: LOW
+        likelihood: HIGH
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://golang.org/pkg/crypto/tls/#InsecureCipherSuites
+        source-rule-url: https://github.com/securego/gosec/blob/master/rules/tls.go
+        subcategory:
+            - vuln
+        technology:
+            - go
+      pattern-either:
+        - pattern: |
+            tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_RSA_WITH_RC4_128_SHA, ...}}
+        - pattern: |
+            tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA, ...}}
+        - pattern: |
+            tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_RSA_WITH_AES_128_CBC_SHA256, ...}}
+        - pattern: |
+            tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, ...}}
+        - pattern: |
+            tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_ECDHE_RSA_WITH_RC4_128_SHA, ...}}
+        - pattern: |
+            tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, ...}}
+        - pattern: |
+            tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, ...}}
+        - pattern: |
+            tls.Config{..., CipherSuites: []$TYPE{..., tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, ...}}
+        - pattern: |
+            tls.CipherSuite{..., TLS_RSA_WITH_RC4_128_SHA, ...}
+        - pattern: |
+            tls.CipherSuite{..., TLS_RSA_WITH_3DES_EDE_CBC_SHA, ...}
+        - pattern: |
+            tls.CipherSuite{..., TLS_RSA_WITH_AES_128_CBC_SHA256, ...}
+        - pattern: |
+            tls.CipherSuite{..., TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, ...}
+        - pattern: |
+            tls.CipherSuite{..., TLS_ECDHE_RSA_WITH_RC4_128_SHA, ...}
+        - pattern: |
+            tls.CipherSuite{..., TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, ...}
+        - pattern: |
+            tls.CipherSuite{..., TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, ...}
+        - pattern: |
+            tls.CipherSuite{..., TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, ...}
+      severity: WARNING
+    - id: go.lang.security.audit.crypto.use_of_weak_crypto.use-of-md5
+      languages:
+        - go
+      message: Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-328: Use of Weak Hash'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+        source-rule-url: https://github.com/securego/gosec#available-rules
+        subcategory:
+            - vuln
+        technology:
+            - go
+      patterns:
+        - pattern-inside: |
+            import "crypto/md5"
+            ...
+        - pattern-either:
+            - pattern: |
+                md5.New()
+            - pattern: |
+                md5.Sum(...)
+      severity: WARNING
+    - id: go.lang.security.audit.crypto.use_of_weak_crypto.use-of-sha1
+      languages:
+        - go
+      message: Detected SHA1 hash algorithm which is considered insecure. SHA1 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-328: Use of Weak Hash'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+        source-rule-url: https://github.com/securego/gosec#available-rules
+        subcategory:
+            - vuln
+        technology:
+            - go
+      patterns:
+        - pattern-inside: |
+            import "crypto/sha1"
+            ...
+        - pattern-either:
+            - pattern: |
+                sha1.New()
+            - pattern: |
+                sha1.Sum(...)
+      severity: WARNING
+    - id: go.lang.security.audit.crypto.use_of_weak_crypto.use-of-des
+      languages:
+        - go
+      message: Detected DES cipher algorithm which is insecure. The algorithm is considered weak and has been deprecated. Use AES instead.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+        source-rule-url: https://github.com/securego/gosec#available-rules
+        subcategory:
+            - vuln
+        technology:
+            - go
+      patterns:
+        - pattern-inside: |
+            import "crypto/des"
+            ...
+        - pattern-either:
+            - pattern: |
+                des.NewTripleDESCipher(...)
+            - pattern: |
+                des.NewCipher(...)
+      severity: WARNING
+    - id: go.lang.security.audit.crypto.use_of_weak_crypto.use-of-rc4
+      languages:
+        - go
+      message: Detected RC4 cipher algorithm which is insecure. The algorithm has many known vulnerabilities. Use AES instead.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+        source-rule-url: https://github.com/securego/gosec#available-rules
+        subcategory:
+            - vuln
+        technology:
+            - go
+      patterns:
+        - pattern-inside: |
+            import "crypto/rc4"
+            ...
+        - pattern: rc4.NewCipher(...)
+      severity: WARNING
+    - fix: |
+        2048
+      id: go.lang.security.audit.crypto.use_of_weak_rsa_key.use-of-weak-rsa-key
+      languages:
+        - go
+      message: RSA keys should be at least 2048 bits
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-326: Inadequate Encryption Strength'
+        impact: MEDIUM
+        likelihood: HIGH
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#algorithms
+        source-rule-url: https://github.com/securego/gosec/blob/master/rules/rsa.go
+        subcategory:
+            - audit
+        technology:
+            - go
+      patterns:
+        - pattern-either:
+            - pattern: |
+                rsa.GenerateKey(..., $BITS)
+            - pattern: |
+                rsa.GenerateMultiPrimeKey(..., $BITS)
+        - metavariable-comparison:
+            comparison: $BITS < 2048
+            metavariable: $BITS
+        - focus-metavariable:
+            - $BITS
+      severity: WARNING
+    - id: go.lang.security.audit.dangerous-exec-cmd.dangerous-exec-cmd
+      languages:
+        - go
+      message: Detected non-static command inside exec.Cmd. Audit the input to 'exec.Cmd'. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+        cwe2022-top25: true
+        impact: HIGH
+        likelihood: LOW
+        owasp:
+            - A03:2021 - Injection
+        references:
+            - https://owasp.org/Top10/A03_2021-Injection
+        subcategory:
+            - audit
+        technology:
+            - go
+      patterns:
+        - pattern-either:
+            - patterns:
+                - pattern: |
+                    exec.Cmd {...,Path: $CMD,...}
+                - pattern-not: |
+                    exec.Cmd {...,Path: "...",...}
+                - pattern-not-inside: |
+                    $CMD,$ERR := exec.LookPath("...");
+                    ...
+                - pattern-not-inside: |
+                    $CMD = "...";
+                    ...
+            - patterns:
+                - pattern: |
+                    exec.Cmd {...,Args: $ARGS,...}
+                - pattern-not: |
+                    exec.Cmd {...,Args: []string{...},...}
+                - pattern-not-inside: |
+                    $ARGS = []string{"...",...};
+                    ...
+                - pattern-not-inside: |
+                    $CMD = "...";
+                    ...
+                    $ARGS = []string{$CMD,...};
+                    ...
+                - pattern-not-inside: |
+                    $CMD = exec.LookPath("...");
+                    ...
+                    $ARGS = []string{$CMD,...};
+                    ...
+            - patterns:
+                - pattern: |
+                    exec.Cmd {...,Args: []string{$CMD,...},...}
+                - pattern-not: |
+                    exec.Cmd {...,Args: []string{"...",...},...}
+                - pattern-not-inside: |
+                    $CMD,$ERR := exec.LookPath("...");
+                    ...
+                - pattern-not-inside: |
+                    $CMD = "...";
+                    ...
+            - patterns:
+                - pattern-either:
+                    - pattern: |
+                        exec.Cmd {...,Args: []string{"=~/(sh|bash|ksh|csh|tcsh|zsh)/","-c",$EXE,...},...}
+                    - patterns:
+                        - pattern: |
+                            exec.Cmd {...,Args: []string{$CMD,"-c",$EXE,...},...}
+                        - pattern-inside: |
+                            $CMD,$ERR := exec.LookPath("=~/(sh|bash|ksh|csh|tcsh|zsh)/");
+                            ...
+                - pattern-not: |
+                    exec.Cmd {...,Args: []string{"...","...","...",...},...}
+                - pattern-not-inside: |
+                    $EXE = "...";
+                    ...
+        - pattern-inside: |
+            import "os/exec"
+            ...
+      severity: ERROR
+    - id: go.lang.security.audit.md5-used-as-password.md5-used-as-password
+      languages:
+        - go
+      message: It looks like MD5 is used as a password hash. MD5 is not considered a secure password hash because it can be cracked by an attacker in a short amount of time. Use a suitable password hashing function such as bcrypt. You can use the `golang.org/x/crypto/bcrypt` package.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-327: Use of a Broken or Risky Cryptographic Algorithm'
+        impact: MEDIUM
+        interfile: true
+        likelihood: MEDIUM
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://tools.ietf.org/id/draft-lvelvindron-tls-md5-sha1-deprecate-01.html
+            - https://security.stackexchange.com/questions/211/how-to-securely-hash-passwords
+            - https://github.com/returntocorp/semgrep-rules/issues/1609
+            - https://pkg.go.dev/golang.org/x/crypto/bcrypt
+        subcategory:
+            - vuln
+        technology:
+            - md5
+      mode: taint
+      options:
+        interfile: true
+      pattern-sinks:
+        - patterns:
+            - pattern: $FUNCTION(...)
+            - metavariable-regex:
+                metavariable: $FUNCTION
+                regex: (?i)(.*password.*)
+      pattern-sources:
+        - patterns:
+            - pattern-either:
+                - pattern: md5.New
+                - pattern: md5.Sum
+      severity: WARNING
+    - id: go.lang.security.audit.net.bind_all.avoid-bind-to-all-interfaces
+      languages:
+        - go
+      message: Detected a network listener listening on 0.0.0.0 or an empty string. This could unexpectedly expose the server publicly as it binds to all available interfaces. Instead, specify another IP address that is not 0.0.0.0 nor the empty string.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-200: Exposure of Sensitive Information to an Unauthorized Actor'
+        cwe2021-top25: true
+        impact: MEDIUM
+        likelihood: LOW
+        owasp:
+            - A01:2021 - Broken Access Control
+        references:
+            - https://owasp.org/Top10/A01_2021-Broken_Access_Control
+        source-rule-url: https://github.com/securego/gosec
+        subcategory:
+            - audit
+        technology:
+            - go
+      pattern-either:
+        - pattern: tls.Listen($NETWORK, "=~/^0.0.0.0:.*$/", ...)
+        - pattern: net.Listen($NETWORK, "=~/^0.0.0.0:.*$/", ...)
+        - pattern: tls.Listen($NETWORK, "=~/^:.*$/", ...)
+        - pattern: net.Listen($NETWORK, "=~/^:.*$/", ...)
+      severity: WARNING
+    - fix-regex:
+        regex: (HttpOnly\s*:\s+)false
+        replacement: \1true
+      id: go.lang.security.audit.net.cookie-missing-httponly.cookie-missing-httponly
+      languages:
+        - go
+      message: A session cookie was detected without setting the 'HttpOnly' flag. The 'HttpOnly' flag for cookies instructs the browser to forbid client-side scripts from reading the cookie which mitigates XSS attacks. Set the 'HttpOnly' flag by setting 'HttpOnly' to 'true' in the Cookie.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-1004: Sensitive Cookie Without ''HttpOnly'' Flag'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A05:2021 - Security Misconfiguration
+        references:
+            - https://github.com/0c34/govwa/blob/139693e56406b5684d2a6ae22c0af90717e149b8/util/cookie.go
+            - https://golang.org/src/net/http/cookie.go
+        subcategory:
+            - vuln
+        technology:
+            - go
+      patterns:
+        - pattern-not-inside: |
+            http.Cookie{
+              ...,
+              HttpOnly: true,
+              ...,
+            }
+        - pattern: |
+            http.Cookie{
+              ...,
+            }
+      severity: WARNING
+    - fix-regex:
+        regex: (Secure\s*:\s+)false
+        replacement: \1true
+      id: go.lang.security.audit.net.cookie-missing-secure.cookie-missing-secure
+      languages:
+        - go
+      message: A session cookie was detected without setting the 'Secure' flag. The 'secure' flag for cookies prevents the client from transmitting the cookie over insecure channels such as HTTP. Set the 'Secure' flag by setting 'Secure' to 'true' in the Options struct.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-614: Sensitive Cookie in HTTPS Session Without ''Secure'' Attribute'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A05:2021 - Security Misconfiguration
+        references:
+            - https://github.com/0c34/govwa/blob/139693e56406b5684d2a6ae22c0af90717e149b8/util/cookie.go
+            - https://golang.org/src/net/http/cookie.go
+        subcategory:
+            - vuln
+        technology:
+            - go
+      patterns:
+        - pattern-not-inside: |
+            http.Cookie{
+              ...,
+              Secure: true,
+              ...,
+            }
+        - pattern: |
+            http.Cookie{
+              ...,
+            }
+      severity: WARNING
+    - id: go.lang.security.audit.net.dynamic-httptrace-clienttrace.dynamic-httptrace-clienttrace
+      languages:
+        - go
+      message: Detected a potentially dynamic ClientTrace. This occurred because semgrep could not find a static definition for '$TRACE'. Dynamic ClientTraces are dangerous because they deserialize function code to run when certain Request events occur, which could lead to code being run without your knowledge. Ensure that your ClientTrace is statically defined.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-913: Improper Control of Dynamically-Managed Code Resources'
+        impact: LOW
+        likelihood: LOW
+        owasp:
+            - A01:2021 - Broken Access Control
+        references:
+            - https://github.com/returntocorp/semgrep-rules/issues/518
+        subcategory:
+            - vuln
+        technology:
+            - go
+      patterns:
+        - pattern-not-inside: |
+            package $PACKAGE
+            ...
+            &httptrace.ClientTrace { ... }
+            ...
+        - pattern: httptrace.WithClientTrace($ANY, $TRACE)
+      severity: WARNING
+    - id: go.lang.security.audit.net.formatted-template-string.formatted-template-string
+      languages:
+        - go
+      message: Found a formatted template string passed to 'template.HTML()'. 'template.HTML()' does not escape contents. Be absolutely sure there is no user-controlled data in this template. If user data can reach this template, you may have a XSS vulnerability.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        likelihood: LOW
+        owasp:
+            - A07:2017 - Cross-Site Scripting (XSS)
+            - A03:2021 - Injection
+        references:
+            - https://golang.org/pkg/html/template/#HTML
+        subcategory:
+            - audit
+        technology:
+            - go
+      patterns:
+        - pattern-not: template.HTML("..." + "...")
+        - pattern-either:
+            - pattern: template.HTML($T + $X, ...)
+            - pattern: template.HTML(fmt.$P("...", ...), ...)
+            - pattern: |
+                $T = "..."
+                ...
+                $T = $FXN(..., $T, ...)
+                ...
+                template.HTML($T, ...)
+            - pattern: |
+                $T = fmt.$P("...", ...)
+                ...
+                template.HTML($T, ...)
+            - pattern: |
+                $T, $ERR = fmt.$P("...", ...)
+                ...
+                template.HTML($T, ...)
+            - pattern: |
+                $T = $X + $Y
+                ...
+                template.HTML($T, ...)
+            - pattern: |-
+                $T = "..."
+                ...
+                $OTHER, $ERR = fmt.$P(..., $T, ...)
+                ...
+                template.HTML($OTHER, ...)
+      severity: WARNING
+    - id: go.lang.security.audit.net.fs-directory-listing.fs-directory-listing
+      languages:
+        - go
+      message: 'Detected usage of ''http.FileServer'' as handler: this allows directory listing and an attacker could navigate through directories looking for sensitive files. Be sure to disable directory listing or restrict access to specific directories/files.'
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-548: Exposure of Information Through Directory Listing'
+        impact: MEDIUM
+        likelihood: MEDIUM
+        owasp:
+            - A06:2017 - Security Misconfiguration
+            - A01:2021 - Broken Access Control
+        references:
+            - https://github.com/OWASP/Go-SCP
+            - https://cwe.mitre.org/data/definitions/548.html
+        subcategory:
+            - vuln
+        technology:
+            - go
+      patterns:
+        - pattern-either:
+            - patterns:
+                - pattern-inside: |
+                    $FS := http.FileServer(...)
+                    ...
+                - pattern-either:
+                    - pattern: |
+                        http.ListenAndServe(..., $FS)
+                    - pattern: |
+                        http.ListenAndServeTLS(..., $FS)
+                    - pattern: |
+                        http.Handle(..., $FS)
+                    - pattern: |
+                        http.HandleFunc(..., $FS)
+            - patterns:
+                - pattern: |
+                    http.$FN(..., http.FileServer(...))
+                - metavariable-regex:
+                    metavariable: $FN
+                    regex: (ListenAndServe|ListenAndServeTLS|Handle|HandleFunc)
+      severity: WARNING
+    - fix: http.ListenAndServeTLS($ADDR, certFile, keyFile, $HANDLER)
+      id: go.lang.security.audit.net.use-tls.use-tls
+      languages:
+        - go
+      message: Found an HTTP server without TLS. Use 'http.ListenAndServeTLS' instead. See https://golang.org/pkg/net/http/#ListenAndServeTLS for more information.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-319: Cleartext Transmission of Sensitive Information'
+        impact: MEDIUM
+        likelihood: LOW
+        owasp:
+            - A03:2017 - Sensitive Data Exposure
+            - A02:2021 - Cryptographic Failures
+        references:
+            - https://golang.org/pkg/net/http/#ListenAndServeTLS
+        subcategory:
+            - audit
+        technology:
+            - go
+      pattern: http.ListenAndServe($ADDR, $HANDLER)
+      severity: WARNING
+    - id: go.lang.security.audit.net.wip-xss-using-responsewriter-and-printf.wip-xss-using-responsewriter-and-printf
+      languages:
+        - go
+      message: Found data going from url query parameters into formatted data written to ResponseWriter. This could be XSS and should not be done. If you must do this, ensure your data is sanitized or escaped.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        likelihood: LOW
+        owasp:
+            - A07:2017 - Cross-Site Scripting (XSS)
+            - A03:2021 - Injection
+        references:
+            - https://owasp.org/Top10/A03_2021-Injection
+        subcategory:
+            - vuln
+        technology:
+            - go
+      patterns:
+        - pattern-inside: |
+            func $FUNC(..., $W http.ResponseWriter, ...) {
+              ...
+              var $TEMPLATE = "..."
+              ...
+              $W.Write([]byte(fmt.$PRINTF($TEMPLATE, ...)), ...)
+              ...
+            }
+        - pattern-either:
+            - pattern: |
+                $PARAMS = r.URL.Query()
+                ...
+                $DATA, $ERR := $PARAMS[...]
+                ...
+                $INTERM = $ANYTHING(..., $DATA, ...)
+                ...
+                $W.Write([]byte(fmt.$PRINTF(..., $INTERM, ...)))
+            - pattern: |
+                $PARAMS = r.URL.Query()
+                ...
+                $DATA, $ERR := $PARAMS[...]
+                ...
+                $INTERM = $DATA[...]
+                ...
+                $W.Write([]byte(fmt.$PRINTF(..., $INTERM, ...)))
+            - pattern: |
+                $DATA, $ERR := r.URL.Query()[...]
+                ...
+                $INTERM = $DATA[...]
+                ...
+                $W.Write([]byte(fmt.$PRINTF(..., $INTERM, ...)))
+            - pattern: |
+                $DATA, $ERR := r.URL.Query()[...]
+                ...
+                $INTERM = $ANYTHING(..., $DATA, ...)
+                ...
+                $W.Write([]byte(fmt.$PRINTF(..., $INTERM, ...)))
+            - pattern: |
+                $PARAMS = r.URL.Query()
+                ...
+                $DATA, $ERR := $PARAMS[...]
+                ...
+                $W.Write([]byte(fmt.$PRINTF(..., $DATA, ...)))
+      severity: WARNING
+    - fix: filepath.FromSlash(filepath.Clean("/"+strings.Trim($...INNER, "/")))
+      id: go.lang.security.filepath-clean-misuse.filepath-clean-misuse
+      languages:
+        - go
+      message: '`Clean` is not intended to sanitize against path traversal attacks. This function is for finding the shortest path name equivalent to the given input. Using `Clean` to sanitize file reads may expose this application to path traversal attacks, where an attacker could access arbitrary files on the server. To fix this easily, write this: `filepath.FromSlash(path.Clean("/"+strings.Trim(req.URL.Path, "/")))` However, a better solution is using the `SecureJoin` function in the package `filepath-securejoin`. See https://pkg.go.dev/github.com/cyphar/filepath-securejoin#section-readme.'
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-22: Improper Limitation of a Pathname to a Restricted Directory (''Path Traversal'')'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        interfile: true
+        likelihood: MEDIUM
+        owasp:
+            - A05:2017 - Broken Access Control
+            - A01:2021 - Broken Access Control
+        references:
+            - https://pkg.go.dev/path#Clean
+            - http://technosophos.com/2016/03/31/go-quickly-cleaning-filepaths.html
+            - https://labs.detectify.com/2021/12/15/zero-day-path-traversal-grafana/
+            - https://dzx.cz/2021/04/02/go_path_traversal/
+            - https://pkg.go.dev/github.com/cyphar/filepath-securejoin#section-readme
+        subcategory:
+            - vuln
+        technology:
+            - go
+      mode: taint
+      options:
+        interfile: true
+      pattern-sanitizers:
+        - pattern-either:
+            - pattern: |
+                "/" + ...
+      pattern-sinks:
+        - patterns:
+            - pattern-either:
+                - pattern: filepath.Clean($...INNER)
+                - pattern: path.Clean($...INNER)
+      pattern-sources:
+        - patterns:
+            - pattern-either:
+                - pattern: |
+                    ($REQUEST : *http.Request).$ANYTHING
+                - pattern: |
+                    ($REQUEST : http.Request).$ANYTHING
+            - metavariable-regex:
+                metavariable: $ANYTHING
+                regex: ^(BasicAuth|Body|Cookie|Cookies|Form|FormValue|GetBody|Host|MultipartReader|ParseForm|ParseMultipartForm|PostForm|PostFormValue|Referer|RequestURI|Trailer|TransferEncoding|UserAgent|URL)$
+      severity: ERROR
+    - id: go.lang.security.injection.open-redirect.open-redirect
+      languages:
+        - go
+      message: An HTTP redirect was found to be crafted from user-input `$REQUEST`. This can lead to open redirect vulnerabilities, potentially allowing attackers to redirect users to malicious web sites. It is recommend where possible to not allow user-input to craft the redirect URL. When user-input is necessary to craft the request, it is recommended to follow OWASP best practices to restrict the URL to domains in an allowlist.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-601: URL Redirection to Untrusted Site (''Open Redirect'')'
+        description: An HTTP redirect was found to be crafted from user-input leading to an open redirect vulnerability
+        impact: MEDIUM
+        interfile: true
+        likelihood: MEDIUM
+        references:
+            - https://knowledge-base.secureflag.com/vulnerabilities/unvalidated_redirects___forwards/open_redirect_go_lang.html
+        subcategory:
+            - vuln
+        technology:
+            - go
+      mode: taint
+      options:
+        interfile: true
+      pattern-sinks:
+        - patterns:
+            - pattern: http.Redirect($W, $REQ, $URL, ...)
+            - focus-metavariable: $URL
+          requires: INPUT and not CLEAN
+      pattern-sources:
+        - label: INPUT
+          patterns:
+            - pattern-either:
+                - pattern: |
+                    ($REQUEST : *http.Request).$ANYTHING
+                - pattern: |
+                    ($REQUEST : http.Request).$ANYTHING
+            - metavariable-regex:
+                metavariable: $ANYTHING
+                regex: ^(BasicAuth|Body|Cookie|Cookies|Form|FormValue|GetBody|Host|MultipartReader|ParseForm|ParseMultipartForm|PostForm|PostFormValue|Referer|RequestURI|Trailer|TransferEncoding|UserAgent|URL)$
+        - label: CLEAN
+          patterns:
+            - pattern-either:
+                - pattern: |
+                    "$URLSTR" + $INPUT
+                - patterns:
+                    - pattern-either:
+                        - pattern: fmt.Fprintf($F, "$URLSTR", $INPUT, ...)
+                        - pattern: fmt.Sprintf("$URLSTR", $INPUT, ...)
+                        - pattern: fmt.Printf("$URLSTR", $INPUT, ...)
+            - metavariable-regex:
+                metavariable: $URLSTR
+                regex: .*//[a-zA-Z0-10]+\..*
+          requires: INPUT
+      severity: WARNING
+    - id: go.lang.security.injection.raw-html-format.raw-html-format
+      languages:
+        - go
+      message: Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. Use the `html/template` package which will safely render HTML instead, or inspect that the HTML is rendered safely.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        cwe:
+            - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site Scripting'')'
+        cwe2021-top25: true
+        cwe2022-top25: true
+        impact: MEDIUM
+        license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+        likelihood: HIGH
+        owasp:
+            - A07:2017 - Cross-Site Scripting (XSS)
+            - A03:2021 - Injection
+        references:
+            - https://blogtitle.github.io/robn-go-security-pearls-cross-site-scripting-xss/
+        subcategory:
+            - vuln
+        technology:
+            - go
+      mode: taint
+      pattern-sanitizers:
+        - pattern: html.EscapeString(...)
+      pattern-sinks:
+        - patterns:
+            - pattern-either:
+                - pattern: fmt.Printf("$HTMLSTR", ...)
+                - pattern: fmt.Sprintf("$HTMLSTR", ...)
+                - pattern: fmt.Fprintf($W, "$HTMLSTR", ...)
+                - pattern: '"$HTMLSTR" + ...'
+            - metavariable-pattern:
+                language: generic
+                metavariable: $HTMLSTR
+                pattern: <$TAG ...
+      pattern-sources:
+        - patterns:
+            - pattern-either:
+                - pattern: |
+                    ($REQUEST : *http.Request).$ANYTHING
+                - pattern: |
+                    ($REQUEST : http.Request).$ANYTHING
+            - metavariable-regex:
+                metavariable: $ANYTHING
+                regex: ^(BasicAuth|Body|Cookie|Cookies|Form|FormValue|GetBody|Host|MultipartReader|ParseForm|ParseMultipartForm|PostForm|PostFormValue|Referer|RequestURI|Trailer|TransferEncoding|UserAgent|URL)$
+      severity: WARNING
+    - id: codacy.java.security.hard-coded-password
+      languages:
+        - java
+      message: Hardcoded passwords are a security risk. They can be easily found by attackers and used to gain unauthorized access to the system.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        description: Hardcoded passwords are a security risk.
+        impact: HIGH
+        owasp:
+            - A3:2017 Sensitive Data Exposure
+        technology:
+            - java
+      patterns:
+        - pattern-either:
+            - pattern: String $PASSWORD = "$VALUE";
+        - metavariable-regex:
+            metavariable: $PASSWORD
+            regex: (?i).*(password|motdepasse|heslo|adgangskode|wachtwoord|salasana|passwort|passord|senha|geslo|clave|losenord|clave|parola|secret|pwd).*
+      severity: ERROR
+    - id: codacy.csharp.security.hard-coded-password
+      languages:
+        - csharp
+      message: Hardcoded passwords are a security risk. They can be easily found by attackers and used to gain unauthorized access to the system.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        description: Hardcoded passwords are a security risk.
+        impact: HIGH
+        owasp:
+            - A3:2017 Sensitive Data Exposure
+        technology:
+            - .net
+      patterns:
+        - pattern-either:
+            - pattern: var $PASSWORD = "$VALUE";
+        - metavariable-regex:
+            metavariable: $PASSWORD
+            regex: (?i).*(password|motdepasse|heslo|adgangskode|wachtwoord|salasana|passwort|passord|senha|geslo|clave|losenord|clave|parola|secret|pwd).*
+      severity: ERROR
+    - id: codacy.javascript.security.hard-coded-password
+      languages:
+        - javascript
+        - typescript
+      message: Hardcoded passwords are a security risk. They can be easily found by attackers and used to gain unauthorized access to the system.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        description: Hardcoded passwords are a security risk.
+        impact: HIGH
+        owasp:
+            - A3:2017 Sensitive Data Exposure
+        technology:
+            - javascript
+      patterns:
+        - pattern-either:
+            - pattern: let $PASSWORD = "$VALUE"
+            - pattern: const $PASSWORD = "$VALUE"
+            - pattern: var $PASSWORD = "$VALUE"
+            - pattern: let $PASSWORD = '$VALUE'
+            - pattern: const $PASSWORD = '$VALUE'
+            - pattern: var $PASSWORD = '$VALUE'
+            - pattern: let $PASSWORD = `$VALUE`
+            - pattern: const $PASSWORD = `$VALUE`
+            - pattern: var $PASSWORD = `$VALUE`
+        - metavariable-regex:
+            metavariable: $PASSWORD
+            regex: (?i).*(password|motdepasse|heslo|adgangskode|wachtwoord|salasana|passwort|passord|senha|geslo|clave|losenord|clave|parola|secret|pwd).*
+      severity: ERROR
+    - id: codacy.generic.plsql.empty-strings
+      languages:
+        - generic
+      message: Empty strings can lead to unexpected behavior and should be handled carefully.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        description: Detects empty strings in the code which might cause issues or bugs.
+        impact: MEDIUM
+      pattern: $VAR VARCHAR2($LENGTH) := '';
+      severity: WARNING
+    - id: codacy.generic.plsql.find-all-passwords
+      languages:
+        - generic
+      message: |
+        Hardcoded or exposed passwords are a security risk. They can be easily found by attackers and used to gain unauthorized access to the system.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        description: Finding all occurrences of passwords in different languages and formats, while avoiding common false positives.
+        impact: HIGH
+        owasp:
+            - A3:2017 Sensitive Data Exposure
+      options:
+        generic_ellipsis_max_span: 0
+      pattern: |
+        $PASSWORD VARCHAR2($LENGTH) := $...VALUE;
+      severity: ERROR
+    - id: codacy.generic.plsql.resource-injection
+      languages:
+        - generic
+      message: Resource injection detected. This can lead to unauthorized access or manipulation of resources.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        description: Detects assignments in PL/SQL involving risky DBMS functions that might cause security issues.
+        impact: HIGH
+        owasp:
+            - A3:2017 Sensitive Data Exposure
+      options:
+        generic_ellipsis_max_span: 0
+      patterns:
+        - pattern-either:
+            - pattern: |
+                $RESOURCE := DBMS_CUBE.BUILD($...ARGS);
+            - pattern: |
+                $RESOURCE := DBMS_FILE_TRANSFER.COPY_FILE($...ARGS);
+            - pattern: |
+                $RESOURCE := DBMS_FILE_TRANSFER.GET_FILE($...ARGS);
+            - pattern: |
+                $RESOURCE := DBMS_FILE_TRANSFER.PUT_FILE($...ARGS);
+            - pattern: |
+                $RESOURCE := DBMS_SCHEDULER.GET_FILE($...ARGS);
+            - pattern: |
+                $RESOURCE := DBMS_SCHEDULER.PUT_FILE($...ARGS);
+            - pattern: |
+                $RESOURCE := DBMS_SCHEDULER.CREATE_PROGRAM($...ARGS);
+            - pattern: |
+                $RESOURCE := DBMS_SERVICE.CREATE_SERVICE($...ARGS);
+            - pattern: |
+                $RESOURCE := UTL_TCP.OPEN_CONNECTION($...ARGS);
+            - pattern: |
+                $RESOURCE := UTL_SMTP.OPEN_CONNECTION($...ARGS);
+            - pattern: |
+                $RESOURCE := WPG_DOCLOAD.DOWNLOAD_FILE($...ARGS);
+      severity: ERROR
+    - id: codacy.generic.security.detect-invisible-unicode
+      languages:
+        - yaml
+        - json
+      message: It's possible to embed malicious secret instructions to AI rules files using unicode characters that are invisible to human reviewers.This can lead to future AI-generated code that has security vulnerabilities or other weaknesses baked in which may not be noticed.
+      metadata:
+        category: security
+        confidence: MEDIUM
+        description: Detects the invisible unicode characters
+        technology:
+            - AI
+            - Copilot
+            - Cursor
+      paths:
+        include:
+            - '*.json'
+            - '*.yaml'
+            - '*.yml'
+      pattern-regex: "[​‌‍⁠\uFEFF]"
+      severity: WARNING
