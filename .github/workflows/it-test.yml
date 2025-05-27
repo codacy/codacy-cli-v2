@@ -40,12 +40,6 @@ jobs:
         with:
           fetch-depth: 0  # Needed for git history
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-          cache: true
-
       - name: Download CLI binaries
         uses: actions/download-artifact@v4
         with:
