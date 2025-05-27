@@ -82,12 +82,7 @@ function Compare-Files {
     # Compare files
     Get-ChildItem -Path $expectedDir -File | ForEach-Object {
         $actualFile = Join-Path $actualDir $_.Name
-        
-        # Skip Semgrep-related files only for init-without-token test
-        if ($label -match 'init-without-token' -and $_.Name -match 'semgrep') {
-            Write-Host "⏭️  Skipping Semgrep file: $label/$($_.Name)"
-            continue
-        }
+
         
         if (-not (Test-Path $actualFile)) {
             Write-Host "❌ $label/$($_.Name) does not exist in actual output"
