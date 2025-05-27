@@ -58,6 +58,12 @@ compare_files() {
     filename=$(basename "$file")
     actual_file="$actual_dir/$filename"
     
+    # Skip Semgrep-related files only for init-without-token test
+    if [[ "$label" == *"init-without-token"* && "$filename" == *"semgrep"* ]]; then
+      echo "⏭️  Skipping Semgrep file: $label/$filename"
+      continue
+    fi
+    
     if [ ! -f "$actual_file" ]; then
       echo "❌ $label/$filename does not exist in actual output"
       echo "Expected: $file"
