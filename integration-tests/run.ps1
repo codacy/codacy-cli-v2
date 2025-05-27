@@ -91,13 +91,13 @@ function Compare-Files {
     Write-Host "Actual dir: $actualDir"
     Write-Host "Label: $label"
     
-    # Normalize paths to use the current OS's path separator
-    $expectedDir = $expectedDir.Replace('/', [System.IO.Path]::DirectorySeparatorChar).Replace('\', [System.IO.Path]::DirectorySeparatorChar)
-    $actualDir = $actualDir.Replace('/', [System.IO.Path]::DirectorySeparatorChar).Replace('\', [System.IO.Path]::DirectorySeparatorChar)
+    # Convert to absolute paths and normalize separators
+    $expectedDir = (Resolve-Path $expectedDir).Path
+    $actualDir = (Resolve-Path $actualDir).Path
     
-    Write-Host "Normalized paths:"
-    Write-Host "Expected dir (normalized): $expectedDir"
-    Write-Host "Actual dir (normalized): $actualDir"
+    Write-Host "Resolved paths:"
+    Write-Host "Expected dir (resolved): $expectedDir"
+    Write-Host "Actual dir (resolved): $actualDir"
     
     # List directory contents before comparison
     Write-Host "`nExpected directory contents:"
@@ -112,13 +112,14 @@ function Compare-Files {
     
     # Compare files
     Get-ChildItem -Path $expectedDir -File | ForEach-Object {
-        $actualFile = Join-Path $actualDir $_.Name
-        Write-Host "`nChecking file: $($_.Name)"
+        $relativePath = $_.FullName.Replace($expectedDir, '').TrimStart('\')
+        $actualFile = Join-Path $actualDir $relativePath
+        Write-Host "`nChecking file: $relativePath"
         Write-Host "Expected file: $($_.FullName)"
         Write-Host "Actual file: $actualFile"
         
         if (-not (Test-Path $actualFile)) {
-            Write-Host "❌ $label/$($_.Name) does not exist in actual output"
+            Write-Host "❌ $label/$relativePath does not exist in actual output"
             Write-Host "Expected: $($_.FullName)"
             Write-Host "Actual should be: $actualFile"
             Write-Host "Current directory structure:"
@@ -135,7 +136,7 @@ function Compare-Files {
         # Compare line by line
         $diff = Compare-Object $expectedContent $actualContent -PassThru
         if ($diff) {
-            Write-Host "❌ $label/$($_.Name) does not match expected"
+            Write-Host "❌ $label/$relativePath does not match expected"
             Write-Host "=== Expected (normalized) ==="
             $expectedContent
             Write-Host "=== Actual (normalized) ==="
@@ -145,18 +146,19 @@ function Compare-Files {
             Write-Host "==================="
             exit 1
         }
-        Write-Host "✅ $label/$($_.Name) matches expected"
+        Write-Host "✅ $label/$relativePath matches expected"
     }
     
     # Compare subdirectories
     Get-ChildItem -Path $expectedDir -Directory | Where-Object { $_.Name -ne "logs" } | ForEach-Object {
-        $actualSubDir = Join-Path $actualDir $_.Name
-        Write-Host "`nChecking subdirectory: $($_.Name)"
+        $relativePath = $_.FullName.Replace($expectedDir, '').TrimStart('\')
+        $actualSubDir = Join-Path $actualDir $relativePath
+        Write-Host "`nChecking subdirectory: $relativePath"
         Write-Host "Expected dir: $($_.FullName)"
         Write-Host "Actual dir: $actualSubDir"
         
         if (-not (Test-Path $actualSubDir)) {
-            Write-Host "❌ Directory $label/$($_.Name) does not exist in actual output"
+            Write-Host "❌ Directory $label/$relativePath does not exist in actual output"
             Write-Host "Expected: $($_.FullName)"
             Write-Host "Actual should be: $actualSubDir"
             Write-Host "Current directory structure:"
@@ -165,7 +167,7 @@ function Compare-Files {
             }
             exit 1
         }
-        Compare-Files $_.FullName $actualSubDir "$label/$($_.Name)"
+        Compare-Files $_.FullName $actualSubDir "$label/$relativePath"
     }
     
     Write-Host "`n=== Directory Comparison Complete ==="
