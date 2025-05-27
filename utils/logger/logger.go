@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -15,36 +16,24 @@ import (
 type CustomTextFormatter struct{}
 
 func (f *CustomTextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	// Get the caller information
-	var fileLocation string
-	if entry.HasCaller() {
-		// Get relative path by removing the workspace root
-		fullPath := entry.Caller.File
-		if workspaceRoot, err := filepath.Abs("."); err == nil {
-			if rel, err := filepath.Rel(workspaceRoot, fullPath); err == nil {
-				fullPath = rel
-			}
-		}
-		fileLocation = fmt.Sprintf("%s:%d", fullPath, entry.Caller.Line)
-	}
-
 	// Format timestamp
 	timestamp := entry.Time.Format("2006-01-02T15:04:05-07:00")
 
 	// Format fields
 	var fields string
+	var location string
 	if len(entry.Data) > 0 {
 		var fieldStrings []string
 		for k, v := range entry.Data {
-			fieldStrings = append(fieldStrings, fmt.Sprintf("%s=%v", k, v))
+			if k == "caller" {
+				location = fmt.Sprintf(" (%v)", v)
+			} else {
+				fieldStrings = append(fieldStrings, fmt.Sprintf("%s=%v", k, v))
+			}
 		}
-		fields = " " + strings.Join(fieldStrings, " ")
-	}
-
-	// Format the log message
-	var location string
-	if fileLocation != "" {
-		location = fmt.Sprintf(" (%s)", fileLocation)
+		if len(fieldStrings) > 0 {
+			fields = " " + strings.Join(fieldStrings, " ")
+		}
 	}
 
 	logMessage := fmt.Sprintf("%s [%s]%s %s%s\n",
@@ -93,8 +82,8 @@ func Initialize(logsDir string) error {
 	fileLogger.SetOutput(lumberjackLogger)
 	fileLogger.SetLevel(logrus.DebugLevel)
 
-	// Enable caller information for file location
-	fileLogger.SetReportCaller(true)
+	// We'll handle caller information ourselves
+	fileLogger.SetReportCaller(false)
 
 	return nil
 }
@@ -102,6 +91,19 @@ func Initialize(logsDir string) error {
 // Log logs a message with the given level and fields
 func Log(level logrus.Level, msg string, fields logrus.Fields) {
 	if fileLogger != nil {
+		// Get caller information
+		_, file, line, ok := runtime.Caller(2)
+		if ok {
+			if workspaceRoot, err := filepath.Abs("."); err == nil {
+				if rel, err := filepath.Rel(workspaceRoot, file); err == nil {
+					file = rel
+				}
+			}
+			if fields == nil {
+				fields = logrus.Fields{}
+			}
+			fields["caller"] = fmt.Sprintf("%s:%d", file, line)
+		}
 		entry := fileLogger.WithFields(fields)
 		entry.Log(level, msg)
 	}
