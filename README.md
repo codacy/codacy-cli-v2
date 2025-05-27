@@ -5,7 +5,7 @@
 
 Codacy CLI (version 2) is a command-line tool for running code analysis and integrating with Codacy. If your repository exists in Codacy, you can sync your configuration to ensure consistency with your organization's standards. 
 
-You can also use Codacy CLI for local code analysis without a Codacy account, leveraging the linter configuration files found in your project's root.
+You can also use Codacy CLI for local code analysis without a Codacy account, leveraging the linter configuration files found in your project's root or Codacy's suggested defaults.
 
 The CLI supports uploading analysis results (in [SARIF](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) format) to Codacy as well.
 
@@ -54,7 +54,7 @@ alias codacy-cli="bash <(curl -Ls https://raw.githubusercontent.com/codacy/codac
 Bootstraps the CLI configuration in your project's folder. This command creates a `.codacy` directory containing a `codacy.yaml` file, which specifies the runtimes and tools that will be used and installed.
 
 - If you provide Codacy repository information (API token, provider, organization, repository), the configuration will be fetched from Codacy, ensuring consistency with your organization's standards.
-- If no Codacy information is provided, all available tools will be included. For each tool, if a local configuration file exists in your project, it will be used; otherwise, an empty configuration file will be created for that tool.
+- If no Codacy information is provided, all available tools will be included. For each tool, if a local configuration file exists in your project, it will be used; otherwise, Codacy's suggested defaults will be used.
 
 - **Local mode (local configuration files):**
   ```bash
