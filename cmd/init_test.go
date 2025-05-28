@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/domain"
-	"codacy/cli-v2/utils"
 	"os"
 	"path/filepath"
 	"testing"
@@ -127,7 +127,7 @@ func TestCleanConfigDirectory(t *testing.T) {
 
 	for _, file := range testFiles {
 		filePath := filepath.Join(tempDir, file)
-		err := os.WriteFile(filePath, []byte("test content"), utils.DefaultFilePerms)
+		err := os.WriteFile(filePath, []byte("test content"), constants.DefaultFilePerms)
 		assert.NoError(t, err, "Failed to create test file: %s", filePath)
 	}
 
@@ -153,6 +153,13 @@ func TestInitCommand_LanguageDetection(t *testing.T) {
 	assert.NoError(t, err, "Failed to get current working directory")
 	defer os.Chdir(originalWD)
 
+	// Change to the temp directory
+	err = os.Chdir(tempDir)
+	assert.NoError(t, err)
+
+	// Set up config with the correct paths
+	config.Config = *config.NewConfigType(tempDir, filepath.Join(tempDir, ".codacy"), filepath.Join(tempDir, ".cache", "codacy"))
+
 	// Create test files for different languages
 	testFiles := map[string]string{
 		"src/main.go":         "package main",
@@ -172,21 +179,17 @@ func TestInitCommand_LanguageDetection(t *testing.T) {
 	// Create the files in the temporary directory
 	for path, content := range testFiles {
 		fullPath := filepath.Join(tempDir, path)
-		err := os.MkdirAll(filepath.Dir(fullPath), 0755)
+		err := os.MkdirAll(filepath.Dir(fullPath), constants.DefaultDirPerms)
 		assert.NoError(t, err)
-		err = os.WriteFile(fullPath, []byte(content), 0644)
+		err = os.WriteFile(fullPath, []byte(content), constants.DefaultFilePerms)
 		assert.NoError(t, err)
 	}
-
-	// Change to the temp directory
-	err = os.Chdir(tempDir)
-	assert.NoError(t, err)
 
 	// Create necessary directories
 	err = config.Config.CreateLocalCodacyDir()
 	assert.NoError(t, err)
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
-	err = os.MkdirAll(toolsConfigDir, utils.DefaultFilePerms)
+	err = os.MkdirAll(toolsConfigDir, constants.DefaultDirPerms)
 	assert.NoError(t, err)
 
 	// Reset initFlags to simulate local mode
@@ -241,11 +244,14 @@ func TestInitCommand_NoLanguagesDetected(t *testing.T) {
 	err = os.Chdir(tempDir)
 	assert.NoError(t, err)
 
+	// Set up config with the correct paths
+	config.Config = *config.NewConfigType(tempDir, filepath.Join(tempDir, ".codacy"), filepath.Join(tempDir, ".cache", "codacy"))
+
 	// Create necessary directories
 	err = config.Config.CreateLocalCodacyDir()
 	assert.NoError(t, err)
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
-	err = os.MkdirAll(toolsConfigDir, utils.DefaultFilePerms)
+	err = os.MkdirAll(toolsConfigDir, constants.DefaultDirPerms)
 	assert.NoError(t, err)
 
 	// Reset initFlags to simulate local mode
