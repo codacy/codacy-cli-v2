@@ -56,56 +56,38 @@ var initCmd = &cobra.Command{
 				log.Fatalf("Failed to detect languages: %v", err)
 			}
 
-			// Map detected languages to tools
-			var enabledTools []domain.Tool
-			toolVersions := map[string]string{
-				ESLint:       "8.57.0",
-				Trivy:        "0.59.1",
-				PyLint:       "3.3.6",
-				PMD:          "6.55.0",
-				DartAnalyzer: "3.7.2",
-				Semgrep:      "1.78.0",
-				Lizard:       "1.17.19",
+			// Get all available tools from the API
+			availableTools, err := codacyclient.GetToolsVersions()
+			if err != nil {
+				log.Fatalf("Failed to get tools versions: %v", err)
 			}
 
-			// Map languages to tools
-			languageToTools := map[string][]string{
-				"JavaScript": {ESLint},
-				"TypeScript": {ESLint},
-				"Python":     {PyLint},
-				"Java":       {PMD},
-				"Dart":       {DartAnalyzer},
-				"Go":         {Semgrep},
-				"Ruby":       {Semgrep},
-				"PHP":        {Semgrep},
-				"C":          {Semgrep},
-				"C++":        {Semgrep},
-				"C#":         {Semgrep},
-				"Kotlin":     {Semgrep},
-				"Swift":      {Semgrep},
-				"Scala":      {PMD},
-				"Rust":       {Semgrep},
+			// Map tools by name for easier lookup
+			toolsByName := make(map[string]domain.Tool)
+			for _, tool := range availableTools {
+				toolsByName[strings.ToLower(tool.Name)] = tool
 			}
-
-			// Always enable Trivy for security scanning
-			enabledTools = append(enabledTools, domain.Tool{
-				Uuid:    Trivy,
-				Name:    "trivy",
-				Version: toolVersions[Trivy],
-			})
 
 			// Enable tools based on detected languages
+			var enabledTools []domain.Tool
 			toolsEnabled := make(map[string]bool)
+
+			// Always enable Trivy for security scanning
+			if trivyTool, ok := toolsByName["trivy"]; ok {
+				enabledTools = append(enabledTools, trivyTool)
+				toolsEnabled[trivyTool.Uuid] = true
+			}
+
+			// Enable tools based on detected languages
 			for langName := range languages {
-				if tools, ok := languageToTools[langName]; ok {
-					for _, toolID := range tools {
-						if !toolsEnabled[toolID] {
-							toolsEnabled[toolID] = true
-							enabledTools = append(enabledTools, domain.Tool{
-								Uuid:    toolID,
-								Name:    toolNameFromUUID(toolID),
-								Version: toolVersions[toolID],
-							})
+				for _, tool := range availableTools {
+					if !toolsEnabled[tool.Uuid] {
+						for _, supportedLang := range tool.Languages {
+							if strings.EqualFold(langName, supportedLang) {
+								enabledTools = append(enabledTools, tool)
+								toolsEnabled[tool.Uuid] = true
+								break
+							}
 						}
 					}
 				}
@@ -113,11 +95,10 @@ var initCmd = &cobra.Command{
 
 			// Always enable Lizard for complexity analysis if any supported language is detected
 			if shouldEnableLizard(languages) {
-				enabledTools = append(enabledTools, domain.Tool{
-					Uuid:    Lizard,
-					Name:    "lizard",
-					Version: toolVersions[Lizard],
-				})
+				if lizardTool, ok := toolsByName["lizard"]; ok && !toolsEnabled[lizardTool.Uuid] {
+					enabledTools = append(enabledTools, lizardTool)
+					toolsEnabled[lizardTool.Uuid] = true
+				}
 			}
 
 			// Create configuration files
@@ -138,8 +119,17 @@ var initCmd = &cobra.Command{
 			}
 
 			fmt.Println("\nEnabled tools:")
+			// Create a map of supported tool UUIDs for quick lookup
+			supportedTools := make(map[string]bool)
+			for _, uuid := range AvailableTools {
+				supportedTools[uuid] = true
+			}
+
+			// Only show tools that are both enabled and supported by the CLI
 			for _, tool := range enabledTools {
-				fmt.Printf("  - %s@%s\n", tool.Name, tool.Version)
+				if supportedTools[tool.Uuid] {
+					fmt.Printf("  - %s@%s\n", tool.Name, tool.Version)
+				}
 			}
 		} else {
 			err := buildRepositoryConfigurationFiles(initFlags.ApiToken)
