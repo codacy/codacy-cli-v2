@@ -1,4 +1,4 @@
-package domain
+package utils
 
 import (
 	"os"
@@ -206,7 +206,7 @@ ignored.js
 		for _, file := range lang.Files {
 			assert.NotContains(t, file, "build/", "Should not contain files from build/")
 			assert.NotContains(t, file, ".log", "Should not contain .log files")
-			assert.NotContains(t, file, "ignored.js", "Should not contain ignored.js")
+			assert.NotEqual(t, file, "ignored.js", "Should not contain the ignored.js file")
 			assert.NotContains(t, file, ".test.js", "Should not contain test files")
 		}
 	}

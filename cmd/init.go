@@ -50,7 +50,7 @@ var initCmd = &cobra.Command{
 			fmt.Println("ℹ️  No project token was specified, detecting languages and configuring tools...")
 
 			// Create language detector and scan the project
-			detector := domain.NewLanguageDetector()
+			detector := utils.NewLanguageDetector()
 			languages, err := detector.DetectLanguages(".")
 			if err != nil {
 				log.Fatalf("Failed to detect languages: %v", err)
@@ -160,7 +160,7 @@ var initCmd = &cobra.Command{
 }
 
 // shouldEnableLizard checks if Lizard should be enabled based on detected languages
-func shouldEnableLizard(languages map[string]*domain.LanguageInfo) bool {
+func shouldEnableLizard(languages map[string]*utils.LanguageInfo) bool {
 	lizardSupportedLangs := map[string]bool{
 		"C": true, "C++": true, "Java": true, "C#": true,
 		"JavaScript": true, "TypeScript": true, "Python": true,
