@@ -17,7 +17,7 @@ func RunLizard(workDirectory string, binary string, files []string, outputFile s
 	}
 
 	// Construct base command with lizard module
-	args := []string{"-m", "lizard", "-V"}
+	args := []string{"-m", "lizard", "--warnings_only"}
 
 	// Add files to analyze - if no files specified, analyze current directory
 	if len(files) > 0 {
