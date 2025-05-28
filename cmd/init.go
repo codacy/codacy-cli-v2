@@ -47,15 +47,99 @@ var initCmd = &cobra.Command{
 
 		if cliLocalMode {
 			fmt.Println()
-			fmt.Println("ℹ️  No project token was specified, fetching codacy default configurations")
-			noTools := []domain.Tool{}
-			err := createConfigurationFiles(noTools, cliLocalMode)
+			fmt.Println("ℹ️  No project token was specified, detecting languages and configuring tools...")
+
+			// Create language detector and scan the project
+			detector := domain.NewLanguageDetector()
+			languages, err := detector.DetectLanguages(".")
+			if err != nil {
+				log.Fatalf("Failed to detect languages: %v", err)
+			}
+
+			// Map detected languages to tools
+			var enabledTools []domain.Tool
+			toolVersions := map[string]string{
+				ESLint:       "8.57.0",
+				Trivy:        "0.59.1",
+				PyLint:       "3.3.6",
+				PMD:          "6.55.0",
+				DartAnalyzer: "3.7.2",
+				Semgrep:      "1.78.0",
+				Lizard:       "1.17.19",
+			}
+
+			// Map languages to tools
+			languageToTools := map[string][]string{
+				"JavaScript": {ESLint},
+				"TypeScript": {ESLint},
+				"Python":     {PyLint},
+				"Java":       {PMD},
+				"Dart":       {DartAnalyzer},
+				"Go":         {Semgrep},
+				"Ruby":       {Semgrep},
+				"PHP":        {Semgrep},
+				"C":          {Semgrep},
+				"C++":        {Semgrep},
+				"C#":         {Semgrep},
+				"Kotlin":     {Semgrep},
+				"Swift":      {Semgrep},
+				"Scala":      {PMD},
+				"Rust":       {Semgrep},
+			}
+
+			// Always enable Trivy for security scanning
+			enabledTools = append(enabledTools, domain.Tool{
+				Uuid:    Trivy,
+				Name:    "trivy",
+				Version: toolVersions[Trivy],
+			})
+
+			// Enable tools based on detected languages
+			toolsEnabled := make(map[string]bool)
+			for langName := range languages {
+				if tools, ok := languageToTools[langName]; ok {
+					for _, toolID := range tools {
+						if !toolsEnabled[toolID] {
+							toolsEnabled[toolID] = true
+							enabledTools = append(enabledTools, domain.Tool{
+								Uuid:    toolID,
+								Name:    toolNameFromUUID(toolID),
+								Version: toolVersions[toolID],
+							})
+						}
+					}
+				}
+			}
+
+			// Always enable Lizard for complexity analysis if any supported language is detected
+			if shouldEnableLizard(languages) {
+				enabledTools = append(enabledTools, domain.Tool{
+					Uuid:    Lizard,
+					Name:    "lizard",
+					Version: toolVersions[Lizard],
+				})
+			}
+
+			// Create configuration files
+			err = createConfigurationFiles(enabledTools, cliLocalMode)
 			if err != nil {
 				log.Fatal(err)
 			}
-			// Create default configuration files
-			if err := buildDefaultConfigurationFiles(toolsConfigDir); err != nil {
+
+			// Create default configuration files for enabled tools
+			if err := buildDefaultConfigurationFiles(toolsConfigDir, enabledTools); err != nil {
 				log.Fatal(err)
+			}
+
+			// Print summary of detected languages and enabled tools
+			fmt.Println("\nDetected languages:")
+			for langName, info := range languages {
+				fmt.Printf("  - %s (%d files)\n", langName, len(info.Files))
+			}
+
+			fmt.Println("\nEnabled tools:")
+			for _, tool := range enabledTools {
+				fmt.Printf("  - %s@%s\n", tool.Name, tool.Version)
 			}
 		} else {
 			err := buildRepositoryConfigurationFiles(initFlags.ApiToken)
@@ -63,6 +147,7 @@ var initCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 		}
+
 		createGitIgnoreFile()
 		fmt.Println()
 		fmt.Println("✅ Successfully initialized Codacy configuration!")
@@ -72,6 +157,45 @@ var initCmd = &cobra.Command{
 		fmt.Println("  2. Run 'codacy-cli analyze' to start analyzing your code")
 		fmt.Println()
 	},
+}
+
+// shouldEnableLizard checks if Lizard should be enabled based on detected languages
+func shouldEnableLizard(languages map[string]*domain.LanguageInfo) bool {
+	lizardSupportedLangs := map[string]bool{
+		"C": true, "C++": true, "Java": true, "C#": true,
+		"JavaScript": true, "TypeScript": true, "Python": true,
+		"Ruby": true, "PHP": true, "Scala": true, "Go": true,
+		"Rust": true, "Kotlin": true, "Swift": true,
+	}
+
+	for lang := range languages {
+		if lizardSupportedLangs[lang] {
+			return true
+		}
+	}
+	return false
+}
+
+// toolNameFromUUID returns the short name for a tool UUID
+func toolNameFromUUID(uuid string) string {
+	switch uuid {
+	case ESLint:
+		return "eslint"
+	case Trivy:
+		return "trivy"
+	case PyLint:
+		return "pylint"
+	case PMD:
+		return "pmd"
+	case DartAnalyzer:
+		return "dartanalyzer"
+	case Semgrep:
+		return "semgrep"
+	case Lizard:
+		return "lizard"
+	default:
+		return "unknown"
+	}
 }
 
 func createGitIgnoreFile() error {
@@ -427,14 +551,14 @@ func createLizardConfigFile(toolsConfigDir string, patternConfiguration []domain
 	return nil
 }
 
-// buildDefaultConfigurationFiles creates default configuration files for all tools
-func buildDefaultConfigurationFiles(toolsConfigDir string) error {
-	for _, tool := range AvailableTools {
-		patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(initFlags, tool)
+// buildDefaultConfigurationFiles creates default configuration files for enabled tools
+func buildDefaultConfigurationFiles(toolsConfigDir string, enabledTools []domain.Tool) error {
+	for _, tool := range enabledTools {
+		patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(initFlags, tool.Uuid)
 		if err != nil {
 			return fmt.Errorf("failed to get default tool patterns config: %w", err)
 		}
-		switch tool {
+		switch tool.Uuid {
 		case ESLint:
 			if err := tools.CreateEslintConfig(toolsConfigDir, patternsConfig); err != nil {
 				return fmt.Errorf("failed to create eslint config file: %v", err)

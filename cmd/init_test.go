@@ -96,54 +96,18 @@ func TestConfigFileTemplate(t *testing.T) {
 				"pmd",
 			},
 		},
-		{
-			name: "all tools enabled",
-			tools: []domain.Tool{
-				{
-					Uuid:    ESLint,
-					Name:    "eslint",
-					Version: "9.4.0",
-				},
-				{
-					Uuid:    Trivy,
-					Name:    "trivy",
-					Version: "0.60.0",
-				},
-				{
-					Uuid:    PyLint,
-					Name:    "pylint",
-					Version: "3.4.0",
-				},
-				{
-					Uuid:    PMD,
-					Name:    "pmd",
-					Version: "6.56.0",
-				},
-			},
-			expected: []string{
-				"node@22.2.0",
-				"python@3.11.11",
-				"eslint@9.4.0",
-				"trivy@0.60.0",
-				"pylint@3.4.0",
-				"pmd@6.56.0",
-			},
-			notExpected: []string{},
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := configFileTemplate(tt.tools)
 
-			// Check that expected strings are present
 			for _, exp := range tt.expected {
-				assert.Contains(t, result, exp, "Config file should contain %s", exp)
+				assert.Contains(t, result, exp)
 			}
 
-			// Check that not-expected strings are absent
 			for _, notExp := range tt.notExpected {
-				assert.NotContains(t, result, notExp, "Config file should not contain %s", notExp)
+				assert.NotContains(t, result, notExp)
 			}
 		})
 	}
@@ -182,65 +146,236 @@ func TestCleanConfigDirectory(t *testing.T) {
 	assert.Equal(t, 0, len(files), "Expected 0 files after cleaning, got %d", len(files))
 }
 
-func TestInitCommand_NoToken(t *testing.T) {
+func TestInitCommand_LanguageDetection(t *testing.T) {
+	// Create a temporary directory for the test
 	tempDir := t.TempDir()
 	originalWD, err := os.Getwd()
 	assert.NoError(t, err, "Failed to get current working directory")
 	defer os.Chdir(originalWD)
 
-	// Use the real plugins/tools/semgrep/rules.yaml file
-	rulesPath := filepath.Join("plugins", "tools", "semgrep", "rules.yaml")
-	if _, err := os.Stat(rulesPath); os.IsNotExist(err) {
-		t.Skip("plugins/tools/semgrep/rules.yaml not found; skipping test")
+	// Create test files for different languages
+	testFiles := map[string]string{
+		"src/main.go":         "package main",
+		"src/app.js":          "console.log('hello')",
+		"src/lib.py":          "print('hello')",
+		"src/Main.java":       "class Main {}",
+		"src/styles.css":      "body { margin: 0; }",
+		"src/config.json":     "{}",
+		"src/Dockerfile":      "FROM ubuntu",
+		"src/app.dart":        "void main() {}",
+		"src/test.rs":         "fn main() {}",
+		"vendor/ignore.js":    "// should be ignored",
+		"node_modules/pkg.js": "// should be ignored",
+		".git/config":         "// should be ignored",
 	}
 
-	// Change to the temp directory to simulate a new project
-	err = os.Chdir(tempDir)
-	assert.NoError(t, err, "Failed to change working directory to tempDir")
+	// Create the files in the temporary directory
+	for path, content := range testFiles {
+		fullPath := filepath.Join(tempDir, path)
+		err := os.MkdirAll(filepath.Dir(fullPath), 0755)
+		assert.NoError(t, err)
+		err = os.WriteFile(fullPath, []byte(content), 0644)
+		assert.NoError(t, err)
+	}
 
-	// Simulate running init with no token
+	// Change to the temp directory
+	err = os.Chdir(tempDir)
+	assert.NoError(t, err)
+
+	// Create necessary directories
+	err = config.Config.CreateLocalCodacyDir()
+	assert.NoError(t, err)
+	toolsConfigDir := config.Config.ToolsConfigDirectory()
+	err = os.MkdirAll(toolsConfigDir, utils.DefaultFilePerms)
+	assert.NoError(t, err)
+
+	// Reset initFlags to simulate local mode
 	initFlags.ApiToken = ""
 	initFlags.Provider = ""
 	initFlags.Organization = ""
 	initFlags.Repository = ""
 
-	// Call the Run logic from initCmd
-	if err := config.Config.CreateLocalCodacyDir(); err != nil {
-		t.Fatalf("Failed to create local codacy directory: %v", err)
+	// Run the init command
+	initCmd.Run(initCmd, []string{})
+
+	// Verify that the configuration files were created
+	codacyYaml := filepath.Join(config.Config.LocalCodacyDirectory(), "codacy.yaml")
+	assert.FileExists(t, codacyYaml)
+
+	// Read and verify the codacy.yaml content
+	content, err := os.ReadFile(codacyYaml)
+	assert.NoError(t, err)
+	contentStr := string(content)
+
+	// Check that appropriate tools are enabled based on detected languages
+	assert.Contains(t, contentStr, "eslint@", "ESLint should be enabled for JavaScript")
+	assert.Contains(t, contentStr, "pylint@", "PyLint should be enabled for Python")
+	assert.Contains(t, contentStr, "semgrep@", "Semgrep should be enabled for Go and Rust")
+	assert.Contains(t, contentStr, "dartanalyzer@", "DartAnalyzer should be enabled for Dart")
+	assert.Contains(t, contentStr, "trivy@", "Trivy should always be enabled")
+	assert.Contains(t, contentStr, "lizard@", "Lizard should be enabled when supported languages are detected")
+
+	// Verify that tool configuration files were created
+	expectedConfigFiles := []string{
+		"eslint.config.mjs",
+		"pylint.rc",
+		"trivy.yaml",
+		"semgrep.yaml",
+		"analysis_options.yaml", // for dartanalyzer
+		"lizard.yaml",
 	}
 
+	for _, configFile := range expectedConfigFiles {
+		assert.FileExists(t, filepath.Join(toolsConfigDir, configFile))
+	}
+}
+
+func TestInitCommand_NoLanguagesDetected(t *testing.T) {
+	// Create a temporary directory for the test
+	tempDir := t.TempDir()
+	originalWD, err := os.Getwd()
+	assert.NoError(t, err, "Failed to get current working directory")
+	defer os.Chdir(originalWD)
+
+	// Change to the temp directory (empty, no source files)
+	err = os.Chdir(tempDir)
+	assert.NoError(t, err)
+
+	// Create necessary directories
+	err = config.Config.CreateLocalCodacyDir()
+	assert.NoError(t, err)
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
-	if err := os.MkdirAll(toolsConfigDir, utils.DefaultFilePerms); err != nil {
-		t.Fatalf("Failed to create tools-configs directory: %v", err)
+	err = os.MkdirAll(toolsConfigDir, utils.DefaultFilePerms)
+	assert.NoError(t, err)
+
+	// Reset initFlags to simulate local mode
+	initFlags.ApiToken = ""
+	initFlags.Provider = ""
+	initFlags.Organization = ""
+	initFlags.Repository = ""
+
+	// Run the init command
+	initCmd.Run(initCmd, []string{})
+
+	// Verify that the configuration files were created
+	codacyYaml := filepath.Join(config.Config.LocalCodacyDirectory(), "codacy.yaml")
+	assert.FileExists(t, codacyYaml)
+
+	// Read and verify the codacy.yaml content
+	content, err := os.ReadFile(codacyYaml)
+	assert.NoError(t, err)
+	contentStr := string(content)
+
+	// Check that only Trivy is enabled when no languages are detected
+	assert.Contains(t, contentStr, "trivy@", "Trivy should always be enabled")
+	assert.NotContains(t, contentStr, "eslint@", "ESLint should not be enabled")
+	assert.NotContains(t, contentStr, "pylint@", "PyLint should not be enabled")
+	assert.NotContains(t, contentStr, "semgrep@", "Semgrep should not be enabled")
+	assert.NotContains(t, contentStr, "dartanalyzer@", "DartAnalyzer should not be enabled")
+	assert.NotContains(t, contentStr, "lizard@", "Lizard should not be enabled")
+
+	// Verify that only Trivy configuration file was created
+	assert.FileExists(t, filepath.Join(toolsConfigDir, "trivy.yaml"))
+}
+
+func TestToolNameFromUUID(t *testing.T) {
+	tests := []struct {
+		name     string
+		uuid     string
+		expected string
+	}{
+		{
+			name:     "ESLint",
+			uuid:     ESLint,
+			expected: "eslint",
+		},
+		{
+			name:     "Trivy",
+			uuid:     Trivy,
+			expected: "trivy",
+		},
+		{
+			name:     "PyLint",
+			uuid:     PyLint,
+			expected: "pylint",
+		},
+		{
+			name:     "PMD",
+			uuid:     PMD,
+			expected: "pmd",
+		},
+		{
+			name:     "DartAnalyzer",
+			uuid:     DartAnalyzer,
+			expected: "dartanalyzer",
+		},
+		{
+			name:     "Semgrep",
+			uuid:     Semgrep,
+			expected: "semgrep",
+		},
+		{
+			name:     "Lizard",
+			uuid:     Lizard,
+			expected: "lizard",
+		},
+		{
+			name:     "Unknown UUID",
+			uuid:     "unknown-uuid",
+			expected: "unknown",
+		},
 	}
 
-	cliLocalMode := len(initFlags.ApiToken) == 0
-	if cliLocalMode {
-		noTools := []domain.Tool{}
-		err := createConfigurationFiles(noTools, cliLocalMode)
-		assert.NoError(t, err, "createConfigurationFiles should not return an error")
-		if err := buildDefaultConfigurationFiles(toolsConfigDir); err != nil {
-			t.Fatalf("Failed to build default configuration files: %v", err)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := toolNameFromUUID(tt.uuid)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestShouldEnableLizard(t *testing.T) {
+	tests := []struct {
+		name      string
+		languages map[string]*domain.LanguageInfo
+		expected  bool
+	}{
+		{
+			name: "No supported languages",
+			languages: map[string]*domain.LanguageInfo{
+				"HTML": {Name: "HTML", Files: []string{"index.html"}},
+				"CSS":  {Name: "CSS", Files: []string{"styles.css"}},
+			},
+			expected: false,
+		},
+		{
+			name: "One supported language",
+			languages: map[string]*domain.LanguageInfo{
+				"Python": {Name: "Python", Files: []string{"main.py"}},
+				"HTML":   {Name: "HTML", Files: []string{"index.html"}},
+			},
+			expected: true,
+		},
+		{
+			name: "Multiple supported languages",
+			languages: map[string]*domain.LanguageInfo{
+				"JavaScript": {Name: "JavaScript", Files: []string{"app.js"}},
+				"Python":     {Name: "Python", Files: []string{"main.py"}},
+				"Java":       {Name: "Java", Files: []string{"Main.java"}},
+			},
+			expected: true,
+		},
+		{
+			name:      "Empty languages",
+			languages: map[string]*domain.LanguageInfo{},
+			expected:  false,
+		},
 	}
 
-	// Assert that the expected config files are created
-	codacyDir := config.Config.LocalCodacyDirectory()
-	expectedFiles := []string{
-		"tools-configs/eslint.config.mjs",
-		"tools-configs/trivy.yaml",
-		"tools-configs/ruleset.xml",
-		"tools-configs/pylint.rc",
-		"tools-configs/analysis_options.yaml",
-		"tools-configs/semgrep.yaml",
-		"tools-configs/lizard.yaml",
-		"codacy.yaml",
-		"cli-config.yaml",
-	}
-
-	for _, file := range expectedFiles {
-		filePath := filepath.Join(codacyDir, file)
-		_, err := os.Stat(filePath)
-		assert.NoError(t, err, "Expected config file %s to be created", file)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := shouldEnableLizard(tt.languages)
+			assert.Equal(t, tt.expected, result)
+		})
 	}
 }

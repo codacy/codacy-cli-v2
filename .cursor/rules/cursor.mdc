@@ -12,6 +12,7 @@ alwaysApply: true
 - run go build after each code modification to see if app compiles
 - remove dead unused code
 - look for constants like file permissons in `constants` folder 
+- run go tests if you modified tests files 
 
 ## Code Style Guidelines
 - **Imports**: Standard lib first, external packages second, internal last
