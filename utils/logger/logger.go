@@ -94,9 +94,15 @@ func Log(level logrus.Level, msg string, fields logrus.Fields) {
 		// Get caller information
 		_, file, line, ok := runtime.Caller(2)
 		if ok {
-			if workspaceRoot, err := filepath.Abs("."); err == nil {
-				if rel, err := filepath.Rel(workspaceRoot, file); err == nil {
-					file = rel
+			// Clean up any path containing codacy-cli-v2 and remove parent directory references
+			file = filepath.Clean(file)
+			parts := strings.Split(file, string(filepath.Separator))
+			for i, part := range parts {
+				if strings.Contains(part, "codacy-cli-v2") {
+					if i+1 < len(parts) {
+						file = filepath.Join(parts[i+1:]...)
+					}
+					break
 				}
 			}
 			if fields == nil {
