@@ -94,11 +94,7 @@ func Log(level logrus.Level, msg string, fields logrus.Fields) {
 		// Get caller information
 		_, file, line, ok := runtime.Caller(2)
 		if ok {
-			if workspaceRoot, err := filepath.Abs("."); err == nil {
-				if rel, err := filepath.Rel(workspaceRoot, file); err == nil {
-					file = rel
-				}
-			}
+			file = cleanupFilePath(file)
 			if fields == nil {
 				fields = logrus.Fields{}
 			}
@@ -143,4 +139,19 @@ func Warn(msg string, fields ...logrus.Fields) {
 		f = fields[0]
 	}
 	Log(logrus.WarnLevel, msg, f)
+}
+
+// cleanupFilePath removes codacy-cli-v2 and parent directory references from the file path
+func cleanupFilePath(file string) string {
+	file = filepath.Clean(file)
+	parts := strings.Split(file, string(filepath.Separator))
+	for i, part := range parts {
+		if strings.Contains(part, "codacy-cli-v2") {
+			if i+1 < len(parts) {
+				return filepath.Join(parts[i+1:]...)
+			}
+			break
+		}
+	}
+	return file
 }
