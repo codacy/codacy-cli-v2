@@ -33,52 +33,61 @@ type RuleSet struct {
 }
 
 // DeprecatedReferences maps deprecated pattern IDs to their new versions
-var DeprecatedReferences = map[string]string{
-	// Add deprecated pattern mappings here
-	// Example: "rulesets_java_design_ExcessiveClassLength": "category_java_design_ExcessiveClassLength",
+var DeprecatedReferences = map[string]string{}
+
+// Add PMD headers
+var (
+	pmd6Header = `<?xml version="1.0"?>
+<ruleset name="Codacy PMD Ruleset"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>Codacy PMD Ruleset</description>`
+
+	pmd7Header = `<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Codacy PMD 7 Ruleset"
+    xmlns="https://pmd.github.io/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://pmd.github.io/ruleset/2.0.0 https://pmd.github.io/schemas/pmd-7.0.0.xsd">
+    <description>Codacy PMD 7 Ruleset</description>`
+)
+
+// CreatePmd6Config creates a PMD 6 configuration from the provided tool configuration
+func CreatePmd6Config(configuration []domain.PatternConfiguration) string {
+	return createPmdConfigGeneric(configuration, pmd6Header, convertPatternIDToPMD, false)
+}
+
+// CreatePmd7Config creates a PMD 7 configuration from the provided tool configuration
+func CreatePmd7Config(configuration []domain.PatternConfiguration) string {
+	return createPmdConfigGeneric(configuration, pmd7Header, convertPatternIDToPMD7, true)
 }
 
 // prefixPatternID adds the appropriate prefix to a pattern ID
 func prefixPatternID(patternID string) string {
 	parts := strings.Split(patternID, "_")
-
-	// Handle different pattern ID formats
 	switch len(parts) {
 	case 2:
-		// Format: "patternCategory_patternName"
 		return fmt.Sprintf("category_java_%s_%s", parts[0], parts[1])
 	case 3:
-		// Format: "langAlias_patternCategory_patternName"
 		return fmt.Sprintf("category_%s_%s_%s", parts[0], parts[1], parts[2])
 	case 4:
-		// Format: "root_langAlias_patternCategory_patternName"
 		return fmt.Sprintf("%s_%s_%s_%s", parts[0], parts[1], parts[2], parts[3])
 	default:
-		// Return as is if format is unknown
 		return patternID
 	}
 }
 
-// convertPatternIDToPMD converts a Codacy pattern ID to PMD format
+// convertPatternIDToPMD converts a Codacy pattern ID to PMD 6 format
 func convertPatternIDToPMD(patternID string) (string, error) {
-	// Check if this is a deprecated pattern
 	if newID, ok := DeprecatedReferences[patternID]; ok {
 		patternID = newID
 	}
-
-	// Handle both formats:
-	// 1. "java/design/NPathComplexity"
-	// 2. "PMD_category_java_design_NPathComplexity"
-	// 3. "PMD_category_apex_security_ApexSharingViolations"
-	// 4. "PMD_category_plsql_errorprone_TO_TIMESTAMPWithoutDateFormat"
 
 	var parts []string
 	if strings.Contains(patternID, "/") {
 		parts = strings.Split(patternID, "/")
 	} else {
-		// Remove PMD_ prefix if present
 		id := strings.TrimPrefix(patternID, "PMD_")
-		// Split by underscore and remove "category" if present
 		parts = strings.Split(id, "_")
 		if parts[0] == "category" {
 			parts = parts[1:]
@@ -89,150 +98,117 @@ func convertPatternIDToPMD(patternID string) (string, error) {
 		return "", fmt.Errorf("invalid pattern ID format: %s", patternID)
 	}
 
-	// Extract language, category, and rule
-	language := parts[0] // java, apex, etc.
-	category := parts[1] // design, security, etc.
-	rule := parts[2]     // rule name
-
-	// If there are more parts, combine them with the rule name
-	if len(parts) > 3 {
-		rule = strings.Join(parts[2:], "_")
-	}
+	language := parts[0]
+	category := parts[1]
+	rule := strings.Join(parts[2:], "_")
 
 	return fmt.Sprintf("category/%s/%s.xml/%s", language, category, rule), nil
 }
 
-// generateRuleXML generates XML for a single rule
-func generateRuleXML(rule Rule) (string, error) {
-	pmdRef, err := convertPatternIDToPMD(rule.PatternID)
-	if err != nil {
-		return "", err
+// convertPatternIDToPMD7 converts a Codacy pattern ID to PMD 7 format
+func convertPatternIDToPMD7(patternID string) (string, error) {
+	if newID, ok := DeprecatedReferences[patternID]; ok {
+		patternID = newID
 	}
 
-	if len(rule.Parameters) == 0 {
-		return fmt.Sprintf(`    <rule ref="%s"/>`, pmdRef), nil
+	patternID = strings.TrimPrefix(patternID, "PMD7_")
+	parts := strings.Split(patternID, "_")
+
+	if len(parts) < 4 || parts[0] != "category" {
+		return "", fmt.Errorf("invalid PMD 7 pattern ID: %s", patternID)
 	}
 
-	// Generate rule with parameters
-	var params strings.Builder
-	for _, param := range rule.Parameters {
-		// Skip enabled and version parameters, but include all others
-		if param.Name != "enabled" && param.Name != "version" {
-			params.WriteString(fmt.Sprintf(`
-            <property name="%s" value="%s"/>`, param.Name, param.Value))
-		}
-	}
+	lang := parts[1]
+	category := parts[2]
+	rule := strings.Join(parts[3:], "_")
 
-	// If no parameters left after filtering, just output the rule without properties
-	if params.Len() == 0 {
-		return fmt.Sprintf(`    <rule ref="%s"/>`, pmdRef), nil
-	}
-
-	result := fmt.Sprintf(`    <rule ref="%s">
-        <properties>%s
-        </properties>
-    </rule>`, pmdRef, params.String())
-
-	return result, nil
+	return fmt.Sprintf("category/%s/%s.xml/%s", lang, category, rule), nil
 }
 
-// ConvertToPMDRuleset converts Codacy rules to PMD ruleset format
-func ConvertToPMDRuleset(rules []Rule) (string, error) {
-	var rulesetXML strings.Builder
-	rulesetXML.WriteString(`<?xml version="1.0"?>
-<ruleset name="Codacy PMD Ruleset"
-    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
-    <description>Codacy PMD Ruleset</description>
-
-`)
-
-	// Track processed rules to avoid duplicates
-	processedRules := make(map[string]bool)
-
-	for _, rule := range rules {
-		if !rule.Enabled {
-			continue
-		}
-
-		pmdRef, err := convertPatternIDToPMD(rule.PatternID)
-		if err != nil {
-			return "", fmt.Errorf("error converting pattern ID: %w", err)
-		}
-
-		// Skip if we've already processed this rule
-		if processedRules[pmdRef] {
-			continue
-		}
-
-		processedRules[pmdRef] = true
-
-		ruleXML, err := generateRuleXML(rule)
-		if err != nil {
-			return "", fmt.Errorf("error generating rule XML: %w", err)
-		}
-		rulesetXML.WriteString(ruleXML + "\n")
-	}
-
-	rulesetXML.WriteString("</ruleset>")
-	return rulesetXML.String(), nil
-}
-
-// CreatePmdConfig creates a PMD configuration from the provided tool configuration
-func CreatePmdConfig(configuration []domain.PatternConfiguration) string {
-	// If no patterns provided, return the default ruleset
+// createPmdConfigGeneric abstracts the config creation for both PMD and PMD7
+func createPmdConfigGeneric(
+	configuration []domain.PatternConfiguration,
+	header string,
+	convertPatternID func(string) (string, error),
+	isPMD7 bool,
+) string {
 	if len(configuration) == 0 {
+		if header == pmd7Header {
+			return header + `</ruleset>`
+		}
 		return defaultPMDRuleset
 	}
 
-	// Convert ToolConfiguration to our Rule format
 	var rules []Rule
 	for _, pattern := range configuration {
-		// Check if pattern is enabled
-		patternEnabled := true
-		var parameters []Parameter
+		enabled := true
+		var params []Parameter
 
-		// Process user-defined parameters
 		for _, param := range pattern.Parameters {
 			if param.Name == "enabled" && param.Value == "false" {
-				patternEnabled = false
+				enabled = false
 				break
-			} else if param.Name != "enabled" && param.Name != "version" {
-				// Check for a value - use Value if not empty, otherwise use Default
-				paramValue := param.Value
-				if paramValue == "" && param.Default != "" {
-					paramValue = param.Default
+			}
+			if param.Name != "enabled" && param.Name != "version" {
+				value := param.Value
+				if value == "" {
+					value = param.Default
 				}
-
-				// Add parameter if it has a value
-				if paramValue != "" {
-					parameters = append(parameters, Parameter{
-						Name:  param.Name,
-						Value: paramValue,
-					})
+				if value != "" {
+					params = append(params, Parameter{Name: param.Name, Value: value})
 				}
 			}
 		}
 
-		// Apply prefix to pattern ID if needed
 		patternID := pattern.PatternDefinition.Id
-		if !strings.HasPrefix(patternID, "PMD_") && !strings.Contains(patternID, "/") {
+		if !isPMD7 && !strings.HasPrefix(patternID, "PMD_") && !strings.Contains(patternID, "/") {
 			patternID = prefixPatternID(patternID)
 		}
 
 		rules = append(rules, Rule{
 			PatternID:  patternID,
-			Parameters: parameters,
-			Enabled:    patternEnabled,
+			Parameters: params,
+			Enabled:    enabled,
 		})
 	}
 
-	// Convert rules to PMD ruleset
-	rulesetXML, err := ConvertToPMDRuleset(rules)
-	if err != nil {
-		return defaultPMDRuleset
+	var rulesetXML strings.Builder
+	rulesetXML.WriteString(header)
+	if !strings.HasSuffix(header, "\n") {
+		rulesetXML.WriteString("\n")
 	}
 
-	return rulesetXML
+	seen := make(map[string]bool)
+	for _, rule := range rules {
+		if !rule.Enabled {
+			continue
+		}
+
+		ref, err := convertPatternID(rule.PatternID)
+		if err != nil {
+			continue
+		}
+		if seen[ref] {
+			continue
+		}
+		seen[ref] = true
+
+		if len(rule.Parameters) == 0 {
+			rulesetXML.WriteString(fmt.Sprintf("    <rule ref=\"%s\"/>\n", ref))
+			continue
+		}
+
+		rulesetXML.WriteString(fmt.Sprintf(`    <rule ref="%s">
+        <properties>`, ref))
+		for _, p := range rule.Parameters {
+			rulesetXML.WriteString(fmt.Sprintf("\n            <property name=\"%s\" value=\"%s\"/>", p.Name, p.Value))
+		}
+		rulesetXML.WriteString(`
+        </properties>
+    </rule>
+`)
+	}
+
+	rulesetXML.WriteString("</ruleset>")
+	return rulesetXML.String()
 }

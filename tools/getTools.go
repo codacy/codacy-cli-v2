@@ -3,9 +3,7 @@ package tools
 import (
 	codacyClient "codacy/cli-v2/codacy-client"
 	"codacy/cli-v2/domain"
-	"codacy/cli-v2/plugins"
 	"fmt"
-	"strings"
 )
 
 func enrichToolsWithVersion(tools []domain.Tool) ([]domain.Tool, error) {
@@ -36,17 +34,14 @@ func GetRepositoryTools(initFlags domain.InitFlags) ([]domain.Tool, error) {
 		return nil, err
 	}
 
-	supportedTools, err := plugins.GetSupportedTools()
-	if err != nil {
-		return nil, err
-	}
+	enabledTools := make([]domain.Tool, 0)
+	seen := map[string]bool{}
 
-	// Filter enabled tools
-	var enabledTools []domain.Tool
 	for _, tool := range tools {
 		if tool.Settings.Enabled {
-			if _, exists := supportedTools[strings.ToLower(tool.Name)]; exists {
+			if _, ok := domain.SupportedToolsMetadata[tool.Uuid]; ok && !seen[tool.Uuid] {
 				enabledTools = append(enabledTools, tool)
+				seen[tool.Uuid] = true
 			}
 		}
 	}
