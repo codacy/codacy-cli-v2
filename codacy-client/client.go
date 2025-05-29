@@ -128,7 +128,14 @@ func parseDefaultPatternConfigurations(response []byte) ([]domain.PatternConfigu
 		}
 	}
 
-	return patternConfigurations, "", nil
+	var pagination domain.Pagination
+	if objmap["pagination"] != nil {
+		if err := json.Unmarshal(objmap["pagination"], &pagination); err != nil {
+			return nil, "", fmt.Errorf("failed to unmarshal pagination: %w", err)
+		}
+	}
+
+	return patternConfigurations, pagination.Cursor, nil
 }
 
 // parsePatternConfigurations parses the response body into pattern configurations
