@@ -57,6 +57,9 @@ var initCmd = &cobra.Command{
 			if err := buildDefaultConfigurationFiles(toolsConfigDir); err != nil {
 				log.Fatal(err)
 			}
+			if err := createLanguagesConfigFileLocal(toolsConfigDir); err != nil {
+				log.Fatal(err)
+			}
 		} else {
 			err := buildRepositoryConfigurationFiles(initFlags.ApiToken)
 			if err != nil {
@@ -72,6 +75,30 @@ var initCmd = &cobra.Command{
 		fmt.Println("  2. Run 'codacy-cli analyze' to start analyzing your code")
 		fmt.Println()
 	},
+}
+
+func createLanguagesConfigFileLocal(toolsConfigDir string) error {
+	content := `tools:
+    - name: semgrep
+      languages: [CPP, Go, Java, JavaScript, JSON, Python, Ruby]
+      extensions: [.cc, .cpcac, .cpp, .cxx, .gemspec, .go, .hpp, .ino, .java, .jbuilder, .js, .jsm, .json, .jssssx, .jsx, .mjs, .opal, .podspec, .py, .pyx, .rake, .rb, .vue]
+    - name: trivy
+      languages: [Multiple]
+      extensions: []
+    - name: pmd
+      languages: [Java, JavaScript, XML, Ruby]
+      extensions: [.gemspec, .java, .jbuilder, .js, .jsm, .jssssx, .jsx, .mjs, .opal, .podspec, .pom, .rake, .rb, .vue, .wsdl, .xml, .xsl]
+    - name: pylint
+      languages: [Python]
+      extensions: [.py]
+    - name: lizard
+      languages: [CPP, Java, JavaScript, Python, Ruby]
+      extensions: [.cc, .cpcac, .cpp, .cxx, .gemspec, .hpp, .ino, .java, .jbuilder, .js, .jsm, .jssssx, .jsx, .mjs, .opal, .podspec, .py, .pyx, .rake, .rb, .vue]
+    - name: eslint
+      languages: [JavaScript]
+      extensions: [.js, .jsm, .jsx, .mjs, .vue]`
+
+	return os.WriteFile(filepath.Join(toolsConfigDir, "languages-config.yaml"), []byte(content), utils.DefaultFilePerms)
 }
 
 func createGitIgnoreFile() error {
