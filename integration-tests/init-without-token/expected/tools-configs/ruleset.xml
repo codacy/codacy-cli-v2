@@ -145,4 +145,43 @@
     <rule ref="category/plsql/design.xml/ExcessiveMethodLength"/>
     <rule ref="category/plsql/design.xml/ExcessiveObjectLength"/>
     <rule ref="category/plsql/design.xml/ExcessivePackageBodyLength"/>
+    <rule ref="category/plsql/design.xml/ExcessivePackageSpecificationLength"/>
+    <rule ref="category/plsql/design.xml/ExcessiveParameterList"/>
+    <rule ref="category/plsql/design.xml/ExcessiveTypeLength"/>
+    <rule ref="category/plsql/design.xml/TooManyMethods">
+        <properties>
+            <property name="maxmethods" value="1"/>
+        </properties>
+    </rule>
+    <rule ref="category/plsql/errorprone.xml/TO_DATEWithoutDateFormat"/>
+    <rule ref="category/plsql/errorprone.xml/TO_DATE_TO_CHAR"/>
+    <rule ref="category/plsql/errorprone.xml/TO_TIMESTAMPWithoutDateFormat"/>
+    <rule ref="category/pom/errorprone.xml/InvalidDependencyTypes">
+        <properties>
+            <property name="validTypes" value="pom,jar,maven-plugin,ejb,war,ear,rar,par"/>
+        </properties>
+    </rule>
+    <rule ref="category/pom/errorprone.xml/ProjectVersionAsDependencyVersion"/>
+    <rule ref="category/vf/security.xml/VfCsrf"/>
+    <rule ref="category/vf/security.xml/VfUnescapeEl"/>
+    <rule ref="category/vm/bestpractices.xml/AvoidReassigningParameters"/>
+    <rule ref="category/vm/bestpractices.xml/UnusedMacroParameter"/>
+    <rule ref="category/vm/design.xml/AvoidDeeplyNestedIfStmts"/>
+    <rule ref="category/vm/design.xml/CollapsibleIfStatements"/>
+    <rule ref="category/vm/design.xml/ExcessiveTemplateLength">
+        <properties>
+            <property name="minimum" value="1000"/>
+        </properties>
+    </rule>
+    <rule ref="category/vm/design.xml/NoInlineJavaScript"/>
+    <rule ref="category/vm/design.xml/NoInlineStyles"/>
+    <rule ref="category/vm/errorprone.xml/EmptyForeachStmt"/>
+    <rule ref="category/vm/errorprone.xml/EmptyIfStmt"/>
+    <rule ref="category/xml/errorprone.xml/MistypedCDATASection"/>
+    <rule ref="category/xsl/codestyle.xml/UseConcatOnce"/>
+    <rule ref="category/xsl/performance.xml/AvoidAxisNavigation">
+        <properties>
+            <property name="checkSelfDescendantAbreviation" value="false"/>
+        </properties>
+    </rule>
 </ruleset>
