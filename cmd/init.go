@@ -96,7 +96,13 @@ func createLanguagesConfigFileLocal(toolsConfigDir string) error {
       extensions: [.cc, .cpcac, .cpp, .cxx, .gemspec, .hpp, .ino, .java, .jbuilder, .js, .jsm, .jssssx, .jsx, .mjs, .opal, .podspec, .py, .pyx, .rake, .rb, .vue]
     - name: eslint
       languages: [JavaScript]
-      extensions: [.js, .jsm, .jsx, .mjs, .vue]`
+      extensions: [.js, .jsm, .jsx, .mjs, .vue]
+    - name: dartanalyzer
+      languages: [Dart]
+      extensions: [.dart]
+    - name: codacy-enigma-cli
+      languages: [Multiple]
+      extensions: []`
 
 	return os.WriteFile(filepath.Join(toolsConfigDir, "languages-config.yaml"), []byte(content), utils.DefaultFilePerms)
 }
