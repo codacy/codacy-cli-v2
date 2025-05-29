@@ -79,27 +79,27 @@ var initCmd = &cobra.Command{
 
 func createLanguagesConfigFileLocal(toolsConfigDir string) error {
 	content := `tools:
-    - name: semgrep
-      languages: [CPP, Go, Java, JavaScript, JSON, Python, Ruby]
-      extensions: [.cc, .cpcac, .cpp, .cxx, .gemspec, .go, .hpp, .ino, .java, .jbuilder, .js, .jsm, .json, .jssssx, .jsx, .mjs, .opal, .podspec, .py, .pyx, .rake, .rb, .vue]
-    - name: trivy
-      languages: [Multiple]
-      extensions: []
-    - name: pmd
-      languages: [Java, JavaScript, XML, Ruby]
-      extensions: [.gemspec, .java, .jbuilder, .js, .jsm, .jssssx, .jsx, .mjs, .opal, .podspec, .pom, .rake, .rb, .vue, .wsdl, .xml, .xsl]
     - name: pylint
       languages: [Python]
       extensions: [.py]
-    - name: lizard
-      languages: [CPP, Java, JavaScript, Python, Ruby]
-      extensions: [.cc, .cpcac, .cpp, .cxx, .gemspec, .hpp, .ino, .java, .jbuilder, .js, .jsm, .jssssx, .jsx, .mjs, .opal, .podspec, .py, .pyx, .rake, .rb, .vue]
     - name: eslint
-      languages: [JavaScript]
-      extensions: [.js, .jsm, .jsx, .mjs, .vue]
+      languages: [JavaScript, TypeScript, JSX, TSX]
+      extensions: [.js, .jsx, .ts, .tsx]
+    - name: pmd
+      languages: [Java, JavaScript, JSP, Velocity, XML, Apex, Scala, Ruby, VisualForce]
+      extensions: [.java, .js, .jsp, .vm, .xml, .cls, .trigger, .scala, .rb, .page, .component]
+    - name: trivy
+      languages: [Multiple]
+      extensions: []
     - name: dartanalyzer
       languages: [Dart]
       extensions: [.dart]
+    - name: lizard
+      languages: [C, CPP, Java, "C#", JavaScript, TypeScript, VueJS, "Objective-C", Swift, Python, Ruby, "TTCN-3", PHP, Scala, GDScript, Golang, Lua, Rust, Fortran, Kotlin, Solidity, Erlang, Zig, Perl]
+      extensions: [.c, .cpp, .cc, .h, .hpp, .java, .cs, .js, .jsx, .ts, .tsx, .vue, .m, .swift, .py, .rb, .ttcn, .php, .scala, .gd, .go, .lua, .rs, .f, .f90, .kt, .sol, .erl, .zig, .pl]
+    - name: semgrep
+      languages: [C, CPP, "C#", Generic, Go, Java, JavaScript, JSON, Kotlin, Python, TypeScript, Ruby, Rust, JSX, PHP, Scala, Swift, Terraform]
+      extensions: [.c, .cpp, .h, .hpp, .cs, .go, .java, .js, .json, .kt, .py, .ts, .rb, .rs, .jsx, .php, .scala, .swift, .tf, .tfvars]
     - name: codacy-enigma-cli
       languages: [Multiple]
       extensions: []`
