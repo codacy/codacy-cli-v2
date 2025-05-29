@@ -57,6 +57,9 @@ var initCmd = &cobra.Command{
 			if err := buildDefaultConfigurationFiles(toolsConfigDir); err != nil {
 				log.Fatal(err)
 			}
+			if err := createLanguagesConfigFileLocal(toolsConfigDir); err != nil {
+				log.Fatal(err)
+			}
 		} else {
 			err := buildRepositoryConfigurationFiles(initFlags.ApiToken)
 			if err != nil {
@@ -72,6 +75,36 @@ var initCmd = &cobra.Command{
 		fmt.Println("  2. Run 'codacy-cli analyze' to start analyzing your code")
 		fmt.Println()
 	},
+}
+
+func createLanguagesConfigFileLocal(toolsConfigDir string) error {
+	content := `tools:
+    - name: pylint
+      languages: [Python]
+      extensions: [.py]
+    - name: eslint
+      languages: [JavaScript, TypeScript, JSX, TSX]
+      extensions: [.js, .jsx, .ts, .tsx]
+    - name: pmd
+      languages: [Java, JavaScript, JSP, Velocity, XML, Apex, Scala, Ruby, VisualForce]
+      extensions: [.java, .js, .jsp, .vm, .xml, .cls, .trigger, .scala, .rb, .page, .component]
+    - name: trivy
+      languages: [Multiple]
+      extensions: []
+    - name: dartanalyzer
+      languages: [Dart]
+      extensions: [.dart]
+    - name: lizard
+      languages: [C, CPP, Java, "C#", JavaScript, TypeScript, VueJS, "Objective-C", Swift, Python, Ruby, "TTCN-3", PHP, Scala, GDScript, Golang, Lua, Rust, Fortran, Kotlin, Solidity, Erlang, Zig, Perl]
+      extensions: [.c, .cpp, .cc, .h, .hpp, .java, .cs, .js, .jsx, .ts, .tsx, .vue, .m, .swift, .py, .rb, .ttcn, .php, .scala, .gd, .go, .lua, .rs, .f, .f90, .kt, .sol, .erl, .zig, .pl]
+    - name: semgrep
+      languages: [C, CPP, "C#", Generic, Go, Java, JavaScript, JSON, Kotlin, Python, TypeScript, Ruby, Rust, JSX, PHP, Scala, Swift, Terraform]
+      extensions: [.c, .cpp, .h, .hpp, .cs, .go, .java, .js, .json, .kt, .py, .ts, .rb, .rs, .jsx, .php, .scala, .swift, .tf, .tfvars]
+    - name: codacy-enigma-cli
+      languages: [Multiple]
+      extensions: []`
+
+	return os.WriteFile(filepath.Join(toolsConfigDir, "languages-config.yaml"), []byte(content), utils.DefaultFilePerms)
 }
 
 func createGitIgnoreFile() error {
