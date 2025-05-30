@@ -13,27 +13,6 @@ import (
 //go:embed runtimes/*/plugin.yaml
 var pluginsFS embed.FS
 
-// binary represents a binary executable provided by the runtime
-type binary struct {
-	Name string      `yaml:"name"`
-	Path interface{} `yaml:"path"` // Can be either string or map[string]string
-}
-
-// binaryPath represents OS-specific paths for a binary
-type binaryPath struct {
-	Darwin string `yaml:"darwin"`
-	Linux  string `yaml:"linux"`
-}
-
-// pluginConfig holds the structure of the plugin.yaml file
-type pluginConfig struct {
-	Name           string         `yaml:"name"`
-	Description    string         `yaml:"description"`
-	Download       DownloadConfig `yaml:"download"`
-	Binaries       []binary       `yaml:"binaries"`
-	DefaultVersion string         `yaml:"default_version"`
-}
-
 // ProcessRuntimes processes a list of runtime configurations and returns a map of runtime information
 func ProcessRuntimes(configs []RuntimeConfig, runtimesDir string) (map[string]*RuntimeInfo, error) {
 	result := make(map[string]*RuntimeInfo)
