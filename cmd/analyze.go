@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"codacy/cli-v2/cmd/configsetup"
 	"codacy/cli-v2/utils"
 
 	"github.com/spf13/cobra"
@@ -264,10 +265,6 @@ func loadsToolAndPatterns(toolName string) (Tool, []Pattern) {
 			break
 		}
 	}
-	// TO DO - PANIC
-	//if tool == nil {
-	//	return nil, nil
-	//}
 	var patterns []Pattern
 	var hasNext bool = true
 	cursor := ""
@@ -390,10 +387,6 @@ func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 	var patterns []domain.PatternDefinition
 	var err error
 
-	//this logic is here because I want to pass the config to the runner which is good for:
-	//Separation of concerns, runner will simply run the tool now
-	//Easier testing, since config is now passed
-	//Avoiding fetching the default patterns in tests (unless we want to maintain codacy directory with the configs)
 	if exists {
 		// Configuration exists, read from file
 		patterns, err = lizard.ReadConfig(configFile)
@@ -402,7 +395,7 @@ func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 		}
 	} else {
 		fmt.Println("No configuration file found for Lizard, using default patterns, run init with repository token to get a custom configuration")
-		patterns, err = tools.FetchDefaultEnabledPatterns(Lizard)
+		patterns, err = tools.FetchDefaultEnabledPatterns(configsetup.Lizard)
 		if err != nil {
 			return fmt.Errorf("failed to fetch default patterns: %v", err)
 		}

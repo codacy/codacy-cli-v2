@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"codacy/cli-v2/config"
-	cfg "codacy/cli-v2/config"
 	config_file "codacy/cli-v2/config-file"
 	"codacy/cli-v2/utils/logger"
 	"fmt"
@@ -41,7 +40,7 @@ var installCmd = &cobra.Command{
 		}
 
 		// Load config file
-		if err := config_file.ReadConfigFile(cfg.Config.ProjectConfigFile()); err != nil {
+		if err := config_file.ReadConfigFile(config.Config.ProjectConfigFile()); err != nil {
 			logger.Warn("Configuration file not found", logrus.Fields{
 				"error": err.Error(),
 			})
@@ -54,15 +53,15 @@ var installCmd = &cobra.Command{
 
 		// Check if anything needs to be installed
 		needsInstallation := false
-		for name, runtime := range cfg.Config.Runtimes() {
-			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
+		for name, runtime := range config.Config.Runtimes() {
+			if !config.Config.IsRuntimeInstalled(name, runtime) {
 				needsInstallation = true
 				break
 			}
 		}
 		if !needsInstallation {
-			for name, tool := range cfg.Config.Tools() {
-				if !cfg.Config.IsToolInstalled(name, tool) {
+			for name, tool := range config.Config.Tools() {
+				if !config.Config.IsToolInstalled(name, tool) {
 					needsInstallation = true
 					break
 				}
@@ -83,13 +82,13 @@ var installCmd = &cobra.Command{
 
 		// Calculate total items to install
 		totalItems := 0
-		for name, runtime := range cfg.Config.Runtimes() {
-			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
+		for name, runtime := range config.Config.Runtimes() {
+			if !config.Config.IsRuntimeInstalled(name, runtime) {
 				totalItems++
 			}
 		}
-		for name, tool := range cfg.Config.Tools() {
-			if !cfg.Config.IsToolInstalled(name, tool) {
+		for name, tool := range config.Config.Tools() {
+			if !config.Config.IsToolInstalled(name, tool) {
 				totalItems++
 			}
 		}
@@ -103,8 +102,8 @@ var installCmd = &cobra.Command{
 
 		// Print list of items to install
 		fmt.Println("📦 Items to install:")
-		for name, runtime := range cfg.Config.Runtimes() {
-			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
+		for name, runtime := range config.Config.Runtimes() {
+			if !config.Config.IsRuntimeInstalled(name, runtime) {
 				logger.Info("Runtime scheduled for installation", logrus.Fields{
 					"runtime": name,
 					"version": runtime.Version,
@@ -112,8 +111,8 @@ var installCmd = &cobra.Command{
 				fmt.Printf("  • Runtime: %s v%s\n", name, runtime.Version)
 			}
 		}
-		for name, tool := range cfg.Config.Tools() {
-			if !cfg.Config.IsToolInstalled(name, tool) {
+		for name, tool := range config.Config.Tools() {
+			if !config.Config.IsToolInstalled(name, tool) {
 				logger.Info("Tool scheduled for installation", logrus.Fields{
 					"tool":    name,
 					"version": tool.Version,
@@ -152,14 +151,14 @@ var installCmd = &cobra.Command{
 		log.SetOutput(io.Discard)
 
 		// Install runtimes first
-		for name, runtime := range cfg.Config.Runtimes() {
-			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
+		for name, runtime := range config.Config.Runtimes() {
+			if !config.Config.IsRuntimeInstalled(name, runtime) {
 				progressBar.Describe(fmt.Sprintf("Installing runtime: %s v%s...", name, runtime.Version))
 				logger.Info("Installing runtime", logrus.Fields{
 					"runtime": name,
 					"version": runtime.Version,
 				})
-				err := cfg.InstallRuntime(name, runtime)
+				err := config.InstallRuntime(name, runtime)
 				if err != nil {
 					logger.Error("Failed to install runtime", logrus.Fields{
 						"runtime": name,
@@ -180,14 +179,14 @@ var installCmd = &cobra.Command{
 		}
 
 		// Install tools
-		for name, tool := range cfg.Config.Tools() {
-			if !cfg.Config.IsToolInstalled(name, tool) {
+		for name, tool := range config.Config.Tools() {
+			if !config.Config.IsToolInstalled(name, tool) {
 				progressBar.Describe(fmt.Sprintf("Installing tool: %s v%s...", name, tool.Version))
 				logger.Info("Installing tool", logrus.Fields{
 					"tool":    name,
 					"version": tool.Version,
 				})
-				err := cfg.InstallTool(name, tool, registry)
+				err := config.InstallTool(name, tool, registry)
 				if err != nil {
 					logger.Error("Failed to install tool", logrus.Fields{
 						"tool":    name,
@@ -215,16 +214,16 @@ var installCmd = &cobra.Command{
 		// Print completion status with warnings for failed installations
 		fmt.Println()
 		var hasFailures bool
-		for name, runtime := range cfg.Config.Runtimes() {
-			if !cfg.Config.IsRuntimeInstalled(name, runtime) {
+		for name, runtime := range config.Config.Runtimes() {
+			if !config.Config.IsRuntimeInstalled(name, runtime) {
 				color.Yellow("  ⚠️  Runtime: %s v%s (installation failed)", name, runtime.Version)
 				hasFailures = true
 			} else {
 				green.Printf("  ✓ Runtime: %s v%s\n", name, runtime.Version)
 			}
 		}
-		for name, tool := range cfg.Config.Tools() {
-			if !cfg.Config.IsToolInstalled(name, tool) {
+		for name, tool := range config.Config.Tools() {
+			if !config.Config.IsToolInstalled(name, tool) {
 				color.Yellow("  ⚠️  Tool: %s v%s (installation failed)", name, tool.Version)
 				hasFailures = true
 			} else {
