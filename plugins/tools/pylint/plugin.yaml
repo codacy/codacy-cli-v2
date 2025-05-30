@@ -1,5 +1,6 @@
 name: pylint
-description: Python linter
+description: Pylint is a Python static code analysis tool which looks for programming errors, helps enforcing a coding standard, sniffs for code smells and offers simple refactoring suggestions.
+default_version: 3.3.6
 runtime: python
 runtime_binaries:
   package_manager: python3

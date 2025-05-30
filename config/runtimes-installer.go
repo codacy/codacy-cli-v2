@@ -47,9 +47,8 @@ func InstallRuntimes(config *ConfigType) error {
 
 // InstallRuntime installs a specific runtime
 func InstallRuntime(name string, runtimeInfo *plugins.RuntimeInfo) error {
-
-	// Check if the runtime is already installed
-	if isRuntimeInstalled(runtimeInfo) {
+	// Skip if already installed
+	if Config.IsRuntimeInstalled(name, runtimeInfo) {
 		logger.Info("Runtime already installed", logrus.Fields{
 			"runtime": name,
 			"version": runtimeInfo.Version,
@@ -65,7 +64,7 @@ func InstallRuntime(name string, runtimeInfo *plugins.RuntimeInfo) error {
 	}
 
 	// Verify that the runtime binaries are available
-	if !isRuntimeInstalled(runtimeInfo) {
+	if !Config.IsRuntimeInstalled(name, runtimeInfo) {
 		logger.Error("Runtime binaries not found after extraction", logrus.Fields{
 			"runtime": name,
 			"version": runtimeInfo.Version,
@@ -74,37 +73,6 @@ func InstallRuntime(name string, runtimeInfo *plugins.RuntimeInfo) error {
 	}
 
 	return nil
-}
-
-// isRuntimeInstalled checks if a runtime is already installed by checking for the binary
-func isRuntimeInstalled(runtimeInfo *plugins.RuntimeInfo) bool {
-	// If there are no binaries, check the install directory
-	if len(runtimeInfo.Binaries) == 0 {
-		_, err := os.Stat(runtimeInfo.InstallDir)
-		if err != nil {
-			logger.Debug("Runtime install directory not found", logrus.Fields{
-				"directory": runtimeInfo.InstallDir,
-				"error":     err,
-			})
-			return false
-		}
-		return true
-	}
-
-	// Check if at least one binary exists
-	for binaryName, binaryPath := range runtimeInfo.Binaries {
-		_, err := os.Stat(binaryPath)
-		if err != nil {
-			logger.Debug("Runtime binary not found", logrus.Fields{
-				"binary": binaryName,
-				"path":   binaryPath,
-				"error":  err,
-			})
-			return false
-		}
-	}
-
-	return true
 }
 
 // downloadAndExtractRuntime downloads and extracts a runtime
