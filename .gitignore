@@ -35,3 +35,7 @@ codacy-cli
 
 #Macos
 .DS_Store
+
+
+#Ignore vscode AI rules
+.github/copilot-instructions.md
