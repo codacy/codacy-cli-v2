@@ -2,11 +2,8 @@ package plugins
 
 import (
 	"bytes"
-	"codacy/cli-v2/utils/logger"
 	"strings"
 	"text/template"
-
-	"github.com/sirupsen/logrus"
 )
 
 // ExtensionConfig defines the file extension based on OS
@@ -145,7 +142,6 @@ func GetDownloadURL(urlTemplate string, fileName string, version string, mappedA
 	}
 
 	url := buf.String()
-	logger.Info("Generated download URL:", logrus.Fields{"url": url})
 	return url
 }
 
