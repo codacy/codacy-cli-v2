@@ -8,7 +8,14 @@ import (
 
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/utils"
+
+	"gopkg.in/yaml.v3" // Added import for YAML parsing
 )
+
+// CliConfigYaml defines the structure for parsing .codacy/cli-config.yaml
+type CliConfigYaml struct {
+	Mode string `yaml:"mode"`
+}
 
 type ConfigType struct {
 	repositoryDirectory string
@@ -231,3 +238,35 @@ func (c *ConfigType) IsToolInstalled(name string, tool *plugins.ToolInfo) bool {
 
 // Global singleton config-file
 var Config = ConfigType{}
+
+// GetCliMode reads and parses the .codacy/cli-config.yaml file to determine the CLI's operational mode.
+// It returns "local" by default and an error if the file doesn't exist or an error occurs during parsing.
+func (c *ConfigType) GetCliMode() (string, error) {
+	cliConfigFilePath := c.CliConfigFile()
+	currentCliMode := "local" // Default to local
+
+	content, readErr := os.ReadFile(cliConfigFilePath)
+	if readErr != nil {
+		if os.IsNotExist(readErr) {
+			// File does not exist. Return default mode and the error so the caller can warn.
+			return currentCliMode, readErr
+		}
+		// Some other error occurred during reading the file.
+		return currentCliMode, fmt.Errorf("failed to read %s: %w", cliConfigFilePath, readErr)
+	}
+
+	// If ReadFile was successful, the file exists. Now parse it.
+	var parsedCliConfig CliConfigYaml
+	if yamlErr := yaml.Unmarshal(content, &parsedCliConfig); yamlErr != nil {
+		return currentCliMode, fmt.Errorf("failed to parse %s: %w", cliConfigFilePath, yamlErr)
+	}
+
+	if parsedCliConfig.Mode == "remote" || parsedCliConfig.Mode == "local" {
+		currentCliMode = parsedCliConfig.Mode
+	} else {
+		// Invalid mode value in the config file.
+		return "local", fmt.Errorf("invalid mode value \"%s\" in %s", parsedCliConfig.Mode, cliConfigFilePath)
+	}
+
+	return currentCliMode, nil
+}
