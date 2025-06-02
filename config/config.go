@@ -88,7 +88,34 @@ func (c *ConfigType) Tools() map[string]*plugins.ToolInfo {
 }
 
 func (c *ConfigType) AddTools(configs []plugins.ToolConfig) error {
-	// Process the tool configurations using the plugins.ProcessTools function
+	// Get the plugin manager to access tool configurations
+	pluginManager := plugins.GetPluginManager()
+
+	// Ensure all required runtimes are present before processing tools
+	for _, toolConfig := range configs {
+		// Get the tool's plugin configuration to access runtime info
+		pluginConfig, err := pluginManager.GetToolConfig(toolConfig.Name)
+		if err != nil {
+			return fmt.Errorf("failed to get plugin config for tool %s: %w", toolConfig.Name, err)
+		}
+
+		if pluginConfig.Runtime != "" {
+			runtimeInfo := c.runtimes[pluginConfig.Runtime]
+			if runtimeInfo == nil {
+				// Try to install the missing runtime
+				if err := InstallRuntimeStrict(pluginConfig.Runtime, nil); err != nil {
+					return fmt.Errorf("failed to install required runtime %s: %w", pluginConfig.Runtime, err)
+				}
+				// Fetch the runtimeInfo again
+				runtimeInfo = c.runtimes[pluginConfig.Runtime]
+				if runtimeInfo == nil {
+					return fmt.Errorf("runtime %s still missing after install", pluginConfig.Runtime)
+				}
+			}
+		}
+	}
+
+	// Now safe to process tools
 	toolInfoMap, err := plugins.ProcessTools(configs, c.toolsDirectory, c.runtimes)
 	if err != nil {
 		return err

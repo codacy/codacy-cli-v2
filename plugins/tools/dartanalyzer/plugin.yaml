@@ -1,7 +1,7 @@
 name: dartanalyzer
 description: The Dart analyzer enforces the Dart style guide and other conventions. It's a static analysis tool that looks for potential errors and enforces style guidelines.
 default_version: 3.7.2
-runtime: "{{.Runtime}}"
+runtime: "dart"
 runtime_binaries:
   package_manager: dart
   execution: dart

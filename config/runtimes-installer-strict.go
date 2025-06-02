@@ -14,8 +14,37 @@ import (
 
 // InstallRuntimeStrict installs a runtime with strict path handling and validation
 func InstallRuntimeStrict(name string, runtimeInfo *plugins.RuntimeInfo) error {
+	logger.Info("InstallRuntimeStrict called", logrus.Fields{"runtime": name, "runtimeInfo_nil": runtimeInfo == nil})
+
+	// If runtimeInfo is nil, try to add and process the runtime
+	if runtimeInfo == nil {
+		logger.Warn("RuntimeInfo is nil, attempting to add and process runtime", logrus.Fields{"runtime": name})
+		defaultVersions := plugins.GetRuntimeVersions()
+		logger.Debug("Default versions map", logrus.Fields{"defaultVersions": defaultVersions})
+		version, ok := defaultVersions[name]
+		if !ok {
+			logger.Error("No default version found for runtime", logrus.Fields{"runtime": name})
+			return fmt.Errorf("no default version found for runtime %s", name)
+		}
+		logger.Info("Adding runtime to config", logrus.Fields{"runtime": name, "version": version})
+		if err := Config.AddRuntimes([]plugins.RuntimeConfig{{Name: name, Version: version}}); err != nil {
+			logger.Error("Failed to add runtime to config", logrus.Fields{"runtime": name, "error": err.Error()})
+			return fmt.Errorf("failed to add runtime %s: %w", name, err)
+		}
+		logger.Info("Fetching runtimeInfo from config after add", logrus.Fields{"runtime": name})
+		runtimeInfo = Config.Runtimes()[name]
+		if runtimeInfo == nil {
+			logger.Error("Failed to process runtime after adding (runtimeInfo is still nil)", logrus.Fields{"runtime": name})
+			return fmt.Errorf("failed to process runtime %s after adding", name)
+		}
+		logger.Info("runtimeInfo successfully created", logrus.Fields{"runtime": name, "version": runtimeInfo.Version, "installDir": runtimeInfo.InstallDir, "downloadURL": runtimeInfo.DownloadURL, "binaries": runtimeInfo.Binaries})
+	}
+
+	logger.Info("Proceeding with runtime installation", logrus.Fields{"runtime": name, "version": runtimeInfo.Version})
+
 	// Create target directory if it doesn't exist
 	if err := os.MkdirAll(runtimeInfo.InstallDir, utils.DefaultDirPerms); err != nil {
+		logger.Error("Failed to create installation directory", logrus.Fields{"runtime": name, "dir": runtimeInfo.InstallDir, "error": err.Error()})
 		return fmt.Errorf("failed to create installation directory: %w", err)
 	}
 
@@ -28,6 +57,7 @@ func InstallRuntimeStrict(name string, runtimeInfo *plugins.RuntimeInfo) error {
 
 	archivePath, err := utils.DownloadFile(runtimeInfo.DownloadURL, Config.RuntimesDirectory())
 	if err != nil {
+		logger.Error("Failed to download runtime archive", logrus.Fields{"runtime": name, "url": runtimeInfo.DownloadURL, "error": err.Error()})
 		return fmt.Errorf("failed to download runtime archive: %w", err)
 	}
 
@@ -40,6 +70,7 @@ func InstallRuntimeStrict(name string, runtimeInfo *plugins.RuntimeInfo) error {
 
 	archive, err := os.Open(archivePath)
 	if err != nil {
+		logger.Error("Failed to open archive", logrus.Fields{"runtime": name, "archive": archivePath, "error": err.Error()})
 		return fmt.Errorf("failed to open archive: %w", err)
 	}
 	defer archive.Close()
@@ -51,16 +82,19 @@ func InstallRuntimeStrict(name string, runtimeInfo *plugins.RuntimeInfo) error {
 		err = utils.ExtractTarGz(archive, Config.RuntimesDirectory())
 	}
 	if err != nil {
+		logger.Error("Failed to extract runtime archive", logrus.Fields{"runtime": name, "archive": archivePath, "error": err.Error()})
 		return fmt.Errorf("failed to extract runtime archive: %w", err)
 	}
 
 	// Set executable permissions on binaries
 	logger.Info("Setting binary permissions", logrus.Fields{
-		"runtime": name,
-		"version": runtimeInfo.Version,
+		"runtime":  name,
+		"version":  runtimeInfo.Version,
+		"binaries": runtimeInfo.Binaries,
 	})
 
 	for binaryName, binaryPath := range runtimeInfo.Binaries {
+		logger.Debug("Checking binary existence", logrus.Fields{"runtime": name, "binary": binaryName, "path": binaryPath})
 		// Skip if binary doesn't exist yet
 		if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
 			logger.Debug("Binary not found, skipping", logrus.Fields{
@@ -72,12 +106,14 @@ func InstallRuntimeStrict(name string, runtimeInfo *plugins.RuntimeInfo) error {
 
 		// Set executable permissions
 		if err := os.Chmod(binaryPath, 0755); err != nil {
+			logger.Error("Failed to set permissions for binary", logrus.Fields{"runtime": name, "binary": binaryName, "path": binaryPath, "error": err.Error()})
 			return fmt.Errorf("failed to set permissions for binary %s: %w", binaryName, err)
 		}
 	}
 
 	// Verify installation
 	if !Config.IsRuntimeInstalled(name, runtimeInfo) {
+		logger.Error("Runtime installed but binaries are not available", logrus.Fields{"runtime": name, "version": runtimeInfo.Version})
 		return fmt.Errorf("runtime %s was installed but binaries are not available", name)
 	}
 
@@ -88,6 +124,7 @@ func InstallRuntimeStrict(name string, runtimeInfo *plugins.RuntimeInfo) error {
 
 	// Update codacy.yaml with the new runtime
 	if err := updateRuntimeInCodacyYaml(name, runtimeInfo.Version); err != nil {
+		logger.Error("Failed to update codacy.yaml with runtime", logrus.Fields{"runtime": name, "error": err.Error()})
 		return fmt.Errorf("failed to update codacy.yaml with runtime %s: %w", name, err)
 	}
 
