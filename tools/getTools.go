@@ -3,7 +3,11 @@ package tools
 import (
 	codacyClient "codacy/cli-v2/codacy-client"
 	"codacy/cli-v2/domain"
+	"codacy/cli-v2/utils/logger"
 	"fmt"
+	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 func enrichToolsWithVersion(tools []domain.Tool) ([]domain.Tool, error) {
@@ -34,16 +38,33 @@ func GetRepositoryTools(initFlags domain.InitFlags) ([]domain.Tool, error) {
 		return nil, err
 	}
 
-	enabledTools := make([]domain.Tool, 0)
-	seen := map[string]bool{}
+	// Log supported tool UUIDs and names
+	supportedTools := make([]map[string]string, 0, len(domain.SupportedToolsMetadata))
+	for uuid, meta := range domain.SupportedToolsMetadata {
+		supportedTools = append(supportedTools, map[string]string{
+			"uuid": uuid,
+			"name": meta.Name,
+		})
+	}
+	logger.Info("Supported tools:", logrus.Fields{
+		"supported_tools": supportedTools,
+	})
+
+	var enabledTools []domain.Tool
+	var unsupportedTools []string
 
 	for _, tool := range tools {
 		if tool.Settings.Enabled {
-			if _, ok := domain.SupportedToolsMetadata[tool.Uuid]; ok && !seen[tool.Uuid] {
+			if _, supported := domain.SupportedToolsMetadata[tool.Uuid]; supported {
 				enabledTools = append(enabledTools, tool)
-				seen[tool.Uuid] = true
+			} else {
+				unsupportedTools = append(unsupportedTools, tool.Name)
 			}
 		}
+	}
+
+	if len(unsupportedTools) > 0 {
+		fmt.Printf("Warning: Some tools are not supported: %s\n", strings.Join(unsupportedTools, ", "))
 	}
 
 	return enrichToolsWithVersion(enabledTools)

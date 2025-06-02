@@ -34,6 +34,7 @@ type ToolInfo struct {
 	Priority int // lower means newer
 }
 
+// SupportedToolsMetadata group same family tools by name
 var SupportedToolsMetadata = map[string]ToolInfo{
 	ESLint9:      {Name: "eslint", Priority: 0},
 	ESLint:       {Name: "eslint", Priority: 1},
