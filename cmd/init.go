@@ -224,8 +224,15 @@ func configFileTemplate(tools []domain.Tool) string {
 			sb.WriteString(fmt.Sprintf("    - %s@%s\n", runtime, runtimeVersions[runtime]))
 		}
 	} else {
-		// If no tools were specified (local mode), include all tools in sorted order
-		for toolName := range defaultVersions {
+		// In local mode with no tools specified, include only the necessary runtimes
+		supportedTools, err := plugins.GetSupportedTools()
+		if err != nil {
+			log.Printf("Warning: failed to get supported tools: %v", err)
+			return sb.String()
+		}
+
+		// Get runtimes needed by supported tools
+		for toolName := range supportedTools {
 			if runtime, ok := runtimeDependencies[toolName]; ok {
 				if toolName == "dartanalyzer" {
 					neededRuntimes["dart"] = true
@@ -540,8 +547,6 @@ func buildDefaultConfigurationFiles(toolsConfigDir string) error {
 			if err := createPMDConfigFile(patternsConfig, toolsConfigDir); err != nil {
 				return fmt.Errorf("failed to create default PMD configuration: %w", err)
 			}
-		case domain.PMD7, domain.ESLint9:
-			continue
 		case domain.PyLint:
 			if err := createPylintConfigFile(patternsConfig, toolsConfigDir); err != nil {
 				return fmt.Errorf("failed to create default Pylint configuration: %w", err)
@@ -558,6 +563,8 @@ func buildDefaultConfigurationFiles(toolsConfigDir string) error {
 			if err := createLizardConfigFile(toolsConfigDir, patternsConfig); err != nil {
 				return fmt.Errorf("failed to create default Lizard configuration: %w", err)
 			}
+		case domain.PMD7, domain.ESLint9:
+			continue
 		}
 	}
 	return nil
