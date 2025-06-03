@@ -11,7 +11,6 @@ import (
 	"codacy/cli-v2/utils"
 
 	"github.com/spf13/cobra"
-	// Added import for YAML parsing
 )
 
 // configResetInitFlags holds the flags for the config reset command.
@@ -20,11 +19,6 @@ var configResetInitFlags domain.InitFlags
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manage Codacy configuration",
-}
-
-// cliConfigYaml defines the structure for parsing .codacy/cli-config.yaml
-type cliConfigYaml struct {
-	Mode string `yaml:"mode"`
 }
 
 var configResetCmd = &cobra.Command{
