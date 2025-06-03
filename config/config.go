@@ -69,6 +69,72 @@ func (c *ConfigType) Runtimes() map[string]*plugins.RuntimeInfo {
 	return c.runtimes
 }
 
+func (c *ConfigType) addRuntimeToCodacyYaml(name string, version string) error {
+	codacyPath := filepath.Join(c.localCodacyDirectory, "codacy.yaml")
+
+	// Read existing content
+	content, err := os.ReadFile(codacyPath)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("error reading codacy.yaml: %w", err)
+	}
+
+	// Parse existing YAML or create new structure
+	var config map[string]interface{}
+	if len(content) > 0 {
+		if err := yaml.Unmarshal(content, &config); err != nil {
+			return fmt.Errorf("error parsing codacy.yaml: %w", err)
+		}
+	} else {
+		config = make(map[string]interface{})
+	}
+
+	// Get or create runtimes list
+	runtimes, ok := config["runtimes"].([]interface{})
+	if !ok {
+		runtimes = make([]interface{}, 0)
+	}
+
+	// Create runtime entry
+	runtimeEntry := fmt.Sprintf("%s@%s", name, version)
+
+	// Check if runtime already exists and update it
+	found := false
+	for i, r := range runtimes {
+		if runtime, ok := r.(string); ok {
+			if strings.Split(runtime, "@")[0] == name {
+				runtimes[i] = runtimeEntry
+				found = true
+				break
+			}
+		}
+	}
+
+	// Add new runtime if not found
+	if !found {
+		runtimes = append(runtimes, runtimeEntry)
+	}
+
+	// Update config
+	config["runtimes"] = runtimes
+
+	// Write back to .codacy/codacy.yaml
+	yamlData, err := yaml.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("error marshaling codacy.yaml: %w", err)
+	}
+
+	// Ensure directory exists
+	if err := os.MkdirAll(filepath.Dir(codacyPath), utils.DefaultDirPerms); err != nil {
+		return fmt.Errorf("error creating .codacy directory: %w", err)
+	}
+
+	if err := os.WriteFile(codacyPath, yamlData, utils.DefaultFilePerms); err != nil {
+		return fmt.Errorf("error writing codacy.yaml: %w", err)
+	}
+
+	return nil
+}
+
 func (c *ConfigType) AddRuntimes(configs []plugins.RuntimeConfig) error {
 	// Process the runtime configurations using the plugins.ProcessRuntimes function
 	runtimeInfoMap, err := plugins.ProcessRuntimes(configs, c.runtimesDirectory)
@@ -81,57 +147,9 @@ func (c *ConfigType) AddRuntimes(configs []plugins.RuntimeConfig) error {
 		c.runtimes[name] = info
 
 		// Update codacy.yaml with the new runtime
-		if err := addRuntimeToCodacyYaml(name, info.Version); err != nil {
+		if err := c.addRuntimeToCodacyYaml(name, info.Version); err != nil {
 			return fmt.Errorf("failed to update codacy.yaml with runtime %s: %w", name, err)
 		}
-	}
-
-	return nil
-}
-
-// addRuntimeToCodacyYaml adds or updates a runtime entry in .codacy/codacy.yaml as a YAML list
-func addRuntimeToCodacyYaml(name string, version string) error {
-	codacyPath := ".codacy/codacy.yaml"
-
-	type CodacyConfig struct {
-		Runtimes []string `yaml:"runtimes"`
-		Tools    []string `yaml:"tools"`
-	}
-
-	// Read existing config
-	var config CodacyConfig
-	if data, err := os.ReadFile(codacyPath); err == nil {
-		if err := yaml.Unmarshal(data, &config); err != nil {
-			return fmt.Errorf("failed to parse %s: %w", codacyPath, err)
-		}
-	}
-
-	// Prepare the new runtime string
-	runtimeEntry := name + "@" + version
-	found := false
-	for i, entry := range config.Runtimes {
-		if strings.HasPrefix(entry, name+"@") {
-			config.Runtimes[i] = runtimeEntry
-			found = true
-			break
-		}
-	}
-	if !found {
-		config.Runtimes = append(config.Runtimes, runtimeEntry)
-	}
-
-	// Create .codacy directory if it doesn't exist
-	if err := os.MkdirAll(".codacy", 0755); err != nil {
-		return fmt.Errorf("failed to create .codacy directory: %w", err)
-	}
-
-	// Write back to .codacy/codacy.yaml
-	yamlData, err := yaml.Marshal(config)
-	if err != nil {
-		return fmt.Errorf("failed to marshal config to YAML: %w", err)
-	}
-	if err := os.WriteFile(codacyPath, yamlData, 0644); err != nil {
-		return fmt.Errorf("failed to write config to %s: %w", codacyPath, err)
 	}
 
 	return nil
