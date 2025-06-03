@@ -68,30 +68,6 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error
 		return nil
 	}
 
-	// For runtime-based tools, ensure the runtime is installed first
-	if toolInfo.Runtime != "" && toolInfo.DownloadURL == "" {
-		// Check if runtime exists in config
-		if _, exists := Config.Runtimes()[toolInfo.Runtime]; !exists {
-			// Get runtime version from plugin manager
-			runtimeVersions := plugins.GetRuntimeVersions()
-			runtimeVersion := runtimeVersions[toolInfo.Runtime]
-
-			// Add runtime to config
-			if err := Config.AddRuntimes([]plugins.RuntimeConfig{{
-				Name:    toolInfo.Runtime,
-				Version: runtimeVersion,
-			}}); err != nil {
-				return fmt.Errorf("failed to add runtime %s to config: %w", toolInfo.Runtime, err)
-			}
-
-			// Install the runtime using the strict installer
-			runtimeInfo := Config.Runtimes()[toolInfo.Runtime]
-			if err := InstallRuntimeStrict(toolInfo.Runtime, runtimeInfo); err != nil {
-				return fmt.Errorf("failed to install runtime %s: %w", toolInfo.Runtime, err)
-			}
-		}
-	}
-
 	// Make sure the installation directory exists
 	err := os.MkdirAll(toolInfo.InstallDir, 0755)
 	if err != nil {

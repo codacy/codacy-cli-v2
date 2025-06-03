@@ -154,6 +154,21 @@ func (c *ConfigType) AddTools(configs []plugins.ToolConfig) error {
 		}
 
 		if pluginConfig.Runtime != "" {
+			// Special handling for dartanalyzer - check for existing dart or flutter runtimes
+			if toolConfig.Name == "dartanalyzer" {
+				// Check if either dart or flutter runtime is already available
+				if runtimeInfo := c.runtimes["flutter"]; runtimeInfo != nil {
+					// Flutter runtime exists, use it
+					continue
+				}
+				if runtimeInfo := c.runtimes["dart"]; runtimeInfo != nil {
+					// Dart runtime exists, use it
+					continue
+				}
+				// Neither runtime exists, proceed with installing dart runtime
+				pluginConfig.Runtime = "dart"
+			}
+
 			runtimeInfo := c.runtimes[pluginConfig.Runtime]
 			if runtimeInfo == nil {
 				// Get the default version for the runtime
@@ -164,6 +179,7 @@ func (c *ConfigType) AddTools(configs []plugins.ToolConfig) error {
 				}
 
 				// Add the runtime to the config
+				fmt.Println("Adding missing runtime to codacy.yaml", pluginConfig.Runtime, version)
 				if err := c.AddRuntimes([]plugins.RuntimeConfig{{Name: pluginConfig.Runtime, Version: version}}); err != nil {
 					return fmt.Errorf("failed to add runtime %s: %w", pluginConfig.Runtime, err)
 				}
