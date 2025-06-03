@@ -24,7 +24,7 @@ func TestConfigFileTemplate(t *testing.T) {
 			expected: []string{
 				"node@22.2.0",
 				"python@3.11.11",
-				"eslint@9.3.0",
+				"eslint@8.57.0",
 				"trivy@0.59.1",
 				"pylint@3.3.6",
 				"pmd@6.55.0",
@@ -35,7 +35,7 @@ func TestConfigFileTemplate(t *testing.T) {
 			name: "only eslint enabled",
 			tools: []domain.Tool{
 				{
-					Uuid:    ESLint,
+					Uuid:    domain.ESLint,
 					Name:    "eslint",
 					Version: "9.4.0",
 				},
@@ -55,7 +55,7 @@ func TestConfigFileTemplate(t *testing.T) {
 			name: "only pylint enabled",
 			tools: []domain.Tool{
 				{
-					Uuid:    PyLint,
+					Uuid:    domain.PyLint,
 					Name:    "pylint",
 					Version: "3.4.0",
 				},
@@ -75,12 +75,12 @@ func TestConfigFileTemplate(t *testing.T) {
 			name: "eslint and trivy enabled",
 			tools: []domain.Tool{
 				{
-					Uuid:    ESLint,
+					Uuid:    domain.ESLint,
 					Name:    "eslint",
 					Version: "9.4.0",
 				},
 				{
-					Uuid:    Trivy,
+					Uuid:    domain.Trivy,
 					Name:    "trivy",
 					Version: "0.60.0",
 				},
@@ -100,22 +100,22 @@ func TestConfigFileTemplate(t *testing.T) {
 			name: "all tools enabled",
 			tools: []domain.Tool{
 				{
-					Uuid:    ESLint,
+					Uuid:    domain.ESLint,
 					Name:    "eslint",
 					Version: "9.4.0",
 				},
 				{
-					Uuid:    Trivy,
+					Uuid:    domain.Trivy,
 					Name:    "trivy",
 					Version: "0.60.0",
 				},
 				{
-					Uuid:    PyLint,
+					Uuid:    domain.PyLint,
 					Name:    "pylint",
 					Version: "3.4.0",
 				},
 				{
-					Uuid:    PMD,
+					Uuid:    domain.PMD,
 					Name:    "pmd",
 					Version: "6.56.0",
 				},

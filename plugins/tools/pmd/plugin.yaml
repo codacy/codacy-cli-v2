@@ -5,8 +5,8 @@ runtime: java
 runtime_binaries:
   execution: java
 download:
-  url_template: "https://github.com/pmd/pmd/releases/download/pmd_releases%2F{{.Version}}/pmd-bin-{{.Version}}.zip"
-  file_name_template: pmd-bin-{{.Version}}
+  url_template: "https://github.com/pmd/pmd/releases/download/pmd_releases%2F{{.Version}}/{{if ge .Version \"7.0.0\"}}pmd-dist-{{.Version}}-bin.zip{{else}}pmd-bin-{{.Version}}.zip{{end}}"
+  file_name_template: "{{if ge .Version \"7.0.0\"}}pmd-dist-{{.Version}}-bin{{else}}pmd-bin-{{.Version}}{{end}}"
   extension:
     default: .zip
 environment:
@@ -14,4 +14,4 @@ environment:
   PATH: "{{.RuntimeInstallDir}}/bin:{{.Path}}"
 binaries:
   - name: pmd
-    path: pmd-bin-{{.Version}}/bin/run.sh
+    path: "pmd-bin-{{.Version}}/bin/{{if ge .Version \"7.0.0\"}}pmd{{else}}run.sh{{end}}"
