@@ -69,55 +69,45 @@ func (c *ConfigType) Runtimes() map[string]*plugins.RuntimeInfo {
 	return c.runtimes
 }
 
-func (c *ConfigType) addRuntimeToCodacyYaml(name string, version string) error {
-	codacyPath := filepath.Join(c.localCodacyDirectory, "codacy.yaml")
-
-	// Read existing content
+// readOrCreateConfig reads the existing YAML config or creates a new one
+func (c *ConfigType) readOrCreateConfig(codacyPath string) (map[string]interface{}, error) {
 	content, err := os.ReadFile(codacyPath)
 	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("error reading codacy.yaml: %w", err)
+		return nil, fmt.Errorf("error reading codacy.yaml: %w", err)
 	}
 
-	// Parse existing YAML or create new structure
 	var config map[string]interface{}
 	if len(content) > 0 {
 		if err := yaml.Unmarshal(content, &config); err != nil {
-			return fmt.Errorf("error parsing codacy.yaml: %w", err)
+			return nil, fmt.Errorf("error parsing codacy.yaml: %w", err)
 		}
 	} else {
 		config = make(map[string]interface{})
 	}
 
-	// Get or create runtimes list
-	runtimes, ok := config["runtimes"].([]interface{})
-	if !ok {
-		runtimes = make([]interface{}, 0)
-	}
+	return config, nil
+}
 
-	// Create runtime entry
+// updateRuntimesList updates or adds a runtime entry in the runtimes list
+func updateRuntimesList(runtimes []interface{}, name, version string) []interface{} {
 	runtimeEntry := fmt.Sprintf("%s@%s", name, version)
 
 	// Check if runtime already exists and update it
-	found := false
 	for i, r := range runtimes {
 		if runtime, ok := r.(string); ok {
 			if strings.Split(runtime, "@")[0] == name {
 				runtimes[i] = runtimeEntry
-				found = true
-				break
+				return runtimes
 			}
 		}
 	}
 
 	// Add new runtime if not found
-	if !found {
-		runtimes = append(runtimes, runtimeEntry)
-	}
+	return append(runtimes, runtimeEntry)
+}
 
-	// Update config
-	config["runtimes"] = runtimes
-
-	// Write back to .codacy/codacy.yaml
+// writeConfig writes the config back to the YAML file
+func (c *ConfigType) writeConfig(codacyPath string, config map[string]interface{}) error {
 	yamlData, err := yaml.Marshal(config)
 	if err != nil {
 		return fmt.Errorf("error marshaling codacy.yaml: %w", err)
@@ -133,6 +123,28 @@ func (c *ConfigType) addRuntimeToCodacyYaml(name string, version string) error {
 	}
 
 	return nil
+}
+
+// addRuntimeToCodacyYaml adds or updates a runtime entry in codacy.yaml as a YAML list
+func (c *ConfigType) addRuntimeToCodacyYaml(name string, version string) error {
+	codacyPath := filepath.Join(c.localCodacyDirectory, "codacy.yaml")
+
+	config, err := c.readOrCreateConfig(codacyPath)
+	if err != nil {
+		return err
+	}
+
+	// Get or create runtimes list
+	runtimes, ok := config["runtimes"].([]interface{})
+	if !ok {
+		runtimes = make([]interface{}, 0)
+	}
+
+	// Update runtimes list
+	runtimes = updateRuntimesList(runtimes, name, version)
+	config["runtimes"] = runtimes
+
+	return c.writeConfig(codacyPath, config)
 }
 
 func (c *ConfigType) AddRuntimes(configs []plugins.RuntimeConfig) error {
