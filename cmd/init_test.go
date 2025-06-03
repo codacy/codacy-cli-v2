@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"codacy/cli-v2/cmd/configsetup"
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/utils"
@@ -134,7 +135,7 @@ func TestConfigFileTemplate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := configFileTemplate(tt.tools)
+			result := configsetup.ConfigFileTemplate(tt.tools)
 
 			// Check that expected strings are present
 			for _, exp := range tt.expected {
@@ -173,7 +174,7 @@ func TestCleanConfigDirectory(t *testing.T) {
 	assert.Equal(t, len(testFiles), len(files), "Expected %d files before cleaning", len(testFiles))
 
 	// Run the clean function
-	err = cleanConfigDirectory(tempDir)
+	err = configsetup.CleanConfigDirectory(tempDir)
 	assert.NoError(t, err, "cleanConfigDirectory should not return an error")
 
 	// Verify all files are gone
@@ -189,9 +190,9 @@ func TestInitCommand_NoToken(t *testing.T) {
 	defer os.Chdir(originalWD)
 
 	// Use the real plugins/tools/semgrep/rules.yaml file
-	rulesPath := filepath.Join("plugins", "tools", "semgrep", "rules.yaml")
+	rulesPath := filepath.Join("..", "plugins", "tools", "semgrep", "rules.yaml")
 	if _, err := os.Stat(rulesPath); os.IsNotExist(err) {
-		t.Skip("plugins/tools/semgrep/rules.yaml not found; skipping test")
+		t.Skipf("plugins/tools/semgrep/rules.yaml not found at %s; skipping test", rulesPath)
 	}
 
 	// Change to the temp directory to simulate a new project
@@ -199,10 +200,12 @@ func TestInitCommand_NoToken(t *testing.T) {
 	assert.NoError(t, err, "Failed to change working directory to tempDir")
 
 	// Simulate running init with no token
-	initFlags.ApiToken = ""
-	initFlags.Provider = ""
-	initFlags.Organization = ""
-	initFlags.Repository = ""
+	currentInitFlags := domain.InitFlags{
+		ApiToken:     "",
+		Provider:     "",
+		Organization: "",
+		Repository:   "",
+	}
 
 	// Call the Run logic from initCmd
 	if err := config.Config.CreateLocalCodacyDir(); err != nil {
@@ -210,37 +213,46 @@ func TestInitCommand_NoToken(t *testing.T) {
 	}
 
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
-	if err := os.MkdirAll(toolsConfigDir, utils.DefaultFilePerms); err != nil {
+	if err := os.MkdirAll(toolsConfigDir, utils.DefaultDirPerms); err != nil {
 		t.Fatalf("Failed to create tools-configs directory: %v", err)
 	}
 
-	cliLocalMode := len(initFlags.ApiToken) == 0
+	cliLocalMode := len(currentInitFlags.ApiToken) == 0
 	if cliLocalMode {
 		noTools := []domain.Tool{}
-		err := createConfigurationFiles(noTools, cliLocalMode)
-		assert.NoError(t, err, "createConfigurationFiles should not return an error")
-		if err := buildDefaultConfigurationFiles(toolsConfigDir); err != nil {
+		err := configsetup.CreateConfigurationFiles(noTools, cliLocalMode)
+		assert.NoError(t, err, "CreateConfigurationFiles should not return an error")
+		if err := configsetup.BuildDefaultConfigurationFiles(toolsConfigDir, currentInitFlags); err != nil {
 			t.Fatalf("Failed to build default configuration files: %v", err)
+		}
+		if err := configsetup.CreateLanguagesConfigFileLocal(toolsConfigDir); err != nil {
+			t.Fatalf("Failed to create languages config file: %v", err)
 		}
 	}
 
 	// Assert that the expected config files are created
 	codacyDir := config.Config.LocalCodacyDirectory()
 	expectedFiles := []string{
-		"tools-configs/eslint.config.mjs",
-		"tools-configs/trivy.yaml",
-		"tools-configs/ruleset.xml",
-		"tools-configs/pylint.rc",
-		"tools-configs/analysis_options.yaml",
-		"tools-configs/semgrep.yaml",
-		"tools-configs/lizard.yaml",
+		filepath.Join("tools-configs", "eslint.config.mjs"),
+		filepath.Join("tools-configs", "trivy.yaml"),
+		filepath.Join("tools-configs", "ruleset.xml"),
+		filepath.Join("tools-configs", "pylint.rc"),
+		filepath.Join("tools-configs", "analysis_options.yaml"),
+		filepath.Join("tools-configs", "semgrep.yaml"),
+		filepath.Join("tools-configs", "lizard.yaml"),
 		"codacy.yaml",
 		"cli-config.yaml",
+		filepath.Join("tools-configs", "languages-config.yaml"),
+		".gitignore",
 	}
 
 	for _, file := range expectedFiles {
 		filePath := filepath.Join(codacyDir, file)
+		if file == ".gitignore" {
+			filePath = filepath.Join(config.Config.LocalCodacyDirectory(), file)
+		}
+
 		_, err := os.Stat(filePath)
-		assert.NoError(t, err, "Expected config file %s to be created", file)
+		assert.NoError(t, err, "Expected config file %s to be created at %s", file, filePath)
 	}
 }
