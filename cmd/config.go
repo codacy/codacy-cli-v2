@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"codacy/cli-v2/cmd/cmdutils"
 	"codacy/cli-v2/cmd/configsetup"
 	codacyclient "codacy/cli-v2/codacy-client"
 	"codacy/cli-v2/config"
@@ -257,13 +258,36 @@ func detectLanguagesInPath(rootPath string, toolLangMap map[string]domain.ToolLa
 		return nil, fmt.Errorf("failed to detect file extensions in path %s: %w", rootPath, err)
 	}
 
-	// Map extensions to languages
+	// Map only found extensions to languages
 	for ext := range extCount {
 		if langs, ok := extToLang[ext]; ok {
+			// Log which extensions map to which languages for debugging
+			logger.Debug("Found files with extension", logrus.Fields{
+				"extension": ext,
+				"count":     extCount[ext],
+				"languages": langs,
+			})
 			for _, lang := range langs {
 				detectedLangs[lang] = struct{}{}
 			}
 		}
+	}
+
+	// Log the final set of detected languages with their corresponding extensions
+	if len(detectedLangs) > 0 {
+		langToExts := make(map[string][]string)
+		for ext, count := range extCount {
+			if langs, ok := extToLang[ext]; ok {
+				for _, lang := range langs {
+					langToExts[lang] = append(langToExts[lang], fmt.Sprintf("%s (%d files)", ext, count))
+				}
+			}
+		}
+
+		logger.Debug("Detected languages in path", logrus.Fields{
+			"languages_with_files": langToExts,
+			"path":                 discoverPath,
+		})
 	}
 
 	return detectedLangs, nil
@@ -622,14 +646,13 @@ func getRecognizableExtensions(extCount map[string]int, toolLangMap map[string]d
 }
 
 func init() {
-	// Define flags for the config reset command. These are the same flags used by the init command.
-	configResetCmd.Flags().StringVar(&configResetInitFlags.ApiToken, "api-token", "", "Optional Codacy API token. If defined, configurations will be fetched from Codacy.")
-	configResetCmd.Flags().StringVar(&configResetInitFlags.Provider, "provider", "", "Provider (e.g., gh, bb, gl) to fetch configurations from Codacy. Required when api-token is provided.")
-	configResetCmd.Flags().StringVar(&configResetInitFlags.Organization, "organization", "", "Remote organization name to fetch configurations from Codacy. Required when api-token is provided.")
-	configResetCmd.Flags().StringVar(&configResetInitFlags.Repository, "repository", "", "Remote repository name to fetch configurations from Codacy. Required when api-token is provided.")
+	// Add cloud-related flags to both commands
+	cmdutils.AddCloudFlags(configResetCmd, &configResetInitFlags)
+	cmdutils.AddCloudFlags(configDiscoverCmd, &configResetInitFlags)
 
-	// Add the reset subcommand to the config command
-	configCmd.AddCommand(configResetCmd)
-	// Add the config command to the root command
+	// Add subcommands to config command
+	configCmd.AddCommand(configResetCmd, configDiscoverCmd)
+
+	// Add config command to root
 	rootCmd.AddCommand(configCmd)
 }
