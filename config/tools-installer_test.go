@@ -20,8 +20,10 @@ func TestAddTools(t *testing.T) {
 
 	// Initialize config with test directories
 	Config = ConfigType{
-		toolsDirectory: tempDir,
-		tools:          make(map[string]*plugins.ToolInfo),
+		toolsDirectory:       tempDir,
+		tools:                make(map[string]*plugins.ToolInfo),
+		runtimes:             make(map[string]*plugins.RuntimeInfo),
+		localCodacyDirectory: tempDir, // Add this to ensure .codacy/codacy.yaml is created in the temp dir
 	}
 
 	// Create a list of tool configs for testing
@@ -94,8 +96,10 @@ func TestAddDownloadBasedTool(t *testing.T) {
 
 	// Initialize config with test directories
 	Config = ConfigType{
-		toolsDirectory: tempDir,
-		tools:          make(map[string]*plugins.ToolInfo),
+		toolsDirectory:       tempDir,
+		tools:                make(map[string]*plugins.ToolInfo),
+		runtimes:             make(map[string]*plugins.RuntimeInfo),
+		localCodacyDirectory: tempDir, // Add this to ensure .codacy/codacy.yaml is created in the temp dir
 	}
 
 	// Create a list of tool configs for testing

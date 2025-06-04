@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/utils"
@@ -68,6 +69,84 @@ func (c *ConfigType) Runtimes() map[string]*plugins.RuntimeInfo {
 	return c.runtimes
 }
 
+// loadConfigOrInitializeEmpty reads the existing YAML config or returns an empty configuration if the file doesn't exist
+func (c *ConfigType) loadConfigOrInitializeEmpty(codacyPath string) (map[string]interface{}, error) {
+	content, err := os.ReadFile(codacyPath)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("error reading codacy.yaml: %w", err)
+	}
+
+	var config map[string]interface{}
+	if len(content) > 0 {
+		if err := yaml.Unmarshal(content, &config); err != nil {
+			return nil, fmt.Errorf("error parsing codacy.yaml: %w", err)
+		}
+	} else {
+		config = make(map[string]interface{})
+	}
+
+	return config, nil
+}
+
+// updateRuntimesList updates or adds a runtime entry in the runtimes list
+func updateRuntimesList(runtimes []interface{}, name, version string) []interface{} {
+	runtimeEntry := fmt.Sprintf("%s@%s", name, version)
+
+	// Check if runtime already exists and update it
+	for i, r := range runtimes {
+		if runtime, ok := r.(string); ok {
+			if strings.Split(runtime, "@")[0] == name {
+				runtimes[i] = runtimeEntry
+				return runtimes
+			}
+		}
+	}
+
+	// Add new runtime if not found
+	return append(runtimes, runtimeEntry)
+}
+
+// writeConfig writes the config back to the YAML file
+func (c *ConfigType) writeConfig(codacyPath string, config map[string]interface{}) error {
+	yamlData, err := yaml.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("error marshaling codacy.yaml: %w", err)
+	}
+
+	// Ensure directory exists
+	if err := os.MkdirAll(filepath.Dir(codacyPath), utils.DefaultDirPerms); err != nil {
+		return fmt.Errorf("error creating .codacy directory: %w", err)
+	}
+
+	if err := os.WriteFile(codacyPath, yamlData, utils.DefaultFilePerms); err != nil {
+		return fmt.Errorf("error writing codacy.yaml: %w", err)
+	}
+
+	return nil
+}
+
+// addRuntimeToCodacyYaml adds or updates a runtime entry in codacy.yaml as a YAML list
+func (c *ConfigType) addRuntimeToCodacyYaml(name string, version string) error {
+	codacyPath := filepath.Join(c.localCodacyDirectory, "codacy.yaml")
+
+	config, err := c.loadConfigOrInitializeEmpty(codacyPath)
+	if err != nil {
+		return err
+	}
+
+	// Get or create runtimes list
+	runtimes, ok := config["runtimes"].([]interface{})
+	if !ok {
+		runtimes = make([]interface{}, 0)
+	}
+
+	// Update runtimes list
+	runtimes = updateRuntimesList(runtimes, name, version)
+	config["runtimes"] = runtimes
+
+	return c.writeConfig(codacyPath, config)
+}
+
 func (c *ConfigType) AddRuntimes(configs []plugins.RuntimeConfig) error {
 	// Process the runtime configurations using the plugins.ProcessRuntimes function
 	runtimeInfoMap, err := plugins.ProcessRuntimes(configs, c.runtimesDirectory)
@@ -78,6 +157,11 @@ func (c *ConfigType) AddRuntimes(configs []plugins.RuntimeConfig) error {
 	// Store the runtime information in the config
 	for name, info := range runtimeInfoMap {
 		c.runtimes[name] = info
+
+		// Update codacy.yaml with the new runtime
+		if err := c.addRuntimeToCodacyYaml(name, info.Version); err != nil {
+			return fmt.Errorf("failed to update codacy.yaml with runtime %s: %w", name, err)
+		}
 	}
 
 	return nil
@@ -88,7 +172,58 @@ func (c *ConfigType) Tools() map[string]*plugins.ToolInfo {
 }
 
 func (c *ConfigType) AddTools(configs []plugins.ToolConfig) error {
-	// Process the tool configurations using the plugins.ProcessTools function
+	// Get the plugin manager to access tool configurations
+	pluginManager := plugins.GetPluginManager()
+
+	// Ensure all required runtimes are present before processing tools
+	for _, toolConfig := range configs {
+		// Get the tool's plugin configuration to access runtime info
+		pluginConfig, err := pluginManager.GetToolConfig(toolConfig.Name)
+		if err != nil {
+			return fmt.Errorf("failed to get plugin config for tool %s: %w", toolConfig.Name, err)
+		}
+
+		if pluginConfig.Runtime != "" {
+			// Special handling for dartanalyzer - check for existing dart or flutter runtimes
+			if toolConfig.Name == "dartanalyzer" {
+				// Check if either dart or flutter runtime is already available
+				if runtimeInfo := c.runtimes["flutter"]; runtimeInfo != nil {
+					// Flutter runtime exists, use it
+					continue
+				}
+				if runtimeInfo := c.runtimes["dart"]; runtimeInfo != nil {
+					// Dart runtime exists, use it
+					continue
+				}
+				// Neither runtime exists, proceed with installing dart runtime
+				pluginConfig.Runtime = "dart"
+			}
+
+			runtimeInfo := c.runtimes[pluginConfig.Runtime]
+			if runtimeInfo == nil {
+				// Get the default version for the runtime
+				defaultVersions := plugins.GetRuntimeVersions()
+				version, ok := defaultVersions[pluginConfig.Runtime]
+				if !ok {
+					return fmt.Errorf("no default version found for runtime %s", pluginConfig.Runtime)
+				}
+
+				// Add the runtime to the config
+				fmt.Println("Adding missing runtime to codacy.yaml", pluginConfig.Runtime, version)
+				if err := c.AddRuntimes([]plugins.RuntimeConfig{{Name: pluginConfig.Runtime, Version: version}}); err != nil {
+					return fmt.Errorf("failed to add runtime %s: %w", pluginConfig.Runtime, err)
+				}
+
+				// Fetch the runtimeInfo again
+				runtimeInfo = c.runtimes[pluginConfig.Runtime]
+				if runtimeInfo == nil {
+					return fmt.Errorf("runtime %s still missing after adding to config", pluginConfig.Runtime)
+				}
+			}
+		}
+	}
+
+	// Now safe to process tools
 	toolInfoMap, err := plugins.ProcessTools(configs, c.toolsDirectory, c.runtimes)
 	if err != nil {
 		return err
