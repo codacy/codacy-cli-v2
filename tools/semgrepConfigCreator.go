@@ -4,7 +4,6 @@ import (
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/plugins/tools/semgrep/embedded"
 	"fmt"
-	"os"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -14,10 +13,6 @@ import (
 type semgrepRulesFile struct {
 	Rules []map[string]interface{} `yaml:"rules"`
 }
-
-// getExecutablePath is a variable that holds the function to get the executable path
-// This is used for testing purposes
-var getExecutablePath = os.Executable
 
 // FilterRulesFromFile extracts enabled rules from a rules.yaml file based on configuration
 func FilterRulesFromFile(rulesData []byte, config []domain.PatternConfiguration) ([]byte, error) {
