@@ -1,0 +1,20 @@
+name: gosec
+# Gosec - Golang Security Checker
+# Inspects source code for security problems by scanning the Go AST.
+description: Gosec inspects Go source code for security problems by scanning the Go AST.
+default_version: 2.15.0
+runtime: go
+runtime_binaries:
+  package_manager: go
+  execution: go
+installation:
+  command: "install github.com/securego/gosec/v2/cmd/gosec@v{{.Version}}"
+binaries:
+  - name: gosec
+    path: gosec
+formatters: []
+output_options:
+  file_flag: "-out"
+analysis_options:
+  autofix_flag: ""
+  default_path: "."
