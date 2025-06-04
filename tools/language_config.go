@@ -14,57 +14,52 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// defaultToolLanguageMap defines the default mapping of tools to their supported languages and file extensions
-var defaultToolLanguageMap = map[string]domain.ToolLanguageInfo{
-	"cppcheck": {
-		Name:       "cppcheck",
-		Languages:  []string{"C", "CPP"},
-		Extensions: []string{".c", ".cpp", ".cc", ".h", ".hpp"},
-	},
-	"pylint": {
-		Name:       "pylint",
-		Languages:  []string{"Python"},
-		Extensions: []string{".py"},
-	},
-	"eslint": {
-		Name:       "eslint",
-		Languages:  []string{"JavaScript", "TypeScript", "JSX", "TSX"},
-		Extensions: []string{".js", ".jsx", ".ts", ".tsx"},
-	},
-	"pmd": {
-		Name:       "pmd",
-		Languages:  []string{"Java", "JavaScript", "JSP", "Velocity", "XML", "Apex", "Scala", "Ruby", "VisualForce"},
-		Extensions: []string{".java", ".js", ".jsp", ".vm", ".xml", ".cls", ".trigger", ".scala", ".rb", ".page", ".component"},
-	},
-	"trivy": {
-		Name:       "trivy",
-		Languages:  []string{"Multiple"},
-		Extensions: []string{},
-	},
-	"dartanalyzer": {
-		Name:       "dartanalyzer",
-		Languages:  []string{"Dart"},
-		Extensions: []string{".dart"},
-	},
-	"lizard": {
-		Name:       "lizard",
-		Languages:  []string{"C", "CPP", "Java", "C#", "JavaScript", "TypeScript", "VueJS", "Objective-C", "Swift", "Python", "Ruby", "TTCN-3", "PHP", "Scala", "GDScript", "Golang", "Lua", "Rust", "Fortran", "Kotlin", "Solidity", "Erlang", "Zig", "Perl"},
-		Extensions: []string{".c", ".cpp", ".cc", ".h", ".hpp", ".java", ".cs", ".js", ".jsx", ".ts", ".tsx", ".vue", ".m", ".swift", ".py", ".rb", ".ttcn", ".php", ".scala", ".gd", ".go", ".lua", ".rs", ".f", ".f90", ".kt", ".sol", ".erl", ".zig", ".pl"},
-	},
-	"semgrep": {
-		Name:       "semgrep",
-		Languages:  []string{"C", "CPP", "C#", "Generic", "Go", "Java", "JavaScript", "JSON", "Kotlin", "Python", "TypeScript", "Ruby", "Rust", "JSX", "PHP", "Scala", "Swift", "Terraform"},
-		Extensions: []string{".c", ".cpp", ".h", ".hpp", ".cs", ".go", ".java", ".js", ".json", ".kt", ".py", ".ts", ".rb", ".rs", ".jsx", ".php", ".scala", ".swift", ".tf", ".tfvars"},
-	},
-	"codacy-enigma-cli": {
-		Name:       "codacy-enigma-cli",
-		Languages:  []string{"Multiple"},
-		Extensions: []string{},
-	},
-}
-
 // CreateLanguagesConfigFile creates languages-config.yaml based on API response
 func CreateLanguagesConfigFile(apiTools []domain.Tool, toolsConfigDir string, toolIDMap map[string]string, initFlags domain.InitFlags) error {
+	// Map tool names to their language/extension information
+	toolLanguageMap := map[string]domain.ToolLanguageInfo{
+		"cppcheck": {
+			Name:       "cppcheck",
+			Languages:  []string{"C", "CPP"},
+			Extensions: []string{".c", ".cpp", ".cc", ".h", ".hpp"},
+		},
+		"pylint": {
+			Name:       "pylint",
+			Languages:  []string{"Python"},
+			Extensions: []string{".py"},
+		},
+		"eslint": {
+			Name:       "eslint",
+			Languages:  []string{"JavaScript", "TypeScript", "JSX", "TSX"},
+			Extensions: []string{".js", ".jsx", ".ts", ".tsx"},
+		},
+		"pmd": {
+			Name:       "pmd",
+			Languages:  []string{"Java", "JavaScript", "JSP", "Velocity", "XML", "Apex", "Scala", "Ruby", "VisualForce"},
+			Extensions: []string{".java", ".js", ".jsp", ".vm", ".xml", ".cls", ".trigger", ".scala", ".rb", ".page", ".component"},
+		},
+		"trivy": {
+			Name:       "trivy",
+			Languages:  []string{"Multiple"},
+			Extensions: []string{},
+		},
+		"dartanalyzer": {
+			Name:       "dartanalyzer",
+			Languages:  []string{"Dart"},
+			Extensions: []string{".dart"},
+		},
+		"lizard": {
+			Name:       "lizard",
+			Languages:  []string{"C", "CPP", "Java", "C#", "JavaScript", "TypeScript", "VueJS", "Objective-C", "Swift", "Python", "Ruby", "TTCN-3", "PHP", "Scala", "GDScript", "Golang", "Lua", "Rust", "Fortran", "Kotlin", "Solidity", "Erlang", "Zig", "Perl"},
+			Extensions: []string{".c", ".cpp", ".cc", ".h", ".hpp", ".java", ".cs", ".js", ".jsx", ".ts", ".tsx", ".vue", ".m", ".swift", ".py", ".rb", ".ttcn", ".php", ".scala", ".gd", ".go", ".lua", ".rs", ".f", ".f90", ".kt", ".sol", ".erl", ".zig", ".pl"},
+		},
+		"semgrep": {
+			Name:       "semgrep",
+			Languages:  []string{"C", "CPP", "C#", "Generic", "Go", "Java", "JavaScript", "JSON", "Kotlin", "Python", "TypeScript", "Ruby", "Rust", "JSX", "PHP", "Scala", "Swift", "Terraform"},
+			Extensions: []string{".c", ".cpp", ".h", ".hpp", ".cs", ".go", ".java", ".js", ".json", ".kt", ".py", ".ts", ".rb", ".rs", ".jsx", ".php", ".scala", ".swift", ".tf", ".tfvars"},
+		},
+	}
+
 	// Build a list of tool language info for enabled tools
 	var configTools []domain.ToolLanguageInfo
 
@@ -81,7 +76,7 @@ func CreateLanguagesConfigFile(apiTools []domain.Tool, toolsConfigDir string, to
 		}
 
 		// Get language info for this tool
-		langInfo, exists := defaultToolLanguageMap[shortName]
+		langInfo, exists := toolLanguageMap[shortName]
 		if exists {
 			// Special case for Trivy - always include it
 			if shortName == "trivy" {
@@ -118,7 +113,7 @@ func CreateLanguagesConfigFile(apiTools []domain.Tool, toolsConfigDir string, to
 
 	// If we have no tools or couldn't match any, include all known tools
 	if len(configTools) == 0 {
-		for _, langInfo := range defaultToolLanguageMap {
+		for _, langInfo := range toolLanguageMap {
 			configTools = append(configTools, langInfo)
 		}
 	}
@@ -142,16 +137,6 @@ func CreateLanguagesConfigFile(apiTools []domain.Tool, toolsConfigDir string, to
 
 	fmt.Println("Created languages configuration file based on enabled tools")
 	return nil
-}
-
-// GetDefaultToolLanguageMapping returns a copy of the default tool to language/extension mapping.
-func GetDefaultToolLanguageMapping() map[string]domain.ToolLanguageInfo {
-	// Create a copy of the map to prevent modifications to the original
-	toolMap := make(map[string]domain.ToolLanguageInfo, len(defaultToolLanguageMap))
-	for k, v := range defaultToolLanguageMap {
-		toolMap[k] = v
-	}
-	return toolMap
 }
 
 func getRepositoryLanguages(initFlags domain.InitFlags) (map[string][]string, error) {
