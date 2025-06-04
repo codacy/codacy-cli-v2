@@ -168,7 +168,7 @@ var configDiscoverCmd = &cobra.Command{
 		fmt.Printf("Discovering languages and tools for path: %s\n", discoverPath)
 
 		// Detect file extensions first
-		extCount, err := detectFileExtensions(discoverPath)
+		extCount, err := config.DetectFileExtensions(discoverPath)
 		if err != nil {
 			log.Fatalf("Error detecting file extensions: %v", err)
 		}
@@ -176,7 +176,7 @@ var configDiscoverCmd = &cobra.Command{
 		defaultToolLangMap := tools.GetDefaultToolLanguageMapping()
 
 		if len(extCount) > 0 {
-			recognizedExts := getRecognizableExtensions(extCount, defaultToolLangMap)
+			recognizedExts := config.GetRecognizableExtensions(extCount, defaultToolLangMap)
 			if len(recognizedExts) > 0 {
 				logger.Debug("Detected recognizable file extensions", logrus.Fields{
 					"extensions": recognizedExts,
@@ -185,7 +185,7 @@ var configDiscoverCmd = &cobra.Command{
 			}
 		}
 
-		detectedLanguages, err := detectLanguagesInPath(discoverPath, defaultToolLangMap)
+		detectedLanguages, err := config.DetectLanguages(discoverPath, defaultToolLangMap)
 		if err != nil {
 			log.Fatalf("Error detecting languages: %v", err)
 		}
@@ -193,10 +193,6 @@ var configDiscoverCmd = &cobra.Command{
 			fmt.Println("No known languages detected in the provided path.")
 			return
 		}
-		logger.Debug("Detected languages in path", logrus.Fields{
-			"languages": getSortedKeys(detectedLanguages),
-			"path":      discoverPath,
-		})
 
 		toolsConfigDir := config.Config.ToolsConfigsDirectory()
 		if err := updateLanguagesConfig(detectedLanguages, toolsConfigDir, defaultToolLangMap); err != nil {
@@ -224,73 +220,6 @@ var configDiscoverCmd = &cobra.Command{
 		fmt.Println("\n✅ Successfully discovered languages and updated configurations.")
 		fmt.Println("   Please review the changes in '.codacy/codacy.yaml' and '.codacy/tools-configs/languages-config.yaml'.")
 	},
-}
-
-func getSortedKeys(m map[string]struct{}) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
-}
-
-// detectLanguagesInPath detects languages based on file extensions found in the path.
-func detectLanguagesInPath(rootPath string, toolLangMap map[string]domain.ToolLanguageInfo) (map[string]struct{}, error) {
-	detectedLangs := make(map[string]struct{})
-	extToLang := make(map[string][]string)
-
-	// Build extension to language mapping
-	for _, toolInfo := range toolLangMap {
-		for _, lang := range toolInfo.Languages {
-			if lang == "Multiple" || lang == "Generic" { // Skip generic language types for direct detection
-				continue
-			}
-			for _, ext := range toolInfo.Extensions {
-				extToLang[ext] = append(extToLang[ext], lang)
-			}
-		}
-	}
-
-	// Get file extensions from the path
-	extCount, err := detectFileExtensions(rootPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to detect file extensions in path %s: %w", rootPath, err)
-	}
-
-	// Map only found extensions to languages
-	for ext := range extCount {
-		if langs, ok := extToLang[ext]; ok {
-			// Log which extensions map to which languages for debugging
-			logger.Debug("Found files with extension", logrus.Fields{
-				"extension": ext,
-				"count":     extCount[ext],
-				"languages": langs,
-			})
-			for _, lang := range langs {
-				detectedLangs[lang] = struct{}{}
-			}
-		}
-	}
-
-	// Log the final set of detected languages with their corresponding extensions
-	if len(detectedLangs) > 0 {
-		langToExts := make(map[string][]string)
-		for ext, count := range extCount {
-			if langs, ok := extToLang[ext]; ok {
-				for _, lang := range langs {
-					langToExts[lang] = append(langToExts[lang], fmt.Sprintf("%s (%d files)", ext, count))
-				}
-			}
-		}
-
-		logger.Debug("Detected languages in path", logrus.Fields{
-			"languages_with_files": langToExts,
-			"path":                 discoverPath,
-		})
-	}
-
-	return detectedLangs, nil
 }
 
 // updateLanguagesConfig updates the .codacy/tools-configs/languages-config.yaml file.
@@ -339,7 +268,7 @@ func updateLanguagesConfig(detectedLanguages map[string]struct{}, toolsConfigDir
 		}
 
 		if isRelevantTool {
-			relevantExtsForThisTool := getSortedKeys(relevantExtsForThisToolMap)
+			relevantExtsForThisTool := config.GetSortedKeys(relevantExtsForThisToolMap)
 			sort.Strings(relevantLangsForThisTool)
 
 			if existingEntry, ok := existingToolsMap[toolName]; ok {
@@ -351,7 +280,7 @@ func updateLanguagesConfig(detectedLanguages map[string]struct{}, toolsConfigDir
 				for _, lang := range relevantLangsForThisTool {
 					existingLangsSet[lang] = struct{}{}
 				}
-				existingEntry.Languages = getSortedKeys(existingLangsSet)
+				existingEntry.Languages = config.GetSortedKeys(existingLangsSet)
 
 				existingExtsSet := make(map[string]struct{})
 				for _, ext := range existingEntry.Extensions {
@@ -360,7 +289,7 @@ func updateLanguagesConfig(detectedLanguages map[string]struct{}, toolsConfigDir
 				for _, ext := range relevantExtsForThisTool {
 					existingExtsSet[ext] = struct{}{}
 				}
-				existingEntry.Extensions = getSortedKeys(existingExtsSet)
+				existingEntry.Extensions = config.GetSortedKeys(existingExtsSet)
 
 			} else {
 				newEntry := domain.ToolLanguageInfo{
@@ -448,18 +377,9 @@ func updateCodacyYAML(detectedLanguages map[string]struct{}, codacyYAMLPath stri
 		}
 		cloudEnabledToolNames := make(map[string]bool)
 		for _, ct := range cloudTools {
-			// Assuming ct.Name or similar field exists that matches our short tool names.
-			// The domain.Tool from GetRepositoryTools usually has a UUID, we need to map it.
-			// For now, we'll use a helper or assume names match if direct mapping isn't straightforward.
-			// This might need adjustment based on how GetRepositoryTools returns tool identifiers.
-			// Let's assume tool.Name from domain.Tool is the short name (e.g., "eslint").
-			// This requires checking the actual structure returned by GetRepositoryTools.
-			// For now, we'll use a placeholder map from UUID to short name, or simply compare by name.
-			// domain.SupportedToolsMetadata maps UUID to name.
-
 			var toolShortName string
 			for uuid, meta := range domain.SupportedToolsMetadata {
-				if uuid == ct.Uuid { // ct.Uuid is the correct field from domain.Tool
+				if uuid == ct.Uuid {
 					toolShortName = meta.Name
 					break
 				}
@@ -468,7 +388,6 @@ func updateCodacyYAML(detectedLanguages map[string]struct{}, codacyYAMLPath stri
 			if toolShortName != "" && ct.Settings.Enabled {
 				cloudEnabledToolNames[toolShortName] = true
 			}
-
 		}
 
 		filteredCandidates := make(map[string]struct{})
@@ -543,10 +462,6 @@ func updateCodacyYAML(detectedLanguages map[string]struct{}, codacyYAMLPath stri
 		}
 
 		// Preserve existing runtimes and their versions if possible, only add new ones.
-		// Or, simpler: recalculate all needed runtimes based on finalToolsList.
-		// The current configsetup.ConfigFileTemplate recalculates runtimes.
-		// For discover, we should be less destructive.
-		// Let's try to merge:
 		existingRuntimesRaw, _ := configData["runtimes"].([]interface{})
 		finalRuntimesList := []string{}
 		existingRuntimeSet := make(map[string]string) // name -> name@version
@@ -579,70 +494,6 @@ func updateCodacyYAML(detectedLanguages map[string]struct{}, codacyYAMLPath stri
 		return fmt.Errorf("error creating .codacy directory: %w", err)
 	}
 	return os.WriteFile(codacyYAMLPath, yamlData, utils.DefaultFilePerms)
-}
-
-// detectFileExtensions walks the directory and collects all unique file extensions with their counts
-func detectFileExtensions(rootPath string) (map[string]int, error) {
-	extCount := make(map[string]int)
-
-	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			ext := strings.ToLower(filepath.Ext(path))
-			if ext != "" {
-				extCount[ext]++
-			}
-		}
-		return nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to walk path %s: %w", rootPath, err)
-	}
-
-	return extCount, nil
-}
-
-// getRecognizableExtensions returns a sorted list of extensions that are mapped to languages
-func getRecognizableExtensions(extCount map[string]int, toolLangMap map[string]domain.ToolLanguageInfo) []string {
-	// Build set of recognized extensions
-	recognizedExts := make(map[string]struct{})
-	for _, toolInfo := range toolLangMap {
-		for _, ext := range toolInfo.Extensions {
-			recognizedExts[ext] = struct{}{}
-		}
-	}
-
-	// Filter and format recognized extensions with counts
-	type extInfo struct {
-		ext   string
-		count int
-	}
-	var recognizedExtList []extInfo
-
-	for ext, count := range extCount {
-		if _, ok := recognizedExts[ext]; ok {
-			recognizedExtList = append(recognizedExtList, extInfo{ext, count})
-		}
-	}
-
-	// Sort by count (descending) and then by extension name
-	sort.Slice(recognizedExtList, func(i, j int) bool {
-		if recognizedExtList[i].count != recognizedExtList[j].count {
-			return recognizedExtList[i].count > recognizedExtList[j].count
-		}
-		return recognizedExtList[i].ext < recognizedExtList[j].ext
-	})
-
-	// Format extensions with their counts
-	result := make([]string, len(recognizedExtList))
-	for i, info := range recognizedExtList {
-		result[i] = fmt.Sprintf("%s (%d files)", info.ext, info.count)
-	}
-
-	return result
 }
 
 func init() {
