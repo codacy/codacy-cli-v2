@@ -69,8 +69,8 @@ func (c *ConfigType) Runtimes() map[string]*plugins.RuntimeInfo {
 	return c.runtimes
 }
 
-// readOrCreateConfig reads the existing YAML config or creates a new one
-func (c *ConfigType) readOrCreateConfig(codacyPath string) (map[string]interface{}, error) {
+// loadConfigOrInitializeEmpty reads the existing YAML config or returns an empty configuration if the file doesn't exist
+func (c *ConfigType) loadConfigOrInitializeEmpty(codacyPath string) (map[string]interface{}, error) {
 	content, err := os.ReadFile(codacyPath)
 	if err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("error reading codacy.yaml: %w", err)
@@ -129,7 +129,7 @@ func (c *ConfigType) writeConfig(codacyPath string, config map[string]interface{
 func (c *ConfigType) addRuntimeToCodacyYaml(name string, version string) error {
 	codacyPath := filepath.Join(c.localCodacyDirectory, "codacy.yaml")
 
-	config, err := c.readOrCreateConfig(codacyPath)
+	config, err := c.loadConfigOrInitializeEmpty(codacyPath)
 	if err != nil {
 		return err
 	}
