@@ -70,6 +70,32 @@ function Normalize-Config {
             
             $output
         }
+        { $_ -in @('mjs', 'js') } {
+            # For JavaScript config files (like ESLint), sort the rule lines within the rules object
+            $content = Get-Content $file
+            $output = @()
+            $inRules = $false
+            $ruleLines = @()
+            
+            foreach ($line in $content) {
+                if ($line -match 'rules: \{') {
+                    $output += $line
+                    $inRules = $true
+                } elseif ($inRules -and $line -match '^\s*\}') {
+                    # Sort collected rule lines and add them
+                    $output += ($ruleLines | Sort-Object)
+                    $ruleLines = @()
+                    $inRules = $false
+                    $output += $line
+                } elseif ($inRules) {
+                    # Collect rule lines for sorting
+                    $ruleLines += $line
+                } else {
+                    $output += $line
+                }
+            }
+            $output
+        }
         { $_ -in @('rc', 'conf', 'ini', 'xml') } {
             Get-Content $file | ForEach-Object {
                 if ($_ -match '^[^#].*=.*,') {

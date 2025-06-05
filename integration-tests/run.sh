@@ -23,6 +23,33 @@ normalize_config() {
       # For YAML files, use yq to sort
       yq e '.' "$file" | sort
       ;;
+    mjs|js)
+      # For JavaScript config files (like ESLint), sort the rule lines within the rules object
+      awk '
+        /rules: \{/ { 
+          print; 
+          inRules = 1; 
+          next 
+        }
+        inRules && /^\s*\}/ { 
+          # Sort collected rules and print them
+          n = asorti(rules, sortedIndices)
+          for (i = 1; i <= n; i++) {
+            print rules[sortedIndices[i]]
+          }
+          delete rules
+          inRules = 0
+          print
+          next
+        }
+        inRules { 
+          # Collect rule lines for sorting
+          rules[NR] = $0
+          next 
+        }
+        { print }
+      ' "$file"
+      ;;
     rc|conf|ini)
       # For other config files, sort values after '=' and keep other lines
       awk -F'=' '

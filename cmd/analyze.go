@@ -6,6 +6,7 @@ import (
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/tools/lizard"
+	reviveTool "codacy/cli-v2/tools/revive"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -412,6 +413,16 @@ func runEnigmaAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 	return tools.RunEnigma(workDirectory, enigma.InstallDir, enigma.Binaries["codacy-enigma-cli"], pathsToCheck, outputFile, outputFormat)
 }
 
+func runReviveAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
+	revive := config.Config.Tools()["revive"]
+	if revive == nil {
+		log.Fatal("Revive tool configuration not found")
+	}
+	reviveBinary := revive.Binaries["revive"]
+
+	return reviveTool.RunRevive(workDirectory, reviveBinary, pathsToCheck, outputFile, outputFormat)
+}
+
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Runs all configured linters.",
@@ -522,6 +533,8 @@ func runTool(workDirectory string, toolName string, args []string, outputFile st
 		return runLizardAnalysis(workDirectory, args, outputFile, outputFormat)
 	case "codacy-enigma-cli":
 		return runEnigmaAnalysis(workDirectory, args, outputFile, outputFormat)
+	case "revive":
+		return runReviveAnalysis(workDirectory, args, outputFile, outputFormat)
 	default:
 		return fmt.Errorf("unsupported tool: %s", toolName)
 	}

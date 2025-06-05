@@ -1,0 +1,226 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "results": [
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "bad.go"
+                },
+                "region": {
+                  "startColumn": 10,
+                  "startLine": 9
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "should omit type int from declaration of var foo; it will be inferred from the right-hand side"
+          },
+          "ruleId": "var-declaration"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "bad.go"
+                },
+                "region": {
+                  "startColumn": 1,
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "should have a package comment"
+          },
+          "ruleId": "package-comments"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "bad.go"
+                },
+                "region": {
+                  "startColumn": 1,
+                  "startLine": 7
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "comment on exported function BadFunction should be of the form \"BadFunction ...\""
+          },
+          "ruleId": "exported"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "bad.go"
+                },
+                "region": {
+                  "startColumn": 1,
+                  "startLine": 22
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "comment on exported function LongLine should be of the form \"LongLine ...\""
+          },
+          "ruleId": "exported"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "bad.go"
+                },
+                "region": {
+                  "startColumn": 1,
+                  "startLine": 27
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "comment on exported function NakedReturn should be of the form \"NakedReturn ...\""
+          },
+          "ruleId": "exported"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "bad.go"
+                },
+                "region": {
+                  "startColumn": 18,
+                  "startLine": 8
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "parameter 'a' seems to be unused, consider removing or renaming it as _"
+          },
+          "ruleId": "unused-parameter"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "bad.go"
+                },
+                "region": {
+                  "startColumn": 25,
+                  "startLine": 8
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "parameter 'b' seems to be unused, consider removing or renaming it as _"
+          },
+          "ruleId": "unused-parameter"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "bad.go"
+                },
+                "region": {
+                  "startColumn": 32,
+                  "startLine": 8
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "parameter 'c' seems to be unused, consider removing or renaming it as _"
+          },
+          "ruleId": "unused-parameter"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "bad.go"
+                },
+                "region": {
+                  "startColumn": 39,
+                  "startLine": 8
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "parameter 'd' seems to be unused, consider removing or renaming it as _"
+          },
+          "ruleId": "unused-parameter"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "bad.go"
+                },
+                "region": {
+                  "startColumn": 46,
+                  "startLine": 8
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "parameter 'e' seems to be unused, consider removing or renaming it as _"
+          },
+          "ruleId": "unused-parameter"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "bad.go"
+                },
+                "region": {
+                  "startColumn": 17,
+                  "startLine": 18
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "parameter 'unused' seems to be unused, consider removing or renaming it as _"
+          },
+          "ruleId": "unused-parameter"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://github.com/mgechev/revive",
+          "name": "revive",
+          "rules": null
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}
