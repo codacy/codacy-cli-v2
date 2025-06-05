@@ -167,6 +167,13 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 	// Execute the installation command using the package manager
 	cmd := exec.Command(packageManagerBinary, strings.Split(installCmd, " ")...)
 
+	// Special handling for Go tools: set GOBIN so the binary is installed in the tool's install directory
+	if toolInfo.Runtime == "go" {
+		env := os.Environ()
+		env = append(env, "GOBIN="+toolInfo.InstallDir)
+		cmd.Env = env
+	}
+
 	// Special handling for ESLint installation in Linux (WSL) environment
 	if toolInfo.Name == "eslint" && runtime.GOOS == "linux" {
 		// Get node binary directory to add to PATH
