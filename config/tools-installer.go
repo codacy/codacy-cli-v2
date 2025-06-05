@@ -57,6 +57,7 @@ func InstallTools(config *ConfigType, registry string) error {
 
 // InstallTool installs a specific tool
 func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error {
+
 	// If toolInfo is nil, it means the tool is not in the configuration
 	// Add it with the default version
 	if toolInfo == nil {
@@ -77,14 +78,26 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error
 		}
 	}
 
-	// Check if the tool is already installed
-	if Config.IsToolInstalled(name, toolInfo) {
-		logger.Info("Tool already installed", logrus.Fields{
+	// Check if the tool is already installed AND its runtime is available
+	isToolInstalled := Config.IsToolInstalled(name, toolInfo)
+
+	// Also check if the required runtime is installed
+	var isRuntimeInstalled bool
+	if toolInfo.Runtime != "" {
+		runtimeInfo, exists := Config.Runtimes()[toolInfo.Runtime]
+		isRuntimeInstalled = exists && Config.IsRuntimeInstalled(toolInfo.Runtime, runtimeInfo)
+	} else {
+		// No runtime dependency
+		isRuntimeInstalled = true
+	}
+
+	if isToolInstalled && isRuntimeInstalled {
+		logger.Info("Tool and runtime already installed", logrus.Fields{
 			"tool":    name,
 			"version": toolInfo.Version,
 			"runtime": toolInfo.Runtime,
 		})
-		fmt.Printf("Tool %s v%s is already installed\n", name, toolInfo.Version)
+		fmt.Printf("Tool %s v%s and its runtime are already installed\n", name, toolInfo.Version)
 		return nil
 	}
 
