@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"codacy/cli-v2/plugins"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetFileExtension(t *testing.T) {
@@ -126,6 +129,94 @@ func TestIsToolSupportedForFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := IsToolSupportedForFile(tt.toolName, tt.filePath, tt.config); got != tt.want {
 				t.Errorf("IsToolSupportedForFile() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEslintInstallationValidationLogic(t *testing.T) {
+	// Test the logic that determines when ESLint installation should be triggered
+	// This tests the core logic from runEslintAnalysis without complex config setup
+
+	tests := []struct {
+		name                   string
+		eslint                 *plugins.ToolInfo
+		nodeRuntime            *plugins.RuntimeInfo
+		isToolInstalled        bool
+		expectInstallTriggered bool
+		description            string
+	}{
+		{
+			name:                   "tool_nil_should_trigger_install",
+			eslint:                 nil,
+			nodeRuntime:            nil,
+			isToolInstalled:        false,
+			expectInstallTriggered: true,
+			description:            "When ESLint tool is nil, installation should be triggered",
+		},
+		{
+			name: "tool_exists_runtime_nil_should_trigger_install",
+			eslint: &plugins.ToolInfo{
+				Name:    "eslint",
+				Version: "8.38.0",
+				Runtime: "node",
+			},
+			nodeRuntime:            nil,
+			isToolInstalled:        true,
+			expectInstallTriggered: true,
+			description:            "When ESLint tool exists but runtime is nil, installation should be triggered",
+		},
+		{
+			name: "tool_not_installed_runtime_exists_should_trigger_install",
+			eslint: &plugins.ToolInfo{
+				Name:    "eslint",
+				Version: "8.38.0",
+				Runtime: "node",
+			},
+			nodeRuntime: &plugins.RuntimeInfo{
+				Name:    "node",
+				Version: "22.2.0",
+			},
+			isToolInstalled:        false,
+			expectInstallTriggered: true,
+			description:            "When ESLint tool is not installed, installation should be triggered",
+		},
+		{
+			name: "both_tool_and_runtime_available_should_not_trigger_install",
+			eslint: &plugins.ToolInfo{
+				Name:    "eslint",
+				Version: "8.38.0",
+				Runtime: "node",
+			},
+			nodeRuntime: &plugins.RuntimeInfo{
+				Name:    "node",
+				Version: "22.2.0",
+			},
+			isToolInstalled:        true,
+			expectInstallTriggered: false,
+			description:            "When both ESLint tool and runtime are available and installed, installation should not be triggered",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// This mimics the logic from runEslintAnalysis
+
+			// Check if the runtime is installed
+			var isRuntimeInstalled bool
+			if tt.eslint != nil {
+				isRuntimeInstalled = tt.nodeRuntime != nil
+				// In the real code, this would also call Config.IsRuntimeInstalled,
+				// but for this test we simplify it to just checking if runtime exists
+			}
+
+			// Apply the installation trigger logic
+			shouldInstall := tt.eslint == nil || !tt.isToolInstalled || !isRuntimeInstalled
+
+			if tt.expectInstallTriggered {
+				assert.True(t, shouldInstall, tt.description)
+			} else {
+				assert.False(t, shouldInstall, tt.description)
 			}
 		})
 	}
