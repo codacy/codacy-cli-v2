@@ -468,45 +468,16 @@ func createLizardConfigFile(toolsConfigDir string, patternConfiguration []domain
 
 // buildDefaultConfigurationFiles creates default configuration files for all tools
 func BuildDefaultConfigurationFiles(toolsConfigDir string, flags domain.InitFlags) error {
+	// Get all supported tool UUIDs
+	var allUUIDs []string
 	for uuid := range domain.SupportedToolsMetadata {
-		patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(flags, uuid)
-		if err != nil {
-			return fmt.Errorf("failed to get default tool patterns config: %w", err)
-		}
-		switch uuid {
-		case domain.ESLint:
-			if err := tools.CreateEslintConfig(toolsConfigDir, patternsConfig); err != nil {
-				return fmt.Errorf("failed to create eslint config file: %v", err)
-			}
-		case domain.Trivy:
-			if err := createTrivyConfigFile(patternsConfig, toolsConfigDir); err != nil {
-				return fmt.Errorf("failed to create default Trivy configuration: %w", err)
-			}
-		case domain.PMD:
-			if err := createPMDConfigFile(patternsConfig, toolsConfigDir); err != nil {
-				return fmt.Errorf("failed to create default PMD configuration: %w", err)
-			}
-		case domain.PyLint:
-			if err := createPylintConfigFile(patternsConfig, toolsConfigDir); err != nil {
-				return fmt.Errorf("failed to create default Pylint configuration: %w", err)
-			}
-		case domain.DartAnalyzer:
-			if err := createDartAnalyzerConfigFile(patternsConfig, toolsConfigDir); err != nil {
-				return fmt.Errorf("failed to create default Dart Analyzer configuration: %w", err)
-			}
-		case domain.Semgrep:
-			if err := createSemgrepConfigFile(patternsConfig, toolsConfigDir); err != nil {
-				return fmt.Errorf("failed to create default Semgrep configuration: %w", err)
-			}
-		case domain.Lizard:
-			if err := createLizardConfigFile(toolsConfigDir, patternsConfig); err != nil {
-				return fmt.Errorf("failed to create default Lizard configuration: %w", err)
-			}
-		case domain.PMD7, domain.ESLint9:
-			continue
+		// Skip PMD7 and ESLint9 as per existing logic
+		if uuid != domain.PMD7 && uuid != domain.ESLint9 {
+			allUUIDs = append(allUUIDs, uuid)
 		}
 	}
-	return nil
+
+	return createToolConfigurationsForUUIDs(allUUIDs, toolsConfigDir, flags)
 }
 
 // KeepToolsWithLatestVersion filters the tools to keep only the latest version of each tool family.
@@ -555,4 +526,155 @@ func KeepToolsWithLatestVersion(tools []domain.Tool) (
 	}
 
 	return
+}
+
+// CreateConfigurationFilesForDiscoveredTools creates tool configuration files for discovered tools
+// It determines the CLI mode and creates appropriate configurations for the tools
+func CreateConfigurationFilesForDiscoveredTools(discoveredToolNames map[string]struct{}, toolsConfigDir string, initFlags domain.InitFlags) error {
+	// Determine CLI mode
+	currentCliMode, err := config.Config.GetCliMode()
+	if err != nil {
+		log.Printf("Warning: Could not determine CLI mode: %v. Assuming local mode for tool configuration creation.", err)
+		currentCliMode = "local" // Default to local
+	}
+
+	if currentCliMode == "remote" && initFlags.ApiToken != "" {
+		// Remote mode - create configurations based on cloud repository settings
+		return createRemoteToolConfigurationsForDiscovered(discoveredToolNames, toolsConfigDir, initFlags)
+	} else {
+		// Local mode - create default configurations for discovered tools
+		return createDefaultConfigurationsForSpecificTools(discoveredToolNames, toolsConfigDir, initFlags)
+	}
+}
+
+// createRemoteToolConfigurationsForDiscovered creates tool configurations for remote mode based on cloud settings
+func createRemoteToolConfigurationsForDiscovered(discoveredToolNames map[string]struct{}, toolsConfigDir string, initFlags domain.InitFlags) error {
+	// Get repository tools from API
+	apiTools, err := tools.GetRepositoryTools(initFlags)
+	if err != nil {
+		return fmt.Errorf("failed to get repository tools from cloud: %w", err)
+	}
+
+	// Filter to only tools that were discovered and enabled in cloud
+	var enabledDiscoveredTools []domain.Tool
+	for _, tool := range apiTools {
+		if tool.Settings.Enabled {
+			if meta, ok := domain.SupportedToolsMetadata[tool.Uuid]; ok {
+				if _, discovered := discoveredToolNames[meta.Name]; discovered {
+					enabledDiscoveredTools = append(enabledDiscoveredTools, tool)
+				}
+			}
+		}
+	}
+
+	if len(enabledDiscoveredTools) == 0 {
+		fmt.Println("No discovered tools are enabled in cloud configuration.")
+		return nil
+	}
+
+	// Filter out tools that use their own configuration files
+	configuredTools := tools.FilterToolsByConfigUsage(enabledDiscoveredTools)
+
+	fmt.Printf("Creating configurations for %d discovered tools enabled in cloud...\n", len(configuredTools))
+
+	// Create configuration files for each tool using existing logic
+	for _, tool := range configuredTools {
+		apiToolConfigurations, err := codacyclient.GetRepositoryToolPatterns(initFlags, tool.Uuid)
+		if err != nil {
+			log.Printf("Warning: Failed to get tool patterns for %s: %v", tool.Name, err)
+			continue
+		}
+
+		if err := createToolFileConfigurations(tool, apiToolConfigurations); err != nil {
+			log.Printf("Warning: Failed to create configuration for %s: %v", tool.Name, err)
+			continue
+		}
+	}
+
+	return nil
+}
+
+// createDefaultConfigurationsForSpecificTools creates default configurations for specific tools only
+// This reuses the existing BuildDefaultConfigurationFiles logic but filters for specific tools
+func createDefaultConfigurationsForSpecificTools(discoveredToolNames map[string]struct{}, toolsConfigDir string, initFlags domain.InitFlags) error {
+	fmt.Printf("Creating default configurations for %d discovered tools...\n", len(discoveredToolNames))
+
+	// Convert tool names to UUIDs
+	var discoveredUUIDs []string
+	for toolName := range discoveredToolNames {
+		for uuid, meta := range domain.SupportedToolsMetadata {
+			if meta.Name == toolName {
+				discoveredUUIDs = append(discoveredUUIDs, uuid)
+				break
+			}
+		}
+	}
+
+	if len(discoveredUUIDs) == 0 {
+		log.Printf("Warning: No recognized tools found among discovered tools")
+		return nil
+	}
+
+	// Create configurations for discovered tools only
+	return createToolConfigurationsForUUIDs(discoveredUUIDs, toolsConfigDir, initFlags)
+}
+
+// createToolConfigurationsForUUIDs creates tool configurations for specific UUIDs
+// This extracts the common logic from BuildDefaultConfigurationFiles
+func createToolConfigurationsForUUIDs(uuids []string, toolsConfigDir string, initFlags domain.InitFlags) error {
+	for _, uuid := range uuids {
+		patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(initFlags, uuid)
+		if err != nil {
+			if meta, ok := domain.SupportedToolsMetadata[uuid]; ok {
+				log.Printf("Warning: Failed to get default patterns for %s: %v", meta.Name, err)
+			} else {
+				log.Printf("Warning: Failed to get default patterns for UUID %s: %v", uuid, err)
+			}
+			continue
+		}
+
+		if err := createToolConfigurationFile(uuid, patternsConfig, toolsConfigDir); err != nil {
+			if meta, ok := domain.SupportedToolsMetadata[uuid]; ok {
+				log.Printf("Warning: Failed to create configuration for %s: %v", meta.Name, err)
+			} else {
+				log.Printf("Warning: Failed to create configuration for UUID %s: %v", uuid, err)
+			}
+			continue
+		}
+
+		// Print success message
+		if meta, ok := domain.SupportedToolsMetadata[uuid]; ok {
+			fmt.Printf("Created %s configuration\n", meta.Name)
+		}
+	}
+
+	return nil
+}
+
+// createToolConfigurationFile creates a single tool configuration file based on UUID
+// This extracts the switch logic to avoid duplication
+func createToolConfigurationFile(uuid string, patternsConfig []domain.PatternConfiguration, toolsConfigDir string) error {
+	switch uuid {
+	case domain.ESLint, domain.ESLint9:
+		return tools.CreateEslintConfig(toolsConfigDir, patternsConfig)
+	case domain.Trivy:
+		return createTrivyConfigFile(patternsConfig, toolsConfigDir)
+	case domain.PMD:
+		return createPMDConfigFile(patternsConfig, toolsConfigDir)
+	case domain.PMD7:
+		return createPMD7ConfigFile(patternsConfig, toolsConfigDir)
+	case domain.PyLint:
+		return createPylintConfigFile(patternsConfig, toolsConfigDir)
+	case domain.DartAnalyzer:
+		return createDartAnalyzerConfigFile(patternsConfig, toolsConfigDir)
+	case domain.Semgrep:
+		return createSemgrepConfigFile(patternsConfig, toolsConfigDir)
+	case domain.Lizard:
+		return createLizardConfigFile(toolsConfigDir, patternsConfig)
+	default:
+		if meta, ok := domain.SupportedToolsMetadata[uuid]; ok {
+			return fmt.Errorf("configuration creation not implemented for tool %s", meta.Name)
+		}
+		return fmt.Errorf("configuration creation not implemented for UUID %s", uuid)
+	}
 }

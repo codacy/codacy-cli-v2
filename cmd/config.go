@@ -217,8 +217,27 @@ var configDiscoverCmd = &cobra.Command{
 		}
 		fmt.Printf("Updated %s with relevant tools.\n", filepath.Base(codacyYAMLPath))
 
+		// Determine which tools are relevant for discovered languages and create their configurations
+		discoveredToolNames := make(map[string]struct{})
+		for toolName, toolInfo := range defaultToolLangMap {
+			for _, toolLang := range toolInfo.Languages {
+				if _, detected := detectedLanguages[toolLang]; detected {
+					discoveredToolNames[toolName] = struct{}{}
+					break
+				}
+			}
+		}
+
+		// Create tool configuration files for discovered tools
+		if len(discoveredToolNames) > 0 {
+			fmt.Printf("\nCreating tool configurations for discovered tools...\n")
+			if err := configsetup.CreateConfigurationFilesForDiscoveredTools(discoveredToolNames, toolsConfigDir, configResetInitFlags); err != nil {
+				log.Printf("Warning: Failed to create some tool configurations: %v", err)
+			}
+		}
+
 		fmt.Println("\n✅ Successfully discovered languages and updated configurations.")
-		fmt.Println("   Please review the changes in '.codacy/codacy.yaml' and '.codacy/tools-configs/languages-config.yaml'.")
+		fmt.Println("   Please review the changes in '.codacy/codacy.yaml' and '.codacy/tools-configs/' directory.")
 	},
 }
 
