@@ -71,6 +71,25 @@ Bootstraps the CLI configuration in your project's folder. This command creates 
 - `--organization` (string): Organization name, required with `--api-token`
 - `--repository` (string): Repository name, required with `--api-token`
 
+### `config discover` — Discover Project Languages
+
+Scans a project directory to detect programming languages and automatically configures appropriate static analysis tools. This command updates both `languages-config.yaml` and `codacy.yaml` with relevant tools for detected languages.
+
+```bash
+# Discover languages in current directory
+codacy-cli config discover .
+
+# Discover languages in specific project path
+codacy-cli config discover /path/to/project
+```
+
+**Features:**
+- Automatically detects file extensions and maps them to programming languages
+- Updates `.codacy/tools-configs/languages-config.yaml` with discovered languages
+- Enables relevant tools in `codacy.yaml` based on detected languages
+- Creates tool-specific configuration files for discovered tools
+- Works in both local and cloud modes
+
 ### `install` — Install Runtimes and Tools
 
 Installs all runtimes and tools specified in `.codacy/codacy.yaml`:
@@ -172,14 +191,17 @@ codacy-cli init
 # or
 codacy-cli init --api-token <token> --provider gh --organization my-org --repository my-repo
 
-# 2. Install all required runtimes and tools
+# 2. (Optional) Discover languages and configure tools automatically
+codacy-cli config discover .
+
+# 3. Install all required runtimes and tools
 codacy-cli install
 
-# 3. Run analysis (all tools or specific tool)
+# 4. Run analysis (all tools or specific tool)
 codacy-cli analyze
 codacy-cli analyze --tool eslint
 
-# 4. Upload results to Codacy
+# 5. Upload results to Codacy
 codacy-cli upload -s eslint.sarif -c <commit-uuid> -t <project-token>
 ```
 
