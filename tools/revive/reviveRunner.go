@@ -5,20 +5,23 @@ import (
 	"log"
 	"os"
 	"os/exec"
+
+	"codacy/cli-v2/config"
+	parenttools "codacy/cli-v2/tools"
 )
 
 // RunRevive executes revive analysis on the specified files or directory
 func RunRevive(workDirectory string, binary string, files []string, outputFile string, outputFormat string) error {
 	cmdArgs := []string{}
 
+	// Check if a config file exists in the expected location and use it if present
+	if configFile, exists := parenttools.ConfigFileExists(config.Config, "revive.toml"); exists {
+		cmdArgs = append(cmdArgs, "-config", configFile)
+	}
+
 	// Add output format if specified
 	if outputFormat != "" {
 		cmdArgs = append(cmdArgs, "-formatter", outputFormat)
-	}
-
-	// Add output file if specified
-	if outputFile != "" {
-		cmdArgs = append(cmdArgs, "-o", outputFile)
 	}
 
 	// Add files to analyze - if no files specified, analyze current directory
@@ -30,8 +33,19 @@ func RunRevive(workDirectory string, binary string, files []string, outputFile s
 
 	cmd := exec.Command(binary, cmdArgs...)
 	cmd.Dir = workDirectory
-	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
+	// Handle output file redirection
+	if outputFile != "" {
+		outputWriter, err := os.Create(outputFile)
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %w", err)
+		}
+		defer outputWriter.Close()
+		cmd.Stdout = outputWriter
+	} else {
+		cmd.Stdout = os.Stdout
+	}
 
 	if err := cmd.Run(); err != nil {
 		if _, ok := err.(*exec.ExitError); !ok {

@@ -12,10 +12,8 @@ binaries:
   - name: revive
     path: revive
 formatters:
-  - name: stylish
-    flag: "-formatter stylish"
-  - name: json
-    flag: "-formatter json"
+  - name: sarif
+    flag: "-formatter sarif"
 output_options:
   file_flag: "-o"
 analysis_options:
