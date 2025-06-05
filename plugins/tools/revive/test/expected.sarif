@@ -125,25 +125,6 @@
                   "uri": "bad.go"
                 },
                 "region": {
-                  "startColumn": 10,
-                  "startLine": 9
-                }
-              }
-            }
-          ],
-          "message": {
-            "text": "should omit type int from declaration of var foo; it will be inferred from the right-hand side"
-          },
-          "ruleId": "var-declaration"
-        },
-        {
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "bad.go"
-                },
-                "region": {
                   "startColumn": 1,
                   "startLine": 7
                 }
@@ -192,6 +173,25 @@
             "text": "comment on exported function NakedReturn should be of the form \"NakedReturn ...\""
           },
           "ruleId": "exported"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "bad.go"
+                },
+                "region": {
+                  "startColumn": 10,
+                  "startLine": 9
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "should omit type int from declaration of var foo; it will be inferred from the right-hand side"
+          },
+          "ruleId": "var-declaration"
         },
         {
           "locations": [
