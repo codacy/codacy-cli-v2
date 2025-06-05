@@ -15,6 +15,7 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/plugins"
+	"codacy/cli-v2/tools"
 	"codacy/cli-v2/utils"
 	"codacy/cli-v2/utils/logger"
 

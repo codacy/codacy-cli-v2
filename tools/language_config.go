@@ -15,7 +15,7 @@ import (
 )
 
 // defaultToolLanguageMap defines the default mapping of tools to their supported languages and file extensions
-var defaultToolLanguageMap = map[string]domain.ToolLanguageInfo{
+var DefaultToolLanguageMap = map[string]domain.ToolLanguageInfo{
 	"pylint": {
 		Name:       "pylint",
 		Languages:  []string{"Python"},
@@ -58,8 +58,17 @@ var defaultToolLanguageMap = map[string]domain.ToolLanguageInfo{
 	},
 }
 
+// GetDefaultToolLanguageMapping returns the default mapping of tools to their supported languages and file extensions
+func GetDefaultToolLanguageMapping() map[string]domain.ToolLanguageInfo {
+	return DefaultToolLanguageMap
+}
+
+// CreateLanguagesConfigFile creates languages-config.yaml based on API response
+func CreateLanguagesConfigFile(apiTools []domain.Tool, toolsConfigDir string, toolIDMap map[string]string, initFlags domain.InitFlags) error {
 	// Build a list of tool language info for enabled tools
 	var configTools []domain.ToolLanguageInfo
+
+	var toolLanguageMap = DefaultToolLanguageMap
 
 	repositoryLanguages, err := getRepositoryLanguages(initFlags)
 	if err != nil {
