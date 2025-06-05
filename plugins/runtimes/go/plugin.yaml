@@ -2,7 +2,7 @@ name: go
 # Go Programming Language Runtime
 # Provides the Go compiler and tools for building and running Go programs.
 description: Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.
-default_version: 1.22.3
+default_version: 1.24.1
 download:
   url_template: "https://go.dev/dl/go{{.Version}}.{{.OS}}-{{.Arch}}.tar.gz"
   file_name_template: "go{{.Version}}.{{.OS}}-{{.Arch}}.tar.gz"

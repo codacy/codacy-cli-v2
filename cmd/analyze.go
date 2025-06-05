@@ -5,6 +5,7 @@ import (
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
+	gosecTool "codacy/cli-v2/tools/gosec"
 	"codacy/cli-v2/tools/lizard"
 	"encoding/json"
 	"fmt"
@@ -412,6 +413,16 @@ func runEnigmaAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 	return tools.RunEnigma(workDirectory, enigma.InstallDir, enigma.Binaries["codacy-enigma-cli"], pathsToCheck, outputFile, outputFormat)
 }
 
+func runGosecAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
+	gosec := config.Config.Tools()["gosec"]
+	if gosec == nil {
+		log.Fatal("Gosec tool configuration not found")
+	}
+	gosecBinary := gosec.Binaries["gosec"]
+
+	return gosecTool.RunGosec(workDirectory, gosecBinary, pathsToCheck, outputFile, outputFormat)
+}
+
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Runs all configured linters.",
@@ -522,6 +533,8 @@ func runTool(workDirectory string, toolName string, args []string, outputFile st
 		return runLizardAnalysis(workDirectory, args, outputFile, outputFormat)
 	case "codacy-enigma-cli":
 		return runEnigmaAnalysis(workDirectory, args, outputFile, outputFormat)
+	case "gosec":
+		return runGosecAnalysis(workDirectory, args, outputFile, outputFormat)
 	default:
 		return fmt.Errorf("unsupported tool: %s", toolName)
 	}
