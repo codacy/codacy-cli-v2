@@ -9,7 +9,7 @@ func BadFunction(a int, b int, c int, d int, e int) int {
 	var foo int = 42 // magic number
 	if foo == 42 {
 		fmt.Println("foo is 42")
-		return
+		return 56
 	}
 	return foo
 }
