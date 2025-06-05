@@ -39,10 +39,13 @@ func main() {
 		}
 	}
 
-	// Check if command is init/update
-	if len(os.Args) > 1 && (os.Args[1] == "init" || os.Args[1] == "update") {
-		cmd.Execute()
-		return
+	// Check if command is init/update/version/help - these don't require configuration
+	if len(os.Args) > 1 {
+		cmdName := os.Args[1]
+		if cmdName == "init" || cmdName == "update" || cmdName == "version" || cmdName == "help" {
+			cmd.Execute()
+			return
+		}
 	}
 
 	// All other commands require a configuration file
