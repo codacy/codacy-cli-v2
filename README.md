@@ -71,6 +71,27 @@ Bootstraps the CLI configuration in your project's folder. This command creates 
 - `--organization` (string): Organization name, required with `--api-token`
 - `--repository` (string): Repository name, required with `--api-token`
 
+### `config reset` — Reset Configuration
+
+Resets the Codacy configuration files and tool-specific configurations. This command overwrites existing configuration with either local default configurations or repository-specific configurations from Codacy.
+
+```bash
+# Reset to local default configurations
+codacy-cli config reset
+
+# Reset to repository-specific configurations from Codacy
+codacy-cli config reset --api-token <token> --provider <gh|gl|bb> --organization <org> --repository <repo>
+```
+
+**Behavior:**
+- **Local mode**: Creates default configurations for all available tools
+- **Remote mode**: Fetches and applies repository-specific configurations from Codacy
+- Prevents accidental mode switching (remote to local requires explicit flags)
+- Overwrites existing `.codacy/codacy.yaml` and tool configurations
+- Creates or updates `.codacy/.gitignore` file
+
+**Flags:** Same as `init` command (api-token, provider, organization, repository)
+
 ### `config discover` — Discover Project Languages
 
 Scans a project directory to detect programming languages and automatically configures appropriate static analysis tools. This command updates both `languages-config.yaml` and `codacy.yaml` with relevant tools for detected languages.
