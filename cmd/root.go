@@ -36,6 +36,18 @@ var rootCmd = &cobra.Command{
 			"full_command": maskedArgs,
 			"args":         args,
 		})
+
+		// Validate codacy.yaml for all commands except init, help, and version
+		if !shouldSkipValidation(cmd.Name()) {
+			if err := validateCodacyYAML(); err != nil {
+				logger.Error("Global validation failed", logrus.Fields{
+					"command": cmd.Name(),
+					"error":   err.Error(),
+				})
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// Check if .codacy directory exists

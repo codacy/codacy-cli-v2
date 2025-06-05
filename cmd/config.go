@@ -341,25 +341,14 @@ func updateLanguagesConfig(detectedLanguages map[string]struct{}, toolsConfigDir
 func updateCodacyYAML(detectedLanguages map[string]struct{}, codacyYAMLPath string, defaultToolLangMap map[string]domain.ToolLanguageInfo, initFlags domain.InitFlags, cliMode string) error {
 	var configData map[string]interface{}
 
-	if _, err := os.Stat(codacyYAMLPath); err == nil {
-		content, err := os.ReadFile(codacyYAMLPath)
-		if err != nil {
-			return fmt.Errorf("error reading %s: %w", codacyYAMLPath, err)
-		}
-		if err := yaml.Unmarshal(content, &configData); err != nil {
-			if strings.Contains(err.Error(), "cannot unmarshal") {
-				return fmt.Errorf(
-					"❌ Fatal: %s contains invalid configuration - run 'codacy-cli config reset' to fix: %v",
-					filepath.Base(codacyYAMLPath), err)
-			}
-			return fmt.Errorf(
-				"❌ Fatal: %s is broken or has invalid YAML format - run 'codacy-cli config reset' to reinitialize your configuration",
-				filepath.Base(codacyYAMLPath))
-		}
-	} else if os.IsNotExist(err) {
-		return fmt.Errorf("codacy.yaml file not found")
-	} else {
-		return fmt.Errorf("error accessing %s: %w", codacyYAMLPath, err)
+	// Read and parse codacy.yaml (validation is done globally in PersistentPreRun)
+	content, err := os.ReadFile(codacyYAMLPath)
+	if err != nil {
+		return fmt.Errorf("error reading %s: %w", codacyYAMLPath, err)
+	}
+
+	if err := yaml.Unmarshal(content, &configData); err != nil {
+		return fmt.Errorf("error parsing %s: %w", codacyYAMLPath, err)
 	}
 
 	toolsRaw, _ := configData["tools"].([]interface{})
