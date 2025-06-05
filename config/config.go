@@ -106,6 +106,23 @@ func updateRuntimesList(runtimes []interface{}, name, version string) []interfac
 	return append(runtimes, runtimeEntry)
 }
 
+// updateToolsList updates the tools list in the configuration, avoiding duplicates
+func updateToolsList(tools []interface{}, name, version string) []interface{} {
+	toolEntry := fmt.Sprintf("%s@%s", name, version)
+
+	// Check if tool already exists
+	for i, tool := range tools {
+		if toolStr, ok := tool.(string); ok && strings.HasPrefix(toolStr, name+"@") {
+			// Replace existing tool
+			tools[i] = toolEntry
+			return tools
+		}
+	}
+
+	// Add new tool
+	return append(tools, toolEntry)
+}
+
 // writeConfig writes the config back to the YAML file
 func (c *ConfigType) writeConfig(codacyPath string, config map[string]interface{}) error {
 	yamlData, err := yaml.Marshal(config)
@@ -143,6 +160,28 @@ func (c *ConfigType) addRuntimeToCodacyYaml(name string, version string) error {
 	// Update runtimes list
 	runtimes = updateRuntimesList(runtimes, name, version)
 	config["runtimes"] = runtimes
+
+	return c.writeConfig(codacyPath, config)
+}
+
+// addToolToCodacyYaml adds a tool to the codacy.yaml file
+func (c *ConfigType) addToolToCodacyYaml(name string, version string) error {
+	codacyPath := filepath.Join(c.localCodacyDirectory, "codacy.yaml")
+
+	config, err := c.loadConfigOrInitializeEmpty(codacyPath)
+	if err != nil {
+		return err
+	}
+
+	// Get or create tools list
+	tools, ok := config["tools"].([]interface{})
+	if !ok {
+		tools = make([]interface{}, 0)
+	}
+
+	// Update tools list
+	tools = updateToolsList(tools, name, version)
+	config["tools"] = tools
 
 	return c.writeConfig(codacyPath, config)
 }
@@ -229,12 +268,38 @@ func (c *ConfigType) AddTools(configs []plugins.ToolConfig) error {
 		return err
 	}
 
-	// Store the tool information in the config
+	// Store the tool information in the config and update codacy.yaml
 	for name, info := range toolInfoMap {
 		c.tools[name] = info
+
+		// Update codacy.yaml with the new tool
+		if err := c.addToolToCodacyYaml(name, info.Version); err != nil {
+			return fmt.Errorf("failed to update codacy.yaml with tool %s: %w", name, err)
+		}
 	}
 
 	return nil
+}
+
+// AddToolWithDefaultVersion adds a tool with its default version to the configuration
+func (c *ConfigType) AddToolWithDefaultVersion(toolName string) error {
+	// Get the default version for the tool from plugins
+	defaultVersions := plugins.GetToolVersions()
+	version, ok := defaultVersions[toolName]
+	if !ok {
+		return fmt.Errorf("no default version found for tool %s", toolName)
+	}
+
+	fmt.Printf("Adding tool %s with default version %s to codacy.yaml\n", toolName, version)
+
+	// Create tool config
+	toolConfig := plugins.ToolConfig{
+		Name:    toolName,
+		Version: version,
+	}
+
+	// Add the tool using the existing AddTools function
+	return c.AddTools([]plugins.ToolConfig{toolConfig})
 }
 
 func (c *ConfigType) ToolsConfigDirectory() string {
