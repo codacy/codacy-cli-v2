@@ -48,6 +48,7 @@ func InstallRuntimes(config *ConfigType) error {
 // InstallRuntime installs a specific runtime
 func InstallRuntime(name string, runtimeInfo *plugins.RuntimeInfo) error {
 	// Skip if already installed
+	fmt.Printf("Checking if runtime %s v%s is installed\n", name, runtimeInfo.Version)
 	if Config.IsRuntimeInstalled(name, runtimeInfo) {
 		logger.Info("Runtime already installed", logrus.Fields{
 			"runtime": name,
@@ -131,15 +132,14 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 	}
 
 	// Ensure binaries have executable permissions
-	for _, binaryPath := range runtimeInfo.Binaries {
-		fullPath := filepath.Join(Config.RuntimesDirectory(), filepath.Base(runtimeInfo.InstallDir), binaryPath)
+	for binaryName, fullPath := range runtimeInfo.Binaries {
 		if err := os.Chmod(fullPath, utils.DefaultDirPerms); err != nil {
 			logger.Debug("Failed to set binary permissions", logrus.Fields{
-				"binary": binaryPath,
+				"binary": binaryName,
 				"path":   fullPath,
 				"error":  err,
 			})
-			return fmt.Errorf("failed to set binary permissions for %s: %w", binaryPath, err)
+			return fmt.Errorf("failed to set binary permissions for %s: %w", fullPath, err)
 		}
 	}
 
