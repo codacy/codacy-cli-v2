@@ -28,7 +28,7 @@ func RunRevive(workDirectory string, binary string, files []string, outputFile s
 	if len(files) > 0 {
 		cmdArgs = append(cmdArgs, files...)
 	} else {
-		cmdArgs = append(cmdArgs, ".")
+		cmdArgs = append(cmdArgs, "./...")
 	}
 
 	cmd := exec.Command(binary, cmdArgs...)
