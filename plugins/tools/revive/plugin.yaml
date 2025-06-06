@@ -1,0 +1,21 @@
+name: revive
+version: 1.7.0
+description: Revive is a fast, configurable, extensible, flexible, and beautiful linter for Go.
+default_version: 1.7.0
+runtime: go
+runtime_binaries:
+  package_manager: go
+  execution: revive
+installation:
+  command: "install github.com/mgechev/revive@v{{.Version}}"
+binaries:
+  - name: revive
+    path: revive
+formatters:
+  - name: sarif
+    flag: "-formatter sarif"
+output_options:
+  file_flag: "-o"
+analysis_options:
+  autofix_flag: ""
+  default_path: "."

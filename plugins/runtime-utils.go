@@ -53,6 +53,8 @@ func processRuntime(config RuntimeConfig, runtimesDir string) (*RuntimeInfo, err
 	var installDir string
 	if config.Name == "python" {
 		installDir = path.Join(runtimesDir, "python")
+	} else if config.Name == "go" {
+		installDir = path.Join(runtimesDir, "go")
 	} else {
 		installDir = path.Join(runtimesDir, fileName)
 	}
