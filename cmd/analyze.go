@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"codacy/cli-v2/config"
-	"codacy/cli-v2/domain"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/tools/lizard"
@@ -332,9 +331,11 @@ func runToolByTooName(toolName string, workDirectory string, pathsToCheck []stri
 	case "semgrep":
 		return tools.RunSemgrep(workDirectory, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
 	case "lizard":
-		return runLizardAnalysis(workDirectory, pathsToCheck, outputFile, outputFormat)
+		return lizard.RunLizard(workDirectory, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
 	case "enigma":
 		return tools.RunEnigma(workDirectory, tool.InstallDir, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
+	case "revive":
+		return reviveTool.RunRevive(workDirectory, tool.Binaries["revive"], pathsToCheck, outputFile, outputFormat)
 	}
 	return fmt.Errorf("unsupported tool: %s", toolName)
 }
@@ -352,8 +353,6 @@ func genericRunTool(toolName string, workDirectory string, pathsToCheck []string
 			return fmt.Errorf("failed to install %s: %w", toolName, err)
 		}
 		tool = config.Config.Tools()[toolName]
-		isToolInstalled = config.Config.IsToolInstalled(toolName, tool)
-
 		runtime = config.Config.Runtimes()[tool.Runtime]
 		isRuntimeInstalled = runtime == nil || config.Config.IsRuntimeInstalled(tool.Runtime, runtime)
 		if !isRuntimeInstalled {
@@ -363,7 +362,6 @@ func genericRunTool(toolName string, workDirectory string, pathsToCheck []string
 				return fmt.Errorf("failed to install %s runtime: %w", tool.Runtime, err)
 			}
 			runtime = config.Config.Runtimes()[tool.Runtime]
-			isRuntimeInstalled = config.Config.IsRuntimeInstalled(tool.Runtime, runtime)
 		}
 
 	} else {
@@ -376,129 +374,9 @@ func genericRunTool(toolName string, workDirectory string, pathsToCheck []string
 				return fmt.Errorf("failed to install %s runtime: %w", tool.Runtime, err)
 			}
 			runtime = config.Config.Runtimes()[tool.Runtime]
-			isRuntimeInstalled = config.Config.IsRuntimeInstalled(tool.Runtime, runtime)
 		}
-
 	}
-
 	return runToolByTooName(toolName, workDirectory, pathsToCheck, autoFix, outputFile, outputFormat, tool, runtime)
-}
-
-func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	// Ensure Lizard tool is configured and installed
-	lizardTool := config.Config.Tools()["lizard"]
-	isToolInstalled := config.Config.IsToolInstalled("lizard", lizardTool)
-
-	// Also check if the runtime is installed
-	var isRuntimeInstalled bool
-	if lizardTool != nil {
-		pythonRuntime := config.Config.Runtimes()["python"]
-		isRuntimeInstalled = pythonRuntime != nil && config.Config.IsRuntimeInstalled("python", pythonRuntime)
-	}
-
-	if lizardTool == nil || !isToolInstalled || !isRuntimeInstalled {
-		if lizardTool == nil {
-			fmt.Println("Lizard tool configuration not found, adding and installing...")
-		} else if !isToolInstalled {
-			fmt.Println("Lizard tool is not installed, installing...")
-		} else if !isRuntimeInstalled {
-			fmt.Println("Python runtime is not installed, installing Lizard (which will install the runtime)...")
-		}
-
-		err := config.InstallTool("lizard", lizardTool, "")
-		if err != nil {
-			return fmt.Errorf("failed to install lizard: %w", err)
-		}
-
-		// Get the updated tool info after installation
-		lizardTool = config.Config.Tools()["lizard"]
-		if lizardTool == nil {
-			return fmt.Errorf("lizard tool configuration still not found after installation")
-		}
-		fmt.Println("Lizard tool installed successfully")
-	}
-
-	// Ensure Python runtime is available
-	pythonRuntime := config.Config.Runtimes()["python"]
-	if pythonRuntime == nil {
-		return fmt.Errorf("python runtime not found - this should not happen after lizard installation")
-	}
-
-	// Ensure python binary is available
-	lizardBinary := lizardTool.Binaries["python"]
-	if lizardBinary == "" {
-		return fmt.Errorf("python binary not found in lizard tool configuration")
-	}
-
-	// Get configuration patterns
-	configFile, exists := tools.ConfigFileExists(config.Config, "lizard.yaml")
-	var patterns []domain.PatternDefinition
-	var err error
-
-	if exists {
-		// Configuration exists, read from file
-		patterns, err = lizard.ReadConfig(configFile)
-		if err != nil {
-			return fmt.Errorf("error reading config file: %v", err)
-		}
-	} else {
-		fmt.Println("No configuration file found for Lizard, using default patterns, run init with repository token to get a custom configuration")
-		patterns, err = tools.FetchDefaultEnabledPatterns(domain.Lizard)
-		if err != nil {
-			return fmt.Errorf("failed to fetch default patterns: %v", err)
-		}
-	}
-
-	// Run Lizard
-	return lizard.RunLizard(workDirectory, lizardBinary, pathsToCheck, outputFile, outputFormat, patterns)
-}
-
-func runEnigmaAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	// Ensure Enigma tool is configured and installed
-	enigma := config.Config.Tools()["codacy-enigma-cli"]
-	isToolInstalled := config.Config.IsToolInstalled("codacy-enigma-cli", enigma)
-
-	// Enigma is a download-based tool (no runtime dependency), so runtime is always "installed"
-	isRuntimeInstalled := true
-
-	if enigma == nil || !isToolInstalled || !isRuntimeInstalled {
-		if enigma == nil {
-			fmt.Println("Enigma tool configuration not found, adding and installing...")
-		} else if !isToolInstalled {
-			fmt.Println("Enigma tool is not installed, installing...")
-		}
-
-		err := config.InstallTool("codacy-enigma-cli", enigma, "")
-		if err != nil {
-			return fmt.Errorf("failed to install codacy-enigma-cli: %w", err)
-		}
-
-		// Get the updated tool info after installation
-		enigma = config.Config.Tools()["codacy-enigma-cli"]
-		if enigma == nil {
-			return fmt.Errorf("codacy-enigma-cli tool configuration still not found after installation")
-		}
-		fmt.Println("Enigma tool installed successfully")
-	}
-
-	// Ensure enigma binary is available
-	enigmaBinary := enigma.Binaries["codacy-enigma-cli"]
-	if enigmaBinary == "" {
-		return fmt.Errorf("codacy-enigma-cli binary not found in tool configuration")
-	}
-
-	// Run Enigma
-	return tools.RunEnigma(workDirectory, enigma.InstallDir, enigmaBinary, pathsToCheck, outputFile, outputFormat)
-}
-
-func runReviveAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	revive := config.Config.Tools()["revive"]
-	if revive == nil {
-		log.Fatal("Revive tool configuration not found")
-	}
-	reviveBinary := revive.Binaries["revive"]
-
-	return reviveTool.RunRevive(workDirectory, reviveBinary, pathsToCheck, outputFile, outputFormat)
 }
 
 var analyzeCmd = &cobra.Command{
