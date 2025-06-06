@@ -317,291 +317,71 @@ func getToolName(toolName string, version string) string {
 	return toolName
 }
 
-func runEslintAnalysis(workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string) error {
-	// Ensure ESLint tool is configured and installed
-	eslint := config.Config.Tools()["eslint"]
-	isToolInstalled := config.Config.IsToolInstalled("eslint", eslint)
-
-	// Also check if the runtime is installed
-	var isRuntimeInstalled bool
-	if eslint != nil {
-		nodeRuntime := config.Config.Runtimes()["node"]
-		isRuntimeInstalled = nodeRuntime != nil && config.Config.IsRuntimeInstalled("node", nodeRuntime)
+func runToolByTooName(toolName string, workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string, tool *plugins.ToolInfo, runtime *plugins.RuntimeInfo) error {
+	switch toolName {
+	case "eslint":
+		return tools.RunEslint(workDirectory, tool.InstallDir, runtime.Binaries[tool.Runtime], pathsToCheck, autoFix, outputFile, outputFormat)
+	case "trivy":
+		return tools.RunTrivy(workDirectory, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
+	case "pmd":
+		return tools.RunPmd(workDirectory, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat, config.Config)
+	case "pylint":
+		return tools.RunPylint(workDirectory, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
+	case "dartanalyzer":
+		return tools.RunDartAnalyzer(workDirectory, tool.InstallDir, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
+	case "semgrep":
+		return tools.RunSemgrep(workDirectory, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
+	case "lizard":
+		return runLizardAnalysis(workDirectory, pathsToCheck, outputFile, outputFormat)
+	case "enigma":
+		return tools.RunEnigma(workDirectory, tool.InstallDir, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
 	}
-
-	if eslint == nil || !isToolInstalled || !isRuntimeInstalled {
-		if eslint == nil {
-			fmt.Println("Eslint tool configuration not found, adding and installing...")
-		} else if !isToolInstalled {
-			fmt.Println("Eslint tool is not installed, installing...")
-		} else if !isRuntimeInstalled {
-			fmt.Println("Node.js runtime is not installed, installing eslint (which will install the runtime)...")
-		}
-
-		err := config.InstallTool("eslint", eslint, "")
-		if err != nil {
-			return fmt.Errorf("failed to install eslint: %w", err)
-		}
-
-		// Get the updated tool info after installation
-		eslint = config.Config.Tools()["eslint"]
-		if eslint == nil {
-			return fmt.Errorf("eslint tool configuration still not found after installation")
-		}
-		fmt.Println("Eslint tool installed successfully")
-	}
-
-	// Ensure node runtime is available
-	nodeRuntime := config.Config.Runtimes()["node"]
-	if nodeRuntime == nil {
-		return fmt.Errorf("node runtime not found - this should not happen after eslint installation")
-	}
-
-	nodeBinary := nodeRuntime.Binaries["node"]
-	if nodeBinary == "" {
-		return fmt.Errorf("node binary not found in runtime configuration")
-	}
-
-	// Run ESLint
-	eslintInstallationDirectory := eslint.InstallDir
-	return tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, pathsToCheck, autoFix, outputFile, outputFormat)
+	return fmt.Errorf("unsupported tool: %s", toolName)
 }
 
-func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	// Ensure Trivy tool is configured and installed
-	trivy := config.Config.Tools()["trivy"]
-	isToolInstalled := config.Config.IsToolInstalled("trivy", trivy)
-
-	// Trivy is a download-based tool (no runtime dependency), so runtime is always "installed"
-	isRuntimeInstalled := true
-
-	if trivy == nil || !isToolInstalled || !isRuntimeInstalled {
-		if trivy == nil {
-			fmt.Println("Trivy tool configuration not found, adding and installing...")
-		} else if !isToolInstalled {
-			fmt.Println("Trivy tool is not installed, installing...")
-		}
-
-		err := config.InstallTool("trivy", trivy, "")
-		if err != nil {
-			return fmt.Errorf("failed to install trivy: %w", err)
-		}
-
-		// Get the updated tool info after installation
-		trivy = config.Config.Tools()["trivy"]
-		if trivy == nil {
-			return fmt.Errorf("trivy tool configuration still not found after installation")
-		}
-		fmt.Println("Trivy tool installed successfully")
-	}
-
-	// Ensure trivy binary is available
-	trivyBinary := trivy.Binaries["trivy"]
-	if trivyBinary == "" {
-		return fmt.Errorf("trivy binary not found in tool configuration")
-	}
-
-	// Run Trivy
-	return tools.RunTrivy(workDirectory, trivyBinary, pathsToCheck, outputFile, outputFormat)
-}
-
-func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	// Ensure PMD tool is configured and installed
-	pmd := config.Config.Tools()["pmd"]
-	isToolInstalled := config.Config.IsToolInstalled("pmd", pmd)
-
-	// Also check if the runtime is installed
+func genericRunTool(toolName string, workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string) error {
+	tool := config.Config.Tools()[toolName]
+	isToolInstalled := config.Config.IsToolInstalled(toolName, tool)
 	var isRuntimeInstalled bool
-	if pmd != nil {
-		javaRuntime := config.Config.Runtimes()["java"]
-		isRuntimeInstalled = javaRuntime != nil && config.Config.IsRuntimeInstalled("java", javaRuntime)
-	}
 
-	if pmd == nil || !isToolInstalled || !isRuntimeInstalled {
-		if pmd == nil {
-			fmt.Println("PMD tool configuration not found, adding and installing...")
-		} else if !isToolInstalled {
-			fmt.Println("PMD tool is not installed, installing...")
-		} else if !isRuntimeInstalled {
-			fmt.Println("Java runtime is not installed, installing PMD (which will install the runtime)...")
-		}
-
-		err := config.InstallTool("pmd", pmd, "")
+	var runtime *plugins.RuntimeInfo
+	if tool == nil || !isToolInstalled {
+		fmt.Println("Tool configuration not found, adding and installing...")
+		err := config.InstallTool(toolName, tool, "")
 		if err != nil {
-			return fmt.Errorf("failed to install pmd: %w", err)
+			return fmt.Errorf("failed to install %s: %w", toolName, err)
+		}
+		tool = config.Config.Tools()[toolName]
+		isToolInstalled = config.Config.IsToolInstalled(toolName, tool)
+
+		runtime = config.Config.Runtimes()[tool.Runtime]
+		isRuntimeInstalled = runtime == nil || config.Config.IsRuntimeInstalled(tool.Runtime, runtime)
+		if !isRuntimeInstalled {
+			fmt.Println("Runtime is not installed, installing...")
+			err := config.InstallRuntime(tool.Runtime, runtime)
+			if err != nil {
+				return fmt.Errorf("failed to install %s runtime: %w", tool.Runtime, err)
+			}
+			runtime = config.Config.Runtimes()[tool.Runtime]
+			isRuntimeInstalled = config.Config.IsRuntimeInstalled(tool.Runtime, runtime)
 		}
 
-		// Get the updated tool info after installation
-		pmd = config.Config.Tools()["pmd"]
-		if pmd == nil {
-			return fmt.Errorf("pmd tool configuration still not found after installation")
-		}
-		fmt.Println("PMD tool installed successfully")
-	}
-
-	// Ensure Java runtime is available
-	javaRuntime := config.Config.Runtimes()["java"]
-	if javaRuntime == nil {
-		return fmt.Errorf("java runtime not found - this should not happen after pmd installation")
-	}
-
-	// Ensure pmd binary is available
-	pmdBinary := pmd.Binaries["pmd"]
-	if pmdBinary == "" {
-		return fmt.Errorf("pmd binary not found in tool configuration")
-	}
-
-	// Run PMD
-	return tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, config.Config)
-}
-
-func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	// Ensure Pylint tool is configured and installed
-	pylint := config.Config.Tools()["pylint"]
-	isToolInstalled := config.Config.IsToolInstalled("pylint", pylint)
-
-	// Also check if the runtime is installed
-	var isRuntimeInstalled bool
-	if pylint != nil {
-		pythonRuntime := config.Config.Runtimes()["python"]
-		isRuntimeInstalled = pythonRuntime != nil && config.Config.IsRuntimeInstalled("python", pythonRuntime)
-	}
-
-	if pylint == nil || !isToolInstalled || !isRuntimeInstalled {
-		if pylint == nil {
-			fmt.Println("Pylint tool configuration not found, adding and installing...")
-		} else if !isToolInstalled {
-			fmt.Println("Pylint tool is not installed, installing...")
-		} else if !isRuntimeInstalled {
-			fmt.Println("Python runtime is not installed, installing Pylint (which will install the runtime)...")
+	} else {
+		runtime = config.Config.Runtimes()[tool.Runtime]
+		isRuntimeInstalled = runtime == nil || config.Config.IsRuntimeInstalled(tool.Runtime, runtime)
+		if !isRuntimeInstalled {
+			fmt.Println("Runtime is not installed, installing...")
+			err := config.InstallRuntime(tool.Runtime, runtime)
+			if err != nil {
+				return fmt.Errorf("failed to install %s runtime: %w", tool.Runtime, err)
+			}
+			runtime = config.Config.Runtimes()[tool.Runtime]
+			isRuntimeInstalled = config.Config.IsRuntimeInstalled(tool.Runtime, runtime)
 		}
 
-		err := config.InstallTool("pylint", pylint, "")
-		if err != nil {
-			return fmt.Errorf("failed to install pylint: %w", err)
-		}
-
-		// Get the updated tool info after installation
-		pylint = config.Config.Tools()["pylint"]
-		if pylint == nil {
-			return fmt.Errorf("pylint tool configuration still not found after installation")
-		}
-		fmt.Println("Pylint tool installed successfully")
 	}
 
-	// Ensure Python runtime is available
-	pythonRuntime := config.Config.Runtimes()["python"]
-	if pythonRuntime == nil {
-		return fmt.Errorf("python runtime not found - this should not happen after pylint installation")
-	}
-
-	// Ensure python binary is available
-	pylintBinary := pylint.Binaries["python"]
-	if pylintBinary == "" {
-		return fmt.Errorf("python binary not found in pylint tool configuration")
-	}
-
-	// Run Pylint
-	return tools.RunPylint(workDirectory, pylintBinary, pathsToCheck, outputFile, outputFormat)
-}
-
-func runDartAnalyzer(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	// Ensure Dart Analyzer tool is configured and installed
-	dartanalyzer := config.Config.Tools()["dartanalyzer"]
-	isToolInstalled := config.Config.IsToolInstalled("dartanalyzer", dartanalyzer)
-
-	// Also check if the runtime is installed
-	var isRuntimeInstalled bool
-	if dartanalyzer != nil {
-		dartRuntime := config.Config.Runtimes()["dart"]
-		isRuntimeInstalled = dartRuntime != nil && config.Config.IsRuntimeInstalled("dart", dartRuntime)
-	}
-
-	if dartanalyzer == nil || !isToolInstalled || !isRuntimeInstalled {
-		if dartanalyzer == nil {
-			fmt.Println("Dart analyzer tool configuration not found, adding and installing...")
-		} else if !isToolInstalled {
-			fmt.Println("Dart analyzer tool is not installed, installing...")
-		} else if !isRuntimeInstalled {
-			fmt.Println("Dart runtime is not installed, installing Dart Analyzer (which will install the runtime)...")
-		}
-
-		err := config.InstallTool("dartanalyzer", dartanalyzer, "")
-		if err != nil {
-			return fmt.Errorf("failed to install dartanalyzer: %w", err)
-		}
-
-		// Get the updated tool info after installation
-		dartanalyzer = config.Config.Tools()["dartanalyzer"]
-		if dartanalyzer == nil {
-			return fmt.Errorf("dartanalyzer tool configuration still not found after installation")
-		}
-		fmt.Println("Dart analyzer tool installed successfully")
-	}
-
-	// Ensure Dart runtime is available (dart or flutter)
-	if config.Config.Runtimes()["flutter"] == nil && config.Config.Runtimes()["dart"] == nil {
-		return fmt.Errorf("dart or flutter runtime not found - this should not happen after dartanalyzer installation")
-	}
-
-	// Ensure dart binary is available
-	dartBinary := dartanalyzer.Binaries["dart"]
-	if dartBinary == "" {
-		return fmt.Errorf("dart binary not found in dartanalyzer tool configuration")
-	}
-
-	// Run Dart Analyzer
-	return tools.RunDartAnalyzer(workDirectory, dartanalyzer.InstallDir, dartBinary, pathsToCheck, outputFile, outputFormat)
-}
-
-func runSemgrepAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	// Ensure Semgrep tool is configured and installed
-	semgrep := config.Config.Tools()["semgrep"]
-	isToolInstalled := config.Config.IsToolInstalled("semgrep", semgrep)
-
-	// Also check if the runtime is installed
-	var isRuntimeInstalled bool
-	if semgrep != nil {
-		pythonRuntime := config.Config.Runtimes()["python"]
-		isRuntimeInstalled = pythonRuntime != nil && config.Config.IsRuntimeInstalled("python", pythonRuntime)
-	}
-
-	if semgrep == nil || !isToolInstalled || !isRuntimeInstalled {
-		if semgrep == nil {
-			fmt.Println("Semgrep tool configuration not found, adding and installing...")
-		} else if !isToolInstalled {
-			fmt.Println("Semgrep tool is not installed, installing...")
-		} else if !isRuntimeInstalled {
-			fmt.Println("Python runtime is not installed, installing Semgrep (which will install the runtime)...")
-		}
-
-		err := config.InstallTool("semgrep", semgrep, "")
-		if err != nil {
-			return fmt.Errorf("failed to install semgrep: %w", err)
-		}
-
-		// Get the updated tool info after installation
-		semgrep = config.Config.Tools()["semgrep"]
-		if semgrep == nil {
-			return fmt.Errorf("semgrep tool configuration still not found after installation")
-		}
-		fmt.Println("Semgrep tool installed successfully")
-	}
-
-	// Ensure Python runtime is available
-	pythonRuntime := config.Config.Runtimes()["python"]
-	if pythonRuntime == nil {
-		return fmt.Errorf("python runtime not found - this should not happen after semgrep installation")
-	}
-
-	// Ensure semgrep binary is available
-	semgrepBinary := semgrep.Binaries["semgrep"]
-	if semgrepBinary == "" {
-		return fmt.Errorf("semgrep binary not found in tool configuration")
-	}
-
-	// Run Semgrep
-	return tools.RunSemgrep(workDirectory, semgrepBinary, pathsToCheck, outputFile, outputFormat)
+	return runToolByTooName(toolName, workDirectory, pathsToCheck, autoFix, outputFile, outputFormat, tool, runtime)
 }
 
 func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
@@ -814,26 +594,9 @@ var analyzeCmd = &cobra.Command{
 }
 
 func runTool(workDirectory string, toolName string, args []string, outputFile string) error {
-	switch toolName {
-	case "eslint":
-		return runEslintAnalysis(workDirectory, args, autoFix, outputFile, outputFormat)
-	case "trivy":
-		return runTrivyAnalysis(workDirectory, args, outputFile, outputFormat)
-	case "pmd":
-		return runPmdAnalysis(workDirectory, args, outputFile, outputFormat)
-	case "pylint":
-		return runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
-	case "semgrep":
-		return runSemgrepAnalysis(workDirectory, args, outputFile, outputFormat)
-	case "dartanalyzer":
-		return runDartAnalyzer(workDirectory, args, outputFile, outputFormat)
-	case "lizard":
-		return runLizardAnalysis(workDirectory, args, outputFile, outputFormat)
-	case "codacy-enigma-cli":
-		return runEnigmaAnalysis(workDirectory, args, outputFile, outputFormat)
-	case "revive":
-		return runReviveAnalysis(workDirectory, args, outputFile, outputFormat)
-	default:
-		return fmt.Errorf("unsupported tool: %s", toolName)
+	err := genericRunTool(toolName, workDirectory, args, autoFix, outputFile, outputFormat)
+	if err != nil {
+		return err
 	}
+	return nil
 }
