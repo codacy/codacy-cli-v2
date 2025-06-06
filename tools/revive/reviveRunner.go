@@ -1,13 +1,15 @@
 package tools
 
 import (
+	"codacy/cli-v2/config"
+	parenttools "codacy/cli-v2/tools"
+	"codacy/cli-v2/utils/logger"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 
-	"codacy/cli-v2/config"
-	parenttools "codacy/cli-v2/tools"
+	"github.com/sirupsen/logrus"
 )
 
 // RunRevive executes revive analysis on the specified files or directory
@@ -46,6 +48,10 @@ func RunRevive(workDirectory string, binary string, files []string, outputFile s
 	} else {
 		cmd.Stdout = os.Stdout
 	}
+
+	logger.Debug("Running Revive command", logrus.Fields{
+		"command": cmd.String(),
+	})
 
 	if err := cmd.Run(); err != nil {
 		if _, ok := err.(*exec.ExitError); !ok {

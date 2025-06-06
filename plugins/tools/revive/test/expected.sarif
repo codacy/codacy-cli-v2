@@ -12,6 +12,25 @@
                 },
                 "region": {
                   "startColumn": 1,
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "should have a package comment"
+          },
+          "ruleId": "package-comments"
+        },
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "bad.go"
+                },
+                "region": {
+                  "startColumn": 1,
                   "startLine": 7
                 }
               }
@@ -59,25 +78,6 @@
             "text": "comment on exported function NakedReturn should be of the form \"NakedReturn ...\""
           },
           "ruleId": "exported"
-        },
-        {
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "bad.go"
-                },
-                "region": {
-                  "startColumn": 1,
-                  "startLine": 1
-                }
-              }
-            }
-          ],
-          "message": {
-            "text": "should have a package comment"
-          },
-          "ruleId": "package-comments"
         },
         {
           "locations": [
