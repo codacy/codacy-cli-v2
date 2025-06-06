@@ -9,8 +9,8 @@ import (
 )
 
 type configFile struct {
-	RUNTIMES []string
-	TOOLS    []string
+	RUNTIMES []string `yaml:"runtimes"`
+	TOOLS    []string `yaml:"tools"`
 }
 
 func parseConfigFile(configContents []byte) error {
