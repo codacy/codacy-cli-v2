@@ -18,6 +18,7 @@ func RunRevive(workDirectory string, binary string, files []string, outputFile s
 
 	// Check if a config file exists in the expected location and use it if present
 	if configFile, exists := parenttools.ConfigFileExists(config.Config, "revive.toml"); exists {
+		log.Printf("[REVIVE] Using config file: %s", configFile)
 		cmdArgs = append(cmdArgs, "-config", configFile)
 	}
 
