@@ -263,21 +263,28 @@ func getToolName(toolName string, version string) string {
 func runToolByTooName(toolName string, workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string, tool *plugins.ToolInfo, runtime *plugins.RuntimeInfo) error {
 	switch toolName {
 	case "eslint":
-		return tools.RunEslint(workDirectory, tool.InstallDir, runtime.Binaries[tool.Runtime], pathsToCheck, autoFix, outputFile, outputFormat)
+		binaryPath := runtime.Binaries[tool.Runtime]
+		return tools.RunEslint(workDirectory, tool.InstallDir, binaryPath, pathsToCheck, autoFix, outputFile, outputFormat)
 	case "trivy":
-		return tools.RunTrivy(workDirectory, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
+		binaryPath := tool.Binaries[toolName]
+		return tools.RunTrivy(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)
 	case "pmd":
-		return tools.RunPmd(workDirectory, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat, config.Config)
+		binaryPath := tool.Binaries[toolName]
+		return tools.RunPmd(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat, config.Config)
 	case "pylint":
-		return tools.RunPylint(workDirectory, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
+		binaryPath := tool.Binaries[tool.Runtime]
+		return tools.RunPylint(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)
 	case "dartanalyzer":
-		return tools.RunDartAnalyzer(workDirectory, tool.InstallDir, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
+		binaryPath := tool.Binaries[tool.Runtime]
+		return tools.RunDartAnalyzer(workDirectory, tool.InstallDir, binaryPath, pathsToCheck, outputFile, outputFormat)
 	case "semgrep":
-		return tools.RunSemgrep(workDirectory, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
+		binaryPath := tool.Binaries[toolName]
+		return tools.RunSemgrep(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)
 	case "lizard":
-		return lizard.RunLizard(workDirectory, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
-	case "enigma":
-		return tools.RunEnigma(workDirectory, tool.InstallDir, tool.Binaries[tool.Runtime], pathsToCheck, outputFile, outputFormat)
+		binaryPath := tool.Binaries[tool.Runtime]
+		return lizard.RunLizard(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)
+	case "codacy-enigma-cli":
+		return tools.RunEnigma(workDirectory, tool.InstallDir, tool.Binaries["codacy-enigma-cli"], pathsToCheck, outputFile, outputFormat)
 	case "revive":
 		return reviveTool.RunRevive(workDirectory, tool.Binaries["revive"], pathsToCheck, outputFile, outputFormat)
 	}
@@ -286,7 +293,12 @@ func runToolByTooName(toolName string, workDirectory string, pathsToCheck []stri
 
 func genericRunTool(toolName string, workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string) error {
 	tool := config.Config.Tools()[toolName]
-	isToolInstalled := config.Config.IsToolInstalled(toolName, tool)
+	var isToolInstalled bool
+	if tool == nil {
+		isToolInstalled = false
+	} else {
+		isToolInstalled = config.Config.IsToolInstalled(toolName, tool)
+	}
 	var isRuntimeInstalled bool
 
 	var runtime *plugins.RuntimeInfo

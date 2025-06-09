@@ -28,6 +28,20 @@ import (
 func RunPmd(repositoryToAnalyseDirectory string, pmdBinary string, pathsToCheck []string, outputFile string, outputFormat string, config config.ConfigType) error {
 	var cmd *exec.Cmd
 
+	// Debug: Log the binary path being used
+	logger.Debug("PMD binary path", logrus.Fields{
+		"pmdBinary": pmdBinary,
+	})
+
+	// Check if the binary exists
+	if _, err := os.Stat(pmdBinary); err != nil {
+		logger.Error("PMD binary not found", logrus.Fields{
+			"pmdBinary": pmdBinary,
+			"error":     err,
+		})
+		return fmt.Errorf("PMD binary not found at %s: %w", pmdBinary, err)
+	}
+
 	// Get tool info to check version
 	toolInfo := config.Tools()["pmd"]
 	if toolInfo == nil {
