@@ -683,9 +683,7 @@ func createToolConfigurationFile(uuid string, patternsConfig []domain.PatternCon
 	case domain.Lizard:
 		return createLizardConfigFile(toolsConfigDir, patternsConfig)
 	case domain.Revive:
-		if err := createReviveConfigFile(patternsConfig, toolsConfigDir); err != nil {
-			return fmt.Errorf("failed to create default Revive configuration: %w", err)
-		}
+		return createReviveConfigFile(patternsConfig, toolsConfigDir)
 	default:
 		if meta, ok := domain.SupportedToolsMetadata[uuid]; ok {
 			return fmt.Errorf("configuration creation not implemented for tool %s", meta.Name)
