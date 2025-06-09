@@ -9,8 +9,8 @@ export default [
           "no-class-assign": ["error"],
           "no-compare-neg-zero": ["error"],
           "no-cond-assign": ["error", "except-parens"],
-          "no-const-assign": ["error"],
           "no-constant-condition": ["error", {"checkLoops": true}],
+          "no-const-assign": ["error"],
           "no-control-regex": ["error"],
           "no-debugger": ["error"],
           "no-delete-var": ["error"],
@@ -31,7 +31,7 @@ export default [
           "no-import-assign": ["error"],
           "no-inner-declarations": ["error", "functions"],
           "no-invalid-regexp": ["error"],
-          "no-irregular-whitespace": ["error", {"skipStrings": true, "skipJSXText": false, "skipRegExps": false, "skipComments": false, "skipTemplates": false}],
+          "no-irregular-whitespace": ["error", {"skipComments": false, "skipJSXText": false, "skipRegExps": false, "skipStrings": true, "skipTemplates": false}],
           "no-loss-of-precision": ["error"],
           "no-misleading-character-class": ["error"],
           "no-mixed-spaces-and-tabs": ["error"],
@@ -60,7 +60,7 @@ export default [
           "no-useless-escape": ["error"],
           "no-with": ["error"],
           "require-yield": ["error"],
-          "use-isnan": ["error", {"enforceForSwitchCase": true, "enforceForIndexOf": false}],
+          "use-isnan": ["error", {"enforceForIndexOf": false, "enforceForSwitchCase": true}],
           "valid-typeof": ["error", {"requireStringLiterals": false}],
         }
     }

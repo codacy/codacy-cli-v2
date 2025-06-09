@@ -24,7 +24,10 @@ normalize_paths() {
 sort_sarif() {
   local input=$1
   local output=$2
-  jq --sort-keys 'if .runs[0].tool.driver.rules == null then . else .runs[0].tool.driver.rules |= sort_by(.id) end' "$input" > "$output"
+  jq --sort-keys '
+    if .runs[0].tool.driver.rules == null then . else .runs[0].tool.driver.rules |= sort_by(.id) end
+    | .runs[0].results |= sort_by(.ruleId, .message.text, .locations[0].physicalLocation.region.startLine, .locations[0].physicalLocation.region.startColumn)
+  ' "$input" > "$output"
 }
 
 # Check if tool name is provided

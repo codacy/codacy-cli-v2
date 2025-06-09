@@ -15,6 +15,7 @@ import (
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/tools/lizard"
 	"codacy/cli-v2/tools/pylint"
+	reviveTool "codacy/cli-v2/tools/revive"
 	"codacy/cli-v2/utils"
 )
 
@@ -374,6 +375,11 @@ func createToolFileConfigurations(tool domain.Tool, patternConfiguration []domai
 			return fmt.Errorf("failed to create Lizard config: %v", err)
 		}
 		fmt.Println("Lizard configuration created based on Codacy settings")
+	case domain.Revive:
+		if err := createReviveConfigFile(patternConfiguration, toolsConfigDir); err != nil {
+			return fmt.Errorf("failed to write revive config: %v", err)
+		}
+		fmt.Println("Revive configuration created based on Codacy settings")
 	}
 	return nil
 }
@@ -464,6 +470,11 @@ func createLizardConfigFile(toolsConfigDir string, patternConfiguration []domain
 		return fmt.Errorf("failed to create Lizard configuration: %w", err)
 	}
 	return nil
+}
+
+func createReviveConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
+	reviveConfigurationString := reviveTool.GenerateReviveConfig(config)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "revive.toml"), []byte(reviveConfigurationString), utils.DefaultFilePerms)
 }
 
 // buildDefaultConfigurationFiles creates default configuration files for all tools
@@ -671,6 +682,8 @@ func createToolConfigurationFile(uuid string, patternsConfig []domain.PatternCon
 		return createSemgrepConfigFile(patternsConfig, toolsConfigDir)
 	case domain.Lizard:
 		return createLizardConfigFile(toolsConfigDir, patternsConfig)
+	case domain.Revive:
+		return createReviveConfigFile(patternsConfig, toolsConfigDir)
 	default:
 		if meta, ok := domain.SupportedToolsMetadata[uuid]; ok {
 			return fmt.Errorf("configuration creation not implemented for tool %s", meta.Name)

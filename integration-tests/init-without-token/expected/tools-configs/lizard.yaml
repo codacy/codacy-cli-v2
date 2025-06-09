@@ -1,7 +1,7 @@
 patterns:
     Lizard_ccn-medium:
         category: Complexity
-        description: Check the Cyclomatic Complexity value of a function or logic block. If the threshold is not met, raise a Medium issue. The default threshold is 8.
+        description: Checks if the cyclomatic complexity of a function or logic block exceeds the medium threshold (default is 8).
         explanation: |-
             # Medium Cyclomatic Complexity control
 
@@ -11,20 +11,20 @@ patterns:
         severityLevel: Warning
         threshold: 8
         timeToFix: 5
-        title: Medium Cyclomatic Complexity control
+        title: Enforce Medium Cyclomatic Complexity Threshold
     Lizard_file-nloc-medium:
         category: Complexity
-        description: Check the number of lines of code (without comments) in a file. If the threshold is not met, raise a Medium issue. The default threshold is 500.
+        description: This rule checks if the number of lines of code (excluding comments) in a file exceeds a medium threshold, typically 500 lines.
         explanation: ""
         id: Lizard_file-nloc-medium
         level: Warning
         severityLevel: Warning
         threshold: 500
         timeToFix: 5
-        title: Medium File NLOC control - Number of Lines of Code (without comments)
+        title: Enforce Medium File Length Limit Based on Number of Lines of Code
     Lizard_nloc-medium:
         category: Complexity
-        description: Check the number of lines of code (without comments) in a function. If the threshold is not met, raise a Medium issue. The default threshold is 50.
+        description: Checks if the number of lines of code (excluding comments) in a function exceeds a medium threshold (default 50 lines).
         explanation: |-
             # Medium NLOC control - Number of Lines of Code (without comments)
 
@@ -34,10 +34,10 @@ patterns:
         severityLevel: Warning
         threshold: 50
         timeToFix: 5
-        title: Medium NLOC control - Number of Lines of Code (without comments)
+        title: Enforce Medium Number of Lines of Code (NLOC) Limit
     Lizard_parameter-count-medium:
         category: Complexity
-        description: Check the number of parameters sent to a function. If the threshold is not met, raise a Medium issue. The default threshold is 8.
+        description: This rule checks the number of parameters passed to a function and raises an issue if it exceeds a medium threshold, which by default is 8 parameters.
         explanation: |-
             # Medium Parameter count control
 
@@ -47,4 +47,4 @@ patterns:
         severityLevel: Warning
         threshold: 8
         timeToFix: 5
-        title: Medium Parameter count control
+        title: Enforce Medium Parameter Count Limit
