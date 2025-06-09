@@ -64,11 +64,11 @@ normalize_eslint_config() {
       next 
     }
     inRules && /^\s*\}/ { 
-      # Sort collected rules and print them
-      n = asorti(rules, sortedIndices)
-      for (i = 1; i <= n; i++) {
-        print rules[sortedIndices[i]]
+      # Print collected rules in sorted order using pipe to sort
+      for (rule in rules) {
+        print rules[rule] | "sort"
       }
+      close("sort")
       delete rules
       inRules = 0
       print
@@ -90,24 +90,47 @@ normalize_toml_config() {
   awk -F'=' '
     /^[^#].*=.*\[.*\]/ {
       # Handle TOML arrays like: rules = ["a", "b", "c"]
-      match($2, /\[(.*)\]/, arr)
-      if (arr[1]) {
-        split(arr[1], values, /,\s*/)
-        # Sort values
-        n = asort(values)
-        printf "%s=[", $1
-        for (i=1; i<=n; i++) {
-          if (i>1) printf ", "
-          printf "%s", values[i]
+      # Extract array content using substr and index instead of match with array
+      start = index($2, "[")
+      end = index($2, "]")
+      if (start > 0 && end > start) {
+        array_content = substr($2, start+1, end-start-1)
+        if (array_content) {
+          # Split and sort values
+          n = split(array_content, values, /,\s*/)
+          # Sort using a simple bubble sort since asort is not available
+          for (i = 1; i <= n; i++) {
+            for (j = i+1; j <= n; j++) {
+              if (values[i] > values[j]) {
+                temp = values[i]
+                values[i] = values[j]
+                values[j] = temp
+              }
+            }
+          }
+          printf "%s=[", $1
+          for (i=1; i<=n; i++) {
+            if (i>1) printf ", "
+            printf "%s", values[i]
+          }
+          print "]"
+          next
         }
-        print "]"
-        next
       }
     }
     /^[^#].*=.*,/ {
       # Handle simple comma-separated values
-      split($2, values, ",")
-      n = asort(values)
+      n = split($2, values, ",")
+      # Sort using bubble sort
+      for (i = 1; i <= n; i++) {
+        for (j = i+1; j <= n; j++) {
+          if (values[i] > values[j]) {
+            temp = values[i]
+            values[i] = values[j]
+            values[j] = temp
+          }
+        }
+      }
       printf "%s=", $1
       for (i=1; i<=n; i++) {
         if (i>1) printf ","
@@ -126,8 +149,17 @@ normalize_rc_config() {
   # Handle key-value pairs with comma-separated values
   awk -F'=' '
     /^[^#].*=.*,/ {
-      split($2, values, ",")
-      n = asort(values)
+      n = split($2, values, ",")
+      # Sort using bubble sort
+      for (i = 1; i <= n; i++) {
+        for (j = i+1; j <= n; j++) {
+          if (values[i] > values[j]) {
+            temp = values[i]
+            values[i] = values[j]
+            values[j] = temp
+          }
+        }
+      }
       printf "%s=", $1
       for (i=1; i<=n; i++) {
         if (i>1) printf ","
@@ -143,9 +175,41 @@ normalize_rc_config() {
 # Normalize XML configuration files
 normalize_xml_config() {
   local file=$1
-  # Sort rule references while preserving XML structure
+  # Sort rule references and properties within properties blocks
   awk '
-    BEGIN { n = 0; end = ""; }
+    BEGIN { 
+      n = 0; 
+      end = ""; 
+      in_props = 0; 
+      props_count = 0;
+    }
+    /^ *<properties>/ { 
+      in_props = 1; 
+      props_start = $0;
+      props_count = 0;
+      next 
+    }
+    /^ *<\/properties>/ { 
+      in_props = 0; 
+      # Sort and print collected properties
+      print props_start;
+      for (i = 1; i <= props_count; i++) {
+        for (j = i+1; j <= props_count; j++) {
+          if (props[i] > props[j]) {
+            temp = props[i]
+            props[i] = props[j]
+            props[j] = temp
+          }
+        }
+      }
+      for (i = 1; i <= props_count; i++) print props[i];
+      print $0;
+      next 
+    }
+    in_props && /^ *<property/ { 
+      props[++props_count] = $0; 
+      next 
+    }
     /^ *<rule ref=/ { 
       rules[++n] = $0; 
       next 
@@ -160,8 +224,17 @@ normalize_xml_config() {
     }
     END {
       if (n > 0) {
-        n = asort(rules, sorted_rules)
-        for (i = 1; i <= n; i++) print sorted_rules[i]
+        # Sort rule references using bubble sort
+        for (i = 1; i <= n; i++) {
+          for (j = i+1; j <= n; j++) {
+            if (rules[i] > rules[j]) {
+              temp = rules[i]
+              rules[i] = rules[j]
+              rules[j] = temp
+            }
+          }
+        }
+        for (i = 1; i <= n; i++) print rules[i];
       }
       if (end) print end
     }

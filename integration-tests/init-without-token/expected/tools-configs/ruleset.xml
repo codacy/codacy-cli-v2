@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <ruleset name="Codacy PMD Ruleset"
-         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
     <description>Codacy PMD Ruleset</description>
     <rule ref="category/apex/design.xml/AvoidDeeplyNestedIfStmts"/>
     <rule ref="category/apex/design.xml/ExcessiveClassLength"/>
@@ -13,8 +13,8 @@
     <rule ref="category/apex/security.xml/ApexDangerousMethods"/>
     <rule ref="category/apex/security.xml/ApexInsecureEndpoint"/>
     <rule ref="category/apex/security.xml/ApexOpenRedirect"/>
-    <rule ref="category/apex/security.xml/ApexSOQLInjection"/>
     <rule ref="category/apex/security.xml/ApexSharingViolations"/>
+    <rule ref="category/apex/security.xml/ApexSOQLInjection"/>
     <rule ref="category/apex/security.xml/ApexSuggestUsingNamedCred"/>
     <rule ref="category/apex/security.xml/ApexXSSFromEscapeFalse"/>
     <rule ref="category/apex/security.xml/ApexXSSFromURLParam"/>
@@ -23,12 +23,12 @@
     <rule ref="category/ecmascript/bestpractices.xml/UseBaseWithParseInt"/>
     <rule ref="category/ecmascript/codestyle.xml/AssignmentInOperand">
         <properties>
-            <property name="allowWhile" value="false"/>
-            <property name="allowIf" value="false"/>
-            <property name="allowTernaryResults" value="false"/>
-            <property name="allowTernary" value="false"/>
             <property name="allowFor" value="false"/>
+            <property name="allowIf" value="false"/>
             <property name="allowIncrementDecrement" value="false"/>
+            <property name="allowTernary" value="false"/>
+            <property name="allowTernaryResults" value="false"/>
+            <property name="allowWhile" value="false"/>
         </properties>
     </rule>
     <rule ref="category/ecmascript/codestyle.xml/UnnecessaryBlock"/>
@@ -49,13 +49,13 @@
     <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod"/>
     <rule ref="category/java/codestyle.xml/ClassNamingConventions">
         <properties>
-            <property name="testClassPattern" value="^Test.*$|^[A-Z][a-zA-Z0-9]*Test(s|Case)?$"/>
             <property name="abstractClassPattern" value="[A-Z][a-zA-Z0-9]*"/>
-            <property name="classPattern" value="[A-Z][a-zA-Z0-9]*"/>
-            <property name="utilityClassPattern" value="[A-Z][a-zA-Z0-9]*"/>
             <property name="annotationPattern" value="[A-Z][a-zA-Z0-9]*"/>
+            <property name="classPattern" value="[A-Z][a-zA-Z0-9]*"/>
             <property name="enumPattern" value="[A-Z][a-zA-Z0-9]*"/>
             <property name="interfacePattern" value="[A-Z][a-zA-Z0-9]*"/>
+            <property name="testClassPattern" value="^Test.*$|^[A-Z][a-zA-Z0-9]*Test(s|Case)?$"/>
+            <property name="utilityClassPattern" value="[A-Z][a-zA-Z0-9]*"/>
         </properties>
     </rule>
     <rule ref="category/java/codestyle.xml/ExtendsObject"/>
@@ -64,11 +64,11 @@
     <rule ref="category/java/codestyle.xml/MethodNamingConventions">
         <properties>
             <property name="junit3TestPattern" value="test[A-Z0-9][a-zA-Z0-9]*"/>
-            <property name="junit5TestPattern" value="[a-z][a-zA-Z0-9]*"/>
-            <property name="staticPattern" value="[a-z][a-zA-Z0-9]*"/>
-            <property name="methodPattern" value="[a-z][a-zA-Z0-9]*"/>
             <property name="junit4TestPattern" value="[a-z][a-zA-Z0-9]*"/>
+            <property name="junit5TestPattern" value="[a-z][a-zA-Z0-9]*"/>
+            <property name="methodPattern" value="[a-z][a-zA-Z0-9]*"/>
             <property name="nativePattern" value="[a-z][a-zA-Z0-9]*"/>
+            <property name="staticPattern" value="[a-z][a-zA-Z0-9]*"/>
         </properties>
     </rule>
     <rule ref="category/java/codestyle.xml/NoPackage"/>
@@ -104,9 +104,9 @@
     <rule ref="category/java/errorprone.xml/DontUseFloatTypeForLoopIndices"/>
     <rule ref="category/java/errorprone.xml/EmptyFinalizer"/>
     <rule ref="category/java/errorprone.xml/EqualsNull"/>
+    <rule ref="category/java/errorprone.xml/JumbledIncrementer"/>
     <rule ref="category/java/errorprone.xml/JUnitSpelling"/>
     <rule ref="category/java/errorprone.xml/JUnitStaticSuite"/>
-    <rule ref="category/java/errorprone.xml/JumbledIncrementer"/>
     <rule ref="category/java/errorprone.xml/MethodWithSameNameAsEnclosingClass"/>
     <rule ref="category/java/errorprone.xml/MisplacedNullCheck"/>
     <rule ref="category/java/errorprone.xml/MissingStaticMethodInNonInstantiatableClass">
@@ -152,8 +152,8 @@
             <property name="maxmethods" value="1"/>
         </properties>
     </rule>
-    <rule ref="category/plsql/errorprone.xml/TO_DATEWithoutDateFormat"/>
     <rule ref="category/plsql/errorprone.xml/TO_DATE_TO_CHAR"/>
+    <rule ref="category/plsql/errorprone.xml/TO_DATEWithoutDateFormat"/>
     <rule ref="category/plsql/errorprone.xml/TO_TIMESTAMPWithoutDateFormat"/>
     <rule ref="category/pom/errorprone.xml/InvalidDependencyTypes">
         <properties>

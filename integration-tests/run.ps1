@@ -70,7 +70,7 @@ function Normalize-EslintConfig {
             $output += $line
             $inRules = $true
         } elseif ($inRules -and $line -match '^\s*\}') {
-            # Sort collected rule lines and add them
+            # Sort collected rule lines (since expected file already has properties sorted)
             $output += ($ruleLines | Sort-Object)
             $ruleLines = @()
             $inRules = $false
@@ -129,10 +129,26 @@ function Normalize-XmlConfig {
     $rules = @()
     $output = @()
     $endTag = $null
+    $inProps = $false
+    $properties = @()
+    $propsStart = $null
 
     foreach ($line in $lines) {
         $trimmed = $line.TrimStart()
-        if ($trimmed -match '^<rule ref=') {
+        
+        if ($trimmed -match '^<properties>') {
+            $inProps = $true
+            $propsStart = $trimmed
+            $properties = @()
+        } elseif ($trimmed -match '^</properties>') {
+            $inProps = $false
+            # Add sorted properties block
+            $output += $propsStart
+            $output += ($properties | Sort-Object)
+            $output += $trimmed
+        } elseif ($inProps -and $trimmed -match '^<property') {
+            $properties += $trimmed
+        } elseif ($trimmed -match '^<rule ref=') {
             $rules += $trimmed
         } elseif ($trimmed -match '^</ruleset>') {
             $endTag = $trimmed
