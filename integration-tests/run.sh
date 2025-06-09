@@ -50,10 +50,35 @@ normalize_config() {
         { print }
       ' "$file"
       ;;
-    rc|conf|ini)
-      # For other config files, sort values after '=' and keep other lines
+    rc|conf|ini|toml)
+      # For config files, sort values after '=' and handle TOML arrays
       awk -F'=' '
+        /^[^#].*=.*\[.*\]/ {
+          # Handle TOML arrays like: rules = ["a", "b", "c"]
+          match($2, /\[(.*)\]/, arr)
+          if (arr[1]) {
+            split(arr[1], values, /,\s*/)
+            # Sort values using a simple bubble sort
+            for (i=1; i<=length(values); i++) {
+              for (j=i+1; j<=length(values); j++) {
+                if (values[i] > values[j]) {
+                  temp = values[i]
+                  values[i] = values[j]
+                  values[j] = temp
+                }
+              }
+            }
+            printf "%s=[", $1
+            for (i=1; i<=length(values); i++) {
+              if (i>1) printf ", "
+              printf "%s", values[i]
+            }
+            print "]"
+            next
+          }
+        }
         /^[^#].*=.*,/ {
+          # Handle simple comma-separated values
           split($2, values, ",")
           # Sort values using a simple bubble sort
           for (i=1; i<=length(values); i++) {

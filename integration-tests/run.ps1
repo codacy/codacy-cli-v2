@@ -96,9 +96,18 @@ function Normalize-Config {
             }
             $output
         }
-        { $_ -in @('rc', 'conf', 'ini', 'xml') } {
+        { $_ -in @('rc', 'conf', 'ini', 'toml', 'xml') } {
             Get-Content $file | ForEach-Object {
-                if ($_ -match '^[^#].*=.*,') {
+                if ($_ -match '^[^#].*=.*\[.*\]') {
+                    # Handle TOML arrays like: rules = ["a", "b", "c"]
+                    $parts = $_ -split '='
+                    if ($parts[1] -match '\[(.*)\]') {
+                        $arrayContent = $matches[1]
+                        $values = $arrayContent -split ',\s*' | Sort-Object
+                        "$($parts[0])=[$($values -join ', ')]"
+                    } else { $_ }
+                } elseif ($_ -match '^[^#].*=.*,') {
+                    # Handle simple comma-separated values
                     $parts = $_ -split '='
                     $values = $parts[1] -split ',' | Sort-Object
                     "$($parts[0])=$($values -join ',')"
