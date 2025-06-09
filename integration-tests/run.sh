@@ -16,32 +16,128 @@ fi
 # Function to normalize and sort configuration values
 normalize_config() {
   local file=$1
-  local ext="${file##*.}"
-  
-  case "$ext" in
-    yaml|yml)
-      normalize_yaml_config "$file"
-      ;;
-    mjs|js)
-      normalize_eslint_config "$file"
-      ;;
-    toml)
-      normalize_toml_config "$file"
-      ;;
-    rc|conf|ini)
-      normalize_rc_config "$file"
-      ;;
-    xml)
-      normalize_xml_config "$file"
-      ;;
-    *)
-      # For other files, just sort
-      sort "$file"
-      ;;
-  esac
+  # Check for specific files first, then fall back to extension
+  if [[ "$file" == *"languages-config.yaml" ]]; then
+    normalize_languages_config "$file"
+  else
+    local ext="${file##*.}"
+    
+    case "$ext" in
+      yaml|yml)
+        normalize_yaml_config "$file"
+        ;;
+      mjs|js)
+        normalize_eslint_config "$file"
+        ;;
+      toml)
+        normalize_toml_config "$file"
+        ;;
+      rc|conf|ini)
+        normalize_rc_config "$file"
+        ;;
+      xml)
+        normalize_xml_config "$file"
+        ;;
+      *)
+        # For other files, just sort
+        sort "$file"
+        ;;
+    esac
+  fi
 }
 
 # Normalize YAML configuration files
+# Normalize languages-config.yaml specifically
+normalize_languages_config() {
+  local file=$1
+  # Sort tools by name using yq if available
+  if command -v yq >/dev/null 2>&1; then
+    yq e '.tools |= sort_by(.name) | sort_keys(.)' "$file" 2>/dev/null || cat "$file"
+  else
+    # Fallback: manual sorting using awk
+    awk '
+      BEGIN { in_tools = 0; current_tool = ""; tools_count = 0; }
+      /^tools:/ { 
+        print; 
+        in_tools = 1; 
+        next 
+      }
+      in_tools && /^  - name:/ { 
+        # Start of new tool - save previous if exists
+        if (current_tool != "") {
+          tool_names[tools_count] = tool_name
+          tool_blocks[tools_count] = current_tool
+          tools_count++
+        }
+        # Extract tool name
+        tool_name = $0
+        gsub(/^.*name: */, "", tool_name)
+        current_tool = $0 "\n"
+        next 
+      }
+      in_tools && /^    / { 
+        # Part of current tool
+        current_tool = current_tool $0 "\n"
+        next 
+      }
+      in_tools && /^[^ ]/ { 
+        # End of tools section
+        if (current_tool != "") {
+          tool_names[tools_count] = tool_name
+          tool_blocks[tools_count] = current_tool
+          tools_count++
+        }
+        # Sort and print tools
+        for (i = 0; i < tools_count; i++) {
+          for (j = i+1; j < tools_count; j++) {
+            if (tool_names[i] > tool_names[j]) {
+              # Swap names
+              temp_name = tool_names[i]
+              tool_names[i] = tool_names[j]
+              tool_names[j] = temp_name
+              # Swap blocks
+              temp_block = tool_blocks[i]
+              tool_blocks[i] = tool_blocks[j]
+              tool_blocks[j] = temp_block
+            }
+          }
+        }
+        for (i = 0; i < tools_count; i++) {
+          printf "%s", tool_blocks[i]
+        }
+        in_tools = 0
+        print
+        next
+      }
+      !in_tools { print }
+      END {
+        # Handle case where file ends while in tools section
+        if (in_tools && current_tool != "") {
+          tool_names[tools_count] = tool_name
+          tool_blocks[tools_count] = current_tool
+          tools_count++
+          # Sort and print tools
+          for (i = 0; i < tools_count; i++) {
+            for (j = i+1; j < tools_count; j++) {
+              if (tool_names[i] > tool_names[j]) {
+                temp_name = tool_names[i]
+                tool_names[i] = tool_names[j]
+                tool_names[j] = temp_name
+                temp_block = tool_blocks[i]
+                tool_blocks[i] = tool_blocks[j]
+                tool_blocks[j] = temp_block
+              }
+            }
+          }
+          for (i = 0; i < tools_count; i++) {
+            printf "%s", tool_blocks[i]
+          }
+        }
+      }
+    ' "$file"
+  fi
+}
+
 normalize_yaml_config() {
   local file=$1
   # For YAML files, use yq to sort while preserving structure
@@ -175,24 +271,42 @@ normalize_rc_config() {
 # Normalize XML configuration files
 normalize_xml_config() {
   local file=$1
-  # Sort rule references and properties within properties blocks
+  # Sort rule blocks and properties within properties blocks
   awk '
     BEGIN { 
-      n = 0; 
+      rule_blocks_count = 0;
+      single_rules_count = 0; 
       end = ""; 
+      in_rule_block = 0;
       in_props = 0; 
       props_count = 0;
+      current_rule_block = "";
+      current_rule_ref = "";
     }
-    /^ *<properties>/ { 
+    /^ *<rule ref=.*>$/ { 
+      # Start of a rule block with properties
+      in_rule_block = 1;
+      current_rule_ref = $0;
+      gsub(/^.*ref="/, "", current_rule_ref);
+      gsub(/".*$/, "", current_rule_ref);
+      current_rule_block = $0 "\n";
+      next 
+    }
+              /^ *<rule ref=.*\"\/>$/ { 
+       # Self-closing rule (no properties)
+       single_rules[++single_rules_count] = $0;
+       next 
+     }
+    in_rule_block && /^ *<properties>/ { 
       in_props = 1; 
       props_start = $0;
       props_count = 0;
       next 
     }
-    /^ *<\/properties>/ { 
+    in_rule_block && in_props && /^ *<\/properties>/ { 
       in_props = 0; 
-      # Sort and print collected properties
-      print props_start;
+      # Sort and add collected properties to rule block
+      current_rule_block = current_rule_block props_start "\n";
       for (i = 1; i <= props_count; i++) {
         for (j = i+1; j <= props_count; j++) {
           if (props[i] > props[j]) {
@@ -202,16 +316,31 @@ normalize_xml_config() {
           }
         }
       }
-      for (i = 1; i <= props_count; i++) print props[i];
-      print $0;
+      for (i = 1; i <= props_count; i++) {
+        current_rule_block = current_rule_block props[i] "\n";
+      }
+      current_rule_block = current_rule_block $0 "\n";
+      props_count = 0;
       next 
     }
-    in_props && /^ *<property/ { 
+    in_rule_block && in_props && /^ *<property/ { 
       props[++props_count] = $0; 
       next 
     }
-    /^ *<rule ref=/ { 
-      rules[++n] = $0; 
+         in_rule_block && /^ *<\/rule>/ { 
+       # End of rule block
+       current_rule_block = current_rule_block $0;
+       rule_block_refs[rule_blocks_count] = current_rule_ref;
+       rule_blocks[rule_blocks_count] = current_rule_block;
+       rule_blocks_count++;
+       in_rule_block = 0;
+       current_rule_block = "";
+       current_rule_ref = "";
+       next 
+     }
+    in_rule_block { 
+      # Part of current rule block
+      current_rule_block = current_rule_block $0 "\n";
       next 
     }
     /^ *<\/ruleset>/ { 
@@ -223,19 +352,34 @@ normalize_xml_config() {
       print 
     }
     END {
-      if (n > 0) {
-        # Sort rule references using bubble sort
-        for (i = 1; i <= n; i++) {
-          for (j = i+1; j <= n; j++) {
-            if (rules[i] > rules[j]) {
-              temp = rules[i]
-              rules[i] = rules[j]
-              rules[j] = temp
-            }
+      # Sort rule blocks by reference
+      for (i = 0; i < rule_blocks_count; i++) {
+        for (j = i+1; j < rule_blocks_count; j++) {
+          if (rule_block_refs[i] > rule_block_refs[j]) {
+            temp_ref = rule_block_refs[i]
+            rule_block_refs[i] = rule_block_refs[j]
+            rule_block_refs[j] = temp_ref
+            temp_block = rule_blocks[i]
+            rule_blocks[i] = rule_blocks[j]
+            rule_blocks[j] = temp_block
           }
         }
-        for (i = 1; i <= n; i++) print rules[i];
       }
+             # Print sorted rule blocks
+       for (i = 0; i < rule_blocks_count; i++) {
+         printf "%s\n", rule_blocks[i]
+       }
+      # Sort and print single rules
+      for (i = 1; i <= single_rules_count; i++) {
+        for (j = i+1; j <= single_rules_count; j++) {
+          if (single_rules[i] > single_rules[j]) {
+            temp = single_rules[i]
+            single_rules[i] = single_rules[j]
+            single_rules[j] = temp
+          }
+        }
+      }
+      for (i = 1; i <= single_rules_count; i++) print single_rules[i];
       if (end) print end
     }
   ' "$file"

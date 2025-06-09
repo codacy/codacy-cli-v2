@@ -23,28 +23,95 @@ function Normalize-Config {
     param ([string]$file)
     
     Write-Host "Normalizing config file: $file"
-    $ext = [System.IO.Path]::GetExtension($file).TrimStart('.')
     
-    switch ($ext) {
-        { $_ -in @('yaml', 'yml') } {
-            Normalize-YamlConfig $file
-        }
-        { $_ -in @('mjs', 'js') } {
-            Normalize-EslintConfig $file
-        }
-        'toml' {
-            Normalize-TomlConfig $file
-        }
-        { $_ -in @('rc', 'conf', 'ini') } {
-            Normalize-RcConfig $file
-        }
-        'xml' {
-            Normalize-XmlConfig $file
-        }
-        default { 
-            Get-Content $file | Sort-Object 
+    # Check for specific files first, then fall back to extension
+    if ($file -like "*languages-config.yaml") {
+        Normalize-LanguagesConfig $file
+    } else {
+        $ext = [System.IO.Path]::GetExtension($file).TrimStart('.')
+        
+        switch ($ext) {
+            { $_ -in @('yaml', 'yml') } {
+                Normalize-YamlConfig $file
+            }
+            { $_ -in @('mjs', 'js') } {
+                Normalize-EslintConfig $file
+            }
+            'toml' {
+                Normalize-TomlConfig $file
+            }
+            { $_ -in @('rc', 'conf', 'ini') } {
+                Normalize-RcConfig $file
+            }
+            'xml' {
+                Normalize-XmlConfig $file
+            }
+            default { 
+                Get-Content $file | Sort-Object 
+            }
         }
     }
+}
+
+# Normalize languages-config.yaml specifically  
+function Normalize-LanguagesConfig {
+    param([string]$file)
+    
+    $content = Get-Content $file
+    $inTools = $false
+    $toolLines = @()
+    $output = @()
+    $currentTool = @()
+    
+    foreach ($line in $content) {
+        if ($line -match '^\s*tools:\s*$') {
+            $output += $line
+            $inTools = $true
+        } elseif ($inTools -and $line -match '^\s*-\s*name:') {
+            # Start of a new tool, save previous if exists
+            if ($currentTool.Count -gt 0) {
+                $toolName = ($currentTool[0] -replace '^\s*-\s*name:\s*', '').Trim()
+                $toolLines += @{ Name = $toolName; Lines = $currentTool }
+                $currentTool = @()
+            }
+            $currentTool += $line
+        } elseif ($inTools -and $line -match '^\s*\w+:') {
+            # Part of current tool
+            $currentTool += $line
+        } elseif ($inTools -and $line -match '^\s*$') {
+            # Empty line, could be end of tools section
+            if ($currentTool.Count -gt 0) {
+                $toolName = ($currentTool[0] -replace '^\s*-\s*name:\s*', '').Trim()
+                $toolLines += @{ Name = $toolName; Lines = $currentTool }
+                $currentTool = @()
+            }
+            # Check if next non-empty line starts a new section
+            $output += $line
+        } else {
+            # End of tools section or other content
+            if ($currentTool.Count -gt 0) {
+                $toolName = ($currentTool[0] -replace '^\s*-\s*name:\s*', '').Trim()
+                $toolLines += @{ Name = $toolName; Lines = $currentTool }
+                $currentTool = @()
+            }
+            $inTools = $false
+            $output += $line
+        }
+    }
+    
+    # Handle last tool if exists
+    if ($currentTool.Count -gt 0) {
+        $toolName = ($currentTool[0] -replace '^\s*-\s*name:\s*', '').Trim()
+        $toolLines += @{ Name = $toolName; Lines = $currentTool }
+    }
+    
+    # Sort tools by name and add to output
+    $sortedTools = $toolLines | Sort-Object Name
+    foreach ($tool in $sortedTools) {
+        $output += $tool.Lines
+    }
+    
+    $output
 }
 
 # Normalize YAML configuration files
@@ -126,30 +193,53 @@ function Normalize-XmlConfig {
     param([string]$file)
     
     $lines = Get-Content $file
-    $rules = @()
+    $ruleBlocks = @()
+    $singleRules = @()
     $output = @()
     $endTag = $null
+    $inRuleBlock = $false
     $inProps = $false
     $properties = @()
     $propsStart = $null
+    $currentRuleBlock = @()
+    $currentRuleRef = ""
 
     foreach ($line in $lines) {
         $trimmed = $line.TrimStart()
         
-        if ($trimmed -match '^<properties>') {
+        if ($trimmed -match '^<rule ref="([^"]+)">$') {
+            # Start of a rule block with properties
+            $inRuleBlock = $true
+            $currentRuleRef = $matches[1]
+            $currentRuleBlock = @($trimmed)
+                 } elseif ($trimmed -match '^<rule ref="[^"]+"/>$') {
+             # Self-closing rule (no properties)
+             $singleRules += $trimmed
+        } elseif ($inRuleBlock -and $trimmed -match '^<properties>') {
             $inProps = $true
             $propsStart = $trimmed
             $properties = @()
-        } elseif ($trimmed -match '^</properties>') {
+        } elseif ($inRuleBlock -and $inProps -and $trimmed -match '^</properties>') {
             $inProps = $false
-            # Add sorted properties block
-            $output += $propsStart
-            $output += ($properties | Sort-Object)
-            $output += $trimmed
-        } elseif ($inProps -and $trimmed -match '^<property') {
+            # Add sorted properties to rule block
+            $currentRuleBlock += $propsStart
+            $currentRuleBlock += ($properties | Sort-Object)
+            $currentRuleBlock += $trimmed
+        } elseif ($inRuleBlock -and $inProps -and $trimmed -match '^<property') {
             $properties += $trimmed
-        } elseif ($trimmed -match '^<rule ref=') {
-            $rules += $trimmed
+        } elseif ($inRuleBlock -and $trimmed -match '^</rule>') {
+            # End of rule block
+            $currentRuleBlock += $trimmed
+            $ruleBlocks += @{ 
+                Ref = $currentRuleRef
+                Block = $currentRuleBlock
+            }
+            $inRuleBlock = $false
+            $currentRuleBlock = @()
+            $currentRuleRef = ""
+        } elseif ($inRuleBlock) {
+            # Part of current rule block
+            $currentRuleBlock += $trimmed
         } elseif ($trimmed -match '^</ruleset>') {
             $endTag = $trimmed
         } else {
@@ -157,7 +247,17 @@ function Normalize-XmlConfig {
         }
     }
     
-    $output + ($rules | Sort-Object) + $endTag
+    # Sort rule blocks by reference and add to output
+    $sortedRuleBlocks = $ruleBlocks | Sort-Object Ref
+    foreach ($ruleBlock in $sortedRuleBlocks) {
+        $output += $ruleBlock.Block
+    }
+    
+    # Add sorted single rules
+    $output += ($singleRules | Sort-Object)
+    
+    # Add end tag
+    $output + $endTag
 }
 
 
