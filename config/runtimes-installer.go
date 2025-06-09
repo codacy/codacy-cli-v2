@@ -76,9 +76,15 @@ func InstallRuntime(name string, runtimeInfo *plugins.RuntimeInfo) error {
 
 // downloadAndExtractRuntime downloads and extracts a runtime
 func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
+	// Ensure the runtimes directory exists
+	runtimesDir := Config.RuntimesDirectory()
+	if err := os.MkdirAll(runtimesDir, utils.DefaultDirPerms); err != nil {
+		return fmt.Errorf("failed to create runtimes directory: %w", err)
+	}
+
 	// Create a file name for the downloaded archive
 	fileName := filepath.Base(runtimeInfo.DownloadURL)
-	downloadPath := filepath.Join(Config.RuntimesDirectory(), fileName)
+	downloadPath := filepath.Join(runtimesDir, fileName)
 
 	// Check if the file already exists
 	_, err := os.Stat(downloadPath)
@@ -90,7 +96,7 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 			"downloadURL":  runtimeInfo.DownloadURL,
 			"downloadPath": downloadPath,
 		})
-		downloadPath, err = utils.DownloadFile(runtimeInfo.DownloadURL, Config.RuntimesDirectory())
+		downloadPath, err = utils.DownloadFile(runtimeInfo.DownloadURL, runtimesDir)
 		if err != nil {
 			return fmt.Errorf("failed to download runtime: %w", err)
 		}
@@ -116,13 +122,13 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 		"runtime":          runtimeInfo.Name,
 		"version":          runtimeInfo.Version,
 		"fileName":         fileName,
-		"extractDirectory": Config.RuntimesDirectory(),
+		"extractDirectory": runtimesDir,
 	})
 
 	if strings.HasSuffix(fileName, ".zip") {
-		err = utils.ExtractZip(file.Name(), Config.RuntimesDirectory())
+		err = utils.ExtractZip(file.Name(), runtimesDir)
 	} else {
-		err = utils.ExtractTarGz(file, Config.RuntimesDirectory())
+		err = utils.ExtractTarGz(file, runtimesDir)
 	}
 
 	if err != nil {
