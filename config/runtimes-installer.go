@@ -48,13 +48,11 @@ func InstallRuntimes(config *ConfigType) error {
 // InstallRuntime installs a specific runtime
 func InstallRuntime(name string, runtimeInfo *plugins.RuntimeInfo) error {
 	// Skip if already installed
-	fmt.Printf("Checking if runtime %s v%s is installed\n", name, runtimeInfo.Version)
 	if Config.IsRuntimeInstalled(name, runtimeInfo) {
 		logger.Info("Runtime already installed", logrus.Fields{
 			"runtime": name,
 			"version": runtimeInfo.Version,
 		})
-		fmt.Printf("Runtime %s v%s is already installed\n", name, runtimeInfo.Version)
 		return nil
 	}
 

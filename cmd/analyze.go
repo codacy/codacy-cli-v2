@@ -300,7 +300,7 @@ func genericRunTool(toolName string, workDirectory string, pathsToCheck []string
 		runtime = config.Config.Runtimes()[tool.Runtime]
 		isRuntimeInstalled = runtime == nil || config.Config.IsRuntimeInstalled(tool.Runtime, runtime)
 		if !isRuntimeInstalled {
-			fmt.Println("Runtime is not installed, installing...")
+			fmt.Printf("%s runtime is not installed, installing...\n", tool.Runtime)
 			err := config.InstallRuntime(tool.Runtime, runtime)
 			if err != nil {
 				return fmt.Errorf("failed to install %s runtime: %w", tool.Runtime, err)
@@ -312,7 +312,7 @@ func genericRunTool(toolName string, workDirectory string, pathsToCheck []string
 		runtime = config.Config.Runtimes()[tool.Runtime]
 		isRuntimeInstalled = runtime == nil || config.Config.IsRuntimeInstalled(tool.Runtime, runtime)
 		if !isRuntimeInstalled {
-			fmt.Println("Runtime is not installed, installing...")
+			fmt.Printf("%s runtime is not installed, installing...\n", tool.Runtime)
 			err := config.InstallRuntime(tool.Runtime, runtime)
 			if err != nil {
 				return fmt.Errorf("failed to install %s runtime: %w", tool.Runtime, err)
