@@ -529,25 +529,11 @@ func CleanConfigDirectory(toolsConfigDir string) error {
 	return nil
 }
 
-func createLizardConfigFile(toolsConfigDir string, patternConfiguration []domain.PatternConfiguration) error {
-	patterns := make([]domain.PatternDefinition, len(patternConfiguration))
-	for i, pattern := range patternConfiguration {
-		patterns[i] = pattern.PatternDefinition
-
-	}
-	err := lizard.CreateLizardConfig(toolsConfigDir, patterns)
-	if err != nil {
-		return fmt.Errorf("failed to create Lizard configuration: %w", err)
-	}
-	return nil
-}
-
 func createReviveConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
 	reviveConfigurationString := reviveTool.GenerateReviveConfig(config)
 	return os.WriteFile(filepath.Join(toolsConfigDir, "revive.toml"), []byte(reviveConfigurationString), utils.DefaultFilePerms)
 }
 
-// buildDefaultConfigurationFiles creates default configuration files for all tools
 // BuildDefaultConfigurationFiles creates default configuration files for all tools
 func BuildDefaultConfigurationFiles(toolsConfigDir string, flags domain.InitFlags) error {
 	// Get all supported tool UUIDs
@@ -621,7 +607,7 @@ func CreateConfigurationFilesForDiscoveredTools(discoveredToolNames map[string]s
 
 	if currentCliMode == "remote" && initFlags.ApiToken != "" {
 		// Remote mode - create configurations based on cloud repository settings
-		return createRemoteToolConfigurationsForDiscovered(discoveredToolNames, toolsConfigDir, initFlags)
+		return createRemoteToolConfigurationsForDiscovered(discoveredToolNames, initFlags)
 	} else {
 		// Local mode - create default configurations for discovered tools
 		return createDefaultConfigurationsForSpecificTools(discoveredToolNames, toolsConfigDir, initFlags)
@@ -629,7 +615,7 @@ func CreateConfigurationFilesForDiscoveredTools(discoveredToolNames map[string]s
 }
 
 // createRemoteToolConfigurationsForDiscovered creates tool configurations for remote mode based on cloud settings
-func createRemoteToolConfigurationsForDiscovered(discoveredToolNames map[string]struct{}, toolsConfigDir string, initFlags domain.InitFlags) error {
+func createRemoteToolConfigurationsForDiscovered(discoveredToolNames map[string]struct{}, initFlags domain.InitFlags) error {
 	// Get repository tools from API
 	apiTools, err := tools.GetRepositoryTools(initFlags)
 	if err != nil {
