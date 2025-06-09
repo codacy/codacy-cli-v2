@@ -20,106 +20,152 @@ normalize_config() {
   
   case "$ext" in
     yaml|yml)
-      # For YAML files, use yq to sort
-      yq e '.' "$file" | sort
+      normalize_yaml_config "$file"
       ;;
     mjs|js)
-      # For JavaScript config files (like ESLint), sort the rule lines within the rules object
-      awk '
-        /rules: \{/ { 
-          print; 
-          inRules = 1; 
-          next 
-        }
-        inRules && /^\s*\}/ { 
-          # Sort collected rules and print them
-          n = asorti(rules, sortedIndices)
-          for (i = 1; i <= n; i++) {
-            print rules[sortedIndices[i]]
-          }
-          delete rules
-          inRules = 0
-          print
-          next
-        }
-        inRules { 
-          # Collect rule lines for sorting
-          rules[NR] = $0
-          next 
-        }
-        { print }
-      ' "$file"
+      normalize_eslint_config "$file"
       ;;
-    rc|conf|ini|toml)
-      # For config files, sort values after '=' and handle TOML arrays
-      awk -F'=' '
-        /^[^#].*=.*\[.*\]/ {
-          # Handle TOML arrays like: rules = ["a", "b", "c"]
-          match($2, /\[(.*)\]/, arr)
-          if (arr[1]) {
-            split(arr[1], values, /,\s*/)
-            # Sort values using a simple bubble sort
-            for (i=1; i<=length(values); i++) {
-              for (j=i+1; j<=length(values); j++) {
-                if (values[i] > values[j]) {
-                  temp = values[i]
-                  values[i] = values[j]
-                  values[j] = temp
-                }
-              }
-            }
-            printf "%s=[", $1
-            for (i=1; i<=length(values); i++) {
-              if (i>1) printf ", "
-              printf "%s", values[i]
-            }
-            print "]"
-            next
-          }
-        }
-        /^[^#].*=.*,/ {
-          # Handle simple comma-separated values
-          split($2, values, ",")
-          # Sort values using a simple bubble sort
-          for (i=1; i<=length(values); i++) {
-            for (j=i+1; j<=length(values); j++) {
-              if (values[i] > values[j]) {
-                temp = values[i]
-                values[i] = values[j]
-                values[j] = temp
-              }
-            }
-          }
-          printf "%s=", $1
-          for (i=1; i<=length(values); i++) {
-            if (i>1) printf ","
-            printf "%s", values[i]
-          }
-          print ""
-          next
-        }
-        { print }
-      ' "$file" | sort
+    toml)
+      normalize_toml_config "$file"
+      ;;
+    rc|conf|ini)
+      normalize_rc_config "$file"
       ;;
     xml)
-      # For XML files, ignore order of <rule ref=.../> lines and strip leading spaces
-      awk '
-        BEGIN { n = 0; end = ""; }
-        /^ *<rule ref=/ { rules[++n] = $0; next }
-        /^ *<\/ruleset>/ { end = $0; next }
-        { gsub(/^ +/, "", $0); print }
-        END {
-          n = asort(rules, sorted_rules)
-          for (i = 1; i <= n; i++) print sorted_rules[i]
-          if (end) print end
-        }
-      ' "$file"
+      normalize_xml_config "$file"
       ;;
     *)
       # For other files, just sort
       sort "$file"
       ;;
   esac
+}
+
+# Normalize YAML configuration files
+normalize_yaml_config() {
+  local file=$1
+  # For YAML files, use yq to sort while preserving structure
+  if command -v yq >/dev/null 2>&1; then
+    yq e 'sort_keys(.)' "$file" 2>/dev/null || cat "$file"
+  else
+    # Fallback: just return the file as-is to preserve YAML structure
+    cat "$file"
+  fi
+}
+
+# Normalize ESLint configuration files (.mjs/.js)
+normalize_eslint_config() {
+  local file=$1
+  # Sort the rule lines within the rules object for consistent comparison
+  awk '
+    /rules: \{/ { 
+      print; 
+      inRules = 1; 
+      next 
+    }
+    inRules && /^\s*\}/ { 
+      # Sort collected rules and print them
+      n = asorti(rules, sortedIndices)
+      for (i = 1; i <= n; i++) {
+        print rules[sortedIndices[i]]
+      }
+      delete rules
+      inRules = 0
+      print
+      next
+    }
+    inRules { 
+      # Collect rule lines for sorting
+      rules[NR] = $0
+      next 
+    }
+    { print }
+  ' "$file"
+}
+
+# Normalize TOML configuration files
+normalize_toml_config() {
+  local file=$1
+  # Handle TOML arrays and key-value pairs
+  awk -F'=' '
+    /^[^#].*=.*\[.*\]/ {
+      # Handle TOML arrays like: rules = ["a", "b", "c"]
+      match($2, /\[(.*)\]/, arr)
+      if (arr[1]) {
+        split(arr[1], values, /,\s*/)
+        # Sort values
+        n = asort(values)
+        printf "%s=[", $1
+        for (i=1; i<=n; i++) {
+          if (i>1) printf ", "
+          printf "%s", values[i]
+        }
+        print "]"
+        next
+      }
+    }
+    /^[^#].*=.*,/ {
+      # Handle simple comma-separated values
+      split($2, values, ",")
+      n = asort(values)
+      printf "%s=", $1
+      for (i=1; i<=n; i++) {
+        if (i>1) printf ","
+        printf "%s", values[i]
+      }
+      print ""
+      next
+    }
+    { print }
+  ' "$file" | sort
+}
+
+# Normalize RC/INI configuration files
+normalize_rc_config() {
+  local file=$1
+  # Handle key-value pairs with comma-separated values
+  awk -F'=' '
+    /^[^#].*=.*,/ {
+      split($2, values, ",")
+      n = asort(values)
+      printf "%s=", $1
+      for (i=1; i<=n; i++) {
+        if (i>1) printf ","
+        printf "%s", values[i]
+      }
+      print ""
+      next
+    }
+    { print }
+  ' "$file" | sort
+}
+
+# Normalize XML configuration files
+normalize_xml_config() {
+  local file=$1
+  # Sort rule references while preserving XML structure
+  awk '
+    BEGIN { n = 0; end = ""; }
+    /^ *<rule ref=/ { 
+      rules[++n] = $0; 
+      next 
+    }
+    /^ *<\/ruleset>/ { 
+      end = $0; 
+      next 
+    }
+    { 
+      gsub(/^ +/, "", $0); 
+      print 
+    }
+    END {
+      if (n > 0) {
+        n = asort(rules, sorted_rules)
+        for (i = 1; i <= n; i++) print sorted_rules[i]
+      }
+      if (end) print end
+    }
+  ' "$file"
 }
 
 compare_files() {

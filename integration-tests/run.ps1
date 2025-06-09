@@ -25,103 +25,107 @@ function Normalize-Config {
     Write-Host "Normalizing config file: $file"
     $ext = [System.IO.Path]::GetExtension($file).TrimStart('.')
     
-    if ($ext -eq 'xml') {
-        Normalize-XmlFile $file
-        return
-    }
-    
     switch ($ext) {
         { $_ -in @('yaml', 'yml') } {
-            # For YAML files, preserve structure and sort within sections
-            $content = Get-Content $file
-            $output = @()
-            $currentSection = ""
-            $sectionContent = @()
-            
-            foreach ($line in $content) {
-                $line = $line.Trim()
-                if ($line -match '^(\w+):$') {
-                    # If we have a previous section, sort and add its content
-                    if ($currentSection -and $sectionContent.Count -gt 0) {
-                        $output += $currentSection
-                        $output += ($sectionContent | Sort-Object)
-                        $sectionContent = @()
-                    }
-                    $currentSection = $line
-                }
-                elseif ($line -match '^\s*-\s*') {
-                    $sectionContent += $line
-                }
-                elseif ($line -match '\S') {
-                    $output += $line
-                }
-            }
-            
-            # Add the last section
-            if ($currentSection -and $sectionContent.Count -gt 0) {
-                $output += $currentSection
-                $output += ($sectionContent | Sort-Object)
-            }
-            
-            # Add empty line at the end if the original had one
-            if ($content[-1] -match '^\s*$') {
-                $output += ""
-            }
-            
-            $output
+            Normalize-YamlConfig $file
         }
         { $_ -in @('mjs', 'js') } {
-            # For JavaScript config files (like ESLint), sort the rule lines within the rules object
-            $content = Get-Content $file
-            $output = @()
-            $inRules = $false
-            $ruleLines = @()
-            
-            foreach ($line in $content) {
-                if ($line -match 'rules: \{') {
-                    $output += $line
-                    $inRules = $true
-                } elseif ($inRules -and $line -match '^\s*\}') {
-                    # Sort collected rule lines and add them
-                    $output += ($ruleLines | Sort-Object)
-                    $ruleLines = @()
-                    $inRules = $false
-                    $output += $line
-                } elseif ($inRules) {
-                    # Collect rule lines for sorting
-                    $ruleLines += $line
-                } else {
-                    $output += $line
-                }
-            }
-            $output
+            Normalize-EslintConfig $file
         }
-        { $_ -in @('rc', 'conf', 'ini', 'toml', 'xml') } {
-            Get-Content $file | ForEach-Object {
-                if ($_ -match '^[^#].*=.*\[.*\]') {
-                    # Handle TOML arrays like: rules = ["a", "b", "c"]
-                    $parts = $_ -split '='
-                    if ($parts[1] -match '\[(.*)\]') {
-                        $arrayContent = $matches[1]
-                        $values = $arrayContent -split ',\s*' | Sort-Object
-                        "$($parts[0])=[$($values -join ', ')]"
-                    } else { $_ }
-                } elseif ($_ -match '^[^#].*=.*,') {
-                    # Handle simple comma-separated values
-                    $parts = $_ -split '='
-                    $values = $parts[1] -split ',' | Sort-Object
-                    "$($parts[0])=$($values -join ',')"
-                } else { $_ }
-            } | Sort-Object
+        'toml' {
+            Normalize-TomlConfig $file
         }
-        default { Get-Content $file | Sort-Object }
+        { $_ -in @('rc', 'conf', 'ini') } {
+            Normalize-RcConfig $file
+        }
+        'xml' {
+            Normalize-XmlConfig $file
+        }
+        default { 
+            Get-Content $file | Sort-Object 
+        }
     }
 }
 
-# Helper function to normalize XML files: strip leading spaces and sort <rule ref=.../> lines
-function Normalize-XmlFile {
-    param([string]$Path)
-    $lines = Get-Content $Path
+# Normalize YAML configuration files
+function Normalize-YamlConfig {
+    param([string]$file)
+    
+    # For YAML files, try to preserve structure - just return as-is for now
+    # Complex YAML sorting can break structure, so we keep original order
+    Get-Content $file
+}
+
+# Normalize ESLint configuration files (.mjs/.js)
+function Normalize-EslintConfig {
+    param([string]$file)
+    
+    $content = Get-Content $file
+    $output = @()
+    $inRules = $false
+    $ruleLines = @()
+    
+    foreach ($line in $content) {
+        if ($line -match 'rules: \{') {
+            $output += $line
+            $inRules = $true
+        } elseif ($inRules -and $line -match '^\s*\}') {
+            # Sort collected rule lines and add them
+            $output += ($ruleLines | Sort-Object)
+            $ruleLines = @()
+            $inRules = $false
+            $output += $line
+        } elseif ($inRules) {
+            # Collect rule lines for sorting
+            $ruleLines += $line
+        } else {
+            $output += $line
+        }
+    }
+    $output
+}
+
+# Normalize TOML configuration files
+function Normalize-TomlConfig {
+    param([string]$file)
+    
+    Get-Content $file | ForEach-Object {
+        if ($_ -match '^[^#].*=.*\[.*\]') {
+            # Handle TOML arrays like: rules = ["a", "b", "c"]
+            $parts = $_ -split '='
+            if ($parts[1] -match '\[(.*)\]') {
+                $arrayContent = $matches[1]
+                $values = $arrayContent -split ',\s*' | Sort-Object
+                "$($parts[0])=[$($values -join ', ')]"
+            } else { $_ }
+        } elseif ($_ -match '^[^#].*=.*,') {
+            # Handle simple comma-separated values
+            $parts = $_ -split '='
+            $values = $parts[1] -split ',' | Sort-Object
+            "$($parts[0])=$($values -join ',')"
+        } else { $_ }
+    } | Sort-Object
+}
+
+# Normalize RC/INI configuration files
+function Normalize-RcConfig {
+    param([string]$file)
+    
+    Get-Content $file | ForEach-Object {
+        if ($_ -match '^[^#].*=.*,') {
+            # Handle simple comma-separated values
+            $parts = $_ -split '='
+            $values = $parts[1] -split ',' | Sort-Object
+            "$($parts[0])=$($values -join ',')"
+        } else { $_ }
+    } | Sort-Object
+}
+
+# Normalize XML configuration files
+function Normalize-XmlConfig {
+    param([string]$file)
+    
+    $lines = Get-Content $file
     $rules = @()
     $output = @()
     $endTag = $null
@@ -136,8 +140,11 @@ function Normalize-XmlFile {
             $output += $trimmed
         }
     }
+    
     $output + ($rules | Sort-Object) + $endTag
 }
+
+
 
 function Compare-Files {
     param (
