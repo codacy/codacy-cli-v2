@@ -10,46 +10,46 @@
           "informationUri": "https://github.com/terryyin/lizard",
           "rules": [
             {
-              "id": "Lizard_ccn-critical",
+              "id": "Lizard_ccn-medium",
               "shortDescription": {
-                "text": "Method has extremely high cyclomatic complexity"
+                "text": "Checks if the cyclomatic complexity of a function or logic block exceeds the medium threshold (default is 8)."
               },
               "properties": {
                 "tags": [
-                  "critical"
+                  "warning"
                 ]
               }
             },
             {
-              "id": "Lizard_ccn-minor",
+              "id": "Lizard_file-nloc-medium",
               "shortDescription": {
-                "text": "Method has high cyclomatic complexity"
+                "text": "This rule checks if the number of lines of code (excluding comments) in a file exceeds a medium threshold, typically 500 lines."
               },
               "properties": {
                 "tags": [
-                  "minor"
+                  "warning"
                 ]
               }
             },
             {
               "id": "Lizard_nloc-medium",
               "shortDescription": {
-                "text": "Method has too many lines of code"
+                "text": "Checks if the number of lines of code (excluding comments) in a function exceeds a medium threshold (default 50 lines)."
               },
               "properties": {
                 "tags": [
-                  "medium"
+                  "warning"
                 ]
               }
             },
             {
-              "id": "Lizard_nloc-minor",
+              "id": "Lizard_parameter-count-medium",
               "shortDescription": {
-                "text": "Method has too many lines of code"
+                "text": "This rule checks the number of parameters passed to a function and raises an issue if it exceeds a medium threshold, which by default is 8 parameters."
               },
               "properties": {
                 "tags": [
-                  "minor"
+                  "warning"
                 ]
               }
             }
@@ -59,9 +59,9 @@
       "results": [
         {
           "ruleId": "Lizard_nloc-medium",
-          "level": "medium",
+          "level": "warning",
           "message": {
-            "text": "Method complex_analysis has 65 lines of code (limit is 25)"
+            "text": "Method complex_analysis has 65 lines of code (limit is 50)"
           },
           "locations": [
             {
@@ -78,10 +78,10 @@
           ]
         },
         {
-          "ruleId": "Lizard_ccn-critical",
-          "level": "critical",
+          "ruleId": "Lizard_ccn-medium",
+          "level": "warning",
           "message": {
-            "text": "Method complex_analysis has a cyclomatic complexity of 31 (limit is 30)"
+            "text": "Method complex_analysis has a cyclomatic complexity of 31 (limit is 8)"
           },
           "locations": [
             {
