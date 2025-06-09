@@ -137,14 +137,30 @@ function Normalize-EslintConfig {
             $output += $line
             $inRules = $true
         } elseif ($inRules -and $line -match '^\s*\}') {
-            # Sort collected rule lines (since expected file already has properties sorted)
+            # Sort collected rule lines
             $output += ($ruleLines | Sort-Object)
             $ruleLines = @()
             $inRules = $false
             $output += $line
         } elseif ($inRules) {
+            # Normalize JSON object properties within rule configurations
+            $normalizedLine = $line
+            if ($line -match '\{[^}]*\}') {
+                # Extract and sort JSON object properties
+                if ($line -match '(\{[^}]*\})') {
+                    $jsonObject = $matches[1]
+                    # Remove braces and split by comma
+                    $content = $jsonObject.Trim('{}').Trim()
+                    if ($content) {
+                        $parts = $content -split ',\s*'
+                        $sortedParts = $parts | Sort-Object
+                        $newObject = "{$($sortedParts -join ', ')}"
+                        $normalizedLine = $line -replace [regex]::Escape($jsonObject), $newObject
+                    }
+                }
+            }
             # Collect rule lines for sorting
-            $ruleLines += $line
+            $ruleLines += $normalizedLine
         } else {
             $output += $line
         }

@@ -152,7 +152,7 @@ normalize_yaml_config() {
 # Normalize ESLint configuration files (.mjs/.js)
 normalize_eslint_config() {
   local file=$1
-  # Sort the rule lines within the rules object for consistent comparison
+  # Sort the rule lines within the rules object and normalize JSON object properties
   awk '
     /rules: \{/ { 
       print; 
@@ -171,8 +171,49 @@ normalize_eslint_config() {
       next
     }
     inRules { 
+      # Normalize JSON object properties within rule configurations
+      line = $0
+      # Look for JSON objects like {"key1": value1, "key2": value2}
+      if (match(line, /\{[^}]*\}/)) {
+        # Extract the JSON object
+        obj_start = RSTART
+        obj_len = RLENGTH
+        before = substr(line, 1, obj_start-1)
+        obj = substr(line, obj_start, obj_len)
+        after = substr(line, obj_start+obj_len)
+        
+        # Parse and sort the object properties
+        if (match(obj, /^\{.*\}$/)) {
+          # Remove braces and split by comma
+          content = substr(obj, 2, length(obj)-2)
+          gsub(/^\s+|\s+$/, "", content)  # trim spaces
+          
+          if (content != "") {
+            # Split by comma (simple approach)
+            n = split(content, parts, /,\s*/)
+            # Sort the parts
+            for (i = 1; i <= n; i++) {
+              for (j = i+1; j <= n; j++) {
+                if (parts[i] > parts[j]) {
+                  temp = parts[i]
+                  parts[i] = parts[j]
+                  parts[j] = temp
+                }
+              }
+            }
+            # Reconstruct the object
+            new_obj = "{"
+            for (i = 1; i <= n; i++) {
+              if (i > 1) new_obj = new_obj ", "
+              new_obj = new_obj parts[i]
+            }
+            new_obj = new_obj "}"
+            line = before new_obj after
+          }
+        }
+      }
       # Collect rule lines for sorting
-      rules[NR] = $0
+      rules[NR] = line
       next 
     }
     { print }
