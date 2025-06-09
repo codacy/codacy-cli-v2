@@ -2,20 +2,21 @@ package cmd
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/domain"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/tools/lizard"
 	reviveTool "codacy/cli-v2/tools/revive"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"codacy/cli-v2/utils"
+
+	codacyclient "codacy/cli-v2/codacy-client"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -211,21 +212,6 @@ type CodacyIssue struct {
 	Category string `json:"category"`
 }
 
-type Tool struct {
-	UUID      string `json:"uuid"`
-	ShortName string `json:"shortName"`
-	Prefix    string `json:"prefix"`
-}
-
-type Pattern struct {
-	UUID        string `json:"uuid"`
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Category    string `json:"category"`
-	Description string `json:"description"`
-	Level       string `json:"level"`
-}
-
 func init() {
 	analyzeCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for analysis results")
 	analyzeCmd.Flags().StringVarP(&toolsToAnalyzeParam, "tool", "t", "", "Which tool to run analysis with. If not specified, all configured tools will be run")
@@ -234,66 +220,24 @@ func init() {
 	rootCmd.AddCommand(analyzeCmd)
 }
 
-func loadsToolAndPatterns(toolName string) (Tool, []Pattern) {
-	var toolsURL = "https://app.codacy.com/api/v3/tools"
-
-	req, err := http.NewRequest("GET", toolsURL, nil)
+func loadsToolAndPatterns(toolName string) (domain.Tool, []domain.PatternConfiguration) {
+	var toolsResponse, err = codacyclient.GetToolsVersions()
 	if err != nil {
-		fmt.Printf("Error creating request: %v\n", err)
-		panic("panic")
+		fmt.Println("Error:", err)
+		return domain.Tool{}, []domain.PatternConfiguration{}
 	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		fmt.Printf("Error fetching patterns: %v\n", err)
-		panic("panic")
-	}
-	defer resp.Body.Close()
-
-	body, _ := io.ReadAll(resp.Body)
-
-	var toolsResponse struct {
-		Data []Tool `json:"data"`
-	}
-	json.Unmarshal(body, &toolsResponse)
-	var tool Tool
-	for _, t := range toolsResponse.Data {
-		if t.ShortName == toolName {
+	var tool domain.Tool
+	for _, t := range toolsResponse {
+		if t.Name == toolName {
 			tool = t
 			break
 		}
 	}
-	var patterns []Pattern
-	var hasNext bool = true
-	cursor := ""
-	client := &http.Client{}
-
-	for hasNext {
-		baseURL := fmt.Sprintf("https://app.codacy.com/api/v3/tools/%s/patterns?limit=1000%s", tool.UUID, cursor)
-		req, _ := http.NewRequest("GET", baseURL, nil)
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Println("Error:", err)
-			break
-		}
-		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-
-		var patternsResponse struct {
-			Data       []Pattern `json:"data"`
-			Pagination struct {
-				Cursor string `json:"cursor"`
-			} `json:"pagination"`
-		}
-		json.Unmarshal(body, &patternsResponse)
-		patterns = append(patterns, patternsResponse.Data...)
-		hasNext = patternsResponse.Pagination.Cursor != ""
-		if hasNext {
-			cursor = "&cursor=" + patternsResponse.Pagination.Cursor
-		}
+	var patterns []domain.PatternConfiguration
+	patterns, err = codacyclient.GetDefaultToolPatternsConfig(domain.InitFlags{}, tool.Uuid)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return domain.Tool{}, []domain.PatternConfiguration{}
 	}
 	return tool, patterns
 }
