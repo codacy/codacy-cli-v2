@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"codacy/cli-v2/cmd/cmdutils"
 	"codacy/cli-v2/cmd/configsetup"
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
@@ -14,10 +15,8 @@ import (
 var initFlags domain.InitFlags
 
 func init() {
-	initCmd.Flags().StringVar(&initFlags.ApiToken, "api-token", "", "optional codacy api token, if defined configurations will be fetched from codacy")
-	initCmd.Flags().StringVar(&initFlags.Provider, "provider", "", "provider (gh/bb/gl) to fetch configurations from codacy, required when api-token is provided")
-	initCmd.Flags().StringVar(&initFlags.Organization, "organization", "", "remote organization name to fetch configurations from codacy, required when api-token is provided")
-	initCmd.Flags().StringVar(&initFlags.Repository, "repository", "", "remote repository name to fetch configurations from codacy, required when api-token is provided")
+	// Add cloud-related flags
+	cmdutils.AddCloudFlags(initCmd, &initFlags)
 	rootCmd.AddCommand(initCmd)
 }
 
