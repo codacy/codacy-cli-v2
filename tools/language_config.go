@@ -56,6 +56,11 @@ var DefaultToolLanguageMap = map[string]domain.ToolLanguageInfo{
 		Languages:  []string{"Multiple"},
 		Extensions: []string{},
 	},
+	"revive": {
+		Name:       "revive",
+		Languages:  []string{"Go"},
+		Extensions: []string{".go"},
+	},
 }
 
 // GetDefaultToolLanguageMapping returns the default mapping of tools to their supported languages and file extensions
