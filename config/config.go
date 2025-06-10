@@ -88,39 +88,32 @@ func (c *ConfigType) loadConfigOrInitializeEmpty(codacyPath string) (map[string]
 	return config, nil
 }
 
-// updateRuntimesList updates or adds a runtime entry in the runtimes list
-func updateRuntimesList(runtimes []interface{}, name, version string) []interface{} {
-	runtimeEntry := fmt.Sprintf("%s@%s", name, version)
+// updateVersionedList updates or adds an entry in the format "name@version" to a list, avoiding duplicates
+func updateVersionedList(entries []interface{}, name, version string) []interface{} {
+	newEntry := fmt.Sprintf("%s@%s", name, version)
 
-	// Check if runtime already exists and update it
-	for i, r := range runtimes {
-		if runtime, ok := r.(string); ok {
-			if strings.Split(runtime, "@")[0] == name {
-				runtimes[i] = runtimeEntry
-				return runtimes
+	// Check if entry with the same name already exists and update it
+	for i, entry := range entries {
+		if entryStr, ok := entry.(string); ok {
+			if strings.Split(entryStr, "@")[0] == name {
+				entries[i] = newEntry
+				return entries
 			}
 		}
 	}
 
-	// Add new runtime if not found
-	return append(runtimes, runtimeEntry)
+	// Add new entry if not found
+	return append(entries, newEntry)
+}
+
+// updateRuntimesList updates or adds a runtime entry in the runtimes list
+func updateRuntimesList(runtimes []interface{}, name, version string) []interface{} {
+	return updateVersionedList(runtimes, name, version)
 }
 
 // updateToolsList updates the tools list in the configuration, avoiding duplicates
 func updateToolsList(tools []interface{}, name, version string) []interface{} {
-	toolEntry := fmt.Sprintf("%s@%s", name, version)
-
-	// Check if tool already exists
-	for i, tool := range tools {
-		if toolStr, ok := tool.(string); ok && strings.HasPrefix(toolStr, name+"@") {
-			// Replace existing tool
-			tools[i] = toolEntry
-			return tools
-		}
-	}
-
-	// Add new tool
-	return append(tools, toolEntry)
+	return updateVersionedList(tools, name, version)
 }
 
 // writeConfig writes the config back to the YAML file
