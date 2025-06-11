@@ -88,39 +88,23 @@ func (c *ConfigType) loadConfigOrInitializeEmpty(codacyPath string) (map[string]
 	return config, nil
 }
 
-// updateRuntimesList updates or adds a runtime entry in the runtimes list
-func updateRuntimesList(runtimes []interface{}, name, version string) []interface{} {
-	runtimeEntry := fmt.Sprintf("%s@%s", name, version)
+// updateEntryList updates or adds an entry in a list, avoiding duplicates
+func updateEntryList(list []interface{}, name, version string) []interface{} {
+	entry := fmt.Sprintf("%s@%s", name, version)
 
-	// Check if runtime already exists and update it
-	for i, r := range runtimes {
-		if runtime, ok := r.(string); ok {
-			if strings.Split(runtime, "@")[0] == name {
-				runtimes[i] = runtimeEntry
-				return runtimes
+	// Check if entry already exists and update it
+	for i, item := range list {
+		if itemStr, ok := item.(string); ok {
+			// Extract the name part before "@" to check for matches
+			if parts := strings.Split(itemStr, "@"); len(parts) > 0 && parts[0] == name {
+				list[i] = entry
+				return list
 			}
 		}
 	}
 
-	// Add new runtime if not found
-	return append(runtimes, runtimeEntry)
-}
-
-// updateToolsList updates the tools list in the configuration, avoiding duplicates
-func updateToolsList(tools []interface{}, name, version string) []interface{} {
-	toolEntry := fmt.Sprintf("%s@%s", name, version)
-
-	// Check if tool already exists
-	for i, tool := range tools {
-		if toolStr, ok := tool.(string); ok && strings.HasPrefix(toolStr, name+"@") {
-			// Replace existing tool
-			tools[i] = toolEntry
-			return tools
-		}
-	}
-
-	// Add new tool
-	return append(tools, toolEntry)
+	// Add new entry if not found
+	return append(list, entry)
 }
 
 // writeConfig writes the config back to the YAML file
@@ -142,8 +126,8 @@ func (c *ConfigType) writeConfig(codacyPath string, config map[string]interface{
 	return nil
 }
 
-// addRuntimeToCodacyYaml adds or updates a runtime entry in codacy.yaml as a YAML list
-func (c *ConfigType) addRuntimeToCodacyYaml(name string, version string) error {
+// addToCodacyYaml is a generic function to add or update entries in codacy.yaml
+func (c *ConfigType) addToCodacyYaml(listKey string, name string, version string) error {
 	codacyPath := filepath.Join(c.localCodacyDirectory, "codacy.yaml")
 
 	config, err := c.loadConfigOrInitializeEmpty(codacyPath)
@@ -151,39 +135,27 @@ func (c *ConfigType) addRuntimeToCodacyYaml(name string, version string) error {
 		return err
 	}
 
-	// Get or create runtimes list
-	runtimes, ok := config["runtimes"].([]interface{})
+	// Get or create list
+	list, ok := config[listKey].([]interface{})
 	if !ok {
-		runtimes = make([]interface{}, 0)
+		list = make([]interface{}, 0)
 	}
 
-	// Update runtimes list
-	runtimes = updateRuntimesList(runtimes, name, version)
-	config["runtimes"] = runtimes
+	// Update list
+	list = updateEntryList(list, name, version)
+	config[listKey] = list
 
 	return c.writeConfig(codacyPath, config)
 }
 
+// addRuntimeToCodacyYaml adds or updates a runtime entry in codacy.yaml as a YAML list
+func (c *ConfigType) addRuntimeToCodacyYaml(name string, version string) error {
+	return c.addToCodacyYaml("runtimes", name, version)
+}
+
 // addToolToCodacyYaml adds a tool to the codacy.yaml file
 func (c *ConfigType) addToolToCodacyYaml(name string, version string) error {
-	codacyPath := filepath.Join(c.localCodacyDirectory, "codacy.yaml")
-
-	config, err := c.loadConfigOrInitializeEmpty(codacyPath)
-	if err != nil {
-		return err
-	}
-
-	// Get or create tools list
-	tools, ok := config["tools"].([]interface{})
-	if !ok {
-		tools = make([]interface{}, 0)
-	}
-
-	// Update tools list
-	tools = updateToolsList(tools, name, version)
-	config["tools"] = tools
-
-	return c.writeConfig(codacyPath, config)
+	return c.addToCodacyYaml("tools", name, version)
 }
 
 func (c *ConfigType) AddRuntimes(configs []plugins.RuntimeConfig) error {
