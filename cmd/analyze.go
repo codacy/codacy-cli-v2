@@ -260,6 +260,23 @@ func getToolName(toolName string, version string) string {
 	return toolName
 }
 
+func validateToolName(toolName string) error {
+	if toolName == "" {
+		return fmt.Errorf("tool name cannot be empty")
+	}
+
+	// Get plugin manager to access the tools filesystem
+	pluginManager := plugins.GetPluginManager()
+
+	// Try to get the tool configuration - this will fail if the tool doesn't exist
+	_, err := pluginManager.GetToolConfig(toolName)
+	if err != nil {
+		return fmt.Errorf("tool '%s' is not supported", toolName)
+	}
+
+	return nil
+}
+
 func runToolByTooName(toolName string, workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string, tool *plugins.ToolInfo, runtime *plugins.RuntimeInfo) error {
 	switch toolName {
 	case "eslint":
@@ -291,7 +308,14 @@ func runToolByTooName(toolName string, workDirectory string, pathsToCheck []stri
 	return fmt.Errorf("unsupported tool: %s", toolName)
 }
 
-func genericRunTool(toolName string, workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string) error {
+func runTool(workDirectory string, toolName string, pathsToCheck []string, outputFile string, autoFix bool, outputFormat string) error {
+	err := validateToolName(toolName)
+	if err != nil {
+		return err
+	}
+	log.Println("Running tools for the specified file(s)...")
+	log.Printf("Running %s...\n", toolName)
+
 	tool := config.Config.Tools()[toolName]
 	var isToolInstalled bool
 	if tool == nil {
@@ -302,6 +326,11 @@ func genericRunTool(toolName string, workDirectory string, pathsToCheck []string
 	var isRuntimeInstalled bool
 
 	var runtime *plugins.RuntimeInfo
+
+	if toolName == "codacy-enigma-cli" {
+		isToolInstalled = true
+	}
+
 	if tool == nil || !isToolInstalled {
 		fmt.Println("Tool configuration not found, adding and installing...")
 		err := config.InstallTool(toolName, tool, "")
@@ -369,8 +398,6 @@ var analyzeCmd = &cobra.Command{
 			return
 		}
 
-		log.Println("Running tools for the specified file(s)...")
-
 		if outputFormat == "sarif" {
 			// Create temporary directory for individual tool outputs
 			tmpDir, err := os.MkdirTemp("", "codacy-analysis-*")
@@ -381,10 +408,9 @@ var analyzeCmd = &cobra.Command{
 
 			var sarifOutputs []string
 			for toolName := range toolsToRun {
-				log.Printf("Running %s...\n", toolName)
 				tmpFile := filepath.Join(tmpDir, fmt.Sprintf("%s.sarif", toolName))
-				if err := runTool(workDirectory, toolName, args, tmpFile); err != nil {
-					log.Printf("Tool failed to run: %s: %v\n", toolName, err)
+				if err := runTool(workDirectory, toolName, args, tmpFile, autoFix, outputFormat); err != nil {
+					log.Printf("Tool failed to run: %v\n", err)
 				}
 				sarifOutputs = append(sarifOutputs, tmpFile)
 			}
@@ -418,19 +444,10 @@ var analyzeCmd = &cobra.Command{
 		} else {
 			// Run tools without merging outputs
 			for toolName := range toolsToRun {
-				log.Printf("Running %s...\n", toolName)
-				if err := runTool(workDirectory, toolName, args, outputFile); err != nil {
-					log.Printf("Tool failed to run: %s: %v\n", toolName, err)
+				if err := runTool(workDirectory, toolName, args, outputFile, autoFix, outputFormat); err != nil {
+					log.Printf("Tool failed to run: %v\n", err)
 				}
 			}
 		}
 	},
-}
-
-func runTool(workDirectory string, toolName string, args []string, outputFile string) error {
-	err := genericRunTool(toolName, workDirectory, args, autoFix, outputFile, outputFormat)
-	if err != nil {
-		return err
-	}
-	return nil
 }
