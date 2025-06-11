@@ -1,6 +1,5 @@
 name: codacy-enigma-cli
 description: Enigma CLI
-default_version: "0.0.1-main.11.91cf89e"
 download:
   url_template: "https://github.com/codacy/codacy-enigma-cli-releases/releases/download/{{.Version}}/codacy-enigma-cli-releases_{{.Version}}_{{.OS}}_{{.Arch}}.tar.gz"
 binaries:

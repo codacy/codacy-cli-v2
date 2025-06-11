@@ -277,7 +277,7 @@ func validateToolName(toolName string) error {
 	return nil
 }
 
-func runToolByTooName(toolName string, workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string, tool *plugins.ToolInfo, runtime *plugins.RuntimeInfo) error {
+func runToolByName(toolName string, workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string, tool *plugins.ToolInfo, runtime *plugins.RuntimeInfo) error {
 	switch toolName {
 	case "eslint":
 		binaryPath := runtime.Binaries[tool.Runtime]
@@ -332,7 +332,12 @@ func runTool(workDirectory string, toolName string, pathsToCheck []string, outpu
 	}
 
 	if tool == nil || !isToolInstalled {
-		fmt.Println("Tool configuration not found, adding and installing...")
+		if tool == nil {
+			fmt.Println("Tool configuration not found, adding and installing...")
+		}
+		if !isToolInstalled {
+			fmt.Println("Tool is not installed, installing...")
+		}
 		err := config.InstallTool(toolName, tool, "")
 		if err != nil {
 			return fmt.Errorf("failed to install %s: %w", toolName, err)
@@ -361,7 +366,7 @@ func runTool(workDirectory string, toolName string, pathsToCheck []string, outpu
 			runtime = config.Config.Runtimes()[tool.Runtime]
 		}
 	}
-	return runToolByTooName(toolName, workDirectory, pathsToCheck, autoFix, outputFile, outputFormat, tool, runtime)
+	return runToolByName(toolName, workDirectory, pathsToCheck, autoFix, outputFile, outputFormat, tool, runtime)
 }
 
 var analyzeCmd = &cobra.Command{
