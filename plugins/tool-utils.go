@@ -67,6 +67,7 @@ type ToolPluginConfig struct {
 	Formatters      []Formatter        `yaml:"formatters"`
 	OutputOptions   OutputOptions      `yaml:"output_options"`
 	AnalysisOptions AnalysisOptions    `yaml:"analysis_options"`
+	ConfigFileName  string             `yaml:"config_file_name,omitempty"` // Optional field
 }
 
 // ToolConfig represents configuration for a tool
@@ -99,6 +100,8 @@ type ToolInfo struct {
 	Extension   string
 	// Environment variables
 	Environment map[string]string
+	// Config file
+	ConfigFileName string
 }
 
 // ProcessTools processes a list of tool configurations and returns a map of tool information
@@ -152,6 +155,8 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 			RegistryCommand: pluginConfig.Installation.RegistryTemplate,
 			// Store environment variables
 			Environment: make(map[string]string),
+			// Store config file name
+			ConfigFileName: pluginConfig.ConfigFileName,
 		}
 
 		// Handle download configuration for directly downloaded tools

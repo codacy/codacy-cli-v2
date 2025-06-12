@@ -20,3 +20,4 @@ download:
 binaries:
   - name: trivy
     path: "trivy"
+config_file_name: "trivy.yaml"

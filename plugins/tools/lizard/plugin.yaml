@@ -12,3 +12,4 @@ output_options:
   file_flag: "-o"
 analysis_options:
   default_path: "." 
+config_file_name: "lizard.yaml"

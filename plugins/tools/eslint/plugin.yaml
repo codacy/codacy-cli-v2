@@ -19,3 +19,5 @@ output_options:
 analysis_options:
   autofix_flag: "--fix"
   default_path: "."
+uses_config: true
+config_file_name: "eslint.config.mjs"

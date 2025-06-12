@@ -15,3 +15,4 @@ output_options:
   file_flag: "--output"
 analysis_options:
   default_path: "." 
+config_file_name: "pylint.rc"

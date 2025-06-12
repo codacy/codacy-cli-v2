@@ -15,3 +15,4 @@ environment:
 binaries:
   - name: pmd
     path: "pmd-bin-{{.Version}}/bin/{{if ge .Version \"7.0.0\"}}pmd{{else}}run.sh{{end}}"
+config_file_name: "ruleset.xml"

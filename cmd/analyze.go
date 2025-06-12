@@ -366,6 +366,21 @@ func runTool(workDirectory string, toolName string, pathsToCheck []string, outpu
 			runtime = config.Config.Runtimes()[tool.Runtime]
 		}
 	}
+
+	if tool.ConfigFileName != "" {
+		configFile, exists := HasConfigFile(config.Config, tool.ConfigFileName)
+		if !exists {
+			fmt.Printf("Config file %s not found, creating...\n", tool.ConfigFileName)
+			// TODO: Implement CreateConfigFile function in utils
+			// err := utils.CreateConfigFile(config.Config, tool.ConfigFileName)
+			// if err != nil {
+			//	return fmt.Errorf("failed to create config file %s: %w", tool.ConfigFileName, err)
+			// }
+		} else {
+			fmt.Printf("Using existing config file: %s\n", configFile)
+		}
+	}
+
 	return runToolByName(toolName, workDirectory, pathsToCheck, autoFix, outputFile, outputFormat, tool, runtime)
 }
 
@@ -455,4 +470,57 @@ var analyzeCmd = &cobra.Command{
 			}
 		}
 	},
+}
+
+// HasConfigFile checks if a tool's config file exists in the .codacy/tools-configs directory
+// or in the repository root directory.
+//
+// Parameters:
+//   - config: The configuration object containing directory paths
+//   - configFileName: The name of the config file to check for
+//
+// Returns:
+//   - string: The full path to the config file if it exists
+//   - bool: True if the config file exists, false otherwise
+func HasConfigFile(config interface{}, configFileName string) (string, bool) {
+	fmt.Println("Checking for config file:", configFileName)
+	// If no config file name is specified, return false
+	if configFileName == "" {
+		return "", false
+	}
+
+	// We need to get the workspace directory from the config
+	// For now, we'll check in the current directory and .codacy/tools-config
+	workDir, err := os.Getwd()
+	if err != nil {
+		return "", false
+	}
+
+	fmt.Println("Work directory:", workDir)
+	fmt.Println("Checking in .codacy/tools-configs directory first")
+	// Check in .codacy/tools-configs directory first
+	toolsConfigDir := filepath.Join(workDir, ".codacy", "tools-configs")
+	fmt.Println("Tools config directory:", toolsConfigDir)
+	configPath := filepath.Join(toolsConfigDir, configFileName)
+	fmt.Println("Config path:", configPath)
+	if _, err := os.Stat(configPath); err == nil {
+		fmt.Println("Found config file in tools-configs directory!")
+		return configPath, true
+	} else {
+		fmt.Println("Config file NOT found in tools-configs directory. Error:", err)
+	}
+
+	// Check in repository root directory as fallback
+	rootConfigPath := filepath.Join(workDir, configFileName)
+	fmt.Println("Checking root config path:", rootConfigPath)
+	if _, err := os.Stat(rootConfigPath); err == nil {
+		fmt.Println("Found config file in repository root directory!")
+		return rootConfigPath, true
+	} else {
+		fmt.Println("Config file NOT found in repository root. Error:", err)
+	}
+
+	// Config file not found
+	fmt.Println("Config file not found anywhere")
+	return "", false
 }
