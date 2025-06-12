@@ -9,14 +9,14 @@ import (
 	reviveTool "codacy/cli-v2/tools/revive"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"codacy/cli-v2/utils"
+
+	codacyclient "codacy/cli-v2/codacy-client"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -212,21 +212,6 @@ type CodacyIssue struct {
 	Category string `json:"category"`
 }
 
-type Tool struct {
-	UUID      string `json:"uuid"`
-	ShortName string `json:"shortName"`
-	Prefix    string `json:"prefix"`
-}
-
-type Pattern struct {
-	UUID        string `json:"uuid"`
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Category    string `json:"category"`
-	Description string `json:"description"`
-	Level       string `json:"level"`
-}
-
 func init() {
 	analyzeCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for analysis results")
 	analyzeCmd.Flags().StringVarP(&toolsToAnalyzeParam, "tool", "t", "", "Which tool to run analysis with. If not specified, all configured tools will be run")
@@ -235,66 +220,24 @@ func init() {
 	rootCmd.AddCommand(analyzeCmd)
 }
 
-func loadsToolAndPatterns(toolName string) (Tool, []Pattern) {
-	var toolsURL = "https://app.codacy.com/api/v3/tools"
-
-	req, err := http.NewRequest("GET", toolsURL, nil)
+func loadsToolAndPatterns(toolName string) (domain.Tool, []domain.PatternConfiguration) {
+	var toolsResponse, err = codacyclient.GetToolsVersions()
 	if err != nil {
-		fmt.Printf("Error creating request: %v\n", err)
-		panic("panic")
+		fmt.Println("Error:", err)
+		return domain.Tool{}, []domain.PatternConfiguration{}
 	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		fmt.Printf("Error fetching patterns: %v\n", err)
-		panic("panic")
-	}
-	defer resp.Body.Close()
-
-	body, _ := io.ReadAll(resp.Body)
-
-	var toolsResponse struct {
-		Data []Tool `json:"data"`
-	}
-	json.Unmarshal(body, &toolsResponse)
-	var tool Tool
-	for _, t := range toolsResponse.Data {
-		if t.ShortName == toolName {
+	var tool domain.Tool
+	for _, t := range toolsResponse {
+		if t.Name == toolName {
 			tool = t
 			break
 		}
 	}
-	var patterns []Pattern
-	var hasNext bool = true
-	cursor := ""
-	client := &http.Client{}
-
-	for hasNext {
-		baseURL := fmt.Sprintf("https://app.codacy.com/api/v3/tools/%s/patterns?limit=1000%s", tool.UUID, cursor)
-		req, _ := http.NewRequest("GET", baseURL, nil)
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Println("Error:", err)
-			break
-		}
-		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-
-		var patternsResponse struct {
-			Data       []Pattern `json:"data"`
-			Pagination struct {
-				Cursor string `json:"cursor"`
-			} `json:"pagination"`
-		}
-		json.Unmarshal(body, &patternsResponse)
-		patterns = append(patterns, patternsResponse.Data...)
-		hasNext = patternsResponse.Pagination.Cursor != ""
-		if hasNext {
-			cursor = "&cursor=" + patternsResponse.Pagination.Cursor
-		}
+	var patterns []domain.PatternConfiguration
+	patterns, err = codacyclient.GetDefaultToolPatternsConfig(domain.InitFlags{}, tool.Uuid)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return domain.Tool{}, []domain.PatternConfiguration{}
 	}
 	return tool, patterns
 }
@@ -317,110 +260,113 @@ func getToolName(toolName string, version string) string {
 	return toolName
 }
 
-func runEslintAnalysis(workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string) error {
-	eslint := config.Config.Tools()["eslint"]
-	eslintInstallationDirectory := eslint.InstallDir
-	nodeRuntime := config.Config.Runtimes()["node"]
-	nodeBinary := nodeRuntime.Binaries["node"]
-
-	return tools.RunEslint(workDirectory, eslintInstallationDirectory, nodeBinary, pathsToCheck, autoFix, outputFile, outputFormat)
-}
-
-func runTrivyAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	trivy := config.Config.Tools()["trivy"]
-	if trivy == nil {
-		log.Fatal("Trivy tool configuration not found")
-	}
-	trivyBinary := trivy.Binaries["trivy"]
-
-	return tools.RunTrivy(workDirectory, trivyBinary, pathsToCheck, outputFile, outputFormat)
-}
-
-func runPmdAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	pmd := config.Config.Tools()["pmd"]
-	if pmd == nil {
-		log.Fatal("Pmd tool configuration not found")
-	}
-	pmdBinary := pmd.Binaries["pmd"]
-
-	return tools.RunPmd(workDirectory, pmdBinary, pathsToCheck, outputFile, outputFormat, config.Config)
-}
-
-func runPylintAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	pylint := config.Config.Tools()["pylint"]
-	if pylint == nil {
-		log.Fatal("Pylint tool configuration not found")
-	}
-	pylintBinary := pylint.Binaries["python"]
-
-	return tools.RunPylint(workDirectory, pylintBinary, pathsToCheck, outputFile, outputFormat)
-}
-
-func runDartAnalyzer(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	dartanalyzer := config.Config.Tools()["dartanalyzer"]
-	if dartanalyzer == nil {
-		log.Fatal("Dart analyzer tool configuration not found")
-	}
-	return tools.RunDartAnalyzer(workDirectory, dartanalyzer.InstallDir, dartanalyzer.Binaries["dart"], pathsToCheck, outputFile, outputFormat)
-}
-
-func runSemgrepAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	semgrep := config.Config.Tools()["semgrep"]
-	if semgrep == nil {
-		log.Fatal("Semgrep tool configuration not found")
-	}
-	semgrepBinary := semgrep.Binaries["semgrep"]
-
-	return tools.RunSemgrep(workDirectory, semgrepBinary, pathsToCheck, outputFile, outputFormat)
-}
-
-func runLizardAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	lizardTool := config.Config.Tools()["lizard"]
-
-	if lizardTool == nil {
-		log.Fatal("Lizard plugin configuration not found")
+func validateToolName(toolName string) error {
+	if toolName == "" {
+		return fmt.Errorf("tool name cannot be empty")
 	}
 
-	lizardBinary := lizardTool.Binaries["python"]
+	// Get plugin manager to access the tools filesystem
+	pluginManager := plugins.GetPluginManager()
 
-	configFile, exists := tools.ConfigFileExists(config.Config, "lizard.yaml")
-	var patterns []domain.PatternDefinition
-	var err error
+	// Try to get the tool configuration - this will fail if the tool doesn't exist
+	_, err := pluginManager.GetToolConfig(toolName)
+	if err != nil {
+		return fmt.Errorf("tool '%s' is not supported", toolName)
+	}
 
-	if exists {
-		// Configuration exists, read from file
-		patterns, err = lizard.ReadConfig(configFile)
-		if err != nil {
-			return fmt.Errorf("error reading config file: %v", err)
-		}
+	return nil
+}
+
+func runToolByName(toolName string, workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string, tool *plugins.ToolInfo, runtime *plugins.RuntimeInfo) error {
+	switch toolName {
+	case "eslint":
+		binaryPath := runtime.Binaries[tool.Runtime]
+		return tools.RunEslint(workDirectory, tool.InstallDir, binaryPath, pathsToCheck, autoFix, outputFile, outputFormat)
+	case "trivy":
+		binaryPath := tool.Binaries[toolName]
+		return tools.RunTrivy(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)
+	case "pmd":
+		binaryPath := tool.Binaries[toolName]
+		return tools.RunPmd(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat, config.Config)
+	case "pylint":
+		binaryPath := tool.Binaries[tool.Runtime]
+		return tools.RunPylint(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)
+	case "dartanalyzer":
+		binaryPath := tool.Binaries[tool.Runtime]
+		return tools.RunDartAnalyzer(workDirectory, tool.InstallDir, binaryPath, pathsToCheck, outputFile, outputFormat)
+	case "semgrep":
+		binaryPath := tool.Binaries[toolName]
+		return tools.RunSemgrep(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)
+	case "lizard":
+		binaryPath := tool.Binaries[tool.Runtime]
+		return lizard.RunLizard(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)
+	case "codacy-enigma-cli":
+		return tools.RunEnigma(workDirectory, tool.InstallDir, tool.Binaries["codacy-enigma-cli"], pathsToCheck, outputFile, outputFormat)
+	case "revive":
+		return reviveTool.RunRevive(workDirectory, tool.Binaries["revive"], pathsToCheck, outputFile, outputFormat)
+	}
+	return fmt.Errorf("unsupported tool: %s", toolName)
+}
+
+func runTool(workDirectory string, toolName string, pathsToCheck []string, outputFile string, autoFix bool, outputFormat string) error {
+	err := validateToolName(toolName)
+	if err != nil {
+		return err
+	}
+	log.Println("Running tools for the specified file(s)...")
+	log.Printf("Running %s...\n", toolName)
+
+	tool := config.Config.Tools()[toolName]
+	var isToolInstalled bool
+	if tool == nil {
+		isToolInstalled = false
 	} else {
-		fmt.Println("No configuration file found for Lizard, using default patterns, run init with repository token to get a custom configuration")
-		patterns, err = tools.FetchDefaultEnabledPatterns(domain.Lizard)
+		isToolInstalled = config.Config.IsToolInstalled(toolName, tool)
+	}
+	var isRuntimeInstalled bool
+
+	var runtime *plugins.RuntimeInfo
+
+	if toolName == "codacy-enigma-cli" {
+		isToolInstalled = true
+	}
+
+	if tool == nil || !isToolInstalled {
+		if tool == nil {
+			fmt.Println("Tool configuration not found, adding and installing...")
+		}
+		if !isToolInstalled {
+			fmt.Println("Tool is not installed, installing...")
+		}
+		err := config.InstallTool(toolName, tool, "")
 		if err != nil {
-			return fmt.Errorf("failed to fetch default patterns: %v", err)
+			return fmt.Errorf("failed to install %s: %w", toolName, err)
+		}
+		tool = config.Config.Tools()[toolName]
+		runtime = config.Config.Runtimes()[tool.Runtime]
+		isRuntimeInstalled = runtime == nil || config.Config.IsRuntimeInstalled(tool.Runtime, runtime)
+		if !isRuntimeInstalled {
+			fmt.Printf("%s runtime is not installed, installing...\n", tool.Runtime)
+			err := config.InstallRuntime(tool.Runtime, runtime)
+			if err != nil {
+				return fmt.Errorf("failed to install %s runtime: %w", tool.Runtime, err)
+			}
+			runtime = config.Config.Runtimes()[tool.Runtime]
+		}
+
+	} else {
+		runtime = config.Config.Runtimes()[tool.Runtime]
+		isRuntimeInstalled = runtime == nil || config.Config.IsRuntimeInstalled(tool.Runtime, runtime)
+		if !isRuntimeInstalled {
+			fmt.Printf("%s runtime is not installed, installing...\n", tool.Runtime)
+			err := config.InstallRuntime(tool.Runtime, runtime)
+			if err != nil {
+				return fmt.Errorf("failed to install %s runtime: %w", tool.Runtime, err)
+			}
+			runtime = config.Config.Runtimes()[tool.Runtime]
 		}
 	}
-
-	return lizard.RunLizard(workDirectory, lizardBinary, pathsToCheck, outputFile, outputFormat, patterns)
-}
-
-func runEnigmaAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	enigma := config.Config.Tools()["codacy-enigma-cli"]
-	if enigma == nil {
-		log.Fatal("Enigma tool configuration not found")
-	}
-
-	return tools.RunEnigma(workDirectory, enigma.InstallDir, enigma.Binaries["codacy-enigma-cli"], pathsToCheck, outputFile, outputFormat)
-}
-
-func runReviveAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	revive := config.Config.Tools()["revive"]
-	if revive == nil {
-		log.Fatal("Revive tool configuration not found")
-	}
-	reviveBinary := revive.Binaries["revive"]
-
-	return reviveTool.RunRevive(workDirectory, reviveBinary, pathsToCheck, outputFile, outputFormat)
+	return runToolByName(toolName, workDirectory, pathsToCheck, autoFix, outputFile, outputFormat, tool, runtime)
 }
 
 var analyzeCmd = &cobra.Command{
@@ -457,8 +403,6 @@ var analyzeCmd = &cobra.Command{
 			return
 		}
 
-		log.Println("Running tools for the specified file(s)...")
-
 		if outputFormat == "sarif" {
 			// Create temporary directory for individual tool outputs
 			tmpDir, err := os.MkdirTemp("", "codacy-analysis-*")
@@ -469,10 +413,9 @@ var analyzeCmd = &cobra.Command{
 
 			var sarifOutputs []string
 			for toolName := range toolsToRun {
-				log.Printf("Running %s...\n", toolName)
 				tmpFile := filepath.Join(tmpDir, fmt.Sprintf("%s.sarif", toolName))
-				if err := runTool(workDirectory, toolName, args, tmpFile); err != nil {
-					log.Printf("Tool failed to run: %s: %v\n", toolName, err)
+				if err := runTool(workDirectory, toolName, args, tmpFile, autoFix, outputFormat); err != nil {
+					log.Printf("Tool failed to run: %v\n", err)
 				}
 				sarifOutputs = append(sarifOutputs, tmpFile)
 			}
@@ -506,36 +449,10 @@ var analyzeCmd = &cobra.Command{
 		} else {
 			// Run tools without merging outputs
 			for toolName := range toolsToRun {
-				log.Printf("Running %s...\n", toolName)
-				if err := runTool(workDirectory, toolName, args, outputFile); err != nil {
-					log.Printf("Tool failed to run: %s: %v\n", toolName, err)
+				if err := runTool(workDirectory, toolName, args, outputFile, autoFix, outputFormat); err != nil {
+					log.Printf("Tool failed to run: %v\n", err)
 				}
 			}
 		}
 	},
-}
-
-func runTool(workDirectory string, toolName string, args []string, outputFile string) error {
-	switch toolName {
-	case "eslint":
-		return runEslintAnalysis(workDirectory, args, autoFix, outputFile, outputFormat)
-	case "trivy":
-		return runTrivyAnalysis(workDirectory, args, outputFile, outputFormat)
-	case "pmd":
-		return runPmdAnalysis(workDirectory, args, outputFile, outputFormat)
-	case "pylint":
-		return runPylintAnalysis(workDirectory, args, outputFile, outputFormat)
-	case "semgrep":
-		return runSemgrepAnalysis(workDirectory, args, outputFile, outputFormat)
-	case "dartanalyzer":
-		return runDartAnalyzer(workDirectory, args, outputFile, outputFormat)
-	case "lizard":
-		return runLizardAnalysis(workDirectory, args, outputFile, outputFormat)
-	case "codacy-enigma-cli":
-		return runEnigmaAnalysis(workDirectory, args, outputFile, outputFormat)
-	case "revive":
-		return runReviveAnalysis(workDirectory, args, outputFile, outputFormat)
-	default:
-		return fmt.Errorf("unsupported tool: %s", toolName)
-	}
 }

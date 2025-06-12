@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"codacy/cli-v2/domain"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -206,8 +207,18 @@ func resultsFinalWithAPIToken(commitUUID string, apiToken string, provider strin
 	fmt.Println("Response Body:", string(body))
 }
 
-func getPatternByID(patterns []Pattern, patternID string) *Pattern {
+func getPatternByID(patterns []domain.PatternConfiguration, patternID string) *domain.SarifPatternConfiguration {
+	var sarifPatterns []domain.SarifPatternConfiguration
 	for _, p := range patterns {
+		sarifPatterns = append(sarifPatterns, domain.SarifPatternConfiguration{
+			UUID:        p.PatternDefinition.Id,
+			ID:          p.PatternDefinition.Id,
+			Category:    p.PatternDefinition.Category,
+			Description: p.PatternDefinition.Description,
+			Level:       p.PatternDefinition.Level,
+		})
+	}
+	for _, p := range sarifPatterns {
 		if strings.EqualFold(p.ID, patternID) {
 			return &p
 		}
