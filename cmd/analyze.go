@@ -369,15 +369,33 @@ func runTool(workDirectory string, toolName string, pathsToCheck []string, outpu
 	return runToolByName(toolName, workDirectory, pathsToCheck, autoFix, outputFile, outputFormat, tool, runtime)
 }
 
+// validatePaths checks if all provided paths exist and returns an error if any don't
+func validatePaths(paths []string) error {
+	for _, path := range paths {
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			return fmt.Errorf("❌ Error: cannot find file or directory '%s'", path)
+		}
+	}
+	return nil
+}
+
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
-	Short: "Runs all configured linters.",
-	Long:  "Runs all configured tools for code analysis. Use --tool flag to run a specific tool.",
+	Short: "Analyze code using configured tools",
+	Long:  `Analyze code using configured tools and output results in the specified format.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Validate paths before proceeding
+		if err := validatePaths(args); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		// Get current working directory
 		workDirectory, err := os.Getwd()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Failed to get current working directory: %v", err)
 		}
+
 		var toolsToRun map[string]*plugins.ToolInfo
 
 		if toolsToAnalyzeParam != "" {

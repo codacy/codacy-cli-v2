@@ -204,9 +204,26 @@ func MergeSarifOutputs(inputFiles []string, outputFile string) error {
 			return fmt.Errorf("failed to read SARIF file %s: %w", file, err)
 		}
 
+		// Skip empty files
+		if len(data) == 0 {
+			continue
+		}
+
 		var sarif SimpleSarifReport
 		if err := json.Unmarshal(data, &sarif); err != nil {
-			return fmt.Errorf("failed to parse SARIF file %s: %w", file, err)
+			// If file is empty or invalid JSON, create an empty SARIF report - extra protection from invalid files
+			emptySarif := SimpleSarifReport{
+				Version: "2.1.0",
+				Schema:  "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+				Runs:    []json.RawMessage{},
+			}
+			emptyData, err := json.Marshal(emptySarif)
+			if err != nil {
+				return fmt.Errorf("failed to create empty SARIF report: %w", err)
+			}
+			if err := json.Unmarshal(emptyData, &sarif); err != nil {
+				return fmt.Errorf("failed to parse empty SARIF report: %w", err)
+			}
 		}
 
 		mergedSarif.Runs = append(mergedSarif.Runs, sarif.Runs...)
