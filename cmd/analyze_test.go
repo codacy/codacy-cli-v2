@@ -221,3 +221,44 @@ func TestEslintInstallationValidationLogic(t *testing.T) {
 		})
 	}
 }
+
+func TestValidatePaths(t *testing.T) {
+	tests := []struct {
+		name        string
+		paths       []string
+		expectError bool
+	}{
+		{
+			name:        "valid path",
+			paths:       []string{"."},
+			expectError: false,
+		},
+		{
+			name:        "non-existent file",
+			paths:       []string{"non-existent-file.txt"},
+			expectError: true,
+		},
+		{
+			name:        "multiple paths with one invalid",
+			paths:       []string{".", "non-existent-file.txt"},
+			expectError: true,
+		},
+		{
+			name:        "empty paths",
+			paths:       []string{},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validatePaths(tt.paths)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "❌ Error: cannot find file or directory")
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
