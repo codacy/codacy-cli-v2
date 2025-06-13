@@ -3,20 +3,24 @@
 # Function to normalize paths in a file
 normalize_paths() {
   local file=$1
-  local path_prefix
+  # Get the repository root directory (5 levels up from current test/src directory)
+  local repo_root=$(cd ../../../../.. && pwd)
   
+  # Normalize absolute paths to relative ones for consistent testing
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    path_prefix="/Users/runner/work/codacy-cli-v2/codacy-cli-v2/"
+    # Replace absolute paths with relative paths in URI contexts
+    sed -i '' "s#file://${repo_root}/plugins/tools/#file:///plugins/tools/#g" "$file"
+    sed -i '' "s#${repo_root}/plugins/tools/#/plugins/tools/#g" "$file"
+    # Handle CI runner paths for macOS
+    sed -i '' "s#file:///Users/runner/work/codacy-cli-v2/codacy-cli-v2/plugins/tools/#file:///plugins/tools/#g" "$file"
+    sed -i '' "s#/Users/runner/work/codacy-cli-v2/codacy-cli-v2/plugins/tools/#/plugins/tools/#g" "$file"
   else
-    path_prefix="/home/runner/work/codacy-cli-v2/codacy-cli-v2/"
-  fi
-  
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s|file://${path_prefix}|file:///|g" "$file"
-    sed -i '' "s|${path_prefix}|/|g" "$file"
-  else
-    sed -i "s|file://${path_prefix}|file:///|g" "$file"
-    sed -i "s|${path_prefix}|/|g" "$file"
+    # Replace absolute paths with relative paths in URI contexts  
+    sed -i "s#file://${repo_root}/plugins/tools/#file:///plugins/tools/#g" "$file"
+    sed -i "s#${repo_root}/plugins/tools/#/plugins/tools/#g" "$file"
+    # Handle CI runner paths for Linux
+    sed -i "s#file:///home/runner/work/codacy-cli-v2/codacy-cli-v2/plugins/tools/#file:///plugins/tools/#g" "$file"
+    sed -i "s#/home/runner/work/codacy-cli-v2/codacy-cli-v2/plugins/tools/#/plugins/tools/#g" "$file"
   fi
 }
 
