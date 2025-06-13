@@ -1,5 +1,24 @@
 #!/bin/bash
 
+# Function to cleanup all generated test files
+cleanup_all_test_files() {
+    echo "🧹 Cleaning up test files..."
+    
+    # Remove generated SARIF and sorted files from all tool test directories
+    find plugins/tools/*/test/src -name "actual.sarif" -o -name "actual.sorted.json" -o -name "expected.sorted.json" -o -name "codacy.yaml.backup" | xargs rm -f 2>/dev/null || true
+    
+    # Restore original codacy.yaml files if they were modified
+    git checkout -- plugins/tools/*/test/src/.codacy/codacy.yaml 2>/dev/null || true
+    
+    # Clean up any empty .codacy directories that were created during testing
+    find plugins/tools/*/test/src -name ".codacy" -type d -empty | xargs rmdir 2>/dev/null || true
+    
+    echo "✅ Cleanup completed"
+}
+
+# Set up trap to ensure cleanup happens even if script fails
+trap cleanup_all_test_files EXIT
+
 # Initialize failed tools file
 rm -f /tmp/failed_tools.txt
 touch /tmp/failed_tools.txt
