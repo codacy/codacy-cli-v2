@@ -1,8 +1,69 @@
 {
-  "version": "2.1.0",
   "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
   "runs": [
     {
+      "columnKind": "utf16CodeUnits",
+      "originalUriBaseIds": {
+        "ROOTPATH": {
+          "uri": "file:///plugins/tools/trivy/test/src/"
+        }
+      },
+      "results": [
+        {
+          "level": "error",
+          "locations": [
+            {
+              "message": {
+                "text": "package-lock.json: cross-spawn@7.0.3"
+              },
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package-lock.json",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "endColumn": 1,
+                  "endLine": 527,
+                  "startColumn": 1,
+                  "startLine": 515
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Package: cross-spawn\nInstalled Version: 7.0.3\nVulnerability CVE-2024-21538\nSeverity: HIGH\nFixed Version: 7.0.5, 6.0.6\nLink: [CVE-2024-21538](https://avd.aquasec.com/nvd/cve-2024-21538)"
+          },
+          "ruleId": "CVE-2024-21538",
+          "ruleIndex": 1
+        },
+        {
+          "level": "note",
+          "locations": [
+            {
+              "message": {
+                "text": "package-lock.json: brace-expansion@1.1.11"
+              },
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package-lock.json",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "endColumn": 1,
+                  "endLine": 357,
+                  "startColumn": 1,
+                  "startLine": 349
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Package: brace-expansion\nInstalled Version: 1.1.11\nVulnerability CVE-2025-5889\nSeverity: LOW\nFixed Version: 2.0.2, 1.1.12, 3.0.1, 4.0.1\nLink: [CVE-2025-5889](https://avd.aquasec.com/nvd/cve-2025-5889)"
+          },
+          "ruleId": "CVE-2025-5889",
+          "ruleIndex": 0
+        }
+      ],
       "tool": {
         "driver": {
           "fullName": "Trivy Vulnerability Scanner",
@@ -11,42 +72,8 @@
           "rules": null,
           "version": "0.59.1"
         }
-      },
-      "results": [
-        {
-          "ruleId": "CVE-2024-21538",
-          "ruleIndex": 0,
-          "level": "error",
-          "message": {
-            "text": "Package: cross-spawn\nInstalled Version: 7.0.3\nVulnerability CVE-2024-21538\nSeverity: HIGH\nFixed Version: 7.0.5, 6.0.6\nLink: [CVE-2024-21538](https://avd.aquasec.com/nvd/cve-2024-21538)"
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "package-lock.json",
-                  "uriBaseId": "ROOTPATH"
-                },
-                "region": {
-                  "startLine": 515,
-                  "startColumn": 1,
-                  "endLine": 527,
-                  "endColumn": 1
-                }
-              },
-              "message": {
-                "text": "package-lock.json: cross-spawn@7.0.3"
-              }
-            }
-          ]
-        }
-      ],
-      "columnKind": "utf16CodeUnits",
-      "originalUriBaseIds": {
-        "ROOTPATH": {
-          "uri": "file:///plugins/tools/trivy/test/src/"
-        }
       }
     }
-  ]
+  ],
+  "version": "2.1.0"
 }
