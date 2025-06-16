@@ -490,6 +490,34 @@ func createToolConfigurationFiles(tools []domain.Tool, flags domain.InitFlags) e
 	return nil
 }
 
+// CreateToolConfigurationFile creates a configuration file for a single tool
+func CreateToolConfigurationFile(toolName string, flags domain.InitFlags) error {
+	// Find the tool UUID by tool name
+	toolUuid := getToolUuidByName(toolName)
+	if toolUuid == "" {
+		return fmt.Errorf("tool '%s' not found in supported tools", toolName)
+	}
+
+	patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(flags, toolUuid)
+	if err != nil {
+		return fmt.Errorf("failed to get default patterns: %w", err)
+	}
+
+	// Get the tool object to pass to createToolFileConfiguration
+	tool := domain.Tool{Uuid: toolUuid}
+	return createToolFileConfiguration(tool, patternsConfig)
+}
+
+// getToolUuidByName finds the UUID for a tool given its name
+func getToolUuidByName(toolName string) string {
+	for uuid, toolInfo := range domain.SupportedToolsMetadata {
+		if toolInfo.Name == toolName {
+			return uuid
+		}
+	}
+	return ""
+}
+
 // createToolFileConfiguration creates a configuration file for a single tool using the registry
 func createToolFileConfiguration(tool domain.Tool, patternConfiguration []domain.PatternConfiguration) error {
 	creator, exists := toolConfigRegistry[tool.Uuid]

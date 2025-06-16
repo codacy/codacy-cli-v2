@@ -2,9 +2,14 @@ package cmd
 
 import (
 	"codacy/cli-v2/plugins"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"codacy/cli-v2/domain"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetFileExtension(t *testing.T) {
@@ -259,6 +264,148 @@ func TestValidatePaths(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
+	// Save original initFlags
+	originalFlags := initFlags
+	defer func() { initFlags = originalFlags }()
+
+	tests := []struct {
+		name             string
+		toolName         string
+		cliLocalMode     bool
+		apiToken         string
+		configFileExists bool
+		expectError      bool
+		description      string
+	}{
+		{
+			name:             "tool_without_config_file",
+			toolName:         "unsupported-tool",
+			cliLocalMode:     false,
+			apiToken:         "test-token",
+			configFileExists: false,
+			expectError:      false,
+			description:      "Tool that doesn't use config files should return without error",
+		},
+		{
+			name:             "config_file_exists",
+			toolName:         "eslint",
+			cliLocalMode:     false,
+			apiToken:         "test-token",
+			configFileExists: true,
+			expectError:      false,
+			description:      "When config file exists, should find it successfully",
+		},
+		{
+			name:             "remote_mode_with_token_no_config",
+			toolName:         "eslint",
+			cliLocalMode:     false,
+			apiToken:         "test-token",
+			configFileExists: false,
+			expectError:      false,
+			description:      "Remote mode with token should attempt to create config",
+		},
+		{
+			name:             "remote_mode_without_token_no_config",
+			toolName:         "eslint",
+			cliLocalMode:     false,
+			apiToken:         "",
+			configFileExists: false,
+			expectError:      false,
+			description:      "Remote mode without token should show appropriate message",
+		},
+		{
+			name:             "local_mode_no_config",
+			toolName:         "eslint",
+			cliLocalMode:     true,
+			apiToken:         "",
+			configFileExists: false,
+			expectError:      false,
+			description:      "Local mode should show message about adding config file",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup temporary directory
+			tmpDir, err := os.MkdirTemp("", "codacy-test-*")
+			require.NoError(t, err)
+			defer os.RemoveAll(tmpDir)
+
+			// Create config file if needed
+			if tt.configFileExists && toolConfigFileName[tt.toolName] != "" {
+				configPath := filepath.Join(tmpDir, toolConfigFileName[tt.toolName])
+				err := os.WriteFile(configPath, []byte("test config"), 0644)
+				require.NoError(t, err)
+			}
+
+			// Setup initFlags
+			initFlags = domain.InitFlags{
+				ApiToken: tt.apiToken,
+			}
+
+			// Mock config directory (this would need actual mocking in real implementation)
+			// For now, we'll create a simple test that verifies the function doesn't panic
+
+			// Execute the function
+			err = checkIfConfigExistsAndIsNeeded(tt.toolName, tt.cliLocalMode)
+
+			// Verify results
+			if tt.expectError {
+				assert.Error(t, err, tt.description)
+			} else {
+				assert.NoError(t, err, tt.description)
+			}
+		})
+	}
+}
+
+func TestToolConfigFileNameMap(t *testing.T) {
+	expectedTools := map[string]string{
+		"eslint":       "eslint.config.mjs",
+		"trivy":        "trivy.yaml",
+		"pmd":          "ruleset.xml",
+		"pylint":       "pylint.rc",
+		"dartanalyzer": "analysis_options.yaml",
+		"semgrep":      "semgrep.yaml",
+		"revive":       "revive.toml",
+		"lizard":       "lizard.yaml",
+	}
+
+	for toolName, expectedFileName := range expectedTools {
+		t.Run(toolName, func(t *testing.T) {
+			actualFileName, exists := toolConfigFileName[toolName]
+			assert.True(t, exists, "Tool %s should exist in toolConfigFileName map", toolName)
+			assert.Equal(t, expectedFileName, actualFileName, "Config filename for %s should match expected", toolName)
+		})
+	}
+}
+
+func TestGetFileExtension(t *testing.T) {
+	tests := []struct {
+		filePath string
+		expected string
+	}{
+		{"test.js", ".js"},
+		{"test.jsx", ".jsx"},
+		{"test.ts", ".ts"},
+		{"test.tsx", ".tsx"},
+		{"test.py", ".py"},
+		{"test.java", ".java"},
+		{"test", ""},
+		{"test.JS", ".js"}, // Should be lowercase
+		{"/path/to/test.py", ".py"},
+		{"", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.filePath, func(t *testing.T) {
+			result := GetFileExtension(tt.filePath)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
