@@ -209,6 +209,7 @@ var configDiscoverCmd = &cobra.Command{
 		}
 
 		codacyYAMLPath := config.Config.ProjectConfigFile()
+
 		if err := updateCodacyYAML(detectedLanguages, codacyYAMLPath, defaultToolLangMap, configResetInitFlags, currentCliMode); err != nil {
 			if strings.Contains(err.Error(), "❌ Fatal:") {
 				fmt.Println(err)
@@ -245,45 +246,32 @@ var configDiscoverCmd = &cobra.Command{
 // updateLanguagesConfig updates the .codacy/tools-configs/languages-config.yaml file.
 func updateLanguagesConfig(detectedLanguages map[string]struct{}, toolsConfigDir string, defaultToolLangMap map[string]domain.ToolLanguageInfo) error {
 	langConfigPath := filepath.Join(toolsConfigDir, "languages-config.yaml")
+
+	// Create a fresh languages config based only on detected languages
+	// This ensures we only include tools relevant to the currently detected languages
 	var langConf domain.LanguagesConfig
-
-	if _, err := os.Stat(langConfigPath); err == nil {
-		data, err := os.ReadFile(langConfigPath)
-		if err != nil {
-			return fmt.Errorf("failed to read existing languages-config.yaml: %w", err)
-		}
-		if err := yaml.Unmarshal(data, &langConf); err != nil {
-			return fmt.Errorf("failed to parse existing languages-config.yaml: %w", err)
-		}
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("failed to stat languages-config.yaml: %w", err)
-	}
-
-	// Create a map of existing tools for easier update
-	existingToolsMap := make(map[string]*domain.ToolLanguageInfo)
-	for i := range langConf.Tools {
-		existingToolsMap[langConf.Tools[i].Name] = &langConf.Tools[i]
-	}
 
 	for toolName, toolInfoFromDefaults := range defaultToolLangMap {
 		isRelevantTool := false
 		relevantLangsForThisTool := []string{}
 		relevantExtsForThisToolMap := make(map[string]struct{})
 
+		// Only include languages that are both supported by the tool AND actually detected
 		for _, langDefault := range toolInfoFromDefaults.Languages {
 			if _, isDetected := detectedLanguages[langDefault]; isDetected {
 				isRelevantTool = true
 				if !slices.Contains(relevantLangsForThisTool, langDefault) {
 					relevantLangsForThisTool = append(relevantLangsForThisTool, langDefault)
 				}
-				// Add extensions associated with this detected language for this tool
-				for _, defaultExt := range toolInfoFromDefaults.Extensions {
-					// A simple heuristic: if a tool supports a language, and that language is detected,
-					// all default extensions of that tool for that language group are considered relevant.
-					// This assumes toolInfoFromDefaults.Extensions are relevant for all toolInfoFromDefaults.Languages.
-					// A more precise mapping might be needed if a tool's extensions vary significantly per language it supports.
-					relevantExtsForThisToolMap[defaultExt] = struct{}{}
-				}
+			}
+		}
+
+		// Only add extensions for the languages that were actually detected
+		if isRelevantTool {
+			// Add only extensions that correspond to detected languages
+			// For now, we'll include all extensions of a relevant tool, but this could be refined
+			for _, defaultExt := range toolInfoFromDefaults.Extensions {
+				relevantExtsForThisToolMap[defaultExt] = struct{}{}
 			}
 		}
 
@@ -291,35 +279,13 @@ func updateLanguagesConfig(detectedLanguages map[string]struct{}, toolsConfigDir
 			relevantExtsForThisTool := config.GetSortedKeys(relevantExtsForThisToolMap)
 			sort.Strings(relevantLangsForThisTool)
 
-			if existingEntry, ok := existingToolsMap[toolName]; ok {
-				// Merge languages and extensions, keeping them unique and sorted
-				existingLangsSet := make(map[string]struct{})
-				for _, lang := range existingEntry.Languages {
-					existingLangsSet[lang] = struct{}{}
-				}
-				for _, lang := range relevantLangsForThisTool {
-					existingLangsSet[lang] = struct{}{}
-				}
-				existingEntry.Languages = config.GetSortedKeys(existingLangsSet)
-
-				existingExtsSet := make(map[string]struct{})
-				for _, ext := range existingEntry.Extensions {
-					existingExtsSet[ext] = struct{}{}
-				}
-				for _, ext := range relevantExtsForThisTool {
-					existingExtsSet[ext] = struct{}{}
-				}
-				existingEntry.Extensions = config.GetSortedKeys(existingExtsSet)
-
-			} else {
-				newEntry := domain.ToolLanguageInfo{
-					Name:       toolName,
-					Languages:  relevantLangsForThisTool,
-					Extensions: relevantExtsForThisTool,
-				}
-				langConf.Tools = append(langConf.Tools, newEntry)
-				existingToolsMap[toolName] = &langConf.Tools[len(langConf.Tools)-1] // update map with pointer to new entry
+			// Create a new entry for each relevant tool
+			newEntry := domain.ToolLanguageInfo{
+				Name:       toolName,
+				Languages:  relevantLangsForThisTool,
+				Extensions: relevantExtsForThisTool,
 			}
+			langConf.Tools = append(langConf.Tools, newEntry)
 		}
 	}
 
@@ -340,6 +306,7 @@ func updateLanguagesConfig(detectedLanguages map[string]struct{}, toolsConfigDir
 
 // updateCodacyYAML updates the codacy.yaml file with newly relevant tools.
 func updateCodacyYAML(detectedLanguages map[string]struct{}, codacyYAMLPath string, defaultToolLangMap map[string]domain.ToolLanguageInfo, initFlags domain.InitFlags, cliMode string) error {
+
 	var configData map[string]interface{}
 
 	// Read and parse codacy.yaml (validation is done globally in PersistentPreRun)
@@ -411,9 +378,12 @@ func updateCodacyYAML(detectedLanguages map[string]struct{}, codacyYAMLPath stri
 	}
 
 	defaultToolVersions := plugins.GetToolVersions()
-	finalToolsList := currentToolsList // Start with existing tools
 
+	// Discover mode: preserve existing tools and add only new discovered ones
+	finalToolsList := currentToolsList // Start with existing tools
 	addedNewTool := false
+
+	// Add only newly discovered tools that aren't already configured
 	for toolNameToAdd := range candidateToolsToAdd {
 		if _, alreadyConfigured := currentToolSetByName[toolNameToAdd]; !alreadyConfigured {
 			version, ok := defaultToolVersions[toolNameToAdd]
@@ -502,6 +472,7 @@ func updateCodacyYAML(detectedLanguages map[string]struct{}, codacyYAMLPath stri
 	if err := os.MkdirAll(filepath.Dir(codacyYAMLPath), utils.DefaultDirPerms); err != nil {
 		return fmt.Errorf("error creating .codacy directory: %w", err)
 	}
+
 	return os.WriteFile(codacyYAMLPath, yamlData, utils.DefaultFilePerms)
 }
 

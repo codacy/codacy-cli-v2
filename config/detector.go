@@ -17,7 +17,23 @@ import (
 func DetectFileExtensions(rootPath string) (map[string]int, error) {
 	extCount := make(map[string]int)
 
-	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+	// Check if rootPath is a file or directory
+	info, err := os.Stat(rootPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat path %s: %w", rootPath, err)
+	}
+
+	if !info.IsDir() {
+		// If it's a single file, only process that file
+		ext := strings.ToLower(filepath.Ext(rootPath))
+		if ext != "" {
+			extCount[ext] = 1
+		}
+		return extCount, nil
+	}
+
+	// If it's a directory, walk through it
+	err = filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -82,16 +98,55 @@ func DetectLanguages(rootPath string, toolLangMap map[string]domain.ToolLanguage
 	detectedLangs := make(map[string]struct{})
 	extToLang := make(map[string][]string)
 
-	// Build extension to language mapping
-	for _, toolInfo := range toolLangMap {
-		for _, lang := range toolInfo.Languages {
-			if lang == "Multiple" || lang == "Generic" { // Skip generic language types for direct detection
-				continue
-			}
-			for _, ext := range toolInfo.Extensions {
-				extToLang[ext] = append(extToLang[ext], lang)
-			}
-		}
+	// Build extension to language mapping based on file extensions, not tool capabilities
+	// Each extension should map to its actual language, not all languages that tools supporting it can handle
+	extensionLanguageMap := map[string][]string{
+		".java":      {"Java"},
+		".py":        {"Python"},
+		".js":        {"JavaScript"},
+		".jsx":       {"JSX"},
+		".ts":        {"TypeScript"},
+		".tsx":       {"TSX"},
+		".go":        {"Go", "Golang"}, // Both Go and Golang are used in tool definitions
+		".dart":      {"Dart"},
+		".c":         {"C"},
+		".cpp":       {"CPP"},
+		".cc":        {"CPP"},
+		".h":         {"C", "CPP"},
+		".hpp":       {"CPP"},
+		".cs":        {"C#"},
+		".rb":        {"Ruby"},
+		".php":       {"PHP"},
+		".scala":     {"Scala"},
+		".swift":     {"Swift"},
+		".kt":        {"Kotlin"},
+		".rs":        {"Rust"},
+		".lua":       {"Lua"},
+		".pl":        {"Perl"},
+		".f":         {"Fortran"},
+		".f90":       {"Fortran"},
+		".erl":       {"Erlang"},
+		".sol":       {"Solidity"},
+		".zig":       {"Zig"},
+		".m":         {"Objective-C"},
+		".vue":       {"VueJS"},
+		".ttcn":      {"TTCN-3"},
+		".gd":        {"GDScript"},
+		".json":      {"JSON"},
+		".xml":       {"XML"},
+		".jsp":       {"JSP"},
+		".vm":        {"Velocity"},
+		".cls":       {"Apex"},
+		".trigger":   {"Apex"},
+		".page":      {"VisualForce"},
+		".component": {"VisualForce"},
+		".tf":        {"Terraform"},
+		".tfvars":    {"Terraform"},
+	}
+
+	// Use the precise extension mapping instead of tool-based mapping
+	for ext, langs := range extensionLanguageMap {
+		extToLang[ext] = langs
 	}
 
 	// Get file extensions from the path
