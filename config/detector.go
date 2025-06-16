@@ -93,101 +93,38 @@ func GetRecognizableExtensions(extCount map[string]int, toolLangMap map[string]d
 	return result
 }
 
-// DetectLanguages detects languages based on file extensions found in the path
-func DetectLanguages(rootPath string, toolLangMap map[string]domain.ToolLanguageInfo) (map[string]struct{}, error) {
-	detectedLangs := make(map[string]struct{})
-	extToLang := make(map[string][]string)
-
-	// Build extension to language mapping based on file extensions, not tool capabilities
-	// Each extension should map to its actual language, not all languages that tools supporting it can handle
-	extensionLanguageMap := map[string][]string{
-		".java":      {"Java"},
-		".py":        {"Python"},
-		".js":        {"JavaScript"},
-		".jsx":       {"JSX"},
-		".ts":        {"TypeScript"},
-		".tsx":       {"TSX"},
-		".go":        {"Go", "Golang"}, // Both Go and Golang are used in tool definitions
-		".dart":      {"Dart"},
-		".c":         {"C"},
-		".cpp":       {"CPP"},
-		".cc":        {"CPP"},
-		".h":         {"C", "CPP"},
-		".hpp":       {"CPP"},
-		".cs":        {"C#"},
-		".rb":        {"Ruby"},
-		".php":       {"PHP"},
-		".scala":     {"Scala"},
-		".swift":     {"Swift"},
-		".kt":        {"Kotlin"},
-		".rs":        {"Rust"},
-		".lua":       {"Lua"},
-		".pl":        {"Perl"},
-		".f":         {"Fortran"},
-		".f90":       {"Fortran"},
-		".erl":       {"Erlang"},
-		".sol":       {"Solidity"},
-		".zig":       {"Zig"},
-		".m":         {"Objective-C"},
-		".vue":       {"VueJS"},
-		".ttcn":      {"TTCN-3"},
-		".gd":        {"GDScript"},
-		".json":      {"JSON"},
-		".xml":       {"XML"},
-		".jsp":       {"JSP"},
-		".vm":        {"Velocity"},
-		".cls":       {"Apex"},
-		".trigger":   {"Apex"},
-		".page":      {"VisualForce"},
-		".component": {"VisualForce"},
-		".tf":        {"Terraform"},
-		".tfvars":    {"Terraform"},
-	}
-
-	// Use the precise extension mapping instead of tool-based mapping
-	for ext, langs := range extensionLanguageMap {
-		extToLang[ext] = langs
-	}
-
+// DetectRelevantTools detects tools based on file extensions found in the path
+func DetectRelevantTools(rootPath string, toolLangMap map[string]domain.ToolLanguageInfo) (map[string]struct{}, error) {
 	// Get file extensions from the path
 	extCount, err := DetectFileExtensions(rootPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to detect file extensions in path %s: %w", rootPath, err)
 	}
 
-	// Map only found extensions to languages
-	for ext := range extCount {
-		if langs, ok := extToLang[ext]; ok {
-			// Log which extensions map to which languages for debugging
-			logger.Debug("Found files with extension", logrus.Fields{
-				"extension": ext,
-				"count":     extCount[ext],
-				"languages": langs,
-			})
-			for _, lang := range langs {
-				detectedLangs[lang] = struct{}{}
+	// Find tools that support these extensions
+	relevantTools := make(map[string]struct{})
+	for toolName, toolInfo := range toolLangMap {
+		for _, ext := range toolInfo.Extensions {
+			if _, found := extCount[ext]; found {
+				logger.Debug("Found relevant tool for extension", logrus.Fields{
+					"tool":      toolName,
+					"extension": ext,
+					"count":     extCount[ext],
+				})
+				relevantTools[toolName] = struct{}{}
+				break
 			}
 		}
 	}
 
-	// Log the final set of detected languages with their corresponding extensions
-	if len(detectedLangs) > 0 {
-		langToExts := make(map[string][]string)
-		for ext, count := range extCount {
-			if langs, ok := extToLang[ext]; ok {
-				for _, lang := range langs {
-					langToExts[lang] = append(langToExts[lang], fmt.Sprintf("%s (%d files)", ext, count))
-				}
-			}
-		}
-
-		logger.Debug("Detected languages in path", logrus.Fields{
-			"languages_with_files": langToExts,
-			"path":                 rootPath,
+	if len(relevantTools) > 0 {
+		logger.Debug("Detected relevant tools for path", logrus.Fields{
+			"tools": GetSortedKeys(relevantTools),
+			"path":  rootPath,
 		})
 	}
 
-	return detectedLangs, nil
+	return relevantTools, nil
 }
 
 // GetSortedKeys returns a sorted slice of strings from a string set
