@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"codacy/cli-v2/cmd/cmdutils"
+	"codacy/cli-v2/cmd/configsetup"
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/plugins"
@@ -39,6 +41,18 @@ type LanguagesConfig struct {
 		Languages  []string `yaml:"languages" json:"languages"`
 		Extensions []string `yaml:"extensions" json:"extensions"`
 	} `yaml:"tools" json:"tools"`
+}
+
+// toolConfigFileName maps tool names to their configuration filenames
+var toolConfigFileName = map[string]string{
+	"eslint":       "eslint.config.mjs",
+	"trivy":        "trivy.yaml",
+	"pmd":          "ruleset.xml",
+	"pylint":       "pylint.rc",
+	"dartanalyzer": "analysis_options.yaml",
+	"semgrep":      "semgrep.yaml",
+	"revive":       "revive.toml",
+	"lizard":       "lizard.yaml",
 }
 
 // LoadLanguageConfig loads the language configuration from the file
@@ -219,6 +233,7 @@ func init() {
 	analyzeCmd.Flags().StringVarP(&toolsToAnalyzeParam, "tool", "t", "", "Which tool to run analysis with. If not specified, all configured tools will be run")
 	analyzeCmd.Flags().StringVar(&outputFormat, "format", "", "Output format (use 'sarif' for SARIF format)")
 	analyzeCmd.Flags().BoolVar(&autoFix, "fix", false, "Apply auto fix to your issues when available")
+	cmdutils.AddCloudFlags(analyzeCmd, &initFlags)
 	rootCmd.AddCommand(analyzeCmd)
 }
 
@@ -279,7 +294,41 @@ func validateToolName(toolName string) error {
 	return nil
 }
 
-func runToolByName(toolName string, workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string, tool *plugins.ToolInfo, runtime *plugins.RuntimeInfo) error {
+func checkIfConfigExistsAndIsNeeded(toolName string, cliLocalMode bool) error {
+	configFileName := toolConfigFileName[toolName]
+	if configFileName == "" {
+		// Tool doesn't use config file
+		return nil
+	}
+
+	// Use the configuration system to get the tools config directory
+	toolsConfigDir := config.Config.ToolsConfigDirectory()
+	toolConfigPath := filepath.Join(toolsConfigDir, configFileName)
+
+	// Check if the config file exists
+	if _, err := os.Stat(toolConfigPath); os.IsNotExist(err) {
+		// Only show error if we're in remote mode and need the config file
+		if !cliLocalMode && initFlags.ApiToken != "" {
+			fmt.Printf("Creating new config file for tool %s\n", toolName)
+			configsetup.CreateToolConfigurationFile(toolName, initFlags)
+		} else if !cliLocalMode {
+			fmt.Printf("config file not found for tool %s: %s and no api token provided \n", toolName, toolConfigPath)
+		} else {
+			fmt.Printf("config file not found for tool %s: %s please add a config file to the tools-configs directory\n", toolName, toolConfigPath)
+		}
+	} else if err != nil {
+		fmt.Printf("error checking config file for tool %s: %v\n", toolName, err)
+	} else {
+		fmt.Printf("Config file found for %s: %s\n", toolName, toolConfigPath)
+	}
+	return nil
+}
+
+func runToolByName(toolName string, workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string, tool *plugins.ToolInfo, runtime *plugins.RuntimeInfo, cliLocalMode bool) error {
+	err := checkIfConfigExistsAndIsNeeded(toolName, cliLocalMode)
+	if err != nil {
+		return err
+	}
 	switch toolName {
 	case "eslint":
 		binaryPath := runtime.Binaries[tool.Runtime]
@@ -310,7 +359,7 @@ func runToolByName(toolName string, workDirectory string, pathsToCheck []string,
 	return fmt.Errorf("unsupported tool: %s", toolName)
 }
 
-func runTool(workDirectory string, toolName string, pathsToCheck []string, outputFile string, autoFix bool, outputFormat string) error {
+func runTool(workDirectory string, toolName string, pathsToCheck []string, outputFile string, autoFix bool, outputFormat string, cliLocalMode bool) error {
 	err := validateToolName(toolName)
 	if err != nil {
 		return err
@@ -368,7 +417,7 @@ func runTool(workDirectory string, toolName string, pathsToCheck []string, outpu
 			runtime = config.Config.Runtimes()[tool.Runtime]
 		}
 	}
-	return runToolByName(toolName, workDirectory, pathsToCheck, autoFix, outputFile, outputFormat, tool, runtime)
+	return runToolByName(toolName, workDirectory, pathsToCheck, autoFix, outputFile, outputFormat, tool, runtime, cliLocalMode)
 }
 
 // validatePaths checks if all provided paths exist and returns an error if any don't
@@ -380,6 +429,13 @@ func validatePaths(paths []string) error {
 			})
 			return fmt.Errorf("❌ Error: cannot find file or directory '%s'", path)
 		}
+	}
+	return nil
+}
+
+func validateCloudMode(cliLocalMode bool) error {
+	if cliLocalMode {
+		fmt.Println("Warning: cannot run in cloud mode")
 	}
 	return nil
 }
@@ -400,6 +456,10 @@ var analyzeCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("Failed to get current working directory: %v", err)
 		}
+
+		cliLocalMode := len(initFlags.ApiToken) == 0
+
+		validateCloudMode(cliLocalMode)
 
 		var toolsToRun map[string]*plugins.ToolInfo
 
@@ -437,7 +497,7 @@ var analyzeCmd = &cobra.Command{
 			var sarifOutputs []string
 			for toolName := range toolsToRun {
 				tmpFile := filepath.Join(tmpDir, fmt.Sprintf("%s.sarif", toolName))
-				if err := runTool(workDirectory, toolName, args, tmpFile, autoFix, outputFormat); err != nil {
+				if err := runTool(workDirectory, toolName, args, tmpFile, autoFix, outputFormat, cliLocalMode); err != nil {
 					log.Printf("Tool failed to run: %v\n", err)
 				}
 				sarifOutputs = append(sarifOutputs, tmpFile)
@@ -472,7 +532,7 @@ var analyzeCmd = &cobra.Command{
 		} else {
 			// Run tools without merging outputs
 			for toolName := range toolsToRun {
-				if err := runTool(workDirectory, toolName, args, outputFile, autoFix, outputFormat); err != nil {
+				if err := runTool(workDirectory, toolName, args, outputFile, autoFix, outputFormat, cliLocalMode); err != nil {
 					log.Printf("Tool failed to run: %v\n", err)
 				}
 			}
