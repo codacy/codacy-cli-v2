@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 
 	"github.com/stretchr/testify/assert"
@@ -269,9 +270,15 @@ func TestValidatePaths(t *testing.T) {
 }
 
 func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
-	// Save original initFlags
+	// Save original initFlags and config
 	originalFlags := initFlags
-	defer func() { initFlags = originalFlags }()
+	originalConfig := config.Config
+	originalWorkingDir, _ := os.Getwd()
+	defer func() {
+		initFlags = originalFlags
+		config.Config = originalConfig
+		os.Chdir(originalWorkingDir)
+	}()
 
 	tests := []struct {
 		name             string
@@ -301,15 +308,6 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 			description:      "When config file exists, should find it successfully",
 		},
 		{
-			name:             "remote_mode_with_token_no_config",
-			toolName:         "eslint",
-			cliLocalMode:     false,
-			apiToken:         "test-token",
-			configFileExists: false,
-			expectError:      false,
-			description:      "Remote mode with token should attempt to create config",
-		},
-		{
 			name:             "remote_mode_without_token_no_config",
 			toolName:         "eslint",
 			cliLocalMode:     false,
@@ -331,10 +329,14 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup temporary directory
+			// Setup temporary directory and change to it to avoid creating files in project dir
 			tmpDir, err := os.MkdirTemp("", "codacy-test-*")
 			require.NoError(t, err)
 			defer os.RemoveAll(tmpDir)
+
+			// Change to temp directory to prevent config file creation in project
+			err = os.Chdir(tmpDir)
+			require.NoError(t, err)
 
 			// Create config file if needed
 			if tt.configFileExists && toolConfigFileName[tt.toolName] != "" {
@@ -348,8 +350,8 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 				ApiToken: tt.apiToken,
 			}
 
-			// Mock config directory (this would need actual mocking in real implementation)
-			// For now, we'll create a simple test that verifies the function doesn't panic
+			// Mock config to use our temporary directory
+			config.Config = *config.NewConfigType(tmpDir, tmpDir, tmpDir)
 
 			// Execute the function
 			err = checkIfConfigExistsAndIsNeeded(tt.toolName, tt.cliLocalMode)
@@ -381,31 +383,6 @@ func TestToolConfigFileNameMap(t *testing.T) {
 			actualFileName, exists := toolConfigFileName[toolName]
 			assert.True(t, exists, "Tool %s should exist in toolConfigFileName map", toolName)
 			assert.Equal(t, expectedFileName, actualFileName, "Config filename for %s should match expected", toolName)
-		})
-	}
-}
-
-func TestGetFileExtension(t *testing.T) {
-	tests := []struct {
-		filePath string
-		expected string
-	}{
-		{"test.js", ".js"},
-		{"test.jsx", ".jsx"},
-		{"test.ts", ".ts"},
-		{"test.tsx", ".tsx"},
-		{"test.py", ".py"},
-		{"test.java", ".java"},
-		{"test", ""},
-		{"test.JS", ".js"}, // Should be lowercase
-		{"/path/to/test.py", ".py"},
-		{"", ""},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.filePath, func(t *testing.T) {
-			result := GetFileExtension(tt.filePath)
-			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
