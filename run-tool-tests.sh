@@ -3,24 +3,29 @@
 # Function to normalize paths in a file
 normalize_paths() {
   local file=$1
-  local path_prefix
+  # Get the repository root directory (5 levels up from current test/src directory)
+  local repo_root=$(cd ../../../../.. && pwd)
   
+  # Normalize absolute paths to relative ones for consistent testing
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    path_prefix="/Users/runner/work/codacy-cli-v2/codacy-cli-v2/"
+    # Replace absolute paths with relative paths in URI contexts
+    sed -i '' "s#file://${repo_root}/plugins/tools/#file:///plugins/tools/#g" "$file"
+    sed -i '' "s#${repo_root}/plugins/tools/#/plugins/tools/#g" "$file"
+    # Handle CI runner paths for macOS
+    sed -i '' "s#file:///Users/runner/work/codacy-cli-v2/codacy-cli-v2/plugins/tools/#file:///plugins/tools/#g" "$file"
+    sed -i '' "s#/Users/runner/work/codacy-cli-v2/codacy-cli-v2/plugins/tools/#/plugins/tools/#g" "$file"
   else
-    path_prefix="/home/runner/work/codacy-cli-v2/codacy-cli-v2/"
-  fi
-  
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s|file://${path_prefix}|file:///|g" "$file"
-    sed -i '' "s|${path_prefix}|/|g" "$file"
-  else
-    sed -i "s|file://${path_prefix}|file:///|g" "$file"
-    sed -i "s|${path_prefix}|/|g" "$file"
+    # Replace absolute paths with relative paths in URI contexts  
+    sed -i "s#file://${repo_root}/plugins/tools/#file:///plugins/tools/#g" "$file"
+    sed -i "s#${repo_root}/plugins/tools/#/plugins/tools/#g" "$file"
+    # Handle CI runner paths for Linux
+    sed -i "s#file:///home/runner/work/codacy-cli-v2/codacy-cli-v2/plugins/tools/#file:///plugins/tools/#g" "$file"
+    sed -i "s#/home/runner/work/codacy-cli-v2/codacy-cli-v2/plugins/tools/#/plugins/tools/#g" "$file"
   fi
 }
 
 # Function to sort SARIF file
+
 sort_sarif() {
   local input=$1
   local output=$2
@@ -56,6 +61,35 @@ fi
 # Change to the tool's test directory
 cd "$TOOL_DIR" || exit 1
 
+# Store initial state for cleanup
+initial_codacy_config=""
+if [ -f .codacy/codacy.yaml ]; then
+  # Backup existing config if it exists
+  cp .codacy/codacy.yaml .codacy/codacy.yaml.backup
+  initial_codacy_config="exists"
+fi
+
+# Function to cleanup generated files
+cleanup_test_files() {
+  # Remove generated SARIF and sorted files
+  rm -f actual.sarif actual.sorted.json expected.sorted.json
+  
+  # Restore or clean up .codacy/codacy.yaml
+  if [ "$initial_codacy_config" = "exists" ] && [ -f .codacy/codacy.yaml.backup ]; then
+    # Restore original config
+    mv .codacy/codacy.yaml.backup .codacy/codacy.yaml
+  elif [ "$initial_codacy_config" != "exists" ]; then
+    # Remove generated config and directory if they didn't exist initially
+    rm -f .codacy/codacy.yaml
+    if [ -d .codacy ]; then
+      rmdir .codacy 2>/dev/null || true  # Only remove if empty
+    fi
+  fi
+}
+
+# Set trap to ensure cleanup happens even if script fails
+trap cleanup_test_files EXIT
+
 # Run analysis
 "$CLI_PATH" install
 "$CLI_PATH" analyze --tool "$TOOL_NAME" --format sarif --output actual.sarif
@@ -75,6 +109,8 @@ if ! diff expected.sorted.json actual.sorted.json; then
   echo -e "\nActual SARIF output:"
   cat actual.sorted.json
   echo "$TOOL_NAME" >> /tmp/failed_tools.txt
+  # Return to original directory before exit
+  cd ../../../../.. || exit 1
   exit 1
 else
   echo "✅ Tests passed successfully for $TOOL_NAME"
