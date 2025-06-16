@@ -10,7 +10,7 @@ patterns:
         level: Warning
         severityLevel: Warning
         threshold: 8
-        timeToFix: 5
+        timeToFix: 10
         title: Enforce Medium Cyclomatic Complexity Threshold
     Lizard_file-nloc-medium:
         category: Complexity
@@ -20,7 +20,7 @@ patterns:
         level: Warning
         severityLevel: Warning
         threshold: 500
-        timeToFix: 5
+        timeToFix: 10
         title: Enforce Medium File Length Limit Based on Number of Lines of Code
     Lizard_nloc-medium:
         category: Complexity
@@ -33,7 +33,7 @@ patterns:
         level: Warning
         severityLevel: Warning
         threshold: 50
-        timeToFix: 5
+        timeToFix: 10
         title: Enforce Medium Number of Lines of Code (NLOC) Limit
     Lizard_parameter-count-medium:
         category: Complexity
@@ -46,5 +46,5 @@ patterns:
         level: Warning
         severityLevel: Warning
         threshold: 8
-        timeToFix: 5
+        timeToFix: 10
         title: Enforce Medium Parameter Count Limit

@@ -1,7 +1,7 @@
 patterns:
     Lizard_ccn-minor:
         category: Complexity
-        description: Check the Cyclomatic Complexity value of a function or logic block. If the threshold is not met, raise a Minor issue. The default threshold is 5.
+        description: Checks that the cyclomatic complexity of functions or logic blocks does not exceed a minor threshold, defaulting to 5.
         explanation: |-
             # Minor Cyclomatic Complexity control
 
@@ -11,10 +11,10 @@ patterns:
         severityLevel: Info
         threshold: 5
         timeToFix: 5
-        title: Minor Cyclomatic Complexity control
+        title: Enforce Minor Cyclomatic Complexity Threshold
     Lizard_nloc-critical:
         category: Complexity
-        description: Check the number of lines of code (without comments) in a function or logic block. If the threshold is not met, raise a Critical issue. The default threshold is 100.
+        description: Checks if functions or logic blocks exceed a set maximum number of lines of code (excluding comments), defaulting to 100 lines.
         explanation: |-
             # Critical NLOC control - Number of Lines of Code (without comments)
 
@@ -23,11 +23,11 @@ patterns:
         level: Error
         severityLevel: Error
         threshold: 100
-        timeToFix: 5
-        title: Critical NLOC control - Number of Lines of Code (without comments)
+        timeToFix: 15
+        title: Enforce Maximum Number of Lines of Code in Functions
     Lizard_nloc-medium:
         category: Complexity
-        description: Check the number of lines of code (without comments) in a function. If the threshold is not met, raise a Medium issue. The default threshold is 50.
+        description: Checks if the number of lines of code (excluding comments) in a function exceeds a medium threshold (default 50 lines).
         explanation: |-
             # Medium NLOC control - Number of Lines of Code (without comments)
 
@@ -36,5 +36,5 @@ patterns:
         level: Warning
         severityLevel: Warning
         threshold: 50
-        timeToFix: 5
-        title: Medium NLOC control - Number of Lines of Code (without comments)
+        timeToFix: 10
+        title: Enforce Medium Number of Lines of Code (NLOC) Limit
