@@ -308,14 +308,16 @@ func checkIfConfigExistsAndIsNeeded(toolName string, cliLocalMode bool) error {
 		// Only show error if we're in remote mode and need the config file
 		if !cliLocalMode && initFlags.ApiToken != "" {
 			fmt.Printf("Creating new config file for tool %s\n", toolName)
-			configsetup.CreateToolConfigurationFile(toolName, initFlags)
+			if err := configsetup.CreateToolConfigurationFile(toolName, initFlags); err != nil {
+				return fmt.Errorf("failed to create config file for tool %s: %w", toolName, err)
+			}
 		} else if !cliLocalMode {
-			fmt.Printf("config file not found for tool %s: %s and no api token provided \n", toolName, toolConfigPath)
+			fmt.Printf("Config file not found for tool %s: %s and no API token provided\n", toolName, toolConfigPath)
 		} else {
-			fmt.Printf("config file not found for tool %s: %s please add a config file to the tools-configs directory\n", toolName, toolConfigPath)
+			fmt.Printf("Config file not found for tool %s: %s. Please add a config file to the tools-configs directory\n", toolName, toolConfigPath)
 		}
 	} else if err != nil {
-		fmt.Printf("error checking config file for tool %s: %v\n", toolName, err)
+		return fmt.Errorf("Error checking config file for tool %s: %w", toolName, err)
 	} else {
 		fmt.Printf("Config file found for %s: %s\n", toolName, toolConfigPath)
 	}
@@ -363,7 +365,7 @@ func runTool(workDirectory string, toolName string, pathsToCheck []string, outpu
 		return err
 	}
 	log.Println("Running tools for the specified file(s)...")
-	log.Printf("Running %s...\n", toolName)
+	log.Printf("Running %s...", toolName)
 
 	tool := config.Config.Tools()[toolName]
 	var isToolInstalled bool
@@ -395,7 +397,7 @@ func runTool(workDirectory string, toolName string, pathsToCheck []string, outpu
 		runtime = config.Config.Runtimes()[tool.Runtime]
 		isRuntimeInstalled = runtime == nil || config.Config.IsRuntimeInstalled(tool.Runtime, runtime)
 		if !isRuntimeInstalled {
-			fmt.Printf("%s runtime is not installed, installing...\n", tool.Runtime)
+			fmt.Printf("%s runtime is not installed, installing...", tool.Runtime)
 			err := config.InstallRuntime(tool.Runtime, runtime)
 			if err != nil {
 				return fmt.Errorf("failed to install %s runtime: %w", tool.Runtime, err)
@@ -407,7 +409,7 @@ func runTool(workDirectory string, toolName string, pathsToCheck []string, outpu
 		runtime = config.Config.Runtimes()[tool.Runtime]
 		isRuntimeInstalled = runtime == nil || config.Config.IsRuntimeInstalled(tool.Runtime, runtime)
 		if !isRuntimeInstalled {
-			fmt.Printf("%s runtime is not installed, installing...\n", tool.Runtime)
+			fmt.Printf("%s runtime is not installed, installing...", tool.Runtime)
 			err := config.InstallRuntime(tool.Runtime, runtime)
 			if err != nil {
 				return fmt.Errorf("failed to install %s runtime: %w", tool.Runtime, err)
@@ -438,7 +440,9 @@ func validateCloudMode(cliLocalMode bool) error {
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Analyze code using configured tools",
-	Long:  `Analyze code using configured tools and output results in the specified format.`,
+	Long: `Analyze code using configured tools and output results in the specified format.
+	
+Supports API token, provider, and repository flags to automatically fetch tool configurations from Codacy API if they don't exist locally.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Validate paths before proceeding
 		if err := validatePaths(args); err != nil {
