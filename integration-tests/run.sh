@@ -519,7 +519,6 @@ run_config_discover_test() {
   if [ -f "$codacy_yaml" ]; then
     # Create a minimal codacy.yaml with just the mode
     cat > "$codacy_yaml" << 'EOF'
-mode: local
 tools: []
 runtimes: []
 EOF
