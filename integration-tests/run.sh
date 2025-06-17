@@ -485,6 +485,16 @@ run_init_test() {
   [ -d "$test_dir" ] || { echo "❌ Test directory does not exist: $test_dir"; exit 1; }
   
   cd "$test_dir" || exit 1
+  
+  # Set up cleanup trap to ensure .codacy is always removed
+  cleanup_codacy() {
+    if [ -d ".codacy" ]; then
+      rm -rf .codacy
+      echo "🧹 Cleaned up .codacy directory"
+    fi
+  }
+  trap cleanup_codacy EXIT
+  
   rm -rf .codacy
   
   if [ "$use_token" = "true" ]; then
@@ -495,8 +505,11 @@ run_init_test() {
   fi
   
   compare_files "expected" ".codacy" "Test $test_name"
+  
   echo "✅ Test $test_name completed successfully"
   echo "----------------------------------------"
+  
+  # Cleanup will happen automatically via trap
 }
 
 run_config_discover_test() {
@@ -507,6 +520,16 @@ run_config_discover_test() {
   [ -d "$test_dir" ] || { echo "❌ Test directory does not exist: $test_dir"; exit 1; }
   
   cd "$test_dir" || exit 1
+  
+  # Set up cleanup trap to ensure .codacy is always removed
+  cleanup_codacy() {
+    if [ -d ".codacy" ]; then
+      rm -rf .codacy
+      echo "🧹 Cleaned up .codacy directory"
+    fi
+  }
+  trap cleanup_codacy EXIT
+  
   # Clean up previous test results
   rm -rf .codacy
   
@@ -553,8 +576,11 @@ EOF
   "$CLI_PATH" config discover .
   
   compare_files "expected" ".codacy" "Test $test_name"
+  
   echo "✅ Test $test_name completed successfully"
   echo "----------------------------------------"
+  
+  # Cleanup will happen automatically via trap
 }
 
 # Run all tests
