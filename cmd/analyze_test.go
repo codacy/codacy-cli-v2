@@ -338,11 +338,23 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 			err = os.Chdir(tmpDir)
 			require.NoError(t, err)
 
-			// Create config file if needed
+			// Mock config to use our temporary directory BEFORE creating files
+			config.Config = *config.NewConfigType(tmpDir, tmpDir, tmpDir)
+
+			// Create config file if needed - using the same path logic as the function under test
 			if tt.configFileExists && toolConfigFileName[tt.toolName] != "" {
-				configPath := filepath.Join(tmpDir, toolConfigFileName[tt.toolName])
-				err := os.WriteFile(configPath, []byte("test config"), 0644)
+				// Use config.Config.ToolsConfigDirectory() to get the exact same path the function will use
+				toolsConfigDir := config.Config.ToolsConfigDirectory()
+				err := os.MkdirAll(toolsConfigDir, 0755)
 				require.NoError(t, err)
+
+				configPath := filepath.Join(toolsConfigDir, toolConfigFileName[tt.toolName])
+				err = os.WriteFile(configPath, []byte("test config"), 0644)
+				require.NoError(t, err)
+
+				// Ensure the file was created and can be found
+				_, err = os.Stat(configPath)
+				require.NoError(t, err, "Config file should exist at %s", configPath)
 			}
 
 			// Setup initFlags
@@ -350,11 +362,17 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 				ApiToken: tt.apiToken,
 			}
 
-			// Mock config to use our temporary directory
-			config.Config = *config.NewConfigType(tmpDir, tmpDir, tmpDir)
-
 			// Execute the function
 			err = checkIfConfigExistsAndIsNeeded(tt.toolName, tt.cliLocalMode)
+
+			// Clean up any files that might have been created by the function under test
+			if !tt.configFileExists && toolConfigFileName[tt.toolName] != "" {
+				toolsConfigDir := config.Config.ToolsConfigDirectory()
+				configPath := filepath.Join(toolsConfigDir, toolConfigFileName[tt.toolName])
+				if _, statErr := os.Stat(configPath); statErr == nil {
+					os.Remove(configPath)
+				}
+			}
 
 			// Verify results
 			if tt.expectError {
