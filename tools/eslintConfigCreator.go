@@ -199,7 +199,7 @@ func CreateEslintConfig(toolsConfigDir string, configuration []domain.PatternCon
 		}
 
 		// Check if this rule accepts options
-		if rulesWithoutOptions[rule] {
+		if _, ok := rulesWithoutOptions[rule]; ok {
 			// Rule doesn't accept options, only use error level
 			result += "          "
 			result += fmt.Sprintf(`"%s": ["error"],`, rule)
