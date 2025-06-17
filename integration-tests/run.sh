@@ -554,7 +554,7 @@ EOF
   fi
 
   # Discover java
-  "$CLI_PATH" config discover sample.java
+  "$CLI_PATH" config discover Sample.java
 
   # Check java is in the config
   if ! grep -q "java" .codacy/codacy.yaml; then
