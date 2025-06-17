@@ -28,7 +28,7 @@ func TestConfigFileTemplate(t *testing.T) {
 				"eslint@8.57.0",
 				"trivy@0.59.1",
 				"pylint@3.3.6",
-				"pmd@6.55.0",
+				"pmd@7.11.0",
 			},
 			notExpected: []string{},
 		},
