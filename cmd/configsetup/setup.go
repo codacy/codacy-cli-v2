@@ -536,11 +536,20 @@ func createReviveConfigFile(config []domain.PatternConfiguration, toolsConfigDir
 
 // BuildDefaultConfigurationFiles creates default configuration files for all tools
 func BuildDefaultConfigurationFiles(toolsConfigDir string, flags domain.InitFlags) error {
-	// Get all supported tool UUIDs
+	// Get default tool versions to determine correct UUIDs
+	defaultVersions := plugins.GetToolVersions()
+
+	// Get unique tool names from metadata
+	toolNames := make(map[string]struct{})
+	for _, meta := range domain.SupportedToolsMetadata {
+		toolNames[meta.Name] = struct{}{}
+	}
+
+	// Convert tool names to correct UUIDs based on versions
 	var allUUIDs []string
-	for uuid := range domain.SupportedToolsMetadata {
-		// Skip PMD7 and ESLint9 as per existing logic
-		if uuid != domain.PMD7 && uuid != domain.ESLint9 {
+	for toolName := range toolNames {
+		uuid := selectCorrectToolUUID(toolName, defaultVersions)
+		if uuid != "" {
 			allUUIDs = append(allUUIDs, uuid)
 		}
 	}
@@ -648,18 +657,51 @@ func createRemoteToolConfigurationsForDiscovered(discoveredToolNames map[string]
 	return createToolConfigurationFiles(configuredTools, initFlags)
 }
 
+// selectCorrectToolUUID selects the correct UUID for a tool based on its version
+func selectCorrectToolUUID(toolName string, defaultVersions map[string]string) string {
+	version, hasVersion := defaultVersions[toolName]
+
+	// Special case for PMD: choose PMD7 UUID for version 7.x, PMD UUID for version 6.x
+	if toolName == "pmd" && hasVersion {
+		if strings.HasPrefix(version, "7.") {
+			return domain.PMD7
+		} else {
+			return domain.PMD
+		}
+	}
+
+	// Special case for ESLint: choose ESLint9 UUID for version 9.x, ESLint UUID for older versions
+	if toolName == "eslint" && hasVersion {
+		if strings.HasPrefix(version, "9.") {
+			return domain.ESLint9
+		} else {
+			return domain.ESLint
+		}
+	}
+
+	// For other tools, find the first matching UUID
+	for uuid, meta := range domain.SupportedToolsMetadata {
+		if meta.Name == toolName {
+			return uuid
+		}
+	}
+
+	return ""
+}
+
 // createDefaultConfigurationsForSpecificTools creates default configurations for specific tools only
 func createDefaultConfigurationsForSpecificTools(discoveredToolNames map[string]struct{}, toolsConfigDir string, initFlags domain.InitFlags) error {
 	fmt.Printf("Creating default configurations for %d discovered tools...\n", len(discoveredToolNames))
 
-	// Convert tool names to UUIDs
+	// Get default tool versions to determine correct UUIDs
+	defaultVersions := plugins.GetToolVersions()
+
+	// Convert tool names to UUIDs, selecting the correct UUID based on version
 	var discoveredUUIDs []string
 	for toolName := range discoveredToolNames {
-		for uuid, meta := range domain.SupportedToolsMetadata {
-			if meta.Name == toolName {
-				discoveredUUIDs = append(discoveredUUIDs, uuid)
-				break
-			}
+		uuid := selectCorrectToolUUID(toolName, defaultVersions)
+		if uuid != "" {
+			discoveredUUIDs = append(discoveredUUIDs, uuid)
 		}
 	}
 

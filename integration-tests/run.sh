@@ -426,6 +426,14 @@ normalize_xml_config() {
   ' "$file"
 }
 
+# Shared cleanup function for test directories
+cleanup_codacy() {
+  if [ -d ".codacy" ]; then
+    rm -rf .codacy
+    echo "🧹 Cleaned up .codacy directory"
+  fi
+}
+
 compare_files() {
   local expected_dir="$1"
   local actual_dir="$2"
@@ -486,19 +494,15 @@ run_init_test() {
   
   cd "$test_dir" || exit 1
   
-  # Set up cleanup trap to ensure .codacy is always removed
-  cleanup_codacy() {
-    if [ -d ".codacy" ]; then
-      rm -rf .codacy
-      echo "🧹 Cleaned up .codacy directory"
-    fi
-  }
-  trap cleanup_codacy EXIT
-  
+  # Clean up any previous test results
   rm -rf .codacy
   
   if [ "$use_token" = "true" ]; then
-    [ -n "$CODACY_API_TOKEN" ] || { echo "❌ Skipping token-based test: CODACY_API_TOKEN not set"; return 0; }
+    [ -n "$CODACY_API_TOKEN" ] || { 
+      echo "❌ Skipping token-based test: CODACY_API_TOKEN not set"
+      cleanup_codacy
+      return 0
+    }
     "$CLI_PATH" init --api-token "$CODACY_API_TOKEN" --organization troubleshoot-codacy-dev --provider gh --repository codacy-cli-test
   else
     "$CLI_PATH" init
@@ -509,7 +513,8 @@ run_init_test() {
   echo "✅ Test $test_name completed successfully"
   echo "----------------------------------------"
   
-  # Cleanup will happen automatically via trap
+  # Clean up test artifacts
+  cleanup_codacy
 }
 
 run_config_discover_test() {
@@ -520,15 +525,6 @@ run_config_discover_test() {
   [ -d "$test_dir" ] || { echo "❌ Test directory does not exist: $test_dir"; exit 1; }
   
   cd "$test_dir" || exit 1
-  
-  # Set up cleanup trap to ensure .codacy is always removed
-  cleanup_codacy() {
-    if [ -d ".codacy" ]; then
-      rm -rf .codacy
-      echo "🧹 Cleaned up .codacy directory"
-    fi
-  }
-  trap cleanup_codacy EXIT
   
   # Clean up previous test results
   rm -rf .codacy
@@ -580,7 +576,8 @@ EOF
   echo "✅ Test $test_name completed successfully"
   echo "----------------------------------------"
   
-  # Cleanup will happen automatically via trap
+  # Clean up test artifacts
+  cleanup_codacy
 }
 
 # Run all tests
