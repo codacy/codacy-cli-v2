@@ -367,9 +367,9 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 			err = checkIfConfigExistsAndIsNeeded(tt.toolName, tt.cliLocalMode)
 
 			// Clean up any files that might have been created by the function under test
-			if !tt.configFileExists && toolConfigFileName[tt.toolName] != "" {
+			if !tt.configFileExists && constants.ToolConfigFileNames[tt.toolName] != "" {
 				toolsConfigDir := config.Config.ToolsConfigDirectory()
-				configPath := filepath.Join(toolsConfigDir, toolConfigFileName[tt.toolName])
+				configPath := filepath.Join(toolsConfigDir, constants.ToolConfigFileNames[tt.toolName])
 				if _, statErr := os.Stat(configPath); statErr == nil {
 					os.Remove(configPath)
 				}
