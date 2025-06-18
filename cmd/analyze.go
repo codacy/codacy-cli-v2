@@ -297,18 +297,16 @@ func checkIfConfigExistsAndIsNeeded(toolName string, cliLocalMode bool) error {
 	// Check if the config file exists
 	if _, err := os.Stat(toolConfigPath); os.IsNotExist(err) {
 		// Only show error if we're in remote mode and need the config file
-		if !cliLocalMode && initFlags.ApiToken != "" {
+		if (!cliLocalMode && initFlags.ApiToken != "") || cliLocalMode {
 			fmt.Printf("Creating new config file for tool %s\n", toolName)
 			if err := configsetup.CreateToolConfigurationFile(toolName, initFlags); err != nil {
 				return fmt.Errorf("failed to create config file for tool %s: %w", toolName, err)
 			}
-		} else if !cliLocalMode {
-			fmt.Printf("Config file not found for tool %s: %s and no API token provided\n", toolName, toolConfigPath)
 		} else {
-			fmt.Printf("Config file not found for tool %s: %s. Please add a config file to the tools-configs directory\n", toolName, toolConfigPath)
+			fmt.Printf("Config file not found for tool %s: %s and no API token provided\n", toolName, toolConfigPath)
 		}
 	} else if err != nil {
-		return fmt.Errorf("Error checking config file for tool %s: %w", toolName, err)
+		return fmt.Errorf("error checking config file for tool %s: %w", toolName, err)
 	} else {
 		fmt.Printf("Config file found for %s: %s\n", toolName, toolConfigPath)
 	}
