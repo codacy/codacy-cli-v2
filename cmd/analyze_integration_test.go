@@ -88,6 +88,11 @@ func TestCheckIfConfigExistsAndIsNeededBehavior(t *testing.T) {
 			// Mock config to use our temporary directory
 			config.Config = *config.NewConfigType(tmpDir, tmpDir, tmpDir)
 
+			// Create tools-configs directory since the function will try to create config files
+			toolsConfigDir := config.Config.ToolsConfigDirectory()
+			err = os.MkdirAll(toolsConfigDir, constants.DefaultDirPerms)
+			require.NoError(t, err)
+
 			// Execute the function - this tests it doesn't panic or return unexpected errors
 			err = checkIfConfigExistsAndIsNeeded(tt.toolName, tt.cliLocalMode)
 

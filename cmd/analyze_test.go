@@ -324,7 +324,7 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 			apiToken:         "",
 			configFileExists: false,
 			expectError:      false,
-			description:      "Local mode should show message about adding config file",
+			description:      "Local mode should create config file if tools-configs directory exists",
 		},
 	}
 
@@ -346,11 +346,11 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 			if tt.configFileExists && constants.ToolConfigFileNames[tt.toolName] != "" {
 				// Use config.Config.ToolsConfigDirectory() to get the exact same path the function will use
 				toolsConfigDir := config.Config.ToolsConfigDirectory()
-				err := os.MkdirAll(toolsConfigDir, 0755)
+				err := os.MkdirAll(toolsConfigDir, constants.DefaultDirPerms)
 				require.NoError(t, err)
 
 				configPath := filepath.Join(toolsConfigDir, constants.ToolConfigFileNames[tt.toolName])
-				err = os.WriteFile(configPath, []byte("test config"), 0644)
+				err = os.WriteFile(configPath, []byte("test config"), constants.DefaultFilePerms)
 				require.NoError(t, err)
 
 				// Ensure the file was created and can be found
@@ -361,6 +361,13 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 			// Setup initFlags
 			initFlags = domain.InitFlags{
 				ApiToken: tt.apiToken,
+			}
+
+			// Ensure tools-configs directory exists if the function might try to create config files
+			if !tt.configFileExists && constants.ToolConfigFileNames[tt.toolName] != "" {
+				toolsConfigDir := config.Config.ToolsConfigDirectory()
+				err := os.MkdirAll(toolsConfigDir, constants.DefaultDirPerms)
+				require.NoError(t, err)
 			}
 
 			// Execute the function
