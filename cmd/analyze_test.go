@@ -1,13 +1,14 @@
 package cmd
 
 import (
-	"codacy/cli-v2/plugins"
+	"codacy/cli-v2/config"
+	"codacy/cli-v2/constants"
+	"codacy/cli-v2/domain"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"codacy/cli-v2/config"
-	"codacy/cli-v2/domain"
+	"codacy/cli-v2/plugins"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -342,13 +343,13 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 			config.Config = *config.NewConfigType(tmpDir, tmpDir, tmpDir)
 
 			// Create config file if needed - using the same path logic as the function under test
-			if tt.configFileExists && toolConfigFileName[tt.toolName] != "" {
+			if tt.configFileExists && constants.ToolConfigFileNames[tt.toolName] != "" {
 				// Use config.Config.ToolsConfigDirectory() to get the exact same path the function will use
 				toolsConfigDir := config.Config.ToolsConfigDirectory()
 				err := os.MkdirAll(toolsConfigDir, 0755)
 				require.NoError(t, err)
 
-				configPath := filepath.Join(toolsConfigDir, toolConfigFileName[tt.toolName])
+				configPath := filepath.Join(toolsConfigDir, constants.ToolConfigFileNames[tt.toolName])
 				err = os.WriteFile(configPath, []byte("test config"), 0644)
 				require.NoError(t, err)
 
@@ -386,20 +387,20 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 
 func TestToolConfigFileNameMap(t *testing.T) {
 	expectedTools := map[string]string{
-		"eslint":       "eslint.config.mjs",
-		"trivy":        "trivy.yaml",
-		"pmd":          "ruleset.xml",
-		"pylint":       "pylint.rc",
-		"dartanalyzer": "analysis_options.yaml",
-		"semgrep":      "semgrep.yaml",
-		"revive":       "revive.toml",
-		"lizard":       "lizard.yaml",
+		"eslint":       constants.ESLintConfigFileName,
+		"trivy":        constants.TrivyConfigFileName,
+		"pmd":          constants.PMDConfigFileName,
+		"pylint":       constants.PylintConfigFileName,
+		"dartanalyzer": constants.DartAnalyzerConfigFileName,
+		"semgrep":      constants.SemgrepConfigFileName,
+		"revive":       constants.ReviveConfigFileName,
+		"lizard":       constants.LizardConfigFileName,
 	}
 
 	for toolName, expectedFileName := range expectedTools {
 		t.Run(toolName, func(t *testing.T) {
-			actualFileName, exists := toolConfigFileName[toolName]
-			assert.True(t, exists, "Tool %s should exist in toolConfigFileName map", toolName)
+			actualFileName, exists := constants.ToolConfigFileNames[toolName]
+			assert.True(t, exists, "Tool %s should exist in constants.ToolConfigFileNames map", toolName)
 			assert.Equal(t, expectedFileName, actualFileName, "Config filename for %s should match expected", toolName)
 		})
 	}
