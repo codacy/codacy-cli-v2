@@ -1,4 +1,7 @@
 tools:
+    - name: codacy-enigma-cli
+      languages: [Multiple]
+      extensions: []
     - name: dartanalyzer
       languages: [Dart]
       extensions: [.dart]
@@ -17,3 +20,6 @@ tools:
     - name: semgrep
       languages: [C, CPP, C#, Generic, Go, Java, JavaScript, JSON, Kotlin, Python, TypeScript, Ruby, Rust, JSX, PHP, Scala, Swift, Terraform]
       extensions: [.c, .cpp, .h, .hpp, .cs, .go, .java, .js, .json, .kt, .py, .ts, .rb, .rs, .jsx, .php, .scala, .swift, .tf, .tfvars]
+    - name: trivy
+      languages: [Multiple]
+      extensions: []

@@ -235,11 +235,26 @@ var configDiscoverCmd = &cobra.Command{
 func updateLanguagesConfigForTools(detectedTools map[string]struct{}, toolsConfigDir string, defaultToolLangMap map[string]domain.ToolLanguageInfo) error {
 	langConfigPath := filepath.Join(toolsConfigDir, "languages-config.yaml")
 
-	// Build language configuration for detected tools
+	// Read existing languages config if it exists
 	var langConf domain.LanguagesConfig
+	if content, err := os.ReadFile(langConfigPath); err == nil {
+		if err := yaml.Unmarshal(content, &langConf); err != nil {
+			return fmt.Errorf("failed to parse existing languages-config.yaml: %w", err)
+		}
+	}
+
+	// Create a map of existing tools for quick lookup
+	existingTools := make(map[string]domain.ToolLanguageInfo)
+	for _, tool := range langConf.Tools {
+		existingTools[tool.Name] = tool
+	}
+
+	// Add detected tools that are not already present
 	for toolName := range detectedTools {
-		if toolInfo, exists := defaultToolLangMap[toolName]; exists {
-			langConf.Tools = append(langConf.Tools, toolInfo)
+		if _, alreadyExists := existingTools[toolName]; !alreadyExists {
+			if toolInfo, exists := defaultToolLangMap[toolName]; exists {
+				langConf.Tools = append(langConf.Tools, toolInfo)
+			}
 		}
 	}
 
