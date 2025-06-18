@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/domain"
 
 	"github.com/stretchr/testify/assert"
@@ -103,28 +104,28 @@ func TestCheckIfConfigExistsAndIsNeededBehavior(t *testing.T) {
 // TestToolConfigFileNameMapCompleteness ensures all expected tools have config mappings
 func TestToolConfigFileNameMapCompleteness(t *testing.T) {
 	expectedTools := map[string]string{
-		"eslint":       "eslint.config.mjs",
-		"trivy":        "trivy.yaml",
-		"pmd":          "ruleset.xml",
-		"pylint":       "pylint.rc",
-		"dartanalyzer": "analysis_options.yaml",
-		"semgrep":      "semgrep.yaml",
-		"revive":       "revive.toml",
-		"lizard":       "lizard.yaml",
+		"eslint":       constants.ESLintConfigFileName,
+		"trivy":        constants.TrivyConfigFileName,
+		"pmd":          constants.PMDConfigFileName,
+		"pylint":       constants.PylintConfigFileName,
+		"dartanalyzer": constants.DartAnalyzerConfigFileName,
+		"semgrep":      constants.SemgrepConfigFileName,
+		"revive":       constants.ReviveConfigFileName,
+		"lizard":       constants.LizardConfigFileName,
 	}
 
 	t.Run("all_expected_tools_present", func(t *testing.T) {
 		for toolName, expectedFileName := range expectedTools {
-			actualFileName, exists := toolConfigFileName[toolName]
-			assert.True(t, exists, "Tool %s should exist in toolConfigFileName map", toolName)
+			actualFileName, exists := constants.ToolConfigFileNames[toolName]
+			assert.True(t, exists, "Tool %s should exist in constants.ToolConfigFileNames map", toolName)
 			assert.Equal(t, expectedFileName, actualFileName, "Config filename for %s should match expected", toolName)
 		}
 	})
 
 	t.Run("no_unexpected_tools", func(t *testing.T) {
-		for toolName := range toolConfigFileName {
+		for toolName := range constants.ToolConfigFileNames {
 			_, expected := expectedTools[toolName]
-			assert.True(t, expected, "Unexpected tool %s found in toolConfigFileName map", toolName)
+			assert.True(t, expected, "Unexpected tool %s found in constants.ToolConfigFileNames map", toolName)
 		}
 	})
 
@@ -139,7 +140,7 @@ func TestToolConfigFileNameMapCompleteness(t *testing.T) {
 			".toml": true,
 		}
 
-		for toolName, fileName := range toolConfigFileName {
+		for toolName, fileName := range constants.ToolConfigFileNames {
 			ext := filepath.Ext(fileName)
 			assert.True(t, validExtensions[ext], "Tool %s has config file %s with unexpected extension %s", toolName, fileName, ext)
 		}
