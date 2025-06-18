@@ -4,6 +4,7 @@ import (
 	"codacy/cli-v2/cmd/cmdutils"
 	"codacy/cli-v2/cmd/configsetup"
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
@@ -43,22 +44,10 @@ type LanguagesConfig struct {
 	} `yaml:"tools" json:"tools"`
 }
 
-// toolConfigFileName maps tool names to their configuration filenames
-var toolConfigFileName = map[string]string{
-	"eslint":       "eslint.config.mjs",
-	"trivy":        "trivy.yaml",
-	"pmd":          "ruleset.xml",
-	"pylint":       "pylint.rc",
-	"dartanalyzer": "analysis_options.yaml",
-	"semgrep":      "semgrep.yaml",
-	"revive":       "revive.toml",
-	"lizard":       "lizard.yaml",
-}
-
 // LoadLanguageConfig loads the language configuration from the file
 func LoadLanguageConfig() (*LanguagesConfig, error) {
 	// First, try to load the YAML config
-	yamlPath := filepath.Join(config.Config.ToolsConfigDirectory(), "languages-config.yaml")
+	yamlPath := filepath.Join(config.Config.ToolsConfigDirectory(), constants.LanguagesConfigFileName)
 
 	// Check if the YAML file exists
 	if _, err := os.Stat(yamlPath); err == nil {
@@ -295,7 +284,7 @@ func validateToolName(toolName string) error {
 }
 
 func checkIfConfigExistsAndIsNeeded(toolName string, cliLocalMode bool) error {
-	configFileName := toolConfigFileName[toolName]
+	configFileName := constants.ToolConfigFileNames[toolName]
 	if configFileName == "" {
 		// Tool doesn't use config file
 		return nil

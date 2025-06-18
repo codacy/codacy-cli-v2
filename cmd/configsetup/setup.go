@@ -22,17 +22,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Configuration file names - extracted as constants to avoid duplication
-const (
-	LanguagesConfigFileName    = "languages-config.yaml"
-	GitIgnoreFileName          = ".gitignore"
-	PMDConfigFileName          = "ruleset.xml"
-	PylintConfigFileName       = "pylint.rc"
-	TrivyConfigFileName        = "trivy.yaml"
-	DartAnalyzerConfigFileName = "analysis_options.yaml"
-	SemgrepConfigFileName      = "semgrep.yaml"
-)
-
 // ToolConfigCreator defines the interface for tool configuration creators
 type ToolConfigCreator interface {
 	CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error
@@ -78,14 +67,14 @@ type trivyConfigCreator struct{}
 
 func (t *trivyConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
 	configString := tools.CreateTrivyConfig(patterns)
-	err := writeConfigFile(filepath.Join(toolsConfigDir, TrivyConfigFileName), []byte(configString))
+	err := writeConfigFile(filepath.Join(toolsConfigDir, constants.TrivyConfigFileName), []byte(configString))
 	if err == nil {
 		fmt.Println("Trivy configuration created based on Codacy settings")
 	}
 	return err
 }
 
-func (t *trivyConfigCreator) GetConfigFileName() string { return TrivyConfigFileName }
+func (t *trivyConfigCreator) GetConfigFileName() string { return constants.TrivyConfigFileName }
 func (t *trivyConfigCreator) GetToolName() string       { return "Trivy" }
 
 // pmdConfigCreator implements ToolConfigCreator for PMD
@@ -93,10 +82,10 @@ type pmdConfigCreator struct{}
 
 func (p *pmdConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
 	configString := tools.CreatePmd6Config(patterns)
-	return writeConfigFile(filepath.Join(toolsConfigDir, PMDConfigFileName), []byte(configString))
+	return writeConfigFile(filepath.Join(toolsConfigDir, constants.PMDConfigFileName), []byte(configString))
 }
 
-func (p *pmdConfigCreator) GetConfigFileName() string { return PMDConfigFileName }
+func (p *pmdConfigCreator) GetConfigFileName() string { return constants.PMDConfigFileName }
 func (p *pmdConfigCreator) GetToolName() string       { return "PMD" }
 
 // pmd7ConfigCreator implements ToolConfigCreator for PMD7
@@ -104,14 +93,14 @@ type pmd7ConfigCreator struct{}
 
 func (p *pmd7ConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
 	configString := tools.CreatePmd7Config(patterns)
-	err := writeConfigFile(filepath.Join(toolsConfigDir, PMDConfigFileName), []byte(configString))
+	err := writeConfigFile(filepath.Join(toolsConfigDir, constants.PMDConfigFileName), []byte(configString))
 	if err == nil {
 		fmt.Println("PMD7 configuration created based on Codacy settings")
 	}
 	return err
 }
 
-func (p *pmd7ConfigCreator) GetConfigFileName() string { return PMDConfigFileName }
+func (p *pmd7ConfigCreator) GetConfigFileName() string { return constants.PMDConfigFileName }
 func (p *pmd7ConfigCreator) GetToolName() string       { return "PMD7" }
 
 // pylintConfigCreator implements ToolConfigCreator for Pylint
@@ -119,14 +108,14 @@ type pylintConfigCreator struct{}
 
 func (p *pylintConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
 	configString := pylint.GeneratePylintRC(patterns)
-	err := writeConfigFile(filepath.Join(toolsConfigDir, PylintConfigFileName), []byte(configString))
+	err := writeConfigFile(filepath.Join(toolsConfigDir, constants.PylintConfigFileName), []byte(configString))
 	if err == nil {
 		fmt.Println("Pylint configuration created based on Codacy settings")
 	}
 	return err
 }
 
-func (p *pylintConfigCreator) GetConfigFileName() string { return PylintConfigFileName }
+func (p *pylintConfigCreator) GetConfigFileName() string { return constants.PylintConfigFileName }
 func (p *pylintConfigCreator) GetToolName() string       { return "Pylint" }
 
 // dartAnalyzerConfigCreator implements ToolConfigCreator for Dart Analyzer
@@ -134,15 +123,17 @@ type dartAnalyzerConfigCreator struct{}
 
 func (d *dartAnalyzerConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
 	configString := tools.CreateDartAnalyzerConfig(patterns)
-	err := writeConfigFile(filepath.Join(toolsConfigDir, DartAnalyzerConfigFileName), []byte(configString))
+	err := writeConfigFile(filepath.Join(toolsConfigDir, constants.DartAnalyzerConfigFileName), []byte(configString))
 	if err == nil {
 		fmt.Println("Dart configuration created based on Codacy settings")
 	}
 	return err
 }
 
-func (d *dartAnalyzerConfigCreator) GetConfigFileName() string { return DartAnalyzerConfigFileName }
-func (d *dartAnalyzerConfigCreator) GetToolName() string       { return "Dart Analyzer" }
+func (d *dartAnalyzerConfigCreator) GetConfigFileName() string {
+	return constants.DartAnalyzerConfigFileName
+}
+func (d *dartAnalyzerConfigCreator) GetToolName() string { return "Dart Analyzer" }
 
 // semgrepConfigCreator implements ToolConfigCreator for Semgrep
 type semgrepConfigCreator struct{}
@@ -152,14 +143,14 @@ func (s *semgrepConfigCreator) CreateConfig(toolsConfigDir string, patterns []do
 	if err != nil {
 		return fmt.Errorf("failed to create Semgrep config: %v", err)
 	}
-	err = writeConfigFile(filepath.Join(toolsConfigDir, SemgrepConfigFileName), configData)
+	err = writeConfigFile(filepath.Join(toolsConfigDir, constants.SemgrepConfigFileName), configData)
 	if err == nil {
 		fmt.Println("Semgrep configuration created based on Codacy settings")
 	}
 	return err
 }
 
-func (s *semgrepConfigCreator) GetConfigFileName() string { return SemgrepConfigFileName }
+func (s *semgrepConfigCreator) GetConfigFileName() string { return constants.SemgrepConfigFileName }
 func (s *semgrepConfigCreator) GetToolName() string       { return "Semgrep" }
 
 // lizardConfigCreator implements ToolConfigCreator for Lizard
@@ -217,7 +208,7 @@ func CreateLanguagesConfigFileLocal(toolsConfigDir string) error {
 }
 
 func CreateGitIgnoreFile() error {
-	gitIgnorePath := filepath.Join(config.Config.LocalCodacyDirectory(), GitIgnoreFileName)
+	gitIgnorePath := filepath.Join(config.Config.LocalCodacyDirectory(), constants.GitIgnoreFileName)
 	content := "# Codacy CLI\ntools-configs/\n.gitignore\ncli-config.yaml\nlogs/\n"
 	return writeConfigFile(gitIgnorePath, []byte(content))
 }
