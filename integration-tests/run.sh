@@ -426,6 +426,71 @@ normalize_xml_config() {
   ' "$file"
 }
 
+# Shared cleanup function for test directories
+cleanup_codacy() {
+  if [ -d ".codacy" ]; then
+    rm -rf .codacy
+    echo "🧹 Cleaned up .codacy directory"
+  fi
+}
+
+# Validate that languages-config.yaml exists and contains all tools from codacy.yaml
+validate_languages_config_contains_all_tools() {
+  local codacy_yaml=".codacy/codacy.yaml"
+  local languages_config=".codacy/tools-configs/languages-config.yaml"
+  
+  # Check that languages-config.yaml exists
+  if [ ! -f "$languages_config" ]; then
+    echo "❌ languages-config.yaml does not exist at $languages_config"
+    exit 1
+  fi
+  echo "✅ languages-config.yaml exists"
+  
+  # Extract tool names from codacy.yaml
+  if [ ! -f "$codacy_yaml" ]; then
+    echo "❌ codacy.yaml does not exist at $codacy_yaml"
+    exit 1
+  fi
+  
+  # Get tools from codacy.yaml (extract tool names before @ version, only from tools section)
+  codacy_tools=$(awk '
+    /^tools:/ { in_tools=1; next }
+    /^[a-zA-Z][^:]*:/ { in_tools=0 }
+    in_tools && /^\s*-\s+[a-zA-Z0-9_-]+@/ { 
+      gsub(/^\s*-\s*/, ""); 
+      gsub(/@.*$/, ""); 
+      print 
+    }
+  ' "$codacy_yaml" | sort || true)
+  
+  if [ -z "$codacy_tools" ]; then
+    echo "✅ No tools found in codacy.yaml, skipping validation"
+    return 0
+  fi
+  
+  echo "📋 Tools found in codacy.yaml:"
+  echo "$codacy_tools"
+  
+  # Check that each tool from codacy.yaml exists in languages-config.yaml
+  missing_tools=""
+  for tool in $codacy_tools; do
+    if ! grep -q "name: $tool" "$languages_config"; then
+      missing_tools="$missing_tools $tool"
+    fi
+  done
+  
+  if [ -n "$missing_tools" ]; then
+    echo "❌ The following tools from codacy.yaml are missing in languages-config.yaml:$missing_tools"
+    echo "=== Tools in codacy.yaml ==="
+    echo "$codacy_tools"
+    echo "=== Tools in languages-config.yaml ==="
+    grep "name:" "$languages_config" | sed 's/.*name: \(.*\)/\1/' | sort
+    exit 1
+  fi
+  
+  echo "✅ All tools from codacy.yaml are present in languages-config.yaml"
+}
+
 compare_files() {
   local expected_dir="$1"
   local actual_dir="$2"
@@ -485,21 +550,100 @@ run_init_test() {
   [ -d "$test_dir" ] || { echo "❌ Test directory does not exist: $test_dir"; exit 1; }
   
   cd "$test_dir" || exit 1
+  
+  # Clean up any previous test results
   rm -rf .codacy
   
   if [ "$use_token" = "true" ]; then
-    [ -n "$CODACY_API_TOKEN" ] || { echo "❌ Skipping token-based test: CODACY_API_TOKEN not set"; return 0; }
+    [ -n "$CODACY_API_TOKEN" ] || { 
+      echo "❌ Skipping token-based test: CODACY_API_TOKEN not set"
+      cleanup_codacy
+      return 0
+    }
     "$CLI_PATH" init --api-token "$CODACY_API_TOKEN" --organization troubleshoot-codacy-dev --provider gh --repository codacy-cli-test
   else
     "$CLI_PATH" init
   fi
   
   compare_files "expected" ".codacy" "Test $test_name"
+  
   echo "✅ Test $test_name completed successfully"
   echo "----------------------------------------"
+  
+  # Clean up test artifacts
+  cleanup_codacy
 }
 
-# Run both tests
+run_config_discover_test() {
+  local test_dir="$1"
+  local test_name="$2"
+  
+  echo "Running test: $test_name"
+  [ -d "$test_dir" ] || { echo "❌ Test directory does not exist: $test_dir"; exit 1; }
+  
+  cd "$test_dir" || exit 1
+  
+  # Clean up previous test results
+  rm -rf .codacy
+  
+  # First initialize with basic configuration
+  "$CLI_PATH" init
+
+  # Remove manually all entries from codacy yaml file
+  # This ensures we test the discover command adding tools to a clean config
+  local codacy_yaml=".codacy/codacy.yaml"
+  if [ -f "$codacy_yaml" ]; then
+    # Create a minimal codacy.yaml with just the mode
+    cat > "$codacy_yaml" << 'EOF'
+tools: []
+runtimes: []
+EOF
+    echo "Cleared tools and runtimes from codacy.yaml for discover test"
+  fi
+  
+  # Run config discover on the test directory
+  "$CLI_PATH" config discover sample.dart
+
+  # Check dart is in the config
+  if ! grep -q "dart" .codacy/codacy.yaml; then
+    echo "❌ Dart is not in the config"
+    exit 1
+  fi
+
+  # Discover java
+  "$CLI_PATH" config discover Sample.java
+
+  # Check java is in the config
+  if ! grep -q "java" .codacy/codacy.yaml; then
+    echo "❌ Java is not in the config"
+    exit 1
+  fi
+
+  # check pmd is in the config
+  if ! grep -q "pmd" .codacy/codacy.yaml; then
+    echo "❌ PMD is not in the config"
+    exit 1
+  fi
+
+  # Check the languages-config.yaml is present and contains all tools which are in the codacy.yaml
+  validate_languages_config_contains_all_tools
+
+  # Run config discover on the test directory - adding all tools
+  "$CLI_PATH" config discover .
+  
+  # Final validation: check that languages-config.yaml contains all tools from codacy.yaml
+  validate_languages_config_contains_all_tools
+  
+  compare_files "expected" ".codacy" "Test $test_name"
+  
+  echo "✅ Test $test_name completed successfully"
+  echo "----------------------------------------"
+  
+  # Clean up test artifacts
+  cleanup_codacy
+}
+
+# Run all tests
 echo "Starting integration tests..."
 echo "----------------------------------------"
 
@@ -508,6 +652,9 @@ run_init_test "$SCRIPT_DIR/init-without-token" "init-without-token" "false"
 
 # Test 2: Init with token
 run_init_test "$SCRIPT_DIR/init-with-token" "init-with-token" "true"
+
+# Test 3: Config discover
+run_config_discover_test "$SCRIPT_DIR/config-discover" "config-discover"
 
 echo "All tests completed successfully! 🎉"
 

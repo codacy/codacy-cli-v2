@@ -1,6 +1,6 @@
 name: pmd
 description: PMD is a source code analyzer that finds common programming flaws like unused variables, empty catch blocks, unnecessary object creation, and so forth.
-default_version: 6.55.0
+default_version: 7.11.0 # ver 7 have higher prio than 6, 7.11.0 is the latest version of PMD used in the Codacy platform
 runtime: java
 runtime_binaries:
   execution: java

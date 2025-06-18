@@ -17,7 +17,23 @@ import (
 func DetectFileExtensions(rootPath string) (map[string]int, error) {
 	extCount := make(map[string]int)
 
-	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+	// Check if rootPath is a file or directory
+	info, err := os.Stat(rootPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat path %s: %w", rootPath, err)
+	}
+
+	if !info.IsDir() {
+		// If it's a single file, only process that file
+		ext := strings.ToLower(filepath.Ext(rootPath))
+		if ext != "" {
+			extCount[ext] = 1
+		}
+		return extCount, nil
+	}
+
+	// If it's a directory, walk through it
+	err = filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -77,62 +93,38 @@ func GetRecognizableExtensions(extCount map[string]int, toolLangMap map[string]d
 	return result
 }
 
-// DetectLanguages detects languages based on file extensions found in the path
-func DetectLanguages(rootPath string, toolLangMap map[string]domain.ToolLanguageInfo) (map[string]struct{}, error) {
-	detectedLangs := make(map[string]struct{})
-	extToLang := make(map[string][]string)
-
-	// Build extension to language mapping
-	for _, toolInfo := range toolLangMap {
-		for _, lang := range toolInfo.Languages {
-			if lang == "Multiple" || lang == "Generic" { // Skip generic language types for direct detection
-				continue
-			}
-			for _, ext := range toolInfo.Extensions {
-				extToLang[ext] = append(extToLang[ext], lang)
-			}
-		}
-	}
-
+// DetectRelevantTools detects tools based on file extensions found in the path
+func DetectRelevantTools(rootPath string, toolLangMap map[string]domain.ToolLanguageInfo) (map[string]struct{}, error) {
 	// Get file extensions from the path
 	extCount, err := DetectFileExtensions(rootPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to detect file extensions in path %s: %w", rootPath, err)
 	}
 
-	// Map only found extensions to languages
-	for ext := range extCount {
-		if langs, ok := extToLang[ext]; ok {
-			// Log which extensions map to which languages for debugging
-			logger.Debug("Found files with extension", logrus.Fields{
-				"extension": ext,
-				"count":     extCount[ext],
-				"languages": langs,
-			})
-			for _, lang := range langs {
-				detectedLangs[lang] = struct{}{}
+	// Find tools that support these extensions
+	relevantTools := make(map[string]struct{})
+	for toolName, toolInfo := range toolLangMap {
+		for _, ext := range toolInfo.Extensions {
+			if _, found := extCount[ext]; found {
+				logger.Debug("Found relevant tool for extension", logrus.Fields{
+					"tool":      toolName,
+					"extension": ext,
+					"count":     extCount[ext],
+				})
+				relevantTools[toolName] = struct{}{}
+				break
 			}
 		}
 	}
 
-	// Log the final set of detected languages with their corresponding extensions
-	if len(detectedLangs) > 0 {
-		langToExts := make(map[string][]string)
-		for ext, count := range extCount {
-			if langs, ok := extToLang[ext]; ok {
-				for _, lang := range langs {
-					langToExts[lang] = append(langToExts[lang], fmt.Sprintf("%s (%d files)", ext, count))
-				}
-			}
-		}
-
-		logger.Debug("Detected languages in path", logrus.Fields{
-			"languages_with_files": langToExts,
-			"path":                 rootPath,
+	if len(relevantTools) > 0 {
+		logger.Debug("Detected relevant tools for path", logrus.Fields{
+			"tools": GetSortedKeys(relevantTools),
+			"path":  rootPath,
 		})
 	}
 
-	return detectedLangs, nil
+	return relevantTools, nil
 }
 
 // GetSortedKeys returns a sorted slice of strings from a string set
