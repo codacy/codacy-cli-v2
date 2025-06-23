@@ -511,6 +511,12 @@ func createToolFileConfiguration(tool domain.Tool, patternConfiguration []domain
 	}
 
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
+
+	// Ensure the tools-configs directory exists
+	if err := os.MkdirAll(toolsConfigDir, constants.DefaultDirPerms); err != nil {
+		return fmt.Errorf("failed to create tools-configs directory: %w", err)
+	}
+
 	return creator.CreateConfig(toolsConfigDir, patternConfiguration)
 }
 

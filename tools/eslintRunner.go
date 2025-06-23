@@ -38,6 +38,7 @@ func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory 
 		//When writing to file, use the output file option
 		cmd.Args = append(cmd.Args, "-o", outputFile)
 	}
+
 	if len(pathsToCheck) > 0 {
 		cmd.Args = append(cmd.Args, pathsToCheck...)
 	} else {

@@ -283,6 +283,7 @@ func validateToolName(toolName string) error {
 	return nil
 }
 
+// checkIfConfigExistsAndIsNeeded validates if a tool has config file and creates one if needed
 func checkIfConfigExistsAndIsNeeded(toolName string, cliLocalMode bool) error {
 	configFileName := constants.ToolConfigFileNames[toolName]
 	if configFileName == "" {
@@ -296,19 +297,33 @@ func checkIfConfigExistsAndIsNeeded(toolName string, cliLocalMode bool) error {
 
 	// Check if the config file exists
 	if _, err := os.Stat(toolConfigPath); os.IsNotExist(err) {
-		// Only show error if we're in remote mode and need the config file
+		// Config file does not exist - create it if we have the means to do so
 		if (!cliLocalMode && initFlags.ApiToken != "") || cliLocalMode {
 			fmt.Printf("Creating new config file for tool %s\n", toolName)
 			if err := configsetup.CreateToolConfigurationFile(toolName, initFlags); err != nil {
 				return fmt.Errorf("failed to create config file for tool %s: %w", toolName, err)
 			}
+
+			// Ensure .gitignore exists FIRST to prevent config files from being analyzed
+			if err := configsetup.CreateGitIgnoreFile(); err != nil {
+				logger.Warn("Failed to create .gitignore file", logrus.Fields{
+					"error": err,
+				})
+			}
 		} else {
-			fmt.Printf("Config file not found for tool %s: %s and no API token provided\n", toolName, toolConfigPath)
+			logger.Debug("Config file not found for tool, using tool defaults", logrus.Fields{
+				"tool":           toolName,
+				"toolConfigPath": toolConfigPath,
+				"message":        "No API token provided",
+			})
 		}
 	} else if err != nil {
 		return fmt.Errorf("error checking config file for tool %s: %w", toolName, err)
 	} else {
-		fmt.Printf("Config file found for %s: %s\n", toolName, toolConfigPath)
+		logger.Info("Config file found for tool", logrus.Fields{
+			"tool":           toolName,
+			"toolConfigPath": toolConfigPath,
+		})
 	}
 	return nil
 }
