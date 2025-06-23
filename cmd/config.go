@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"slices"
 	"sort"
 	"strings"
 
@@ -186,17 +185,17 @@ var configDiscoverCmd = &cobra.Command{
 			}
 		}
 
-		detectedLanguages, err := config.DetectLanguages(discoverPath, defaultToolLangMap)
+		detectedTools, err := config.DetectRelevantTools(discoverPath, defaultToolLangMap)
 		if err != nil {
-			log.Fatalf("Error detecting languages: %v", err)
+			log.Fatalf("Error detecting relevant tools: %v", err)
 		}
-		if len(detectedLanguages) == 0 {
-			fmt.Println("No known languages detected in the provided path.")
+		if len(detectedTools) == 0 {
+			fmt.Println("No relevant tools found for the file extensions in the provided path.")
 			return
 		}
 
 		toolsConfigDir := config.Config.ToolsConfigsDirectory()
-		if err := updateLanguagesConfig(detectedLanguages, toolsConfigDir, defaultToolLangMap); err != nil {
+		if err := updateLanguagesConfigForTools(detectedTools, toolsConfigDir, defaultToolLangMap); err != nil {
 			log.Fatalf("Error updating .codacy/tools-configs/languages-config.yaml: %v", err)
 		}
 		fmt.Println("Updated .codacy/tools-configs/languages-config.yaml")
@@ -209,7 +208,8 @@ var configDiscoverCmd = &cobra.Command{
 		}
 
 		codacyYAMLPath := config.Config.ProjectConfigFile()
-		if err := updateCodacyYAML(detectedLanguages, codacyYAMLPath, defaultToolLangMap, configResetInitFlags, currentCliMode); err != nil {
+
+		if err := updateCodacyYAMLForTools(detectedTools, codacyYAMLPath, configResetInitFlags, currentCliMode); err != nil {
 			if strings.Contains(err.Error(), "❌ Fatal:") {
 				fmt.Println(err)
 				os.Exit(1)
@@ -218,21 +218,10 @@ var configDiscoverCmd = &cobra.Command{
 		}
 		fmt.Printf("Updated %s with relevant tools.\n", filepath.Base(codacyYAMLPath))
 
-		// Determine which tools are relevant for discovered languages and create their configurations
-		discoveredToolNames := make(map[string]struct{})
-		for toolName, toolInfo := range defaultToolLangMap {
-			for _, toolLang := range toolInfo.Languages {
-				if _, detected := detectedLanguages[toolLang]; detected {
-					discoveredToolNames[toolName] = struct{}{}
-					break
-				}
-			}
-		}
-
 		// Create tool configuration files for discovered tools
-		if len(discoveredToolNames) > 0 {
+		if len(detectedTools) > 0 {
 			fmt.Printf("\nCreating tool configurations for discovered tools...\n")
-			if err := configsetup.CreateConfigurationFilesForDiscoveredTools(discoveredToolNames, toolsConfigDir, configResetInitFlags); err != nil {
+			if err := configsetup.CreateConfigurationFilesForDiscoveredTools(detectedTools, toolsConfigDir, configResetInitFlags); err != nil {
 				log.Printf("Warning: Failed to create some tool configurations: %v", err)
 			}
 		}
@@ -242,83 +231,29 @@ var configDiscoverCmd = &cobra.Command{
 	},
 }
 
-// updateLanguagesConfig updates the .codacy/tools-configs/languages-config.yaml file.
-func updateLanguagesConfig(detectedLanguages map[string]struct{}, toolsConfigDir string, defaultToolLangMap map[string]domain.ToolLanguageInfo) error {
+// updateLanguagesConfigForTools updates the .codacy/tools-configs/languages-config.yaml file based on detected tools.
+func updateLanguagesConfigForTools(detectedTools map[string]struct{}, toolsConfigDir string, defaultToolLangMap map[string]domain.ToolLanguageInfo) error {
 	langConfigPath := filepath.Join(toolsConfigDir, "languages-config.yaml")
-	var langConf domain.LanguagesConfig
 
-	if _, err := os.Stat(langConfigPath); err == nil {
-		data, err := os.ReadFile(langConfigPath)
-		if err != nil {
-			return fmt.Errorf("failed to read existing languages-config.yaml: %w", err)
-		}
-		if err := yaml.Unmarshal(data, &langConf); err != nil {
+	// Read existing languages config if it exists
+	var langConf domain.LanguagesConfig
+	if content, err := os.ReadFile(langConfigPath); err == nil {
+		if err := yaml.Unmarshal(content, &langConf); err != nil {
 			return fmt.Errorf("failed to parse existing languages-config.yaml: %w", err)
 		}
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("failed to stat languages-config.yaml: %w", err)
 	}
 
-	// Create a map of existing tools for easier update
-	existingToolsMap := make(map[string]*domain.ToolLanguageInfo)
-	for i := range langConf.Tools {
-		existingToolsMap[langConf.Tools[i].Name] = &langConf.Tools[i]
+	// Create a map of existing tools for quick lookup
+	existingTools := make(map[string]domain.ToolLanguageInfo)
+	for _, tool := range langConf.Tools {
+		existingTools[tool.Name] = tool
 	}
 
-	for toolName, toolInfoFromDefaults := range defaultToolLangMap {
-		isRelevantTool := false
-		relevantLangsForThisTool := []string{}
-		relevantExtsForThisToolMap := make(map[string]struct{})
-
-		for _, langDefault := range toolInfoFromDefaults.Languages {
-			if _, isDetected := detectedLanguages[langDefault]; isDetected {
-				isRelevantTool = true
-				if !slices.Contains(relevantLangsForThisTool, langDefault) {
-					relevantLangsForThisTool = append(relevantLangsForThisTool, langDefault)
-				}
-				// Add extensions associated with this detected language for this tool
-				for _, defaultExt := range toolInfoFromDefaults.Extensions {
-					// A simple heuristic: if a tool supports a language, and that language is detected,
-					// all default extensions of that tool for that language group are considered relevant.
-					// This assumes toolInfoFromDefaults.Extensions are relevant for all toolInfoFromDefaults.Languages.
-					// A more precise mapping might be needed if a tool's extensions vary significantly per language it supports.
-					relevantExtsForThisToolMap[defaultExt] = struct{}{}
-				}
-			}
-		}
-
-		if isRelevantTool {
-			relevantExtsForThisTool := config.GetSortedKeys(relevantExtsForThisToolMap)
-			sort.Strings(relevantLangsForThisTool)
-
-			if existingEntry, ok := existingToolsMap[toolName]; ok {
-				// Merge languages and extensions, keeping them unique and sorted
-				existingLangsSet := make(map[string]struct{})
-				for _, lang := range existingEntry.Languages {
-					existingLangsSet[lang] = struct{}{}
-				}
-				for _, lang := range relevantLangsForThisTool {
-					existingLangsSet[lang] = struct{}{}
-				}
-				existingEntry.Languages = config.GetSortedKeys(existingLangsSet)
-
-				existingExtsSet := make(map[string]struct{})
-				for _, ext := range existingEntry.Extensions {
-					existingExtsSet[ext] = struct{}{}
-				}
-				for _, ext := range relevantExtsForThisTool {
-					existingExtsSet[ext] = struct{}{}
-				}
-				existingEntry.Extensions = config.GetSortedKeys(existingExtsSet)
-
-			} else {
-				newEntry := domain.ToolLanguageInfo{
-					Name:       toolName,
-					Languages:  relevantLangsForThisTool,
-					Extensions: relevantExtsForThisTool,
-				}
-				langConf.Tools = append(langConf.Tools, newEntry)
-				existingToolsMap[toolName] = &langConf.Tools[len(langConf.Tools)-1] // update map with pointer to new entry
+	// Add detected tools that are not already present
+	for toolName := range detectedTools {
+		if _, alreadyExists := existingTools[toolName]; !alreadyExists {
+			if toolInfo, exists := defaultToolLangMap[toolName]; exists {
+				langConf.Tools = append(langConf.Tools, toolInfo)
 			}
 		}
 	}
@@ -338,8 +273,9 @@ func updateLanguagesConfig(detectedLanguages map[string]struct{}, toolsConfigDir
 	return os.WriteFile(langConfigPath, data, utils.DefaultFilePerms)
 }
 
-// updateCodacyYAML updates the codacy.yaml file with newly relevant tools.
-func updateCodacyYAML(detectedLanguages map[string]struct{}, codacyYAMLPath string, defaultToolLangMap map[string]domain.ToolLanguageInfo, initFlags domain.InitFlags, cliMode string) error {
+// updateCodacyYAMLForTools updates the codacy.yaml file with detected tools.
+func updateCodacyYAMLForTools(detectedTools map[string]struct{}, codacyYAMLPath string, initFlags domain.InitFlags, cliMode string) error {
+
 	var configData map[string]interface{}
 
 	// Read and parse codacy.yaml (validation is done globally in PersistentPreRun)
@@ -368,15 +304,7 @@ func updateCodacyYAML(detectedLanguages map[string]struct{}, codacyYAMLPath stri
 		}
 	}
 
-	candidateToolsToAdd := make(map[string]struct{}) // tool names like "eslint"
-	for toolName, toolInfo := range defaultToolLangMap {
-		for _, lang := range toolInfo.Languages {
-			if _, detected := detectedLanguages[lang]; detected {
-				candidateToolsToAdd[toolName] = struct{}{}
-				break
-			}
-		}
-	}
+	candidateToolsToAdd := detectedTools
 
 	if cliMode == "remote" && initFlags.ApiToken != "" {
 		fmt.Println("Cloud mode: Verifying tools against repository settings...")
@@ -411,9 +339,12 @@ func updateCodacyYAML(detectedLanguages map[string]struct{}, codacyYAMLPath stri
 	}
 
 	defaultToolVersions := plugins.GetToolVersions()
-	finalToolsList := currentToolsList // Start with existing tools
 
+	// Discover mode: preserve existing tools and add only new discovered ones
+	finalToolsList := currentToolsList // Start with existing tools
 	addedNewTool := false
+
+	// Add only newly discovered tools that aren't already configured
 	for toolNameToAdd := range candidateToolsToAdd {
 		if _, alreadyConfigured := currentToolSetByName[toolNameToAdd]; !alreadyConfigured {
 			version, ok := defaultToolVersions[toolNameToAdd]
@@ -502,6 +433,7 @@ func updateCodacyYAML(detectedLanguages map[string]struct{}, codacyYAMLPath stri
 	if err := os.MkdirAll(filepath.Dir(codacyYAMLPath), utils.DefaultDirPerms); err != nil {
 		return fmt.Errorf("error creating .codacy directory: %w", err)
 	}
+
 	return os.WriteFile(codacyYAMLPath, yamlData, utils.DefaultFilePerms)
 }
 
