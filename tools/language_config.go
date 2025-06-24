@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strings"
 
 	codacyclient "codacy/cli-v2/codacy-client"
@@ -136,6 +137,11 @@ func BuildLanguagesConfigFromAPI() ([]domain.ToolLanguageInfo, error) {
 		configTools = append(configTools, updatedTool)
 	}
 
+	// Sort tools by name for consistent output
+	sort.Slice(configTools, func(i, j int) bool {
+		return configTools[i].Name < configTools[j].Name
+	})
+
 	return configTools, nil
 }
 
@@ -200,6 +206,11 @@ func CreateLanguagesConfigFile(apiTools []domain.Tool, toolsConfigDir string, to
 			configTools = append(configTools, langInfo)
 		}
 	}
+
+	// Sort tools by name for consistent output
+	sort.Slice(configTools, func(i, j int) bool {
+		return configTools[i].Name < configTools[j].Name
+	})
 
 	// Create the config structure
 	config := domain.LanguagesConfig{

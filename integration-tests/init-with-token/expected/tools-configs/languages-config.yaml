@@ -1,28 +1,19 @@
 tools:
-  - name: codacy-enigma-cli
-    languages: [Multiple]
-    extensions: []
-  - name: dartanalyzer
-    languages: [Dart]
-    extensions: [.dart]
   - name: eslint
-    languages: [JavaScript, TypeScript, JSX, TSX]
-    extensions: [.js, .jsm, .jsx, .mjs, .ts, .tsx, .vue]
+    languages: [JavaScript]
+    extensions: [.js, .jsm, .jsx, .mjs, .vue]
   - name: lizard
-    languages: [C, CPP, Java, C#, JavaScript, TypeScript, VueJS, Objective-C, Swift, Python, Ruby, TTCN-3, PHP, Scala, GDScript, Golang, Lua, Rust, Fortran, Kotlin, Solidity, Erlang, Zig, Perl]
-    extensions: [.c, .cc, .cpp, .cs, .cxx, .gemspec, .go, .h, .hpp, .ino, .java, .jbuilder, .js, .jsm, .jsx, .kt, .kts, .m, .mjs, .opal, .php, .podspec, .py, .rake, .rb, .rlib, .rs, .scala, .swift, .ts, .tsx, .vue]
+    languages: [Java, JavaScript, Python]
+    extensions: [.java, .js, .jsm, .jsx, .mjs, .py, .vue]
   - name: pmd
-    languages: [Java, JavaScript, JSP, Velocity, XML, Apex, Scala, Ruby, VisualForce]
-    extensions: [.cls, .component, .gemspec, .java, .jbuilder, .js, .jsm, .jsp, .jsx, .mjs, .opal, .page, .podspec, .pom, .rake, .rb, .scala, .trigger, .vm, .vue, .wsdl, .xml, .xsl]
+    languages: [Java, JavaScript]
+    extensions: [.java, .js, .jsm, .jsx, .mjs, .vue]
   - name: pylint
     languages: [Python]
     extensions: [.py]
-  - name: revive
-    languages: [Go]
-    extensions: [.go]
   - name: semgrep
-    languages: [C, CPP, C#, Generic, Go, Java, JavaScript, JSON, Kotlin, Python, TypeScript, Ruby, Rust, JSX, PHP, Scala, Swift, Terraform]
-    extensions: [.c, .cc, .cpp, .cs, .cxx, .gemspec, .go, .h, .hpp, .ino, .java, .jbuilder, .js, .jsm, .json, .jsx, .kt, .kts, .mjs, .opal, .php, .podspec, .py, .rake, .rb, .rlib, .rs, .scala, .swift, .tf, .ts, .tsx, .vue]
+    languages: [Java, JavaScript, JSON, Python]
+    extensions: [.java, .js, .jsm, .json, .jsx, .mjs, .py, .vue]
   - name: trivy
     languages: [Multiple]
     extensions: []
