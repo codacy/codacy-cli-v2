@@ -253,3 +253,21 @@ func GetRepositoryLanguages(initFlags domain.InitFlags) ([]domain.Language, erro
 
 	return languagesResponse.Languages, nil
 }
+
+// GetLanguageTools fetches the default language file extensions from the API
+func GetLanguageTools() ([]domain.LanguageTool, error) {
+	baseURL := fmt.Sprintf("%s/api/v3/languages/tools", CodacyApiBase)
+
+	bodyResponse, err := getRequest(baseURL, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get language tools: %w", err)
+	}
+
+	var languageToolsResponse domain.LanguageToolsResponse
+	err = json.Unmarshal(bodyResponse, &languageToolsResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal language tools response: %w", err)
+	}
+
+	return languageToolsResponse.Data, nil
+}
