@@ -1,19 +1,19 @@
 tools:
     - name: eslint
-      languages: [JavaScript]
+      languages: [Javascript]
       extensions: [.js, .jsm, .jsx, .mjs, .vue]
     - name: lizard
-      languages: [Java, JavaScript, Python]
+      languages: [Java, Javascript, Python]
       extensions: [.java, .js, .jsm, .jsx, .mjs, .py, .vue]
     - name: pmd
-      languages: [Java, JavaScript]
+      languages: [Java, Javascript]
       extensions: [.java, .js, .jsm, .jsx, .mjs, .vue]
     - name: pylint
       languages: [Python]
       extensions: [.py]
     - name: semgrep
-      languages: [Java, JavaScript, JSON, Python]
-      extensions: [.java, .js, .jsm, .json, .jsx, .mjs, .py, .vue]
+      languages: [Java, Javascript, Python]
+      extensions: [.java, .js, .jsm, .jsx, .mjs, .py, .vue]
     - name: trivy
       languages: [Multiple]
       extensions: []

@@ -7,11 +7,12 @@ type ToolsResponse struct {
 
 // Tool represents a tool in the Codacy API
 type Tool struct {
-	Uuid      string `json:"uuid"`
-	Name      string `json:"name"`
-	Version   string `json:"version"`
-	ShortName string `json:"shortName"`
-	Prefix    string `json:"prefix"`
+	Uuid      string   `json:"uuid"`
+	Name      string   `json:"name"`
+	Version   string   `json:"version"`
+	ShortName string   `json:"shortName"`
+	Prefix    string   `json:"prefix"`
+	Languages []string `json:"languages"`
 	Settings  struct {
 		Enabled               bool `json:"isEnabled"`
 		HasConfigurationFile  bool `json:"hasConfigurationFile"`

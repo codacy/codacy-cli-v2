@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	codacyclient "codacy/cli-v2/codacy-client"
+	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/utils"
 
@@ -64,59 +65,81 @@ var DefaultToolLanguageMap = map[string]domain.ToolLanguageInfo{
 	},
 }
 
+// GetToolLanguageMappingFromAPI returns tool language mapping from API data
+// This can be used instead of the hardcoded DefaultToolLanguageMap
+func GetToolLanguageMappingFromAPI() (map[string]domain.ToolLanguageInfo, error) {
+	configTools, err := buildToolLanguageConfigFromAPI()
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert slice to map for compatibility with existing code
+	result := make(map[string]domain.ToolLanguageInfo)
+	for _, tool := range configTools {
+		result[tool.Name] = tool
+	}
+
+	return result, nil
+}
+
 // GetDefaultToolLanguageMapping returns the default mapping of tools to their supported languages and file extensions
 func GetDefaultToolLanguageMapping() map[string]domain.ToolLanguageInfo {
 	return DefaultToolLanguageMap
 }
 
-// BuildLanguagesConfigFromAPI builds the tool language configuration from API data
-func BuildLanguagesConfigFromAPI() ([]domain.ToolLanguageInfo, error) {
-	// Fetch language tools from API
-	languageTools, err := codacyclient.GetLanguageTools()
+// buildToolLanguageConfigFromAPI builds tool language configuration using only API data
+func buildToolLanguageConfigFromAPI() ([]domain.ToolLanguageInfo, error) {
+	// Get all tools from API with their languages
+	allTools, err := codacyclient.GetToolsVersions()
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch language tools from API: %w", err)
+		return nil, fmt.Errorf("failed to get tools from API: %w", err)
 	}
 
-	// Create a map of language names to file extensions from API
+	// Get language file extensions from API
+	languageTools, err := codacyclient.GetLanguageTools()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get language tools from API: %w", err)
+	}
+
+	// Create map of language name to file extensions
 	languageExtensionsMap := make(map[string][]string)
 	for _, langTool := range languageTools {
 		languageExtensionsMap[strings.ToLower(langTool.Name)] = langTool.FileExtensions
 	}
 
-	// Simple mapping: tool → real API languages it supports
-	toolToAPILanguages := map[string][]string{
-		"pylint":            {"python"},
-		"eslint":            {"javascript", "typescript"},
-		"pmd":               {"java", "javascript", "jsp", "velocity", "xml", "apex", "scala", "ruby", "visualforce"},
-		"trivy":             {}, // Special case - works with multiple languages
-		"dartanalyzer":      {"dart"},
-		"lizard":            {"c", "cpp", "java", "csharp", "javascript", "typescript", "objective c", "swift", "python", "ruby", "php", "scala", "go", "rust", "fortran", "kotlin"},
-		"semgrep":           {"c", "cpp", "csharp", "go", "java", "javascript", "json", "kotlin", "python", "typescript", "ruby", "rust", "php", "scala", "swift", "terraform"},
-		"codacy-enigma-cli": {}, // Special case - works with multiple languages
-		"revive":            {"go"},
+	// Build tool language configurations from API data
+	var configTools []domain.ToolLanguageInfo
+	supportedToolNames := make(map[string]bool)
+
+	// Get supported tool names from metadata
+	for _, meta := range domain.SupportedToolsMetadata {
+		supportedToolNames[meta.Name] = true
 	}
 
-	// Build tool configurations
-	var configTools []domain.ToolLanguageInfo
-	for _, toolInfo := range DefaultToolLanguageMap {
-		// Get API languages this tool supports
-		apiLanguages, exists := toolToAPILanguages[toolInfo.Name]
-		if !exists {
-			// Fallback to original configuration if tool not in mapping
-			configTools = append(configTools, toolInfo)
-			continue
+	// Group tools by name and keep only supported ones
+	toolsByName := make(map[string]domain.Tool)
+	for _, tool := range allTools {
+		if supportedToolNames[strings.ToLower(tool.ShortName)] {
+			// Keep the tool with latest version (first one in the response)
+			if _, exists := toolsByName[strings.ToLower(tool.ShortName)]; !exists {
+				toolsByName[strings.ToLower(tool.ShortName)] = tool
+			}
 		}
+	}
 
-		updatedTool := domain.ToolLanguageInfo{
-			Name:       toolInfo.Name,
-			Languages:  toolInfo.Languages, // Keep original language names for display
+	// Build configuration for each supported tool
+	for toolName, tool := range toolsByName {
+		configTool := domain.ToolLanguageInfo{
+			Name:       toolName,
+			Languages:  tool.Languages,
 			Extensions: []string{},
 		}
 
-		// Build extensions set from API data
+		// Build extensions from API language data
 		extensionsSet := make(map[string]struct{})
-		for _, apiLang := range apiLanguages {
-			if extensions, exists := languageExtensionsMap[apiLang]; exists {
+		for _, apiLang := range tool.Languages {
+			lowerLang := strings.ToLower(apiLang)
+			if extensions, exists := languageExtensionsMap[lowerLang]; exists {
 				for _, ext := range extensions {
 					extensionsSet[ext] = struct{}{}
 				}
@@ -125,16 +148,14 @@ func BuildLanguagesConfigFromAPI() ([]domain.ToolLanguageInfo, error) {
 
 		// Convert set to sorted slice
 		for ext := range extensionsSet {
-			updatedTool.Extensions = append(updatedTool.Extensions, ext)
+			configTool.Extensions = append(configTool.Extensions, ext)
 		}
-		slices.Sort(updatedTool.Extensions)
+		slices.Sort(configTool.Extensions)
 
-		// If no extensions found from API, fallback to hardcoded extensions
-		if len(updatedTool.Extensions) == 0 {
-			updatedTool.Extensions = toolInfo.Extensions
-		}
+		// Sort languages alphabetically
+		slices.Sort(configTool.Languages)
 
-		configTools = append(configTools, updatedTool)
+		configTools = append(configTools, configTool)
 	}
 
 	// Sort tools by name for consistent output
@@ -145,65 +166,34 @@ func BuildLanguagesConfigFromAPI() ([]domain.ToolLanguageInfo, error) {
 	return configTools, nil
 }
 
+// BuildLanguagesConfigFromAPI builds the tool language configuration from API data
+func BuildLanguagesConfigFromAPI() ([]domain.ToolLanguageInfo, error) {
+	return buildToolLanguageConfigFromAPI()
+}
+
 // CreateLanguagesConfigFile creates languages-config.yaml based on API response
 func CreateLanguagesConfigFile(apiTools []domain.Tool, toolsConfigDir string, toolIDMap map[string]string, initFlags domain.InitFlags) error {
-	// Build a list of tool language info for enabled tools
+	// Check if we're in remote mode
+	currentCliMode, err := config.Config.GetCliMode()
+	if err != nil {
+		// If we can't determine mode, default to local behavior
+		currentCliMode = "local"
+	}
+	isRemoteMode := currentCliMode == "remote"
+
 	var configTools []domain.ToolLanguageInfo
 
-	var toolLanguageMap = DefaultToolLanguageMap
-
-	repositoryLanguages, err := getRepositoryLanguages(initFlags)
-	if err != nil {
-		return fmt.Errorf("failed to get repository languages: %w", err)
-	}
-
-	for _, tool := range apiTools {
-		shortName, exists := toolIDMap[tool.Uuid]
-		if !exists {
-			// Skip tools we don't recognize
-			continue
+	if isRemoteMode {
+		// Remote mode: Use GetRepositoryLanguages as the single source of truth
+		configTools, err = buildRemoteModeLanguagesConfig(apiTools, toolIDMap, initFlags)
+		if err != nil {
+			return fmt.Errorf("failed to build remote mode languages config: %w", err)
 		}
-
-		// Get language info for this tool
-		langInfo, exists := toolLanguageMap[shortName]
-		if exists {
-			// Special case for Trivy - always include it
-			if shortName == "trivy" {
-				configTools = append(configTools, langInfo)
-				continue
-			}
-
-			// Filter languages based on repository languages
-			var filteredLanguages []string
-			var filteredExtensionsSet = make(map[string]struct{})
-			for _, lang := range langInfo.Languages {
-				lowerLang := strings.ToLower(lang)
-				if extensions, exists := repositoryLanguages[lowerLang]; exists && len(extensions) > 0 {
-					filteredLanguages = append(filteredLanguages, lang)
-					for _, ext := range extensions {
-						filteredExtensionsSet[ext] = struct{}{}
-					}
-				}
-			}
-			filteredExtensions := make([]string, 0, len(filteredExtensionsSet))
-			for ext := range filteredExtensionsSet {
-				filteredExtensions = append(filteredExtensions, ext)
-			}
-			slices.Sort(filteredExtensions)
-			langInfo.Languages = filteredLanguages
-			langInfo.Extensions = filteredExtensions
-
-			// Only add tool if it has languages that exist in the repository
-			if len(filteredLanguages) > 0 {
-				configTools = append(configTools, langInfo)
-			}
-		}
-	}
-
-	// If we have no tools or couldn't match any, include all known tools
-	if len(configTools) == 0 {
-		for _, langInfo := range toolLanguageMap {
-			configTools = append(configTools, langInfo)
+	} else {
+		// Local mode: Show all supported tools
+		configTools, err = buildToolLanguageConfigFromAPI()
+		if err != nil {
+			return fmt.Errorf("failed to build local mode languages config: %w", err)
 		}
 	}
 
@@ -229,8 +219,79 @@ func CreateLanguagesConfigFile(apiTools []domain.Tool, toolsConfigDir string, to
 		return fmt.Errorf("failed to write languages config file: %w", err)
 	}
 
-	fmt.Println("Created languages configuration file based on enabled tools")
+	fmt.Println("Created languages configuration file based on API data")
 	return nil
+}
+
+// buildRemoteModeLanguagesConfig builds the languages config for remote mode using repository languages as source of truth
+func buildRemoteModeLanguagesConfig(apiTools []domain.Tool, toolIDMap map[string]string, initFlags domain.InitFlags) ([]domain.ToolLanguageInfo, error) {
+	// Get language file extensions from API
+	languageTools, err := codacyclient.GetLanguageTools()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get language tools from API: %w", err)
+	}
+
+	// Create map of language name to file extensions
+	languageExtensionsMap := make(map[string][]string)
+	for _, langTool := range languageTools {
+		languageExtensionsMap[strings.ToLower(langTool.Name)] = langTool.FileExtensions
+	}
+
+	// Get repository languages - this is the single source of truth for remote mode
+	repositoryLanguages, err := getRepositoryLanguages(initFlags)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository languages: %w", err)
+	}
+
+	var configTools []domain.ToolLanguageInfo
+
+	for _, tool := range apiTools {
+		shortName, exists := toolIDMap[tool.Uuid]
+		if !exists {
+			// Skip tools we don't recognize
+			continue
+		}
+
+		configTool := domain.ToolLanguageInfo{
+			Name:       shortName,
+			Languages:  []string{},
+			Extensions: []string{},
+		}
+
+		// Special case for tools that work with multiple languages
+		if shortName == "trivy" || shortName == "codacy-enigma-cli" {
+			configTool.Languages = []string{"Multiple"}
+			configTool.Extensions = []string{}
+		} else {
+			// For regular tools, use only languages that exist in the repository
+			extensionsSet := make(map[string]struct{})
+
+			for _, lang := range tool.Languages {
+				lowerLang := strings.ToLower(lang)
+				if repoExts, exists := repositoryLanguages[lowerLang]; exists && len(repoExts) > 0 {
+					configTool.Languages = append(configTool.Languages, lang)
+					// Add repository-specific extensions
+					for _, ext := range repoExts {
+						extensionsSet[ext] = struct{}{}
+					}
+				}
+			}
+
+			// Convert extensions set to sorted slice
+			for ext := range extensionsSet {
+				configTool.Extensions = append(configTool.Extensions, ext)
+			}
+			slices.Sort(configTool.Extensions)
+
+			// Sort languages alphabetically
+			slices.Sort(configTool.Languages)
+		}
+
+		// Add the tool (even if it has no languages - this is what repository configured)
+		configTools = append(configTools, configTool)
+	}
+
+	return configTools, nil
 }
 
 func getRepositoryLanguages(initFlags domain.InitFlags) (map[string][]string, error) {

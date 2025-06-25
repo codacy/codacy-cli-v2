@@ -434,18 +434,18 @@ func BuildRepositoryConfigurationFiles(flags domain.InitFlags) error {
 
 	logVersionConflicts(familyToVersions, toolsWithLatestVersion)
 
-	// Generate languages configuration based on API tools response
+	// Create main config files with all enabled API tools (including cli-config.yaml)
+	if err := CreateConfigurationFiles(toolsWithLatestVersion, false); err != nil {
+		return err
+	}
+
+	// Generate languages configuration based on API tools response (after cli-config.yaml is created)
 	if err := tools.CreateLanguagesConfigFile(toolsWithLatestVersion, toolsConfigDir, uuidToName, flags); err != nil {
 		return fmt.Errorf("failed to create languages configuration file: %w", err)
 	}
 
 	// Filter out any tools that use configuration file
 	configuredToolsWithUI := tools.FilterToolsByConfigUsage(toolsWithLatestVersion)
-
-	// Create main config files with all enabled API tools
-	if err := CreateConfigurationFiles(toolsWithLatestVersion, false); err != nil {
-		return err
-	}
 
 	// Generate config files for tools not using their own config file
 	return createToolConfigurationFiles(configuredToolsWithUI, flags)

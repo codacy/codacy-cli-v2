@@ -211,6 +211,26 @@ func GetRepositoryTools(initFlags domain.InitFlags) ([]domain.Tool, error) {
 		return nil, err
 	}
 
+	// Get global tools with languages to populate the Languages field
+	globalTools, err := GetToolsVersions()
+	if err != nil {
+		fmt.Printf("Warning: Failed to get global tools for languages: %v\n", err)
+		return toolsResponse.Data, nil // Return repository tools without languages
+	}
+
+	// Create a map of UUID to languages from global tools
+	uuidToLanguages := make(map[string][]string)
+	for _, globalTool := range globalTools {
+		uuidToLanguages[globalTool.Uuid] = globalTool.Languages
+	}
+
+	// Populate Languages field in repository tools
+	for i := range toolsResponse.Data {
+		if languages, exists := uuidToLanguages[toolsResponse.Data[i].Uuid]; exists {
+			toolsResponse.Data[i].Languages = languages
+		}
+	}
+
 	return toolsResponse.Data, nil
 }
 

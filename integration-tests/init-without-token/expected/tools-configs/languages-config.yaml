@@ -1,19 +1,16 @@
 tools:
-    - name: codacy-enigma-cli
-      languages: [Multiple]
-      extensions: []
     - name: dartanalyzer
       languages: [Dart]
       extensions: [.dart]
     - name: eslint
-      languages: [JavaScript, TypeScript, JSX, TSX]
+      languages: [Javascript, TypeScript]
       extensions: [.js, .jsm, .jsx, .mjs, .ts, .tsx, .vue]
     - name: lizard
-      languages: [C, CPP, Java, C#, JavaScript, TypeScript, VueJS, Objective-C, Swift, Python, Ruby, TTCN-3, PHP, Scala, GDScript, Golang, Lua, Rust, Fortran, Kotlin, Solidity, Erlang, Zig, Perl]
+      languages: [C, CPP, CSharp, Erlang, Fortran, Go, Java, Javascript, Kotlin, Lua, Objective C, PHP, Python, Ruby, Rust, Scala, Solidity, Swift, TypeScript]
       extensions: [.c, .cc, .cpp, .cs, .cxx, .gemspec, .go, .h, .hpp, .ino, .java, .jbuilder, .js, .jsm, .jsx, .kt, .kts, .m, .mjs, .opal, .php, .podspec, .py, .rake, .rb, .rlib, .rs, .scala, .swift, .ts, .tsx, .vue]
     - name: pmd
-      languages: [Java, JavaScript, JSP, Velocity, XML, Apex, Scala, Ruby, VisualForce]
-      extensions: [.cls, .component, .gemspec, .java, .jbuilder, .js, .jsm, .jsp, .jsx, .mjs, .opal, .page, .podspec, .pom, .rake, .rb, .scala, .trigger, .vm, .vue, .wsdl, .xml, .xsl]
+      languages: [Apex, JSP, Java, Javascript, PLSQL, SQL, Velocity, VisualForce, XML]
+      extensions: [.cls, .component, .fnc, .java, .js, .jsm, .jsp, .jsx, .mjs, .page, .pck, .pkb, .pkh, .pks, .plb, .pld, .plh, .pls, .pom, .prc, .sql, .tpb, .tps, .trg, .trigger, .tyb, .typ, .vm, .vue, .wsdl, .xml, .xsl]
     - name: pylint
       languages: [Python]
       extensions: [.py]
@@ -21,8 +18,8 @@ tools:
       languages: [Go]
       extensions: [.go]
     - name: semgrep
-      languages: [C, CPP, C#, Generic, Go, Java, JavaScript, JSON, Kotlin, Python, TypeScript, Ruby, Rust, JSX, PHP, Scala, Swift, Terraform]
-      extensions: [.c, .cc, .cpp, .cs, .cxx, .gemspec, .go, .h, .hpp, .ino, .java, .jbuilder, .js, .jsm, .json, .jsx, .kt, .kts, .mjs, .opal, .php, .podspec, .py, .rake, .rb, .rlib, .rs, .scala, .swift, .tf, .ts, .tsx, .vue]
+      languages: [Apex, C, CPP, CSharp, Dockerfile, Go, Java, Javascript, Kotlin, PHP, PLSQL, Python, Ruby, Rust, SQL, Scala, Shell, Swift, Terraform, TypeScript, YAML]
+      extensions: [.bash, .c, .cc, .cls, .cpp, .cs, .cxx, .dockerfile, .fnc, .gemspec, .go, .h, .hpp, .ino, .java, .jbuilder, .js, .jsm, .jsx, .kt, .kts, .mjs, .opal, .pck, .php, .pkb, .pkh, .pks, .plb, .pld, .plh, .pls, .podspec, .prc, .py, .rake, .rb, .rlib, .rs, .scala, .sh, .sql, .swift, .tf, .tpb, .tps, .trg, .trigger, .ts, .tsx, .tyb, .typ, .vue, .yaml, .yml]
     - name: trivy
-      languages: [Multiple]
-      extensions: []
+      languages: [C, CPP, CSharp, Dart, Dockerfile, Elixir, Go, JSON, Java, Javascript, PHP, Python, Ruby, Rust, Scala, Swift, Terraform, TypeScript, XML, YAML]
+      extensions: [.c, .cc, .cpp, .cs, .cxx, .dart, .dockerfile, .ex, .exs, .gemspec, .go, .h, .hpp, .ino, .java, .jbuilder, .js, .jsm, .json, .jsx, .mjs, .opal, .php, .podspec, .pom, .py, .rake, .rb, .rlib, .rs, .scala, .swift, .tf, .ts, .tsx, .vue, .wsdl, .xml, .xsl, .yaml, .yml]

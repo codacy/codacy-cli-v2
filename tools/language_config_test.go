@@ -7,11 +7,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
 	codacyclient "codacy/cli-v2/codacy-client"
+	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 
 	"github.com/stretchr/testify/assert"
@@ -229,48 +232,102 @@ func TestGetRepositoryLanguages(t *testing.T) {
 func TestCreateLanguagesConfigFile_ExtensionsFromRepository(t *testing.T) {
 	tempDir := t.TempDir()
 
-	// Mock API server for getRepositoryLanguages
+	// Create cli-config.yaml with remote mode to test remote mode behavior
+	cliConfigPath := filepath.Join(tempDir, "cli-config.yaml")
+	cliConfigContent := "mode: remote\n"
+	err := os.WriteFile(cliConfigPath, []byte(cliConfigContent), 0644)
+	assert.NoError(t, err)
+
+	// Create a temporary config instance with the temp directory
+	tempConfig := config.NewConfigType("", tempDir, filepath.Join(tempDir, "cache"))
+
+	// Save the original global config
+	originalConfig := config.Config
+
+	// Override the global config temporarily
+	config.Config = *tempConfig
+	defer func() { config.Config = originalConfig }()
+
+	// Mock API server for getRepositoryLanguages and GetLanguageTools
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"languages": []map[string]interface{}{
-				{
-					"name":           "JavaScript",
-					"codacyDefaults": []string{".js", ".jsx"},
-					"extensions":     []string{".js", ".vue"},
-					"enabled":        true,
-					"detected":       true,
+
+		if strings.Contains(r.URL.Path, "/languages/tools") {
+			// Mock GetLanguageTools response
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"data": []map[string]interface{}{
+					{
+						"name":           "JavaScript",
+						"fileExtensions": []string{".js", ".jsx", ".mjs"},
+					},
+					{
+						"name":           "TypeScript",
+						"fileExtensions": []string{".ts", ".tsx"},
+					},
+					{
+						"name":           "Python",
+						"fileExtensions": []string{".py"},
+					},
+					{
+						"name":           "Java",
+						"fileExtensions": []string{".java"},
+					},
+					{
+						"name":           "Apex",
+						"fileExtensions": []string{".cls", ".trigger"},
+					},
+					{
+						"name":           "Scala",
+						"fileExtensions": []string{".scala"},
+					},
+					{
+						"name":           "Ruby",
+						"fileExtensions": []string{".rb", ".gemspec"},
+					},
 				},
-				{
-					"name":           "Python",
-					"codacyDefaults": []string{".py"},
-					"extensions":     []string{".testPy"},
-					"enabled":        true,
-					"detected":       true,
+			})
+		} else {
+			// Mock getRepositoryLanguages response
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"languages": []map[string]interface{}{
+					{
+						"name":           "JavaScript",
+						"codacyDefaults": []string{".js", ".jsx"},
+						"extensions":     []string{".js", ".vue"},
+						"enabled":        true,
+						"detected":       true,
+					},
+					{
+						"name":           "Python",
+						"codacyDefaults": []string{".py"},
+						"extensions":     []string{".testPy"},
+						"enabled":        true,
+						"detected":       true,
+					},
+					{
+						"name":           "Apex",
+						"codacyDefaults": []string{".cls"},
+						"extensions":     []string{".app", ".trigger"},
+						"enabled":        true,
+						"detected":       true,
+					},
+					{
+						"name":           "Scala",
+						"codacyDefaults": []string{".scala"},
+						"extensions":     []string{},
+						"enabled":        true,
+						"detected":       true,
+					},
+					{
+						"name":           "Ruby",
+						"codacyDefaults": []string{".rb"},
+						"extensions":     []string{".gemspec"},
+						"enabled":        true,
+						"detected":       true,
+					},
 				},
-				{
-					"name":           "Apex",
-					"codacyDefaults": []string{".cls"},
-					"extensions":     []string{".app", ".trigger"},
-					"enabled":        true,
-					"detected":       true,
-				},
-				{
-					"name":           "Scala",
-					"codacyDefaults": []string{".scala"},
-					"extensions":     []string{},
-					"enabled":        true,
-					"detected":       true,
-				},
-				{
-					"name":           "Ruby",
-					"codacyDefaults": []string{".rb"},
-					"extensions":     []string{".gemspec"},
-					"enabled":        true,
-					"detected":       true,
-				},
-			},
-		})
+			})
+		}
 	}))
 	defer server.Close()
 
@@ -280,9 +337,18 @@ func TestCreateLanguagesConfigFile_ExtensionsFromRepository(t *testing.T) {
 	defer func() { codacyclient.CodacyApiBase = oldBase }()
 
 	apiTools := []domain.Tool{
-		{Uuid: "eslint-uuid"},
-		{Uuid: "pylint-uuid"},
-		{Uuid: "pmd-uuid"},
+		{
+			Uuid:      "eslint-uuid",
+			Languages: []string{"JavaScript", "TypeScript"},
+		},
+		{
+			Uuid:      "pylint-uuid",
+			Languages: []string{"Python"},
+		},
+		{
+			Uuid:      "pmd-uuid",
+			Languages: []string{"Java", "JavaScript", "Apex", "Scala", "Ruby"},
+		},
 	}
 	toolIDMap := map[string]string{
 		"eslint-uuid": "eslint",
@@ -296,7 +362,7 @@ func TestCreateLanguagesConfigFile_ExtensionsFromRepository(t *testing.T) {
 		Organization: "org",
 		Repository:   "repo",
 	}
-	err := CreateLanguagesConfigFile(apiTools, tempDir, toolIDMap, initFlags)
+	err = CreateLanguagesConfigFile(apiTools, tempDir, toolIDMap, initFlags)
 	assert.NoError(t, err)
 
 	// Read and unmarshal the generated YAML
