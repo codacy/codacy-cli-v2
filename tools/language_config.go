@@ -23,11 +23,10 @@ import (
 // This file is responsible for building the languages-config.yaml file.
 //
 
-// GetToolLanguageMappingFromAPI gets the tool language mapping from the public API
-//
-// TODO: cache this with TTL time
-func GetToolLanguageMappingFromAPI() (map[string]domain.ToolLanguageInfo, error) {
-	// Get tools from API (same as buildToolLanguageConfigFromAPI)
+// buildToolLanguageInfoFromAPI builds tool language information from API data
+// This is the core shared logic used by both GetToolLanguageMappingFromAPI and buildToolLanguageConfigFromAPI
+func buildToolLanguageInfoFromAPI() (map[string]domain.ToolLanguageInfo, error) {
+	// Get all tools from API with their languages
 	allTools, err := codacyclient.GetToolsVersions()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tools from API: %w", err)
@@ -45,7 +44,7 @@ func GetToolLanguageMappingFromAPI() (map[string]domain.ToolLanguageInfo, error)
 		languageExtensionsMap[strings.ToLower(langTool.Name)] = langTool.FileExtensions
 	}
 
-	// Build the tool to language mapping (same pattern as buildToolLanguageConfigFromAPI)
+	// Build tool language configurations from API data
 	result := make(map[string]domain.ToolLanguageInfo)
 	supportedToolNames := make(map[string]bool)
 
@@ -99,6 +98,13 @@ func GetToolLanguageMappingFromAPI() (map[string]domain.ToolLanguageInfo, error)
 	return result, nil
 }
 
+// GetToolLanguageMappingFromAPI gets the tool language mapping from the public API
+//
+// TODO: cache this with TTL time
+func GetToolLanguageMappingFromAPI() (map[string]domain.ToolLanguageInfo, error) {
+	return buildToolLanguageInfoFromAPI()
+}
+
 // GetDefaultToolLanguageMapping returns the default mapping of tools to their supported languages and file extensions
 // This function now uses the public API instead of hardcoded mappings.
 func GetDefaultToolLanguageMapping() map[string]domain.ToolLanguageInfo {
@@ -116,73 +122,16 @@ func GetDefaultToolLanguageMapping() map[string]domain.ToolLanguageInfo {
 
 // buildToolLanguageConfigFromAPI builds tool language configuration using only API data
 func buildToolLanguageConfigFromAPI() ([]domain.ToolLanguageInfo, error) {
-	// Get all tools from API with their languages
-	allTools, err := codacyclient.GetToolsVersions()
+	// Use the shared logic to get tool info map
+	toolInfoMap, err := buildToolLanguageInfoFromAPI()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get tools from API: %w", err)
+		return nil, err
 	}
 
-	// Get language file extensions from API
-	languageTools, err := codacyclient.GetLanguageTools()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get language tools from API: %w", err)
-	}
-
-	// Create map of language name to file extensions
-	languageExtensionsMap := make(map[string][]string)
-	for _, langTool := range languageTools {
-		languageExtensionsMap[strings.ToLower(langTool.Name)] = langTool.FileExtensions
-	}
-
-	// Build tool language configurations from API data
+	// Convert map to slice
 	var configTools []domain.ToolLanguageInfo
-	supportedToolNames := make(map[string]bool)
-
-	// Get supported tool names from metadata
-	for _, meta := range domain.SupportedToolsMetadata {
-		supportedToolNames[meta.Name] = true
-	}
-
-	// Group tools by name and keep only supported ones
-	toolsByName := make(map[string]domain.Tool)
-	for _, tool := range allTools {
-		if supportedToolNames[strings.ToLower(tool.ShortName)] {
-			// Keep the tool with latest version (first one in the response)
-			if _, exists := toolsByName[strings.ToLower(tool.ShortName)]; !exists {
-				toolsByName[strings.ToLower(tool.ShortName)] = tool
-			}
-		}
-	}
-
-	// Build configuration for each supported tool
-	for toolName, tool := range toolsByName {
-		configTool := domain.ToolLanguageInfo{
-			Name:       toolName,
-			Languages:  tool.Languages,
-			Extensions: []string{},
-		}
-
-		// Build extensions from API language data
-		extensionsSet := make(map[string]struct{})
-		for _, apiLang := range tool.Languages {
-			lowerLang := strings.ToLower(apiLang)
-			if extensions, exists := languageExtensionsMap[lowerLang]; exists {
-				for _, ext := range extensions {
-					extensionsSet[ext] = struct{}{}
-				}
-			}
-		}
-
-		// Convert set to sorted slice
-		for ext := range extensionsSet {
-			configTool.Extensions = append(configTool.Extensions, ext)
-		}
-		slices.Sort(configTool.Extensions)
-
-		// Sort languages alphabetically
-		slices.Sort(configTool.Languages)
-
-		configTools = append(configTools, configTool)
+	for _, toolInfo := range toolInfoMap {
+		configTools = append(configTools, toolInfo)
 	}
 
 	// Sort tools by name for consistent output
