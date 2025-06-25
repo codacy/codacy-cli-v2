@@ -10,3 +10,4 @@ tools:
     - pmd@7.11.0
     - pylint@3.3.6
     - semgrep@1.78.0
+    - trivy@0.59.1
