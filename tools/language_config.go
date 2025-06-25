@@ -16,6 +16,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+//
+// This file is responsible for building the languages-config.yaml file.
+//
+
 // defaultToolLanguageMap defines the default mapping of tools to their supported languages and file extensions
 var DefaultToolLanguageMap = map[string]domain.ToolLanguageInfo{
 	"pylint": {
@@ -258,34 +262,28 @@ func buildRemoteModeLanguagesConfig(apiTools []domain.Tool, toolIDMap map[string
 			Extensions: []string{},
 		}
 
-		// Special case for tools that work with multiple languages
-		if shortName == "trivy" || shortName == "codacy-enigma-cli" {
-			configTool.Languages = []string{"Multiple"}
-			configTool.Extensions = []string{}
-		} else {
-			// For regular tools, use only languages that exist in the repository
-			extensionsSet := make(map[string]struct{})
+		// Use only languages that exist in the repository
+		extensionsSet := make(map[string]struct{})
 
-			for _, lang := range tool.Languages {
-				lowerLang := strings.ToLower(lang)
-				if repoExts, exists := repositoryLanguages[lowerLang]; exists && len(repoExts) > 0 {
-					configTool.Languages = append(configTool.Languages, lang)
-					// Add repository-specific extensions
-					for _, ext := range repoExts {
-						extensionsSet[ext] = struct{}{}
-					}
+		for _, lang := range tool.Languages {
+			lowerLang := strings.ToLower(lang)
+			if repoExts, exists := repositoryLanguages[lowerLang]; exists && len(repoExts) > 0 {
+				configTool.Languages = append(configTool.Languages, lang)
+				// Add repository-specific extensions
+				for _, ext := range repoExts {
+					extensionsSet[ext] = struct{}{}
 				}
 			}
-
-			// Convert extensions set to sorted slice
-			for ext := range extensionsSet {
-				configTool.Extensions = append(configTool.Extensions, ext)
-			}
-			slices.Sort(configTool.Extensions)
-
-			// Sort languages alphabetically
-			slices.Sort(configTool.Languages)
 		}
+
+		// Convert extensions set to sorted slice
+		for ext := range extensionsSet {
+			configTool.Extensions = append(configTool.Extensions, ext)
+		}
+		slices.Sort(configTool.Extensions)
+
+		// Sort languages alphabetically
+		slices.Sort(configTool.Languages)
 
 		// Add the tool (even if it has no languages - this is what repository configured)
 		configTools = append(configTools, configTool)
