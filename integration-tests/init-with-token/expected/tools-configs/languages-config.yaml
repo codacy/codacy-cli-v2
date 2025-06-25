@@ -15,5 +15,5 @@ tools:
       languages: [Java, Javascript, Python]
       extensions: [.java, .js, .jsm, .jsx, .mjs, .py, .vue]
     - name: trivy
-      languages: [Multiple]
-      extensions: []
+      languages: [JSON, Java, Javascript, Python]
+      extensions: [.java, .js, .jsm, .json, .jsx, .mjs, .py, .vue]
