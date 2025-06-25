@@ -5,6 +5,11 @@
       "artifacts": [
         {
           "location": {
+            "uri": "file:///plugins/tools/eslint/test/src/.codacy/tools-configs/eslint.config.mjs"
+          }
+        },
+        {
+          "location": {
             "uri": "file:///plugins/tools/eslint/test/src/Test.js"
           }
         }
@@ -22,7 +27,7 @@
                 {
                   "physicalLocation": {
                     "artifactLocation": {
-                      "index": 0,
+                      "index": 1,
                       "uri": "file:///plugins/tools/eslint/test/src/Test.js"
                     },
                     "region": {
