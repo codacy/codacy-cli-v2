@@ -1,84 +1,30 @@
 {
-  
   "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
-  "version": "2.1.0",
   "runs": [
     {
-      "tool": {
-        "driver": {
-          "name": "Pylint",
-          "version": "3.3.6",
-          "informationUri": "https://pylint.org",
-          "rules": null
-        }
-      },
       "results": [
         {
-          "ruleId": "missing-final-newline",
-          "level": "note",
-          "message": {
-            "text": "Final newline missing"
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "test_file.py"
-                },
-                "region": {
-                  "startLine": 33,
-                  "startColumn": 0
-                }
-              }
-            }
-          ]
-        },
-        {
-          "ruleId": "too-many-arguments",
-          "level": "note",
-          "message": {
-            "text": "Too many arguments (11/5)"
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "test_file.py"
-                },
-                "region": {
-                  "startLine": 16,
-                  "startColumn": 0
-                }
-              }
-            }
-          ]
-        },
-        {
-          "ruleId": "too-many-positional-arguments",
-          "level": "note",
-          "message": {
-            "text": "Too many positional arguments (11/5)"
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "test_file.py"
-                },
-                "region": {
-                  "startLine": 16,
-                  "startColumn": 0
-                }
-              }
-            }
-          ]
-        },
-        {
-          "ruleId": "unused-import",
           "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test_file.py"
+                },
+                "region": {
+                  "startColumn": 0,
+                  "startLine": 8
+                }
+              }
+            }
+          ],
           "message": {
             "text": "Unused import os"
           },
+          "ruleId": "unused-import"
+        },
+        {
+          "level": "warning",
           "locations": [
             {
               "physicalLocation": {
@@ -86,34 +32,27 @@
                   "uri": "test_file.py"
                 },
                 "region": {
-                  "startLine": 8,
-                  "startColumn": 0
+                  "startColumn": 0,
+                  "startLine": 9
                 }
               }
             }
-          ]
-        },
-        {
-          "ruleId": "unused-import",
-          "level": "warning",
+          ],
           "message": {
             "text": "Unused import sys"
           },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "test_file.py"
-                },
-                "region": {
-                  "startLine": 9,
-                  "startColumn": 0
-                }
-              }
-            }
-          ]
+          "ruleId": "unused-import"
         }
-      ]
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://pylint.org",
+          "name": "Pylint",
+          "rules": null,
+          "version": "3.3.6"
+        }
+      }
     }
-  ]
-} 
+  ],
+  "version": "2.1.0"
+}
