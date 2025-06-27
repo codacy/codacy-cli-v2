@@ -7,6 +7,7 @@ import (
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/tools/lizard"
 	reviveTool "codacy/cli-v2/tools/revive"
+	"codacy/cli-v2/utils/logger"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -18,6 +19,7 @@ import (
 
 	codacyclient "codacy/cli-v2/codacy-client"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -373,6 +375,9 @@ func runTool(workDirectory string, toolName string, pathsToCheck []string, outpu
 func validatePaths(paths []string) error {
 	for _, path := range paths {
 		if _, err := os.Stat(path); os.IsNotExist(err) {
+			logger.Error("Analysis failed because path does not exist", logrus.Fields{
+				"path": path,
+			})
 			return fmt.Errorf("❌ Error: cannot find file or directory '%s'", path)
 		}
 	}

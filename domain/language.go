@@ -14,6 +14,17 @@ type LanguagesResponse struct {
 	Languages []Language `json:"languages"`
 }
 
+// LanguageTool represents a language tool with its file extensions from the API
+type LanguageTool struct {
+	Name           string   `json:"name"`
+	FileExtensions []string `json:"fileExtensions"`
+}
+
+// LanguageToolsResponse represents the structure of the language tools API response
+type LanguageToolsResponse struct {
+	Data []LanguageTool `json:"data"`
+}
+
 // ToolLanguageInfo contains language and extension information for a tool
 type ToolLanguageInfo struct {
 	Name       string   `yaml:"name"`
