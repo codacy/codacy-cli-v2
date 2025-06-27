@@ -50,14 +50,14 @@ var rootCmd = &cobra.Command{
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		// Check if .codacy directory exists
-		if _, err := os.Stat(".codacy"); os.IsNotExist(err) {
-			// Show welcome message if .codacy doesn't exist
+		// Check if codacy.yaml exists
+		if _, err := os.Stat(config.Config.ProjectConfigFile()); os.IsNotExist(err) {
+			// Show welcome message if codacy.yaml doesn't exist
 			showWelcomeMessage()
 			return
 		}
 
-		// If .codacy exists, show regular help
+		// If codacy.yaml exists, show regular help
 		cmd.Help()
 	},
 }
@@ -72,25 +72,23 @@ func Execute() {
 func showWelcomeMessage() {
 	bold := color.New(color.Bold)
 	cyan := color.New(color.FgCyan)
-	yellow := color.New(color.FgYellow)
 
 	fmt.Println()
 	bold.Println("👋 Welcome to Codacy CLI!")
 	fmt.Println()
 	fmt.Println("This tool helps you analyze and maintain code quality in your projects.")
 	fmt.Println()
-	yellow.Println("To get started, you'll need a Codacy API token.")
-	fmt.Println("You can find your Project API token in Codacy under:")
-	fmt.Println("Project > Settings > Integrations > Repository API tokens")
+	cyan.Println("Get started initializing with your Codacy account:")
+	fmt.Println("  codacy-cli init --api-token <token> --provider <gh|gl|bb> --organization <org> --repository <repo>")
 	fmt.Println()
-	cyan.Println("Initialize your project with:")
-	fmt.Println("  codacy-cli init --repository-token YOUR_TOKEN")
-	fmt.Println("  codacy-cli init --codacy-api-token YOUR_TOKEN")
+	fmt.Println("ℹ️  This will synchronzize tools and paterns from Codacy to your local machine.")
+	fmt.Println("   You can find your Project API token in Codacy under:")
+	fmt.Println("     Project > Settings > Integrations > Repository API tokens")
 	fmt.Println()
-	fmt.Println("Or run without a token to use local configuration:")
+	fmt.Println("Or initialize with default Codacy configuration:")
 	fmt.Println("  codacy-cli init")
 	fmt.Println()
-	fmt.Println("For more information about available commands, run:")
+	fmt.Println("For more information, run:")
 	fmt.Println("  codacy-cli --help")
 }
 
