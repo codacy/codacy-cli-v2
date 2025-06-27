@@ -82,6 +82,7 @@ func shouldSkipValidation(cmdName string) bool {
 		"version",
 		"reset",      // config reset should work even with empty/invalid codacy.yaml
 		"codacy-cli", // root command when called without subcommands
+		"update",
 	}
 
 	for _, skipCmd := range skipCommands {
