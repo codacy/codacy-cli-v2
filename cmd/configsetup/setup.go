@@ -204,7 +204,7 @@ func CreateLanguagesConfigFileLocal(toolsConfigDir string) error {
 		return fmt.Errorf("failed to marshal languages config to YAML: %w", err)
 	}
 
-	return writeConfigFile(filepath.Join(toolsConfigDir, LanguagesConfigFileName), data)
+	return writeConfigFile(filepath.Join(toolsConfigDir, constants.LanguagesConfigFileName), data)
 }
 
 func CreateGitIgnoreFile() error {
