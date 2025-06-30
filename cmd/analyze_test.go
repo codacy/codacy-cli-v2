@@ -1,10 +1,17 @@
 package cmd
 
 import (
-	"codacy/cli-v2/plugins"
+	"codacy/cli-v2/config"
+	"codacy/cli-v2/constants"
+	"codacy/cli-v2/domain"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"codacy/cli-v2/plugins"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetFileExtension(t *testing.T) {
@@ -259,6 +266,149 @@ func TestValidatePaths(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
+	// Save original initFlags and config
+	originalFlags := initFlags
+	originalConfig := config.Config
+	originalWorkingDir, _ := os.Getwd()
+	defer func() {
+		initFlags = originalFlags
+		config.Config = originalConfig
+		os.Chdir(originalWorkingDir)
+	}()
+
+	tests := []struct {
+		name             string
+		toolName         string
+		cliLocalMode     bool
+		apiToken         string
+		configFileExists bool
+		expectError      bool
+		description      string
+	}{
+		{
+			name:             "tool_without_config_file",
+			toolName:         "unsupported-tool",
+			cliLocalMode:     false,
+			apiToken:         "test-token",
+			configFileExists: false,
+			expectError:      false,
+			description:      "Tool that doesn't use config files should return without error",
+		},
+		{
+			name:             "config_file_exists",
+			toolName:         "eslint",
+			cliLocalMode:     false,
+			apiToken:         "test-token",
+			configFileExists: true,
+			expectError:      false,
+			description:      "When config file exists, should find it successfully",
+		},
+		{
+			name:             "remote_mode_without_token_no_config",
+			toolName:         "eslint",
+			cliLocalMode:     false,
+			apiToken:         "",
+			configFileExists: false,
+			expectError:      false,
+			description:      "Remote mode without token should show appropriate message",
+		},
+		{
+			name:             "local_mode_no_config",
+			toolName:         "eslint",
+			cliLocalMode:     true,
+			apiToken:         "",
+			configFileExists: false,
+			expectError:      false,
+			description:      "Local mode should create config file if tools-configs directory exists",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup temporary directory and change to it to avoid creating files in project dir
+			tmpDir, err := os.MkdirTemp("", "codacy-test-*")
+			require.NoError(t, err)
+			defer os.RemoveAll(tmpDir)
+
+			// Change to temp directory to prevent config file creation in project
+			err = os.Chdir(tmpDir)
+			require.NoError(t, err)
+
+			// Mock config to use our temporary directory BEFORE creating files
+			config.Config = *config.NewConfigType(tmpDir, tmpDir, tmpDir)
+
+			// Create config file if needed - using the same path logic as the function under test
+			if tt.configFileExists && constants.ToolConfigFileNames[tt.toolName] != "" {
+				// Use config.Config.ToolsConfigDirectory() to get the exact same path the function will use
+				toolsConfigDir := config.Config.ToolsConfigDirectory()
+				err := os.MkdirAll(toolsConfigDir, constants.DefaultDirPerms)
+				require.NoError(t, err)
+
+				configPath := filepath.Join(toolsConfigDir, constants.ToolConfigFileNames[tt.toolName])
+				err = os.WriteFile(configPath, []byte("test config"), constants.DefaultFilePerms)
+				require.NoError(t, err)
+
+				// Ensure the file was created and can be found
+				_, err = os.Stat(configPath)
+				require.NoError(t, err, "Config file should exist at %s", configPath)
+			}
+
+			// Setup initFlags
+			initFlags = domain.InitFlags{
+				ApiToken: tt.apiToken,
+			}
+
+			// Ensure tools-configs directory exists if the function might try to create config files
+			if !tt.configFileExists && constants.ToolConfigFileNames[tt.toolName] != "" {
+				toolsConfigDir := config.Config.ToolsConfigDirectory()
+				err := os.MkdirAll(toolsConfigDir, constants.DefaultDirPerms)
+				require.NoError(t, err)
+			}
+
+			// Execute the function
+			err = checkIfConfigExistsAndIsNeeded(tt.toolName, tt.cliLocalMode)
+
+			// Clean up any files that might have been created by the function under test
+			if !tt.configFileExists && constants.ToolConfigFileNames[tt.toolName] != "" {
+				toolsConfigDir := config.Config.ToolsConfigDirectory()
+				configPath := filepath.Join(toolsConfigDir, constants.ToolConfigFileNames[tt.toolName])
+				if _, statErr := os.Stat(configPath); statErr == nil {
+					os.Remove(configPath)
+				}
+			}
+
+			// Verify results
+			if tt.expectError {
+				assert.Error(t, err, tt.description)
+			} else {
+				assert.NoError(t, err, tt.description)
+			}
+		})
+	}
+}
+
+func TestToolConfigFileNameMap(t *testing.T) {
+	expectedTools := map[string]string{
+		"eslint":       constants.ESLintConfigFileName,
+		"trivy":        constants.TrivyConfigFileName,
+		"pmd":          constants.PMDConfigFileName,
+		"pylint":       constants.PylintConfigFileName,
+		"dartanalyzer": constants.DartAnalyzerConfigFileName,
+		"semgrep":      constants.SemgrepConfigFileName,
+		"revive":       constants.ReviveConfigFileName,
+		"lizard":       constants.LizardConfigFileName,
+	}
+
+	for toolName, expectedFileName := range expectedTools {
+		t.Run(toolName, func(t *testing.T) {
+			actualFileName, exists := constants.ToolConfigFileNames[toolName]
+			assert.True(t, exists, "Tool %s should exist in constants.ToolConfigFileNames map", toolName)
+			assert.Equal(t, expectedFileName, actualFileName, "Config filename for %s should match expected", toolName)
 		})
 	}
 }
