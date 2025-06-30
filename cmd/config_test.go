@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/domain"
-	"codacy/cli-v2/utils"
 
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
@@ -135,7 +135,7 @@ func TestUpdateCodacyYAMLForTools_NewFile(t *testing.T) {
 	}
 	yamlData, err := yaml.Marshal(initialConfig)
 	assert.NoError(t, err)
-	err = os.WriteFile(codacyYAMLPath, yamlData, utils.DefaultFilePerms)
+	err = os.WriteFile(codacyYAMLPath, yamlData, constants.DefaultFilePerms)
 	assert.NoError(t, err)
 
 	// Mock detected tools

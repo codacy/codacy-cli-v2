@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
@@ -464,7 +465,7 @@ var analyzeCmd = &cobra.Command{
 
 			if outputFile != "" {
 				// Write filtered SARIF to output file
-				os.WriteFile(outputFile, filteredData, utils.DefaultFilePerms)
+				os.WriteFile(outputFile, filteredData, constants.DefaultFilePerms)
 			} else {
 				// Print the filtered SARIF output
 				fmt.Println(string(filteredData))

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/utils"
 	"codacy/cli-v2/utils/logger"
@@ -78,7 +79,7 @@ func InstallRuntime(name string, runtimeInfo *plugins.RuntimeInfo) error {
 func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 	// Ensure the runtimes directory exists
 	runtimesDir := Config.RuntimesDirectory()
-	if err := os.MkdirAll(runtimesDir, utils.DefaultDirPerms); err != nil {
+	if err := os.MkdirAll(runtimesDir, constants.DefaultDirPerms); err != nil {
 		return fmt.Errorf("failed to create runtimes directory: %w", err)
 	}
 
@@ -137,7 +138,7 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 
 	// Ensure binaries have executable permissions
 	for binaryName, fullPath := range runtimeInfo.Binaries {
-		if err := os.Chmod(fullPath, utils.DefaultDirPerms); err != nil {
+		if err := os.Chmod(fullPath, constants.DefaultDirPerms); err != nil {
 			logger.Debug("Failed to set binary permissions", logrus.Fields{
 				"binary": binaryName,
 				"path":   fullPath,

@@ -11,8 +11,8 @@ import (
 
 	codacyclient "codacy/cli-v2/codacy-client"
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/domain"
-	"codacy/cli-v2/utils"
 	"codacy/cli-v2/utils/logger"
 
 	"github.com/sirupsen/logrus"
@@ -191,7 +191,7 @@ func CreateLanguagesConfigFile(apiTools []domain.Tool, toolsConfigDir string, to
 
 	// Write the file
 	configPath := filepath.Join(toolsConfigDir, "languages-config.yaml")
-	if err := os.WriteFile(configPath, data, utils.DefaultFilePerms); err != nil {
+	if err := os.WriteFile(configPath, data, constants.DefaultFilePerms); err != nil {
 		return fmt.Errorf("failed to write languages config file: %w", err)
 	}
 
