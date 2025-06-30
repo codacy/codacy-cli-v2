@@ -3,6 +3,7 @@ package lizard
 import (
 	"bytes"
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/tools"
 	"encoding/json"
@@ -84,7 +85,7 @@ func RunLizard(workDirectory string, binary string, files []string, outputFile s
 
 				// Write SARIF output to file if specified, else stdout
 				if outputFile != "" {
-					err = os.WriteFile(outputFile, sarifData, 0644)
+					err = os.WriteFile(outputFile, sarifData, constants.DefaultFilePerms)
 					if err != nil {
 						return fmt.Errorf("failed to write SARIF output: %w", err)
 					}

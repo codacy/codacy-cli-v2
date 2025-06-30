@@ -2,6 +2,7 @@ package tools
 
 import (
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/utils"
 	"fmt"
 	"os"
@@ -69,7 +70,7 @@ func RunPylint(workDirectory string, binary string, files []string, outputFile s
 		sarifOutput := utils.ConvertPylintToSarif(jsonOutput)
 
 		if outputFile != "" {
-			err = os.WriteFile(outputFile, sarifOutput, 0644)
+			err = os.WriteFile(outputFile, sarifOutput, constants.DefaultFilePerms)
 			if err != nil {
 				return fmt.Errorf("failed to write SARIF output: %w", err)
 			}

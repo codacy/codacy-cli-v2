@@ -3,8 +3,8 @@ package cmd
 import (
 	"codacy/cli-v2/cmd/configsetup"
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/domain"
-	"codacy/cli-v2/utils"
 	"os"
 	"path/filepath"
 	"testing"
@@ -164,7 +164,7 @@ func TestCleanConfigDirectory(t *testing.T) {
 
 	for _, file := range testFiles {
 		filePath := filepath.Join(tempDir, file)
-		err := os.WriteFile(filePath, []byte("test content"), utils.DefaultFilePerms)
+		err := os.WriteFile(filePath, []byte("test content"), constants.DefaultFilePerms)
 		assert.NoError(t, err, "Failed to create test file: %s", filePath)
 	}
 
@@ -213,7 +213,7 @@ func TestInitCommand_NoToken(t *testing.T) {
 	}
 
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
-	if err := os.MkdirAll(toolsConfigDir, utils.DefaultDirPerms); err != nil {
+	if err := os.MkdirAll(toolsConfigDir, constants.DefaultDirPerms); err != nil {
 		t.Fatalf("Failed to create tools-configs directory: %v", err)
 	}
 

@@ -1,8 +1,8 @@
 package config
 
 import (
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/plugins"
-	"codacy/cli-v2/utils"
 	"os"
 	"path/filepath"
 	"testing"
@@ -27,7 +27,7 @@ func TestIsRuntimeInstalled(t *testing.T) {
 	assert.False(t, Config.IsRuntimeInstalled("test-runtime", runtimeInfoNoBinaries))
 
 	// Create the install directory
-	err = os.MkdirAll(runtimeInfoNoBinaries.InstallDir, utils.DefaultDirPerms)
+	err = os.MkdirAll(runtimeInfoNoBinaries.InstallDir, constants.DefaultDirPerms)
 	assert.NoError(t, err)
 
 	// Test when the install directory exists

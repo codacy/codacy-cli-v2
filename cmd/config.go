@@ -12,10 +12,10 @@ import (
 	"codacy/cli-v2/cmd/configsetup"
 	codacyclient "codacy/cli-v2/codacy-client"
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
-	"codacy/cli-v2/utils"
 	"codacy/cli-v2/utils/logger"
 
 	"github.com/sirupsen/logrus"
@@ -101,7 +101,7 @@ func runConfigResetLogic(cmd *cobra.Command, args []string, flags domain.InitFla
 
 	// Create .codacy/tools-configs directory
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
-	if err := os.MkdirAll(toolsConfigDir, utils.DefaultDirPerms); err != nil {
+	if err := os.MkdirAll(toolsConfigDir, constants.DefaultDirPerms); err != nil {
 		log.Fatalf("Failed to create tools-configs directory: %v", err)
 	}
 
@@ -267,10 +267,10 @@ func updateLanguagesConfigForTools(detectedTools map[string]struct{}, toolsConfi
 	if err != nil {
 		return fmt.Errorf("failed to marshal languages-config.yaml: %w", err)
 	}
-	if err := os.MkdirAll(toolsConfigDir, utils.DefaultDirPerms); err != nil {
+	if err := os.MkdirAll(toolsConfigDir, constants.DefaultDirPerms); err != nil {
 		return fmt.Errorf("failed to create tools-configs directory: %w", err)
 	}
-	return os.WriteFile(langConfigPath, data, utils.DefaultFilePerms)
+	return os.WriteFile(langConfigPath, data, constants.DefaultFilePerms)
 }
 
 // updateCodacyYAMLForTools updates the codacy.yaml file with detected tools.
@@ -430,11 +430,11 @@ func updateCodacyYAMLForTools(detectedTools map[string]struct{}, codacyYAMLPath 
 		return fmt.Errorf("error marshaling %s: %w", codacyYAMLPath, err)
 	}
 	// Ensure directory exists
-	if err := os.MkdirAll(filepath.Dir(codacyYAMLPath), utils.DefaultDirPerms); err != nil {
+	if err := os.MkdirAll(filepath.Dir(codacyYAMLPath), constants.DefaultDirPerms); err != nil {
 		return fmt.Errorf("error creating .codacy directory: %w", err)
 	}
 
-	return os.WriteFile(codacyYAMLPath, yamlData, utils.DefaultFilePerms)
+	return os.WriteFile(codacyYAMLPath, yamlData, constants.DefaultFilePerms)
 }
 
 func init() {

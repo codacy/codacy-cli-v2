@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/plugins"
-	"codacy/cli-v2/utils"
 
 	"gopkg.in/yaml.v3" // Added import for YAML parsing
 )
@@ -115,11 +115,11 @@ func (c *ConfigType) writeConfig(codacyPath string, config map[string]interface{
 	}
 
 	// Ensure directory exists
-	if err := os.MkdirAll(filepath.Dir(codacyPath), utils.DefaultDirPerms); err != nil {
+	if err := os.MkdirAll(filepath.Dir(codacyPath), constants.DefaultDirPerms); err != nil {
 		return fmt.Errorf("error creating .codacy directory: %w", err)
 	}
 
-	if err := os.WriteFile(codacyPath, yamlData, utils.DefaultFilePerms); err != nil {
+	if err := os.WriteFile(codacyPath, yamlData, constants.DefaultFilePerms); err != nil {
 		return fmt.Errorf("error writing codacy.yaml: %w", err)
 	}
 
@@ -325,22 +325,22 @@ func setupGlobalConfig(repositoryDirectory string, repositoryCache string, globa
 }
 
 func (c *ConfigType) CreateCodacyDirs() error {
-	if err := os.MkdirAll(c.globalCacheDirectory, utils.DefaultDirPerms); err != nil {
+	if err := os.MkdirAll(c.globalCacheDirectory, constants.DefaultDirPerms); err != nil {
 		return fmt.Errorf("failed to create codacy directory: %w", err)
 	}
 
-	if err := os.MkdirAll(c.runtimesDirectory, utils.DefaultDirPerms); err != nil {
+	if err := os.MkdirAll(c.runtimesDirectory, constants.DefaultDirPerms); err != nil {
 		return fmt.Errorf("failed to create runtimes directory: %w", err)
 	}
 
-	if err := os.MkdirAll(c.toolsDirectory, utils.DefaultDirPerms); err != nil {
+	if err := os.MkdirAll(c.toolsDirectory, constants.DefaultDirPerms); err != nil {
 		return fmt.Errorf("failed to create tools directory: %w", err)
 	}
 	return nil
 }
 
 func (c *ConfigType) CreateLocalCodacyDir() error {
-	if err := os.MkdirAll(c.localCodacyDirectory, utils.DefaultDirPerms); err != nil {
+	if err := os.MkdirAll(c.localCodacyDirectory, constants.DefaultDirPerms); err != nil {
 		return fmt.Errorf("failed to create local codacy directory: %w", err)
 	}
 	return nil

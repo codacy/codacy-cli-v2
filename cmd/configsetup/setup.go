@@ -17,7 +17,6 @@ import (
 	"codacy/cli-v2/tools/lizard"
 	"codacy/cli-v2/tools/pylint"
 	reviveTool "codacy/cli-v2/tools/revive"
-	"codacy/cli-v2/utils"
 
 	"gopkg.in/yaml.v3"
 )
@@ -549,7 +548,7 @@ func CleanConfigDirectory(toolsConfigDir string) error {
 
 func createReviveConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
 	reviveConfigurationString := reviveTool.GenerateReviveConfig(config)
-	return os.WriteFile(filepath.Join(toolsConfigDir, "revive.toml"), []byte(reviveConfigurationString), utils.DefaultFilePerms)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "revive.toml"), []byte(reviveConfigurationString), constants.DefaultFilePerms)
 }
 
 // BuildDefaultConfigurationFiles creates default configuration files for all tools

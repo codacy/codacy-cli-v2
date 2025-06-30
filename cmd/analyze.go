@@ -530,7 +530,7 @@ Supports API token, provider, and repository flags to automatically fetch tool c
 
 			if outputFile != "" {
 				// Write filtered SARIF to output file
-				os.WriteFile(outputFile, filteredData, utils.DefaultFilePerms)
+				os.WriteFile(outputFile, filteredData, constants.DefaultFilePerms)
 			} else {
 				// Print the filtered SARIF output
 				fmt.Println(string(filteredData))

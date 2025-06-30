@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/utils"
 	"codacy/cli-v2/utils/logger"
@@ -102,7 +103,7 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error
 	}
 
 	// Make sure the installation directory exists
-	err := os.MkdirAll(toolInfo.InstallDir, 0755)
+	err := os.MkdirAll(toolInfo.InstallDir, constants.DefaultDirPerms)
 	if err != nil {
 		return fmt.Errorf("failed to create installation directory: %w", err)
 	}
@@ -291,7 +292,7 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 	defer file.Close()
 
 	// Create the installation directory
-	err = os.MkdirAll(toolInfo.InstallDir, 0755)
+	err = os.MkdirAll(toolInfo.InstallDir, constants.DefaultDirPerms)
 	if err != nil {
 		return fmt.Errorf("failed to create installation directory: %w", err)
 	}
@@ -316,7 +317,7 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 
 	// Make sure all binaries are executable
 	for _, binaryPath := range toolInfo.Binaries {
-		err = os.Chmod(filepath.Join(toolInfo.InstallDir, filepath.Base(binaryPath)), 0755)
+		err = os.Chmod(filepath.Join(toolInfo.InstallDir, filepath.Base(binaryPath)), constants.DefaultDirPerms)
 		if err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("failed to make binary executable: %w", err)
 		}
