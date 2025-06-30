@@ -18,6 +18,8 @@ import (
 	"codacy/cli-v2/tools/pylint"
 	reviveTool "codacy/cli-v2/tools/revive"
 	"codacy/cli-v2/utils"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Configuration file names - extracted as constants to avoid duplication
@@ -194,33 +196,24 @@ func (r *reviveConfigCreator) GetConfigFileName() string { return "revive.toml" 
 func (r *reviveConfigCreator) GetToolName() string       { return "Revive" }
 
 func CreateLanguagesConfigFileLocal(toolsConfigDir string) error {
-	content := `tools:
-    - name: pylint
-      languages: [Python]
-      extensions: [.py]
-    - name: eslint
-      languages: [JavaScript, TypeScript, JSX, TSX]
-      extensions: [.js, .jsx, .ts, .tsx]
-    - name: pmd
-      languages: [Java, JavaScript, JSP, Velocity, XML, Apex, Scala, Ruby, VisualForce]
-      extensions: [.java, .js, .jsp, .vm, .xml, .cls, .trigger, .scala, .rb, .page, .component]
-    - name: trivy
-      languages: [Multiple]
-      extensions: []
-    - name: dartanalyzer
-      languages: [Dart]
-      extensions: [.dart]
-    - name: lizard
-      languages: [C, CPP, Java, "C#", JavaScript, TypeScript, VueJS, "Objective-C", Swift, Python, Ruby, "TTCN-3", PHP, Scala, GDScript, Golang, Lua, Rust, Fortran, Kotlin, Solidity, Erlang, Zig, Perl]
-      extensions: [.c, .cpp, .cc, .h, .hpp, .java, .cs, .js, .jsx, .ts, .tsx, .vue, .m, .swift, .py, .rb, .ttcn, .php, .scala, .gd, .go, .lua, .rs, .f, .f90, .kt, .sol, .erl, .zig, .pl]
-    - name: semgrep
-      languages: [C, CPP, "C#", Generic, Go, Java, JavaScript, JSON, Kotlin, Python, TypeScript, Ruby, Rust, JSX, PHP, Scala, Swift, Terraform]
-      extensions: [.c, .cpp, .h, .hpp, .cs, .go, .java, .js, .json, .kt, .py, .ts, .rb, .rs, .jsx, .php, .scala, .swift, .tf, .tfvars]
-    - name: codacy-enigma-cli
-      languages: [Multiple]
-      extensions: []`
+	// Build tool language configurations from API
+	configTools, err := tools.BuildLanguagesConfigFromAPI()
+	if err != nil {
+		return fmt.Errorf("failed to build languages config from API: %w", err)
+	}
 
-	return writeConfigFile(filepath.Join(toolsConfigDir, LanguagesConfigFileName), []byte(content))
+	// Create the config structure
+	config := domain.LanguagesConfig{
+		Tools: configTools,
+	}
+
+	// Marshal to YAML
+	data, err := yaml.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal languages config to YAML: %w", err)
+	}
+
+	return writeConfigFile(filepath.Join(toolsConfigDir, LanguagesConfigFileName), data)
 }
 
 func CreateGitIgnoreFile() error {
@@ -441,18 +434,18 @@ func BuildRepositoryConfigurationFiles(flags domain.InitFlags) error {
 
 	logVersionConflicts(familyToVersions, toolsWithLatestVersion)
 
-	// Generate languages configuration based on API tools response
+	// Create main config files with all enabled API tools (including cli-config.yaml)
+	if err := CreateConfigurationFiles(toolsWithLatestVersion, false); err != nil {
+		return err
+	}
+
+	// Generate languages configuration based on API tools response (after cli-config.yaml is created)
 	if err := tools.CreateLanguagesConfigFile(toolsWithLatestVersion, toolsConfigDir, uuidToName, flags); err != nil {
 		return fmt.Errorf("failed to create languages configuration file: %w", err)
 	}
 
 	// Filter out any tools that use configuration file
 	configuredToolsWithUI := tools.FilterToolsByConfigUsage(toolsWithLatestVersion)
-
-	// Create main config files with all enabled API tools
-	if err := CreateConfigurationFiles(toolsWithLatestVersion, false); err != nil {
-		return err
-	}
 
 	// Generate config files for tools not using their own config file
 	return createToolConfigurationFiles(configuredToolsWithUI, flags)
