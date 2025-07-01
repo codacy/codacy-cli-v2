@@ -485,7 +485,12 @@ Supports API token, provider, and repository flags to automatically fetch tool c
 		}
 
 		// Filter tools by language support
-		toolsToRun = FilterToolsByLanguageSupport(toolsToRun, args)
+		// HOT FIX - disable for now, file extensions are not considered during the analysis
+		// Need to support special `files` for languages like the ones defined here:
+		// https://github.com/codacy/codacy-plugins-api/blob/ed456e612382c688b6146f70ca0df6b4dfdf0bf9/codacy-plugins-api/src/main/scala/com/codacy/plugins/api/languages/Language.scala#L102
+		//
+
+		// toolsToRun = FilterToolsByLanguageSupport(toolsToRun, args)
 
 		if len(toolsToRun) == 0 {
 			log.Println("No tools support the specified file(s). Skipping analysis.")
