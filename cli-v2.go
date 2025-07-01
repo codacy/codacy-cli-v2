@@ -14,6 +14,8 @@ import (
 )
 
 func main() {
+
+	fmt.Printf("TESTING CLI BUILD")
 	// Initialize config global object
 	config.Init()
 

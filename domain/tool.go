@@ -27,6 +27,7 @@ const (
 	DartAnalyzer string = "d203d615-6cf1-41f9-be5f-e2f660f7850f"
 	Semgrep      string = "6792c561-236d-41b7-ba5e-9d6bee0d548b"
 	Lizard       string = "76348462-84b3-409a-90d3-955e90abfb87"
+	SolidGrader  string = "716FCE5C-F5E8-4B9D-A7D2-86CDFAE79D45"
 )
 
 type ToolInfo struct {
@@ -45,4 +46,5 @@ var SupportedToolsMetadata = map[string]ToolInfo{
 	DartAnalyzer: {Name: "dartanalyzer", Priority: 0},
 	Lizard:       {Name: "lizard", Priority: 0},
 	Semgrep:      {Name: "semgrep", Priority: 0},
+	SolidGrader:  {Name: "solid_grader", Priority: 0},
 }

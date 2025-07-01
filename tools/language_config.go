@@ -58,6 +58,11 @@ func CreateLanguagesConfigFile(apiTools []domain.Tool, toolsConfigDir string, to
 			Languages:  []string{"C", "CPP", "C#", "Generic", "Go", "Java", "JavaScript", "JSON", "Kotlin", "Python", "TypeScript", "Ruby", "Rust", "JSX", "PHP", "Scala", "Swift", "Terraform"},
 			Extensions: []string{".c", ".cpp", ".h", ".hpp", ".cs", ".go", ".java", ".js", ".json", ".kt", ".py", ".ts", ".rb", ".rs", ".jsx", ".php", ".scala", ".swift", ".tf", ".tfvars"},
 		},
+		"pyrefly": {
+			Name:       "pyrefly",
+			Languages:  []string{"Python"},
+			Extensions: []string{".py"},
+		},
 	}
 
 	// Build a list of tool language info for enabled tools
