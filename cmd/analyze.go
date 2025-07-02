@@ -412,22 +412,6 @@ func runEnigmaAnalysis(workDirectory string, pathsToCheck []string, outputFile s
 	return tools.RunEnigma(workDirectory, enigma.InstallDir, enigma.Binaries["codacy-enigma-cli"], pathsToCheck, outputFile, outputFormat)
 }
 
-func runSolidGraderAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	solidGrader := config.Config.Tools()["solid_grader"]
-	if solidGrader == nil {
-		log.Fatal("solid_grader tool configuration not found")
-	}
-	solidGraderBinary := solidGrader.Binaries["solid_grader"]
-	return tools.RunSolidGrader(
-		workDirectory,
-		solidGrader.InstallDir,
-		solidGraderBinary,
-		pathsToCheck,
-		outputFile,
-		outputFormat,
-	)
-}
-
 func runPyreflyAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
 	pyrefly := config.Config.Tools()["pyrefly"]
 	if pyrefly == nil {
@@ -547,8 +531,6 @@ func runTool(workDirectory string, toolName string, args []string, outputFile st
 		return runLizardAnalysis(workDirectory, args, outputFile, outputFormat)
 	case "codacy-enigma-cli":
 		return runEnigmaAnalysis(workDirectory, args, outputFile, outputFormat)
-	case "solid_grader":
-		return runSolidGraderAnalysis(workDirectory, args, outputFile, outputFormat)
 	case "pyrefly":
 		return runPyreflyAnalysis(workDirectory, args, outputFile, outputFormat)
 	default:
