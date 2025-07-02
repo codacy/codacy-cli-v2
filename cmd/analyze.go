@@ -359,6 +359,9 @@ func runToolByName(toolName string, workDirectory string, pathsToCheck []string,
 		return tools.RunEnigma(workDirectory, tool.InstallDir, tool.Binaries["codacy-enigma-cli"], pathsToCheck, outputFile, outputFormat)
 	case "revive":
 		return reviveTool.RunRevive(workDirectory, tool.Binaries["revive"], pathsToCheck, outputFile, outputFormat)
+	case "pyrefly":
+		binaryPath := tool.Binaries["pyrefly"]
+		return tools.RunPyrefly(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)
 	}
 	return fmt.Errorf("unsupported tool: %s", toolName)
 }
@@ -442,6 +445,15 @@ func validateCloudMode(cliLocalMode bool) error {
 		fmt.Println("Warning: cannot run in cloud mode")
 	}
 	return nil
+}
+
+func runPyreflyAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
+	pyrefly := config.Config.Tools()["pyrefly"]
+	if pyrefly == nil {
+		log.Fatal("Pyrefly tool configuration not found")
+	}
+	pyreflyBinary := pyrefly.Binaries["pyrefly"]
+	return tools.RunPyrefly(workDirectory, pyreflyBinary, pathsToCheck, outputFile, outputFormat)
 }
 
 var analyzeCmd = &cobra.Command{
