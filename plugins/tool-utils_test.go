@@ -170,6 +170,8 @@ func TestGetSupportedTools(t *testing.T) {
 				"semgrep",
 				"lizard",
 				"codacy-enigma-cli",
+				"revive",
+				"pyrefly",
 			},
 			expectedError: false,
 		},

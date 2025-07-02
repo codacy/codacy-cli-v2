@@ -1,6 +1,7 @@
 package config
 
 import (
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/utils"
 	"codacy/cli-v2/utils/logger"
@@ -53,7 +54,6 @@ func InstallRuntime(name string, runtimeInfo *plugins.RuntimeInfo) error {
 			"runtime": name,
 			"version": runtimeInfo.Version,
 		})
-		fmt.Printf("Runtime %s v%s is already installed\n", name, runtimeInfo.Version)
 		return nil
 	}
 
@@ -77,9 +77,15 @@ func InstallRuntime(name string, runtimeInfo *plugins.RuntimeInfo) error {
 
 // downloadAndExtractRuntime downloads and extracts a runtime
 func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
+	// Ensure the runtimes directory exists
+	runtimesDir := Config.RuntimesDirectory()
+	if err := os.MkdirAll(runtimesDir, constants.DefaultDirPerms); err != nil {
+		return fmt.Errorf("failed to create runtimes directory: %w", err)
+	}
+
 	// Create a file name for the downloaded archive
 	fileName := filepath.Base(runtimeInfo.DownloadURL)
-	downloadPath := filepath.Join(Config.RuntimesDirectory(), fileName)
+	downloadPath := filepath.Join(runtimesDir, fileName)
 
 	// Check if the file already exists
 	_, err := os.Stat(downloadPath)
@@ -91,7 +97,7 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 			"downloadURL":  runtimeInfo.DownloadURL,
 			"downloadPath": downloadPath,
 		})
-		downloadPath, err = utils.DownloadFile(runtimeInfo.DownloadURL, Config.RuntimesDirectory())
+		downloadPath, err = utils.DownloadFile(runtimeInfo.DownloadURL, runtimesDir)
 		if err != nil {
 			return fmt.Errorf("failed to download runtime: %w", err)
 		}
@@ -117,13 +123,13 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 		"runtime":          runtimeInfo.Name,
 		"version":          runtimeInfo.Version,
 		"fileName":         fileName,
-		"extractDirectory": Config.RuntimesDirectory(),
+		"extractDirectory": runtimesDir,
 	})
 
 	if strings.HasSuffix(fileName, ".zip") {
-		err = utils.ExtractZip(file.Name(), Config.RuntimesDirectory())
+		err = utils.ExtractZip(file.Name(), runtimesDir)
 	} else {
-		err = utils.ExtractTarGz(file, Config.RuntimesDirectory())
+		err = utils.ExtractTarGz(file, runtimesDir)
 	}
 
 	if err != nil {
@@ -131,15 +137,14 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 	}
 
 	// Ensure binaries have executable permissions
-	for _, binaryPath := range runtimeInfo.Binaries {
-		fullPath := filepath.Join(Config.RuntimesDirectory(), filepath.Base(runtimeInfo.InstallDir), binaryPath)
-		if err := os.Chmod(fullPath, utils.DefaultDirPerms); err != nil {
+	for binaryName, fullPath := range runtimeInfo.Binaries {
+		if err := os.Chmod(fullPath, constants.DefaultDirPerms); err != nil {
 			logger.Debug("Failed to set binary permissions", logrus.Fields{
-				"binary": binaryPath,
+				"binary": binaryName,
 				"path":   fullPath,
 				"error":  err,
 			})
-			return fmt.Errorf("failed to set binary permissions for %s: %w", binaryPath, err)
+			return fmt.Errorf("failed to set binary permissions for %s: %w", fullPath, err)
 		}
 	}
 

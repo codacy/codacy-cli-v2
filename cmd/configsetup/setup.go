@@ -10,86 +10,231 @@ import (
 
 	codacyclient "codacy/cli-v2/codacy-client"
 	"codacy/cli-v2/config"
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/tools/lizard"
 	"codacy/cli-v2/tools/pylint"
-	"codacy/cli-v2/utils"
+	reviveTool "codacy/cli-v2/tools/revive"
+
+	"gopkg.in/yaml.v3"
 )
 
-func CreateLanguagesConfigFileLocal(toolsConfigDir string) error {
-	content := `tools:
-    - name: pylint
-      languages: [Python]
-      extensions: [.py]
-    - name: eslint
-      languages: [JavaScript, TypeScript, JSX, TSX]
-      extensions: [.js, .jsx, .ts, .tsx]
-    - name: pmd
-      languages: [Java, JavaScript, JSP, Velocity, XML, Apex, Scala, Ruby, VisualForce]
-      extensions: [.java, .js, .jsp, .vm, .xml, .cls, .trigger, .scala, .rb, .page, .component]
-    - name: trivy
-      languages: [Multiple]
-      extensions: []
-    - name: dartanalyzer
-      languages: [Dart]
-      extensions: [.dart]
-    - name: lizard
-      languages: [C, CPP, Java, "C#", JavaScript, TypeScript, VueJS, "Objective-C", Swift, Python, Ruby, "TTCN-3", PHP, Scala, GDScript, Golang, Lua, Rust, Fortran, Kotlin, Solidity, Erlang, Zig, Perl]
-      extensions: [.c, .cpp, .cc, .h, .hpp, .java, .cs, .js, .jsx, .ts, .tsx, .vue, .m, .swift, .py, .rb, .ttcn, .php, .scala, .gd, .go, .lua, .rs, .f, .f90, .kt, .sol, .erl, .zig, .pl]
-    - name: semgrep
-      languages: [C, CPP, "C#", Generic, Go, Java, JavaScript, JSON, Kotlin, Python, TypeScript, Ruby, Rust, JSX, PHP, Scala, Swift, Terraform]
-      extensions: [.c, .cpp, .h, .hpp, .cs, .go, .java, .js, .json, .kt, .py, .ts, .rb, .rs, .jsx, .php, .scala, .swift, .tf, .tfvars]
-    - name: codacy-enigma-cli
-      languages: [Multiple]
-      extensions: []`
-
-	return os.WriteFile(filepath.Join(toolsConfigDir, "languages-config.yaml"), []byte(content), utils.DefaultFilePerms)
+// ToolConfigCreator defines the interface for tool configuration creators
+type ToolConfigCreator interface {
+	CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error
+	GetConfigFileName() string
+	GetToolName() string
 }
 
-func CreateGitIgnoreFile() error {
-	gitIgnorePath := filepath.Join(config.Config.LocalCodacyDirectory(), ".gitignore")
-	gitIgnoreFile, err := os.Create(gitIgnorePath)
+// toolConfigRegistry maps tool UUIDs to their configuration creators
+var toolConfigRegistry = map[string]ToolConfigCreator{
+	domain.ESLint:       &eslintConfigCreator{},
+	domain.ESLint9:      &eslintConfigCreator{},
+	domain.Trivy:        &trivyConfigCreator{},
+	domain.PMD:          &pmdConfigCreator{},
+	domain.PMD7:         &pmd7ConfigCreator{},
+	domain.PyLint:       &pylintConfigCreator{},
+	domain.DartAnalyzer: &dartAnalyzerConfigCreator{},
+	domain.Semgrep:      &semgrepConfigCreator{},
+	domain.Lizard:       &lizardConfigCreator{},
+	domain.Revive:       &reviveConfigCreator{},
+}
+
+// writeConfigFile is a helper function to write configuration files with consistent error handling
+func writeConfigFile(filePath string, content []byte) error {
+	return os.WriteFile(filePath, content, constants.DefaultFilePerms)
+}
+
+// eslintConfigCreator implements ToolConfigCreator for ESLint
+type eslintConfigCreator struct{}
+
+func (e *eslintConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
+	err := tools.CreateEslintConfig(toolsConfigDir, patterns)
+	if err == nil {
+		fmt.Println("ESLint configuration created based on Codacy settings. Ignoring plugin rules. ESLint plugins are not supported yet.")
+	}
+	return err
+}
+
+func (e *eslintConfigCreator) GetConfigFileName() string { return "eslint.config.mjs" }
+func (e *eslintConfigCreator) GetToolName() string       { return "ESLint" }
+
+// trivyConfigCreator implements ToolConfigCreator for Trivy
+type trivyConfigCreator struct{}
+
+func (t *trivyConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
+	configString := tools.CreateTrivyConfig(patterns)
+	err := writeConfigFile(filepath.Join(toolsConfigDir, constants.TrivyConfigFileName), []byte(configString))
+	if err == nil {
+		fmt.Println("Trivy configuration created based on Codacy settings")
+	}
+	return err
+}
+
+func (t *trivyConfigCreator) GetConfigFileName() string { return constants.TrivyConfigFileName }
+func (t *trivyConfigCreator) GetToolName() string       { return "Trivy" }
+
+// pmdConfigCreator implements ToolConfigCreator for PMD
+type pmdConfigCreator struct{}
+
+func (p *pmdConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
+	configString := tools.CreatePmd6Config(patterns)
+	return writeConfigFile(filepath.Join(toolsConfigDir, constants.PMDConfigFileName), []byte(configString))
+}
+
+func (p *pmdConfigCreator) GetConfigFileName() string { return constants.PMDConfigFileName }
+func (p *pmdConfigCreator) GetToolName() string       { return "PMD" }
+
+// pmd7ConfigCreator implements ToolConfigCreator for PMD7
+type pmd7ConfigCreator struct{}
+
+func (p *pmd7ConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
+	configString := tools.CreatePmd7Config(patterns)
+	err := writeConfigFile(filepath.Join(toolsConfigDir, constants.PMDConfigFileName), []byte(configString))
+	if err == nil {
+		fmt.Println("PMD7 configuration created based on Codacy settings")
+	}
+	return err
+}
+
+func (p *pmd7ConfigCreator) GetConfigFileName() string { return constants.PMDConfigFileName }
+func (p *pmd7ConfigCreator) GetToolName() string       { return "PMD7" }
+
+// pylintConfigCreator implements ToolConfigCreator for Pylint
+type pylintConfigCreator struct{}
+
+func (p *pylintConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
+	configString := pylint.GeneratePylintRC(patterns)
+	err := writeConfigFile(filepath.Join(toolsConfigDir, constants.PylintConfigFileName), []byte(configString))
+	if err == nil {
+		fmt.Println("Pylint configuration created based on Codacy settings")
+	}
+	return err
+}
+
+func (p *pylintConfigCreator) GetConfigFileName() string { return constants.PylintConfigFileName }
+func (p *pylintConfigCreator) GetToolName() string       { return "Pylint" }
+
+// dartAnalyzerConfigCreator implements ToolConfigCreator for Dart Analyzer
+type dartAnalyzerConfigCreator struct{}
+
+func (d *dartAnalyzerConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
+	configString := tools.CreateDartAnalyzerConfig(patterns)
+	err := writeConfigFile(filepath.Join(toolsConfigDir, constants.DartAnalyzerConfigFileName), []byte(configString))
+	if err == nil {
+		fmt.Println("Dart configuration created based on Codacy settings")
+	}
+	return err
+}
+
+func (d *dartAnalyzerConfigCreator) GetConfigFileName() string {
+	return constants.DartAnalyzerConfigFileName
+}
+func (d *dartAnalyzerConfigCreator) GetToolName() string { return "Dart Analyzer" }
+
+// semgrepConfigCreator implements ToolConfigCreator for Semgrep
+type semgrepConfigCreator struct{}
+
+func (s *semgrepConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
+	configData, err := tools.GetSemgrepConfig(patterns)
 	if err != nil {
-		return fmt.Errorf("failed to create .gitignore file: %w", err)
+		return fmt.Errorf("failed to create Semgrep config: %v", err)
 	}
-	defer gitIgnoreFile.Close()
-
-	content := "# Codacy CLI\ntools-configs/\n.gitignore\ncli-config.yaml\nlogs/\n"
-	if _, err := gitIgnoreFile.WriteString(content); err != nil {
-		return fmt.Errorf("failed to write to .gitignore file: %w", err)
+	err = writeConfigFile(filepath.Join(toolsConfigDir, constants.SemgrepConfigFileName), configData)
+	if err == nil {
+		fmt.Println("Semgrep configuration created based on Codacy settings")
 	}
+	return err
+}
 
+func (s *semgrepConfigCreator) GetConfigFileName() string { return constants.SemgrepConfigFileName }
+func (s *semgrepConfigCreator) GetToolName() string       { return "Semgrep" }
+
+// lizardConfigCreator implements ToolConfigCreator for Lizard
+type lizardConfigCreator struct{}
+
+func (l *lizardConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
+	patternDefinitions := make([]domain.PatternDefinition, len(patterns))
+	for i, pattern := range patterns {
+		patternDefinitions[i] = pattern.PatternDefinition
+	}
+	err := lizard.CreateLizardConfig(toolsConfigDir, patternDefinitions)
+	if err != nil {
+		return fmt.Errorf("failed to create Lizard configuration: %w", err)
+	}
+	fmt.Println("Lizard configuration created based on Codacy settings")
 	return nil
 }
 
-func CreateConfigurationFiles(tools []domain.Tool, cliLocalMode bool) error {
-	configFile, err := os.Create(config.Config.ProjectConfigFile())
-	if err != nil {
-		return fmt.Errorf("failed to create project config file: %w", err)
-	}
-	defer configFile.Close()
+func (l *lizardConfigCreator) GetConfigFileName() string { return "lizard.json" }
+func (l *lizardConfigCreator) GetToolName() string       { return "Lizard" }
 
-	configContent := ConfigFileTemplate(tools)
-	_, err = configFile.WriteString(configContent)
+// reviveConfigCreator implements ToolConfigCreator for Revive
+type reviveConfigCreator struct{}
+
+func (r *reviveConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
+	err := createReviveConfigFile(patterns, toolsConfigDir)
+	if err == nil {
+		fmt.Println("Revive configuration created based on Codacy settings")
+	}
+	return err
+}
+
+func (r *reviveConfigCreator) GetConfigFileName() string { return "revive.toml" }
+func (r *reviveConfigCreator) GetToolName() string       { return "Revive" }
+
+func CreateLanguagesConfigFileLocal(toolsConfigDir string) error {
+	// Build tool language configurations from API
+	configTools, err := tools.BuildLanguagesConfigFromAPI()
 	if err != nil {
+		return fmt.Errorf("failed to build languages config from API: %w", err)
+	}
+
+	// Create the config structure
+	config := domain.LanguagesConfig{
+		Tools: configTools,
+	}
+
+	// Marshal to YAML
+	data, err := yaml.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal languages config to YAML: %w", err)
+	}
+
+	return writeConfigFile(filepath.Join(toolsConfigDir, constants.LanguagesConfigFileName), data)
+}
+
+func CreateGitIgnoreFile() error {
+	gitIgnorePath := filepath.Join(config.Config.LocalCodacyDirectory(), constants.GitIgnoreFileName)
+	content := "# Codacy CLI\ntools-configs/\n.gitignore\ncli-config.yaml\nlogs/\n"
+	return writeConfigFile(gitIgnorePath, []byte(content))
+}
+
+func CreateConfigurationFiles(tools []domain.Tool, cliLocalMode bool) error {
+	// Create project config file
+	configContent := ConfigFileTemplate(tools)
+	if err := writeConfigFile(config.Config.ProjectConfigFile(), []byte(configContent)); err != nil {
 		return fmt.Errorf("failed to write project config file: %w", err)
 	}
 
-	cliConfigFile, err := os.Create(config.Config.CliConfigFile())
-	if err != nil {
-		return fmt.Errorf("failed to create CLI config file: %w", err)
-	}
-	defer cliConfigFile.Close()
-
-	cliConfigContent := cliConfigFileTemplate(cliLocalMode)
-	_, err = cliConfigFile.WriteString(cliConfigContent)
-	if err != nil {
+	// Create CLI config file
+	cliConfigContent := buildCliConfigContent(cliLocalMode)
+	if err := writeConfigFile(config.Config.CliConfigFile(), []byte(cliConfigContent)); err != nil {
 		return fmt.Errorf("failed to write CLI config file: %w", err)
 	}
 
 	return nil
+}
+
+// buildCliConfigContent creates the CLI configuration content
+func buildCliConfigContent(cliLocalMode bool) string {
+	mode := "remote"
+	if cliLocalMode {
+		mode = "local"
+	}
+	return fmt.Sprintf("mode: %s", mode)
 }
 
 // RuntimePluginConfig holds the structure of the runtime plugin.yaml file
@@ -100,162 +245,159 @@ type RuntimePluginConfig struct {
 }
 
 func ConfigFileTemplate(tools []domain.Tool) string {
-	// Maps to track which tools are enabled
 	toolsMap := make(map[string]bool)
 	toolVersions := make(map[string]string)
+	neededRuntimes := make(map[string]bool)
 
 	toolsWithLatestVersion, _, _ := KeepToolsWithLatestVersion(tools)
 
-	// Track needed runtimes
-	neededRuntimes := make(map[string]bool)
-
-	// Get tool versions from plugin configurations
+	// Get versions and runtime dependencies
 	defaultVersions := plugins.GetToolVersions()
-
-	// Get runtime versions all at once
 	runtimeVersions := plugins.GetRuntimeVersions()
-
-	// Get tool runtime dependencies
 	runtimeDependencies := plugins.GetToolRuntimeDependencies()
 
-	// Build map of enabled tools with their versions
+	// Process enabled tools
 	for _, tool := range toolsWithLatestVersion {
 		toolsMap[tool.Uuid] = true
-		if tool.Version != "" {
-			toolVersions[tool.Uuid] = tool.Version
-		} else {
-			if meta, ok := domain.SupportedToolsMetadata[tool.Uuid]; ok {
-				if defaultVersion, ok := defaultVersions[meta.Name]; ok {
-					toolVersions[tool.Uuid] = defaultVersion
-				}
-			}
-		}
-
-		// Get the tool's runtime dependency
-		if meta, ok := domain.SupportedToolsMetadata[tool.Uuid]; ok {
-			if runtime, ok := runtimeDependencies[meta.Name]; ok {
-				// Handle special case for dartanalyzer which can use either dart or flutter
-				if meta.Name == "dartanalyzer" {
-					// For now, default to dart runtime
-					neededRuntimes["dart"] = true
-				} else {
-					neededRuntimes[runtime] = true
-				}
-			}
-		}
+		toolVersions[tool.Uuid] = getToolVersion(tool, defaultVersions)
+		addRequiredRuntime(tool.Uuid, neededRuntimes, runtimeDependencies)
 	}
 
-	// Start building the YAML content
 	var sb strings.Builder
-	sb.WriteString("runtimes:\n")
 
-	// Only include runtimes needed by the enabled tools
-	if len(tools) > 0 {
-		// Create a sorted slice of runtimes
-		var sortedRuntimes []string
-		for runtime := range neededRuntimes {
-			sortedRuntimes = append(sortedRuntimes, runtime)
-		}
-		sort.Strings(sortedRuntimes)
+	// Build runtimes section
+	buildRuntimesSection(&sb, tools, neededRuntimes, runtimeVersions, runtimeDependencies)
 
-		// Write sorted runtimes
-		for _, runtime := range sortedRuntimes {
-			sb.WriteString(fmt.Sprintf("    - %s@%s\n", runtime, runtimeVersions[runtime]))
-		}
-	} else {
-		// In local mode with no tools specified, include only the necessary runtimes
-		supportedTools, err := plugins.GetSupportedTools()
-		if err != nil {
-			log.Printf("Warning: failed to get supported tools: %v", err)
-			return sb.String()
-		}
-
-		// Get runtimes needed by supported tools
-		for toolName := range supportedTools {
-			if runtime, ok := runtimeDependencies[toolName]; ok {
-				if toolName == "dartanalyzer" {
-					neededRuntimes["dart"] = true
-				} else {
-					neededRuntimes[runtime] = true
-				}
-			}
-		}
-		var sortedRuntimes []string
-		for runtime := range neededRuntimes {
-			sortedRuntimes = append(sortedRuntimes, runtime)
-		}
-		sort.Strings(sortedRuntimes)
-		for _, runtime := range sortedRuntimes {
-			sb.WriteString(fmt.Sprintf("    - %s@%s\n", runtime, runtimeVersions[runtime]))
-		}
-	}
-
-	sb.WriteString("tools:\n")
-
-	if len(tools) > 0 {
-		// Create a sorted slice of tool names
-		var sortedTools []string
-		for uuid, meta := range domain.SupportedToolsMetadata {
-			if toolsMap[uuid] {
-				sortedTools = append(sortedTools, meta.Name)
-			}
-		}
-		sort.Strings(sortedTools)
-
-		// Write sorted tools
-		for _, name := range sortedTools {
-			// Find the UUID for this tool name to get its version
-			for uuid, meta := range domain.SupportedToolsMetadata {
-				if meta.Name == name && toolsMap[uuid] {
-					version := toolVersions[uuid]
-					sb.WriteString(fmt.Sprintf("    - %s@%s\n", name, version))
-					break
-				}
-			}
-		}
-	} else {
-		// If no tools were specified (local mode), include all tools in sorted order
-		var sortedTools []string
-
-		// Get supported tools from plugin system
-		supportedTools, err := plugins.GetSupportedTools()
-		if err != nil {
-			log.Printf("Warning: failed to get supported tools: %v", err)
-			return sb.String()
-		}
-
-		// Convert map keys to slice and sort them
-		for toolName := range supportedTools {
-			if version, ok := defaultVersions[toolName]; ok {
-				// Skip tools without a version
-				if version != "" {
-					sortedTools = append(sortedTools, toolName)
-				}
-			}
-		}
-		sort.Strings(sortedTools)
-
-		// Write sorted tools
-		for _, toolName := range sortedTools {
-			if version, ok := defaultVersions[toolName]; ok {
-				sb.WriteString(fmt.Sprintf("    - %s@%s\n", toolName, version))
-			}
-		}
-	}
+	// Build tools section
+	buildToolsSection(&sb, tools, toolsMap, toolVersions, defaultVersions)
 
 	return sb.String()
 }
 
-func cliConfigFileTemplate(cliLocalMode bool) string {
-	var cliModeString string
+// getToolVersion returns the version for a tool, preferring tool.Version over default
+func getToolVersion(tool domain.Tool, defaultVersions map[string]string) string {
+	if tool.Version != "" {
+		return tool.Version
+	}
+	if meta, ok := domain.SupportedToolsMetadata[tool.Uuid]; ok {
+		if defaultVersion, ok := defaultVersions[meta.Name]; ok {
+			return defaultVersion
+		}
+	}
+	return ""
+}
 
-	if cliLocalMode {
-		cliModeString = "local"
-	} else {
-		cliModeString = "remote"
+// addRequiredRuntime adds the runtime requirement for a tool
+func addRequiredRuntime(toolUuid string, neededRuntimes map[string]bool, runtimeDependencies map[string]string) {
+	if meta, ok := domain.SupportedToolsMetadata[toolUuid]; ok {
+		if runtime, ok := runtimeDependencies[meta.Name]; ok {
+			if meta.Name == "dartanalyzer" {
+				// For dartanalyzer, default to dart runtime
+				neededRuntimes["dart"] = true
+			} else {
+				neededRuntimes[runtime] = true
+			}
+		}
+	}
+}
+
+// buildRuntimesSection builds the runtimes section of the configuration
+func buildRuntimesSection(sb *strings.Builder, tools []domain.Tool, neededRuntimes map[string]bool, runtimeVersions map[string]string, runtimeDependencies map[string]string) {
+	sb.WriteString("runtimes:\n")
+
+	if len(tools) == 0 {
+		// In local mode with no tools specified, include all necessary runtimes
+		addAllSupportedRuntimes(neededRuntimes, runtimeDependencies)
 	}
 
-	return fmt.Sprintf(`mode: %s`, cliModeString)
+	writeRuntimesList(sb, neededRuntimes, runtimeVersions)
+}
+
+// addAllSupportedRuntimes adds all runtimes needed by supported tools
+func addAllSupportedRuntimes(neededRuntimes map[string]bool, runtimeDependencies map[string]string) {
+	supportedTools, err := plugins.GetSupportedTools()
+	if err != nil {
+		log.Printf("Warning: failed to get supported tools: %v", err)
+		return
+	}
+
+	for toolName := range supportedTools {
+		if runtime, ok := runtimeDependencies[toolName]; ok {
+			if toolName == "dartanalyzer" {
+				neededRuntimes["dart"] = true
+			} else {
+				neededRuntimes[runtime] = true
+			}
+		}
+	}
+}
+
+// writeRuntimesList writes the sorted runtimes list to the string builder
+func writeRuntimesList(sb *strings.Builder, neededRuntimes map[string]bool, runtimeVersions map[string]string) {
+	var sortedRuntimes []string
+	for runtime := range neededRuntimes {
+		sortedRuntimes = append(sortedRuntimes, runtime)
+	}
+	sort.Strings(sortedRuntimes)
+
+	for _, runtime := range sortedRuntimes {
+		sb.WriteString(fmt.Sprintf("    - %s@%s\n", runtime, runtimeVersions[runtime]))
+	}
+}
+
+// buildToolsSection builds the tools section of the configuration
+func buildToolsSection(sb *strings.Builder, tools []domain.Tool, toolsMap map[string]bool, toolVersions map[string]string, defaultVersions map[string]string) {
+	sb.WriteString("tools:\n")
+
+	if len(tools) > 0 {
+		writeEnabledTools(sb, toolsMap, toolVersions)
+	} else {
+		writeAllSupportedTools(sb, defaultVersions)
+	}
+}
+
+// writeEnabledTools writes the enabled tools to the string builder
+func writeEnabledTools(sb *strings.Builder, toolsMap map[string]bool, toolVersions map[string]string) {
+	var sortedTools []string
+	for uuid, meta := range domain.SupportedToolsMetadata {
+		if toolsMap[uuid] {
+			sortedTools = append(sortedTools, meta.Name)
+		}
+	}
+	sort.Strings(sortedTools)
+
+	for _, name := range sortedTools {
+		for uuid, meta := range domain.SupportedToolsMetadata {
+			if meta.Name == name && toolsMap[uuid] {
+				version := toolVersions[uuid]
+				sb.WriteString(fmt.Sprintf("    - %s@%s\n", name, version))
+				break
+			}
+		}
+	}
+}
+
+// writeAllSupportedTools writes all supported tools to the string builder
+func writeAllSupportedTools(sb *strings.Builder, defaultVersions map[string]string) {
+	supportedTools, err := plugins.GetSupportedTools()
+	if err != nil {
+		log.Printf("Warning: failed to get supported tools: %v", err)
+		return
+	}
+
+	var sortedTools []string
+	for toolName := range supportedTools {
+		if version, ok := defaultVersions[toolName]; ok && version != "" {
+			sortedTools = append(sortedTools, toolName)
+		}
+	}
+	sort.Strings(sortedTools)
+
+	for _, toolName := range sortedTools {
+		if version, ok := defaultVersions[toolName]; ok {
+			sb.WriteString(fmt.Sprintf("    - %s@%s\n", toolName, version))
+		}
+	}
 }
 
 func BuildRepositoryConfigurationFiles(flags domain.InitFlags) error {
@@ -264,7 +406,7 @@ func BuildRepositoryConfigurationFiles(flags domain.InitFlags) error {
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
 
 	// Create tools-configs directory if it doesn't exist
-	if err := os.MkdirAll(toolsConfigDir, utils.DefaultDirPerms); err != nil {
+	if err := os.MkdirAll(toolsConfigDir, constants.DefaultDirPerms); err != nil {
 		return fmt.Errorf("failed to create tools-configs directory: %w", err)
 	}
 
@@ -280,6 +422,27 @@ func BuildRepositoryConfigurationFiles(flags domain.InitFlags) error {
 
 	toolsWithLatestVersion, uuidToName, familyToVersions := KeepToolsWithLatestVersion(apiTools)
 
+	logVersionConflicts(familyToVersions, toolsWithLatestVersion)
+
+	// Create main config files with all enabled API tools (including cli-config.yaml)
+	if err := CreateConfigurationFiles(toolsWithLatestVersion, false); err != nil {
+		return err
+	}
+
+	// Generate languages configuration based on API tools response (after cli-config.yaml is created)
+	if err := tools.CreateLanguagesConfigFile(toolsWithLatestVersion, toolsConfigDir, uuidToName, flags); err != nil {
+		return fmt.Errorf("failed to create languages configuration file: %w", err)
+	}
+
+	// Filter out any tools that use configuration file
+	configuredToolsWithUI := tools.FilterToolsByConfigUsage(toolsWithLatestVersion)
+
+	// Generate config files for tools not using their own config file
+	return createToolConfigurationFiles(configuredToolsWithUI, flags)
+}
+
+// logVersionConflicts logs warnings about multiple versions of the same tool family
+func logVersionConflicts(familyToVersions map[string][]string, toolsWithLatestVersion []domain.Tool) {
 	for family, versions := range familyToVersions {
 		if len(versions) > 1 {
 			kept := ", "
@@ -292,141 +455,71 @@ func BuildRepositoryConfigurationFiles(flags domain.InitFlags) error {
 			fmt.Printf("⚠️  Multiple versions of '%s' detected: [%s], keeping %s\n", family, strings.Join(versions, ", "), kept)
 		}
 	}
+}
 
-	// Generate languages configuration based on API tools response
-	if err := tools.CreateLanguagesConfigFile(toolsWithLatestVersion, toolsConfigDir, uuidToName, flags); err != nil {
-		return fmt.Errorf("failed to create languages configuration file: %w", err)
-	}
-
-	// Filter out any tools that use configuration file
-	configuredToolsWithUI := tools.FilterToolsByConfigUsage(toolsWithLatestVersion)
-
-	// Create main config files with all enabled API tools
-	err = CreateConfigurationFiles(toolsWithLatestVersion, false)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Only generate config files for tools not using their own config file
-	for _, tool := range configuredToolsWithUI {
-
+// createToolConfigurationFiles creates configuration files for the given tools
+func createToolConfigurationFiles(tools []domain.Tool, flags domain.InitFlags) error {
+	for _, tool := range tools {
 		apiToolConfigurations, err := codacyclient.GetRepositoryToolPatterns(flags, tool.Uuid)
-
 		if err != nil {
 			fmt.Println("Error unmarshaling tool configurations:", err)
 			return err
 		}
 
-		createToolFileConfigurations(tool, apiToolConfigurations)
-	}
-
-	return nil
-}
-
-// map tool uuid to tool name
-func createToolFileConfigurations(tool domain.Tool, patternConfiguration []domain.PatternConfiguration) error {
-	toolsConfigDir := config.Config.ToolsConfigDirectory()
-	switch tool.Uuid {
-	case domain.ESLint, domain.ESLint9:
-		err := tools.CreateEslintConfig(toolsConfigDir, patternConfiguration)
-		if err != nil {
-			return fmt.Errorf("failed to write eslint config: %v", err)
+		if err := createToolFileConfiguration(tool, apiToolConfigurations); err != nil {
+			return err
 		}
-		fmt.Println("ESLint configuration created based on Codacy settings. Ignoring plugin rules. ESLint plugins are not supported yet.")
-	case domain.Trivy:
-		err := createTrivyConfigFile(patternConfiguration, toolsConfigDir)
-		if err != nil {
-			return fmt.Errorf("failed to create Trivy config: %v", err)
-		}
-		fmt.Println("Trivy configuration created based on Codacy settings")
-	case domain.PMD:
-		err := createPMDConfigFile(patternConfiguration, toolsConfigDir)
-		if err != nil {
-			return fmt.Errorf("failed to create PMD config: %v", err)
-		}
-	case domain.PMD7:
-		err := createPMD7ConfigFile(patternConfiguration, toolsConfigDir)
-		if err != nil {
-			return fmt.Errorf("failed to create PMD7 config: %v", err)
-		}
-		fmt.Println("PMD7 configuration created based on Codacy settings")
-	case domain.PyLint:
-		err := createPylintConfigFile(patternConfiguration, toolsConfigDir)
-		if err != nil {
-			return fmt.Errorf("failed to create Pylint config: %v", err)
-		}
-		fmt.Println("Pylint configuration created based on Codacy settings")
-	case domain.DartAnalyzer:
-		err := createDartAnalyzerConfigFile(patternConfiguration, toolsConfigDir)
-		if err != nil {
-			return fmt.Errorf("failed to create Dart Analyzer config: %v", err)
-		}
-		fmt.Println("Dart configuration created based on Codacy settings")
-	case domain.Semgrep:
-		err := createSemgrepConfigFile(patternConfiguration, toolsConfigDir)
-		if err != nil {
-			return fmt.Errorf("failed to create Semgrep config: %v", err)
-		}
-		fmt.Println("Semgrep configuration created based on Codacy settings")
-	case domain.Lizard:
-		err := createLizardConfigFile(toolsConfigDir, patternConfiguration)
-		if err != nil {
-			return fmt.Errorf("failed to create Lizard config: %v", err)
-		}
-		fmt.Println("Lizard configuration created based on Codacy settings")
 	}
 	return nil
 }
 
-func createPMDConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
-	pmdConfigurationString := tools.CreatePmd6Config(config)
-	return os.WriteFile(filepath.Join(toolsConfigDir, "ruleset.xml"), []byte(pmdConfigurationString), utils.DefaultFilePerms)
-}
+// CreateToolConfigurationFile creates a configuration file for a single tool
+func CreateToolConfigurationFile(toolName string, flags domain.InitFlags) error {
+	// Find the tool UUID by tool name
+	toolUuid := getToolUuidByName(toolName)
+	if toolUuid == "" {
+		return fmt.Errorf("tool '%s' not found in supported tools", toolName)
+	}
 
-func createPMD7ConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
-	pmdConfigurationString := tools.CreatePmd7Config(config)
-	return os.WriteFile(filepath.Join(toolsConfigDir, "ruleset.xml"), []byte(pmdConfigurationString), utils.DefaultFilePerms)
-}
-
-func createPylintConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
-	pylintConfigurationString := pylint.GeneratePylintRC(config)
-	return os.WriteFile(filepath.Join(toolsConfigDir, "pylint.rc"), []byte(pylintConfigurationString), utils.DefaultFilePerms)
-}
-
-// createTrivyConfigFile creates a trivy.yaml configuration file based on the API configuration
-func createTrivyConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
-
-	trivyConfigurationString := tools.CreateTrivyConfig(config)
-
-	// Write to file
-	return os.WriteFile(filepath.Join(toolsConfigDir, "trivy.yaml"), []byte(trivyConfigurationString), utils.DefaultFilePerms)
-}
-
-func createDartAnalyzerConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
-
-	dartAnalyzerConfigurationString := tools.CreateDartAnalyzerConfig(config)
-	return os.WriteFile(filepath.Join(toolsConfigDir, "analysis_options.yaml"), []byte(dartAnalyzerConfigurationString), utils.DefaultFilePerms)
-}
-
-// SemgrepRulesFile represents the structure of the rules.yaml file
-type SemgrepRulesFile struct {
-	Rules []map[string]interface{} `yaml:"rules"`
-}
-
-// createSemgrepConfigFile creates a semgrep.yaml configuration file based on the API configuration
-func createSemgrepConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
-	// Use the refactored function from tools package
-	configData, err := tools.GetSemgrepConfig(config)
-
+	patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(flags, toolUuid)
 	if err != nil {
-		return fmt.Errorf("failed to create Semgrep config: %v", err)
+		return fmt.Errorf("failed to get default patterns: %w", err)
 	}
 
-	// Write to file
-	return os.WriteFile(filepath.Join(toolsConfigDir, "semgrep.yaml"), configData, utils.DefaultFilePerms)
+	// Get the tool object to pass to createToolFileConfiguration
+	tool := domain.Tool{Uuid: toolUuid}
+	return createToolFileConfiguration(tool, patternsConfig)
 }
 
-// cleanConfigDirectory removes all previous configuration files in the tools-configs directory
+// getToolUuidByName finds the UUID for a tool given its name
+func getToolUuidByName(toolName string) string {
+	for uuid, toolInfo := range domain.SupportedToolsMetadata {
+		if toolInfo.Name == toolName {
+			return uuid
+		}
+	}
+	return ""
+}
+
+// createToolFileConfiguration creates a configuration file for a single tool using the registry
+func createToolFileConfiguration(tool domain.Tool, patternConfiguration []domain.PatternConfiguration) error {
+	creator, exists := toolConfigRegistry[tool.Uuid]
+	if !exists {
+		// Tool doesn't have a configuration creator - this is not an error
+		return nil
+	}
+
+	toolsConfigDir := config.Config.ToolsConfigDirectory()
+
+	// Ensure the tools-configs directory exists
+	if err := os.MkdirAll(toolsConfigDir, constants.DefaultDirPerms); err != nil {
+		return fmt.Errorf("failed to create tools-configs directory: %w", err)
+	}
+
+	return creator.CreateConfig(toolsConfigDir, patternConfiguration)
+}
+
+// CleanConfigDirectory removes all previous configuration files in the tools-configs directory
 func CleanConfigDirectory(toolsConfigDir string) error {
 	// Check if directory exists
 	if _, err := os.Stat(toolsConfigDir); os.IsNotExist(err) {
@@ -453,60 +546,32 @@ func CleanConfigDirectory(toolsConfigDir string) error {
 	return nil
 }
 
-func createLizardConfigFile(toolsConfigDir string, patternConfiguration []domain.PatternConfiguration) error {
-	patterns := make([]domain.PatternDefinition, len(patternConfiguration))
-	for i, pattern := range patternConfiguration {
-		patterns[i] = pattern.PatternDefinition
-
-	}
-	err := lizard.CreateLizardConfig(toolsConfigDir, patterns)
-	if err != nil {
-		return fmt.Errorf("failed to create Lizard configuration: %w", err)
-	}
-	return nil
+func createReviveConfigFile(config []domain.PatternConfiguration, toolsConfigDir string) error {
+	reviveConfigurationString := reviveTool.GenerateReviveConfig(config)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "revive.toml"), []byte(reviveConfigurationString), constants.DefaultFilePerms)
 }
 
-// buildDefaultConfigurationFiles creates default configuration files for all tools
+// BuildDefaultConfigurationFiles creates default configuration files for all tools
 func BuildDefaultConfigurationFiles(toolsConfigDir string, flags domain.InitFlags) error {
-	for uuid := range domain.SupportedToolsMetadata {
-		patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(flags, uuid)
-		if err != nil {
-			return fmt.Errorf("failed to get default tool patterns config: %w", err)
-		}
-		switch uuid {
-		case domain.ESLint:
-			if err := tools.CreateEslintConfig(toolsConfigDir, patternsConfig); err != nil {
-				return fmt.Errorf("failed to create eslint config file: %v", err)
-			}
-		case domain.Trivy:
-			if err := createTrivyConfigFile(patternsConfig, toolsConfigDir); err != nil {
-				return fmt.Errorf("failed to create default Trivy configuration: %w", err)
-			}
-		case domain.PMD:
-			if err := createPMDConfigFile(patternsConfig, toolsConfigDir); err != nil {
-				return fmt.Errorf("failed to create default PMD configuration: %w", err)
-			}
-		case domain.PyLint:
-			if err := createPylintConfigFile(patternsConfig, toolsConfigDir); err != nil {
-				return fmt.Errorf("failed to create default Pylint configuration: %w", err)
-			}
-		case domain.DartAnalyzer:
-			if err := createDartAnalyzerConfigFile(patternsConfig, toolsConfigDir); err != nil {
-				return fmt.Errorf("failed to create default Dart Analyzer configuration: %w", err)
-			}
-		case domain.Semgrep:
-			if err := createSemgrepConfigFile(patternsConfig, toolsConfigDir); err != nil {
-				return fmt.Errorf("failed to create default Semgrep configuration: %w", err)
-			}
-		case domain.Lizard:
-			if err := createLizardConfigFile(toolsConfigDir, patternsConfig); err != nil {
-				return fmt.Errorf("failed to create default Lizard configuration: %w", err)
-			}
-		case domain.PMD7, domain.ESLint9:
-			continue
+	// Get default tool versions to determine correct UUIDs
+	defaultVersions := plugins.GetToolVersions()
+
+	// Get unique tool names from metadata
+	toolNames := make(map[string]struct{})
+	for _, meta := range domain.SupportedToolsMetadata {
+		toolNames[meta.Name] = struct{}{}
+	}
+
+	// Convert tool names to correct UUIDs based on versions
+	var allUUIDs []string
+	for toolName := range toolNames {
+		uuid := selectCorrectToolUUID(toolName, defaultVersions)
+		if uuid != "" {
+			allUUIDs = append(allUUIDs, uuid)
 		}
 	}
-	return nil
+
+	return createToolConfigurationsForUUIDs(allUUIDs, toolsConfigDir, flags)
 }
 
 // KeepToolsWithLatestVersion filters the tools to keep only the latest version of each tool family.
@@ -555,4 +620,158 @@ func KeepToolsWithLatestVersion(tools []domain.Tool) (
 	}
 
 	return
+}
+
+// CreateConfigurationFilesForDiscoveredTools creates tool configuration files for discovered tools
+func CreateConfigurationFilesForDiscoveredTools(discoveredToolNames map[string]struct{}, toolsConfigDir string, initFlags domain.InitFlags) error {
+	// Determine CLI mode
+	currentCliMode, err := config.Config.GetCliMode()
+	if err != nil {
+		log.Printf("Warning: Could not determine CLI mode: %v. Assuming local mode for tool configuration creation.", err)
+		currentCliMode = "local" // Default to local
+	}
+
+	if currentCliMode == "remote" && initFlags.ApiToken != "" {
+		// Remote mode - create configurations based on cloud repository settings
+		return createRemoteToolConfigurationsForDiscovered(discoveredToolNames, initFlags)
+	} else {
+		// Local mode - create default configurations for discovered tools
+		return createDefaultConfigurationsForSpecificTools(discoveredToolNames, toolsConfigDir, initFlags)
+	}
+}
+
+// createRemoteToolConfigurationsForDiscovered creates tool configurations for remote mode based on cloud settings
+func createRemoteToolConfigurationsForDiscovered(discoveredToolNames map[string]struct{}, initFlags domain.InitFlags) error {
+	// Get repository tools from API
+	apiTools, err := tools.GetRepositoryTools(initFlags)
+	if err != nil {
+		return fmt.Errorf("failed to get repository tools from cloud: %w", err)
+	}
+
+	// Filter to only tools that were discovered and enabled in cloud
+	var enabledDiscoveredTools []domain.Tool
+	for _, tool := range apiTools {
+		if tool.Settings.Enabled {
+			if meta, ok := domain.SupportedToolsMetadata[tool.Uuid]; ok {
+				if _, discovered := discoveredToolNames[meta.Name]; discovered {
+					enabledDiscoveredTools = append(enabledDiscoveredTools, tool)
+				}
+			}
+		}
+	}
+
+	if len(enabledDiscoveredTools) == 0 {
+		fmt.Println("No discovered tools are enabled in cloud configuration.")
+		return nil
+	}
+
+	// Filter out tools that use their own configuration files
+	configuredTools := tools.FilterToolsByConfigUsage(enabledDiscoveredTools)
+
+	fmt.Printf("Creating configurations for %d discovered tools enabled in cloud...\n", len(configuredTools))
+
+	// Create configuration files for each tool using existing logic
+	return createToolConfigurationFiles(configuredTools, initFlags)
+}
+
+// selectCorrectToolUUID selects the correct UUID for a tool based on its version
+func selectCorrectToolUUID(toolName string, defaultVersions map[string]string) string {
+	version, hasVersion := defaultVersions[toolName]
+
+	// Special case for PMD: choose PMD7 UUID for version 7.x, PMD UUID for version 6.x
+	if toolName == "pmd" && hasVersion {
+		if strings.HasPrefix(version, "7.") {
+			return domain.PMD7
+		} else {
+			return domain.PMD
+		}
+	}
+
+	// Special case for ESLint: choose ESLint9 UUID for version 9.x, ESLint UUID for older versions
+	if toolName == "eslint" && hasVersion {
+		if strings.HasPrefix(version, "9.") {
+			return domain.ESLint9
+		} else {
+			return domain.ESLint
+		}
+	}
+
+	// For other tools, find the first matching UUID
+	for uuid, meta := range domain.SupportedToolsMetadata {
+		if meta.Name == toolName {
+			return uuid
+		}
+	}
+
+	return ""
+}
+
+// createDefaultConfigurationsForSpecificTools creates default configurations for specific tools only
+func createDefaultConfigurationsForSpecificTools(discoveredToolNames map[string]struct{}, toolsConfigDir string, initFlags domain.InitFlags) error {
+	fmt.Printf("Creating default configurations for %d discovered tools...\n", len(discoveredToolNames))
+
+	// Get default tool versions to determine correct UUIDs
+	defaultVersions := plugins.GetToolVersions()
+
+	// Convert tool names to UUIDs, selecting the correct UUID based on version
+	var discoveredUUIDs []string
+	for toolName := range discoveredToolNames {
+		uuid := selectCorrectToolUUID(toolName, defaultVersions)
+		if uuid != "" {
+			discoveredUUIDs = append(discoveredUUIDs, uuid)
+		}
+	}
+
+	if len(discoveredUUIDs) == 0 {
+		log.Printf("Warning: No recognized tools found among discovered tools")
+		return nil
+	}
+
+	// Create configurations for discovered tools only
+	return createToolConfigurationsForUUIDs(discoveredUUIDs, toolsConfigDir, initFlags)
+}
+
+// createToolConfigurationsForUUIDs creates tool configurations for specific UUIDs
+func createToolConfigurationsForUUIDs(uuids []string, toolsConfigDir string, initFlags domain.InitFlags) error {
+	for _, uuid := range uuids {
+		patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(initFlags, uuid)
+		if err != nil {
+			logToolConfigWarning(uuid, "Failed to get default patterns", err)
+			continue
+		}
+
+		if err := createSingleToolConfiguration(uuid, patternsConfig, toolsConfigDir); err != nil {
+			logToolConfigWarning(uuid, "Failed to create configuration", err)
+			continue
+		}
+
+		// Print success message
+		if meta, ok := domain.SupportedToolsMetadata[uuid]; ok {
+			fmt.Printf("Created %s configuration\n", meta.Name)
+		}
+	}
+
+	return nil
+}
+
+// logToolConfigWarning logs a warning message for tool configuration issues
+func logToolConfigWarning(uuid, message string, err error) {
+	if meta, ok := domain.SupportedToolsMetadata[uuid]; ok {
+		log.Printf("Warning: %s for %s: %v", message, meta.Name, err)
+	} else {
+		log.Printf("Warning: %s for UUID %s: %v", message, uuid, err)
+	}
+}
+
+// createSingleToolConfiguration creates a single tool configuration file based on UUID using the registry
+func createSingleToolConfiguration(uuid string, patternsConfig []domain.PatternConfiguration, toolsConfigDir string) error {
+	creator, exists := toolConfigRegistry[uuid]
+	if !exists {
+		if meta, ok := domain.SupportedToolsMetadata[uuid]; ok {
+			return fmt.Errorf("configuration creation not implemented for tool %s", meta.Name)
+		}
+		return fmt.Errorf("configuration creation not implemented for UUID %s", uuid)
+	}
+
+	return creator.CreateConfig(toolsConfigDir, patternsConfig)
 }

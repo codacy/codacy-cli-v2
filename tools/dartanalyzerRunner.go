@@ -3,6 +3,7 @@ package tools
 import (
 	"bufio"
 	"bytes"
+	"codacy/cli-v2/constants"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -121,7 +122,7 @@ func RunDartAnalyzer(workDirectory string, installationDirectory string, binary 
 		// Write SARIF output to file if specified
 		if outputFile != "" {
 			sarifJson, _ := json.MarshalIndent(sarif, "", "  ")
-			err := os.WriteFile(outputFile, sarifJson, 0644)
+			err := os.WriteFile(outputFile, sarifJson, constants.DefaultFilePerms)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error writing SARIF output: %v\n", err)
 			}
