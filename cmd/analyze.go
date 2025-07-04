@@ -437,13 +437,6 @@ func validatePaths(paths []string) error {
 	return nil
 }
 
-func validateCloudMode(cliLocalMode bool) error {
-	if cliLocalMode {
-		fmt.Println("Warning: cannot run in cloud mode")
-	}
-	return nil
-}
-
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Analyze code using configured tools",
@@ -464,8 +457,6 @@ Supports API token, provider, and repository flags to automatically fetch tool c
 		}
 
 		cliLocalMode := len(initFlags.ApiToken) == 0
-
-		validateCloudMode(cliLocalMode)
 
 		var toolsToRun map[string]*plugins.ToolInfo
 

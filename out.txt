@@ -1,0 +1,146 @@
+Warning: cannot run in cloud mode
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "toolExecutionNotifications": []
+        }
+      ],
+      "results": [],
+      "tool": {
+        "driver": {
+          "name": "Semgrep OSS",
+          "rules": null,
+          "semanticVersion": "1.78.0"
+        }
+      }
+    },
+    {
+      "columnKind": "utf16CodeUnits",
+      "originalUriBaseIds": {
+        "ROOTPATH": {
+          "uri": "file:///Users/czak/GIT/codacy/codacy-cli-v2/example_1.ts/"
+        }
+      },
+      "results": [],
+      "tool": {
+        "driver": {
+          "fullName": "Trivy Vulnerability Scanner",
+          "informationUri": "https://github.com/aquasecurity/trivy",
+          "name": "Trivy",
+          "rules": null,
+          "version": "0.59.1"
+        }
+      }
+    },
+    {
+      "artifacts": [
+        {
+          "location": {
+            "uri": "file:///Users/czak/GIT/codacy/codacy-cli-v2/example_1.ts"
+          }
+        }
+      ],
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "toolConfigurationNotifications": [
+            {
+              "descriptor": {
+                "id": "ESL0999"
+              },
+              "level": "warning",
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "index": 0,
+                      "uri": "file:///Users/czak/GIT/codacy/codacy-cli-v2/example_1.ts"
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "File ignored because no matching configuration was supplied."
+              }
+            }
+          ]
+        }
+      ],
+      "results": [],
+      "tool": {
+        "driver": {
+          "informationUri": "https://eslint.org",
+          "name": "ESLint",
+          "rules": null,
+          "version": "9.26.0"
+        }
+      }
+    },
+    {
+      "results": [
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "example_1.ts"
+                },
+                "region": {
+                  "startColumn": 1,
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Parsing failed: 'invalid syntax (example_1, line 1)'"
+          },
+          "ruleId": "syntax-error"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://pylint.org",
+          "name": "Pylint",
+          "rules": null,
+          "version": "3.3.6"
+        }
+      }
+    },
+    {
+      "results": [
+        {
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "example_1.ts"
+                },
+                "region": {
+                  "startColumn": 1,
+                  "startLine": 3
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "invalid file example_1.ts: example_1.ts:3:1: expected 'package', found 'import' (and 4 more errors)"
+          }
+        }
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://github.com/mgechev/revive",
+          "name": "revive",
+          "rules": null
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}
