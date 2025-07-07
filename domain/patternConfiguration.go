@@ -36,3 +36,12 @@ type PatternResponse struct {
 	IsCustom          bool                     `json:"isCustom"`
 	Parameters        []ParameterConfiguration `json:"parameters"`
 }
+
+type SarifPatternConfiguration struct {
+	UUID        string `json:"uuid"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Category    string `json:"category"`
+	Description string `json:"description"`
+	Level       string `json:"level"`
+}

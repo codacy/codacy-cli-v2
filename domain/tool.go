@@ -7,10 +7,13 @@ type ToolsResponse struct {
 
 // Tool represents a tool in the Codacy API
 type Tool struct {
-	Uuid     string `json:"uuid"`
-	Name     string `json:"name"`
-	Version  string `json:"version"`
-	Settings struct {
+	Uuid      string   `json:"uuid"`
+	Name      string   `json:"name"`
+	Version   string   `json:"version"`
+	ShortName string   `json:"shortName"`
+	Prefix    string   `json:"prefix"`
+	Languages []string `json:"languages"`
+	Settings  struct {
 		Enabled               bool `json:"isEnabled"`
 		HasConfigurationFile  bool `json:"hasConfigurationFile"`
 		UsesConfigurationFile bool `json:"usesConfigurationFile"`
@@ -28,6 +31,7 @@ const (
 	Semgrep      string = "6792c561-236d-41b7-ba5e-9d6bee0d548b"
 	Lizard       string = "76348462-84b3-409a-90d3-955e90abfb87"
 	SolidGrader  string = "716FCE5C-F5E8-4B9D-A7D2-86CDFAE79D45"
+	Revive       string = "bd81d1f4-1406-402d-9181-1274ee09f1aa"
 )
 
 type ToolInfo struct {
@@ -47,4 +51,5 @@ var SupportedToolsMetadata = map[string]ToolInfo{
 	Lizard:       {Name: "lizard", Priority: 0},
 	Semgrep:      {Name: "semgrep", Priority: 0},
 	SolidGrader:  {Name: "solid_grader", Priority: 0},
+	Revive:       {Name: "revive", Priority: 0},
 }

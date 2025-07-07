@@ -16,21 +16,228 @@ fi
 # Function to normalize and sort configuration values
 normalize_config() {
   local file=$1
-  local ext="${file##*.}"
-  
-  case "$ext" in
-    yaml|yml)
-      # For YAML files, use yq to sort
-      yq e '.' "$file" | sort
-      ;;
-    rc|conf|ini)
-      # For other config files, sort values after '=' and keep other lines
-      awk -F'=' '
-        /^[^#].*=.*,/ {
-          split($2, values, ",")
-          # Sort values using a simple bubble sort
-          for (i=1; i<=length(values); i++) {
-            for (j=i+1; j<=length(values); j++) {
+  # Check for specific files first, then fall back to extension
+  if [[ "$file" == *"languages-config.yaml" ]]; then
+    normalize_languages_config "$file"
+  else
+    local ext="${file##*.}"
+    
+    case "$ext" in
+      yaml|yml)
+        normalize_yaml_config "$file"
+        ;;
+      mjs|js)
+        normalize_eslint_config "$file"
+        ;;
+      toml)
+        normalize_toml_config "$file"
+        ;;
+      rc|conf|ini)
+        normalize_rc_config "$file"
+        ;;
+      xml)
+        normalize_xml_config "$file"
+        ;;
+      *)
+        # For other files, just sort
+        sort "$file"
+        ;;
+    esac
+  fi
+}
+
+# Normalize YAML configuration files
+# Normalize languages-config.yaml specifically
+normalize_languages_config() {
+  local file=$1
+  # Sort tools by name using yq if available
+  if command -v yq >/dev/null 2>&1; then
+    yq e '.tools |= sort_by(.name) | sort_keys(.)' "$file" 2>/dev/null || cat "$file"
+  else
+    # Fallback: manual sorting using awk
+    awk '
+      BEGIN { in_tools = 0; current_tool = ""; tools_count = 0; }
+      /^tools:/ { 
+        print; 
+        in_tools = 1; 
+        next 
+      }
+      in_tools && /^  - name:/ { 
+        # Start of new tool - save previous if exists
+        if (current_tool != "") {
+          tool_names[tools_count] = tool_name
+          tool_blocks[tools_count] = current_tool
+          tools_count++
+        }
+        # Extract tool name
+        tool_name = $0
+        gsub(/^.*name: */, "", tool_name)
+        current_tool = $0 "\n"
+        next 
+      }
+      in_tools && /^    / { 
+        # Part of current tool
+        current_tool = current_tool $0 "\n"
+        next 
+      }
+      in_tools && /^[^ ]/ { 
+        # End of tools section
+        if (current_tool != "") {
+          tool_names[tools_count] = tool_name
+          tool_blocks[tools_count] = current_tool
+          tools_count++
+        }
+        # Sort and print tools
+        for (i = 0; i < tools_count; i++) {
+          for (j = i+1; j < tools_count; j++) {
+            if (tool_names[i] > tool_names[j]) {
+              # Swap names
+              temp_name = tool_names[i]
+              tool_names[i] = tool_names[j]
+              tool_names[j] = temp_name
+              # Swap blocks
+              temp_block = tool_blocks[i]
+              tool_blocks[i] = tool_blocks[j]
+              tool_blocks[j] = temp_block
+            }
+          }
+        }
+        for (i = 0; i < tools_count; i++) {
+          printf "%s", tool_blocks[i]
+        }
+        in_tools = 0
+        print
+        next
+      }
+      !in_tools { print }
+      END {
+        # Handle case where file ends while in tools section
+        if (in_tools && current_tool != "") {
+          tool_names[tools_count] = tool_name
+          tool_blocks[tools_count] = current_tool
+          tools_count++
+          # Sort and print tools
+          for (i = 0; i < tools_count; i++) {
+            for (j = i+1; j < tools_count; j++) {
+              if (tool_names[i] > tool_names[j]) {
+                temp_name = tool_names[i]
+                tool_names[i] = tool_names[j]
+                tool_names[j] = temp_name
+                temp_block = tool_blocks[i]
+                tool_blocks[i] = tool_blocks[j]
+                tool_blocks[j] = temp_block
+              }
+            }
+          }
+          for (i = 0; i < tools_count; i++) {
+            printf "%s", tool_blocks[i]
+          }
+        }
+      }
+    ' "$file"
+  fi
+}
+
+normalize_yaml_config() {
+  local file=$1
+  # For YAML files, use yq to sort while preserving structure
+  if command -v yq >/dev/null 2>&1; then
+    yq e 'sort_keys(.)' "$file" 2>/dev/null || cat "$file"
+  else
+    # Fallback: just return the file as-is to preserve YAML structure
+    cat "$file"
+  fi
+}
+
+# Normalize ESLint configuration files (.mjs/.js)
+normalize_eslint_config() {
+  local file=$1
+  # Sort the rule lines within the rules object and normalize JSON object properties
+  awk '
+    /rules: \{/ { 
+      print; 
+      inRules = 1; 
+      next 
+    }
+    inRules && /^\s*\}/ { 
+      # Print collected rules in sorted order using pipe to sort
+      for (rule in rules) {
+        print rules[rule] | "sort"
+      }
+      close("sort")
+      delete rules
+      inRules = 0
+      print
+      next
+    }
+    inRules { 
+      # Normalize JSON object properties within rule configurations
+      line = $0
+      # Look for JSON objects like {"key1": value1, "key2": value2}
+      if (match(line, /\{[^}]*\}/)) {
+        # Extract the JSON object
+        obj_start = RSTART
+        obj_len = RLENGTH
+        before = substr(line, 1, obj_start-1)
+        obj = substr(line, obj_start, obj_len)
+        after = substr(line, obj_start+obj_len)
+        
+        # Parse and sort the object properties
+        if (match(obj, /^\{.*\}$/)) {
+          # Remove braces and split by comma
+          content = substr(obj, 2, length(obj)-2)
+          gsub(/^\s+|\s+$/, "", content)  # trim spaces
+          
+          if (content != "") {
+            # Split by comma (simple approach)
+            n = split(content, parts, /,\s*/)
+            # Sort the parts
+            for (i = 1; i <= n; i++) {
+              for (j = i+1; j <= n; j++) {
+                if (parts[i] > parts[j]) {
+                  temp = parts[i]
+                  parts[i] = parts[j]
+                  parts[j] = temp
+                }
+              }
+            }
+            # Reconstruct the object
+            new_obj = "{"
+            for (i = 1; i <= n; i++) {
+              if (i > 1) new_obj = new_obj ", "
+              new_obj = new_obj parts[i]
+            }
+            new_obj = new_obj "}"
+            line = before new_obj after
+          }
+        }
+      }
+      # Collect rule lines for sorting
+      rules[NR] = line
+      next 
+    }
+    { print }
+  ' "$file"
+}
+
+# Normalize TOML configuration files
+normalize_toml_config() {
+  local file=$1
+  # Handle TOML arrays and key-value pairs
+  awk -F'=' '
+    /^[^#].*=.*\[.*\]/ {
+      # Handle TOML arrays like: rules = ["a", "b", "c"]
+      # Extract array content using substr and index instead of match with array
+      start = index($2, "[")
+      end = index($2, "]")
+      if (start > 0 && end > start) {
+        array_content = substr($2, start+1, end-start-1)
+        if (array_content) {
+          # Split and sort values
+          n = split(array_content, values, /,\s*/)
+          # Sort using a simple bubble sort since asort is not available
+          for (i = 1; i <= n; i++) {
+            for (j = i+1; j <= n; j++) {
               if (values[i] > values[j]) {
                 temp = values[i]
                 values[i] = values[j]
@@ -38,36 +245,250 @@ normalize_config() {
               }
             }
           }
-          printf "%s=", $1
-          for (i=1; i<=length(values); i++) {
-            if (i>1) printf ","
+          printf "%s=[", $1
+          for (i=1; i<=n; i++) {
+            if (i>1) printf ", "
             printf "%s", values[i]
           }
-          print ""
+          print "]"
           next
         }
-        { print }
-      ' "$file" | sort
-      ;;
-    xml)
-      # For XML files, ignore order of <rule ref=.../> lines and strip leading spaces
-      awk '
-        BEGIN { n = 0; end = ""; }
-        /^ *<rule ref=/ { rules[++n] = $0; next }
-        /^ *<\/ruleset>/ { end = $0; next }
-        { gsub(/^ +/, "", $0); print }
-        END {
-          n = asort(rules, sorted_rules)
-          for (i = 1; i <= n; i++) print sorted_rules[i]
-          if (end) print end
+      }
+    }
+    /^[^#].*=.*,/ {
+      # Handle simple comma-separated values
+      n = split($2, values, ",")
+      # Sort using bubble sort
+      for (i = 1; i <= n; i++) {
+        for (j = i+1; j <= n; j++) {
+          if (values[i] > values[j]) {
+            temp = values[i]
+            values[i] = values[j]
+            values[j] = temp
+          }
         }
-      ' "$file"
-      ;;
-    *)
-      # For other files, just sort
-      sort "$file"
-      ;;
-  esac
+      }
+      printf "%s=", $1
+      for (i=1; i<=n; i++) {
+        if (i>1) printf ","
+        printf "%s", values[i]
+      }
+      print ""
+      next
+    }
+    { print }
+  ' "$file" | sort
+}
+
+# Normalize RC/INI configuration files
+normalize_rc_config() {
+  local file=$1
+  # Handle key-value pairs with comma-separated values
+  awk -F'=' '
+    /^[^#].*=.*,/ {
+      n = split($2, values, ",")
+      # Sort using bubble sort
+      for (i = 1; i <= n; i++) {
+        for (j = i+1; j <= n; j++) {
+          if (values[i] > values[j]) {
+            temp = values[i]
+            values[i] = values[j]
+            values[j] = temp
+          }
+        }
+      }
+      printf "%s=", $1
+      for (i=1; i<=n; i++) {
+        if (i>1) printf ","
+        printf "%s", values[i]
+      }
+      print ""
+      next
+    }
+    { print }
+  ' "$file" | sort
+}
+
+# Normalize XML configuration files
+normalize_xml_config() {
+  local file=$1
+  # Sort rule blocks and properties within properties blocks
+  awk '
+    BEGIN { 
+      rule_blocks_count = 0;
+      single_rules_count = 0; 
+      end = ""; 
+      in_rule_block = 0;
+      in_props = 0; 
+      props_count = 0;
+      current_rule_block = "";
+      current_rule_ref = "";
+    }
+    /^ *<rule ref=.*>$/ { 
+      # Start of a rule block with properties
+      in_rule_block = 1;
+      current_rule_ref = $0;
+      gsub(/^.*ref="/, "", current_rule_ref);
+      gsub(/".*$/, "", current_rule_ref);
+      current_rule_block = $0 "\n";
+      next 
+    }
+              /^ *<rule ref=.*\"\/>$/ { 
+       # Self-closing rule (no properties)
+       single_rules[++single_rules_count] = $0;
+       next 
+     }
+    in_rule_block && /^ *<properties>/ { 
+      in_props = 1; 
+      props_start = $0;
+      props_count = 0;
+      next 
+    }
+    in_rule_block && in_props && /^ *<\/properties>/ { 
+      in_props = 0; 
+      # Sort and add collected properties to rule block
+      current_rule_block = current_rule_block props_start "\n";
+      for (i = 1; i <= props_count; i++) {
+        for (j = i+1; j <= props_count; j++) {
+          if (props[i] > props[j]) {
+            temp = props[i]
+            props[i] = props[j]
+            props[j] = temp
+          }
+        }
+      }
+      for (i = 1; i <= props_count; i++) {
+        current_rule_block = current_rule_block props[i] "\n";
+      }
+      current_rule_block = current_rule_block $0 "\n";
+      props_count = 0;
+      next 
+    }
+    in_rule_block && in_props && /^ *<property/ { 
+      props[++props_count] = $0; 
+      next 
+    }
+         in_rule_block && /^ *<\/rule>/ { 
+       # End of rule block
+       current_rule_block = current_rule_block $0;
+       rule_block_refs[rule_blocks_count] = current_rule_ref;
+       rule_blocks[rule_blocks_count] = current_rule_block;
+       rule_blocks_count++;
+       in_rule_block = 0;
+       current_rule_block = "";
+       current_rule_ref = "";
+       next 
+     }
+    in_rule_block { 
+      # Part of current rule block
+      current_rule_block = current_rule_block $0 "\n";
+      next 
+    }
+    /^ *<\/ruleset>/ { 
+      end = $0; 
+      next 
+    }
+    { 
+      gsub(/^ +/, "", $0); 
+      print 
+    }
+    END {
+      # Sort rule blocks by reference
+      for (i = 0; i < rule_blocks_count; i++) {
+        for (j = i+1; j < rule_blocks_count; j++) {
+          if (rule_block_refs[i] > rule_block_refs[j]) {
+            temp_ref = rule_block_refs[i]
+            rule_block_refs[i] = rule_block_refs[j]
+            rule_block_refs[j] = temp_ref
+            temp_block = rule_blocks[i]
+            rule_blocks[i] = rule_blocks[j]
+            rule_blocks[j] = temp_block
+          }
+        }
+      }
+             # Print sorted rule blocks
+       for (i = 0; i < rule_blocks_count; i++) {
+         printf "%s\n", rule_blocks[i]
+       }
+      # Sort and print single rules
+      for (i = 1; i <= single_rules_count; i++) {
+        for (j = i+1; j <= single_rules_count; j++) {
+          if (single_rules[i] > single_rules[j]) {
+            temp = single_rules[i]
+            single_rules[i] = single_rules[j]
+            single_rules[j] = temp
+          }
+        }
+      }
+      for (i = 1; i <= single_rules_count; i++) print single_rules[i];
+      if (end) print end
+    }
+  ' "$file"
+}
+
+# Shared cleanup function for test directories
+cleanup_codacy() {
+  if [ -d ".codacy" ]; then
+    rm -rf .codacy
+    echo "🧹 Cleaned up .codacy directory"
+  fi
+}
+
+# Validate that languages-config.yaml exists and contains all tools from codacy.yaml
+validate_languages_config_contains_all_tools() {
+  local codacy_yaml=".codacy/codacy.yaml"
+  local languages_config=".codacy/tools-configs/languages-config.yaml"
+  
+  # Check that languages-config.yaml exists
+  if [ ! -f "$languages_config" ]; then
+    echo "❌ languages-config.yaml does not exist at $languages_config"
+    exit 1
+  fi
+  echo "✅ languages-config.yaml exists"
+  
+  # Extract tool names from codacy.yaml
+  if [ ! -f "$codacy_yaml" ]; then
+    echo "❌ codacy.yaml does not exist at $codacy_yaml"
+    exit 1
+  fi
+  
+  # Get tools from codacy.yaml (extract tool names before @ version, only from tools section)
+  codacy_tools=$(awk '
+    /^tools:/ { in_tools=1; next }
+    /^[a-zA-Z][^:]*:/ { in_tools=0 }
+    in_tools && /^\s*-\s+[a-zA-Z0-9_-]+@/ { 
+      gsub(/^\s*-\s*/, ""); 
+      gsub(/@.*$/, ""); 
+      print 
+    }
+  ' "$codacy_yaml" | sort || true)
+  
+  if [ -z "$codacy_tools" ]; then
+    echo "✅ No tools found in codacy.yaml, skipping validation"
+    return 0
+  fi
+  
+  echo "📋 Tools found in codacy.yaml:"
+  echo "$codacy_tools"
+  
+  # Check that each tool from codacy.yaml exists in languages-config.yaml
+  missing_tools=""
+  for tool in $codacy_tools; do
+    if ! grep -q "name: $tool" "$languages_config"; then
+      missing_tools="$missing_tools $tool"
+    fi
+  done
+  
+  if [ -n "$missing_tools" ]; then
+    echo "❌ The following tools from codacy.yaml are missing in languages-config.yaml:$missing_tools"
+    echo "=== Tools in codacy.yaml ==="
+    echo "$codacy_tools"
+    echo "=== Tools in languages-config.yaml ==="
+    grep "name:" "$languages_config" | sed 's/.*name: \(.*\)/\1/' | sort
+    exit 1
+  fi
+  
+  echo "✅ All tools from codacy.yaml are present in languages-config.yaml"
 }
 
 compare_files() {
@@ -129,21 +550,100 @@ run_init_test() {
   [ -d "$test_dir" ] || { echo "❌ Test directory does not exist: $test_dir"; exit 1; }
   
   cd "$test_dir" || exit 1
+  
+  # Clean up any previous test results
   rm -rf .codacy
   
   if [ "$use_token" = "true" ]; then
-    [ -n "$CODACY_API_TOKEN" ] || { echo "❌ Skipping token-based test: CODACY_API_TOKEN not set"; return 0; }
+    [ -n "$CODACY_API_TOKEN" ] || { 
+      echo "❌ Skipping token-based test: CODACY_API_TOKEN not set"
+      cleanup_codacy
+      return 0
+    }
     "$CLI_PATH" init --api-token "$CODACY_API_TOKEN" --organization troubleshoot-codacy-dev --provider gh --repository codacy-cli-test
   else
     "$CLI_PATH" init
   fi
   
   compare_files "expected" ".codacy" "Test $test_name"
+  
   echo "✅ Test $test_name completed successfully"
   echo "----------------------------------------"
+  
+  # Clean up test artifacts
+  cleanup_codacy
 }
 
-# Run both tests
+run_config_discover_test() {
+  local test_dir="$1"
+  local test_name="$2"
+  
+  echo "Running test: $test_name"
+  [ -d "$test_dir" ] || { echo "❌ Test directory does not exist: $test_dir"; exit 1; }
+  
+  cd "$test_dir" || exit 1
+  
+  # Clean up previous test results
+  rm -rf .codacy
+  
+  # First initialize with basic configuration
+  "$CLI_PATH" init
+
+  # Remove manually all entries from codacy yaml file
+  # This ensures we test the discover command adding tools to a clean config
+  local codacy_yaml=".codacy/codacy.yaml"
+  if [ -f "$codacy_yaml" ]; then
+    # Create a minimal codacy.yaml with just the mode
+    cat > "$codacy_yaml" << 'EOF'
+tools: []
+runtimes: []
+EOF
+    echo "Cleared tools and runtimes from codacy.yaml for discover test"
+  fi
+  
+  # Run config discover on the test directory
+  "$CLI_PATH" config discover sample.dart
+
+  # Check dart is in the config
+  if ! grep -q "dart" .codacy/codacy.yaml; then
+    echo "❌ Dart is not in the config"
+    exit 1
+  fi
+
+  # Discover java
+  "$CLI_PATH" config discover Sample.java
+
+  # Check java is in the config
+  if ! grep -q "java" .codacy/codacy.yaml; then
+    echo "❌ Java is not in the config"
+    exit 1
+  fi
+
+  # check pmd is in the config
+  if ! grep -q "pmd" .codacy/codacy.yaml; then
+    echo "❌ PMD is not in the config"
+    exit 1
+  fi
+
+  # Check the languages-config.yaml is present and contains all tools which are in the codacy.yaml
+  validate_languages_config_contains_all_tools
+
+  # Run config discover on the test directory - adding all tools
+  "$CLI_PATH" config discover .
+  
+  # Final validation: check that languages-config.yaml contains all tools from codacy.yaml
+  validate_languages_config_contains_all_tools
+  
+  compare_files "expected" ".codacy" "Test $test_name"
+  
+  echo "✅ Test $test_name completed successfully"
+  echo "----------------------------------------"
+  
+  # Clean up test artifacts
+  cleanup_codacy
+}
+
+# Run all tests
 echo "Starting integration tests..."
 echo "----------------------------------------"
 
@@ -152,6 +652,9 @@ run_init_test "$SCRIPT_DIR/init-without-token" "init-without-token" "false"
 
 # Test 2: Init with token
 run_init_test "$SCRIPT_DIR/init-with-token" "init-with-token" "true"
+
+# Test 3: Config discover
+run_config_discover_test "$SCRIPT_DIR/config-discover" "config-discover"
 
 echo "All tests completed successfully! 🎉"
 

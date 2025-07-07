@@ -1,28 +1,38 @@
 package utils
 
 import (
+	"codacy/cli-v2/utils/logger"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/sirupsen/logrus"
 )
 
 func DownloadFile(url string, destDir string) (string, error) {
-	log.Printf("Attempting to download from URL: %s", url)
+	logger.Debug("Attempting to download from URL", logrus.Fields{
+		"url": url,
+	})
 
 	// Get the file name from the URL
 	fileName := filepath.Base(url)
-	log.Printf("Target filename: %s", fileName)
+	logger.Debug("Target filename determined", logrus.Fields{
+		"fileName": fileName,
+	})
 
 	// Create the destination file path
 	destPath := filepath.Join(destDir, fileName)
-	log.Printf("Destination path: %s", destPath)
+	logger.Debug("Destination path set", logrus.Fields{
+		"destPath": destPath,
+	})
 
 	_, errInfo := os.Stat(destPath)
 	if errInfo != nil && os.IsExist(errInfo) {
-		log.Printf("File already exists at destination, skipping download")
+		logger.Debug("File already exists at destination, skipping download", logrus.Fields{
+			"destPath": destPath,
+		})
 		return destPath, nil
 	}
 
@@ -34,7 +44,9 @@ func DownloadFile(url string, destDir string) (string, error) {
 	defer outFile.Close()
 
 	// Make the HTTP GET request
-	log.Printf("Making HTTP GET request...")
+	logger.Debug("Making HTTP GET request", logrus.Fields{
+		"url": url,
+	})
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -54,12 +66,14 @@ func DownloadFile(url string, destDir string) (string, error) {
 	}
 
 	// Copy the response body to the destination file
-	log.Printf("Downloading file content...")
+	logger.Debug("Downloading file content")
 	written, err := io.Copy(outFile, resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("failed to copy file contents: %w", err)
 	}
-	log.Printf("Downloaded %d bytes", written)
+	logger.Debug("Downloaded file successfully", logrus.Fields{
+		"bytes": written,
+	})
 
 	if written == 0 {
 		return "", fmt.Errorf("downloaded file is empty (0 bytes)")

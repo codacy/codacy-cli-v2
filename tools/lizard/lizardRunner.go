@@ -2,7 +2,10 @@ package lizard
 
 import (
 	"bytes"
+	"codacy/cli-v2/config"
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/domain"
+	"codacy/cli-v2/tools"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,8 +13,25 @@ import (
 )
 
 // RunLizard runs the Lizard tool and returns any issues found
-func RunLizard(workDirectory string, binary string, files []string, outputFile string, outputFormat string, patterns []domain.PatternDefinition) error {
+func RunLizard(workDirectory string, binary string, files []string, outputFile string, outputFormat string) error {
+	// Get configuration patterns
+	configFile, exists := tools.ConfigFileExists(config.Config, "lizard.yaml")
+	var patterns []domain.PatternDefinition
+	var errConfigs error
 
+	if exists {
+		// Configuration exists, read from file
+		patterns, errConfigs = ReadConfig(configFile)
+		if errConfigs != nil {
+			return fmt.Errorf("error reading config file: %v", errConfigs)
+		}
+	} else {
+		fmt.Println("No configuration file found for Lizard, using default patterns, run init with repository token to get a custom configuration")
+		patterns, errConfigs = tools.FetchDefaultEnabledPatterns(domain.Lizard)
+		if errConfigs != nil {
+			return fmt.Errorf("failed to fetch default patterns: %v", errConfigs)
+		}
+	}
 	if len(patterns) == 0 {
 		return fmt.Errorf("no valid patterns found in configuration")
 	}
@@ -65,7 +85,7 @@ func RunLizard(workDirectory string, binary string, files []string, outputFile s
 
 				// Write SARIF output to file if specified, else stdout
 				if outputFile != "" {
-					err = os.WriteFile(outputFile, sarifData, 0644)
+					err = os.WriteFile(outputFile, sarifData, constants.DefaultFilePerms)
 					if err != nil {
 						return fmt.Errorf("failed to write SARIF output: %w", err)
 					}

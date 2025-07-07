@@ -1,8 +1,8 @@
 package lizard
 
 import (
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/domain"
-	"codacy/cli-v2/utils"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -50,7 +50,7 @@ func CreateLizardConfig(toolsConfigDir string, patterns []domain.PatternDefiniti
 		return fmt.Errorf("failed to marshal YAML: %w", err)
 	}
 
-	return os.WriteFile(filepath.Join(toolsConfigDir, "lizard.yaml"), yamlData, utils.DefaultFilePerms)
+	return os.WriteFile(filepath.Join(toolsConfigDir, "lizard.yaml"), yamlData, constants.DefaultFilePerms)
 }
 
 // getThresholdFromParams extracts the threshold value from the parameters

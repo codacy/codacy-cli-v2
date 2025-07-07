@@ -103,6 +103,54 @@ func writeFile(filePath string, content string) error {
 	return nil
 }
 
+// rulesWithoutOptions contains ESLint rules that don't accept any configuration options
+var rulesWithoutOptions = map[string]bool{
+	"no-misleading-character-class": true,
+	"constructor-super":             true,
+	"for-direction":                 true,
+	"no-async-promise-executor":     true,
+	"no-case-declarations":          true,
+	"no-class-assign":               true,
+	"no-compare-neg-zero":           true,
+	"no-const-assign":               true,
+	"no-control-regex":              true,
+	"no-debugger":                   true,
+	"no-delete-var":                 true,
+	"no-dupe-args":                  true,
+	"no-dupe-class-members":         true,
+	"no-dupe-else-if":               true,
+	"no-dupe-keys":                  true,
+	"no-duplicate-case":             true,
+	"no-empty-character-class":      true,
+	"no-ex-assign":                  true,
+	"no-extra-semi":                 true,
+	"no-func-assign":                true,
+	"no-global-assign":              true,
+	"no-import-assign":              true,
+	"no-invalid-regexp":             true,
+	"no-loss-of-precision":          true,
+	"no-mixed-spaces-and-tabs":      true,
+	"no-new-symbol":                 true,
+	"no-nonoctal-decimal-escape":    true,
+	"no-obj-calls":                  true,
+	"no-octal":                      true,
+	"no-prototype-builtins":         true,
+	"no-regex-spaces":               true,
+	"no-setter-return":              true,
+	"no-shadow-restricted-names":    true,
+	"no-sparse-arrays":              true,
+	"no-this-before-super":          true,
+	"no-unexpected-multiline":       true,
+	"no-unreachable":                true,
+	"no-unsafe-finally":             true,
+	"no-unused-labels":              true,
+	"no-useless-backreference":      true,
+	"no-useless-catch":              true,
+	"no-useless-escape":             true,
+	"no-with":                       true,
+	"require-yield":                 true,
+}
+
 func CreateEslintConfig(toolsConfigDir string, configuration []domain.PatternConfiguration) error {
 	result := `export default [
     {
@@ -150,23 +198,31 @@ func CreateEslintConfig(toolsConfigDir string, configuration []domain.PatternCon
 			parametersString += quoteWhenIsNotJson(defaultUnnamedParamValue)
 		}
 
-		// Use the new helper method to build named parameters JSON object
-		namedParametersString := buildNamedParametersString(patternConfiguration.Parameters, patternConfiguration.PatternDefinition)
-
-		if parametersString != "" && namedParametersString != "" {
-			parametersString = fmt.Sprintf("%s, %s", parametersString, namedParametersString)
-		} else {
-			parametersString += namedParametersString
-		}
-
-		result += "          "
-
-		if parametersString == "" {
+		// Check if this rule accepts options
+		if _, ok := rulesWithoutOptions[rule]; ok {
+			// Rule doesn't accept options, only use error level
+			result += "          "
 			result += fmt.Sprintf(`"%s": ["error"],`, rule)
 			result += "\n"
 		} else {
-			result += fmt.Sprintf(`"%s": ["error", %s],`, rule, parametersString)
-			result += "\n"
+			// Use the new helper method to build named parameters JSON object
+			namedParametersString := buildNamedParametersString(patternConfiguration.Parameters, patternConfiguration.PatternDefinition)
+
+			if parametersString != "" && namedParametersString != "" {
+				parametersString = fmt.Sprintf("%s, %s", parametersString, namedParametersString)
+			} else {
+				parametersString += namedParametersString
+			}
+
+			result += "          "
+
+			if parametersString == "" {
+				result += fmt.Sprintf(`"%s": ["error"],`, rule)
+				result += "\n"
+			} else {
+				result += fmt.Sprintf(`"%s": ["error", %s],`, rule, parametersString)
+				result += "\n"
+			}
 		}
 	}
 

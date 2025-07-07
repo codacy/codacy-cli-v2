@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Codacy PMD 7 Ruleset"
+xmlns="https://pmd.github.io/ruleset/2.0.0"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="https://pmd.github.io/ruleset/2.0.0 https://pmd.github.io/schemas/pmd-7.0.0.xsd">
+<description>Codacy PMD 7 Ruleset</description>
+    <rule ref="category/ecmascript/codestyle.xml/AssignmentInOperand">
+        <properties>
+            <property name="allowFor" value="false"/>
+            <property name="allowIf" value="false"/>
+            <property name="allowIncrementDecrement" value="false"/>
+            <property name="allowTernary" value="false"/>
+            <property name="allowTernaryResults" value="false"/>
+            <property name="allowWhile" value="false"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/bestpractices.xml/OneDeclarationPerLine">
+        <properties>
+            <property name="strictMode" value="false"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml/ClassNamingConventions">
+        <properties>
+            <property name="abstractClassPattern" value="[A-Z][a-zA-Z0-9]*"/>
+            <property name="annotationPattern" value="[A-Z][a-zA-Z0-9]*"/>
+            <property name="classPattern" value="[A-Z][a-zA-Z0-9]*"/>
+            <property name="enumPattern" value="[A-Z][a-zA-Z0-9]*"/>
+            <property name="interfacePattern" value="[A-Z][a-zA-Z0-9]*"/>
+            <property name="testClassPattern" value="^Test.*$|^[A-Z][a-zA-Z0-9]*Test(s|Case)?$"/>
+            <property name="utilityClassPattern" value="[A-Z][a-zA-Z0-9]*"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml/MethodNamingConventions">
+        <properties>
+            <property name="junit3TestPattern" value="test[A-Z0-9][a-zA-Z0-9]*"/>
+            <property name="junit4TestPattern" value="[a-z][a-zA-Z0-9]*"/>
+            <property name="junit5TestPattern" value="[a-z][a-zA-Z0-9]*"/>
+            <property name="methodPattern" value="[a-z][a-zA-Z0-9]*"/>
+            <property name="nativePattern" value="[a-z][a-zA-Z0-9]*"/>
+            <property name="staticPattern" value="[a-z][a-zA-Z0-9]*"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/CompareObjectsWithEquals">
+        <properties>
+            <property name="typesThatCompareByReference" value="java.lang.Enum,java.lang.Class"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/MissingStaticMethodInNonInstantiatableClass">
+        <properties>
+            <property name="annotations" value="org.springframework.beans.factory.annotation.Autowired,javax.inject.Inject,com.google.inject.Inject,lombok.Builder"/>
+        </properties>
+    </rule>
+    <rule ref="category/plsql/design.xml/TooManyMethods">
+        <properties>
+            <property name="maxmethods" value="1"/>
+        </properties>
+    </rule>
+    <rule ref="category/pom/errorprone.xml/InvalidDependencyTypes">
+        <properties>
+            <property name="validTypes" value="pom,jar,maven-plugin,ejb,war,ear,rar,par"/>
+        </properties>
+    </rule>
+    <rule ref="category/xsl/performance.xml/AvoidAxisNavigation">
+        <properties>
+            <property name="checkSelfDescendantAbreviation" value="false"/>
+        </properties>
+    </rule>
+</ruleset>

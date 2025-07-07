@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"codacy/cli-v2/constants"
 	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/utils"
 	"codacy/cli-v2/utils/logger"
@@ -57,19 +58,52 @@ func InstallTools(config *ConfigType, registry string) error {
 
 // InstallTool installs a specific tool
 func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error {
-	// Check if the tool is already installed
-	if Config.IsToolInstalled(name, toolInfo) {
-		logger.Info("Tool already installed", logrus.Fields{
+
+	// If toolInfo is nil, it means the tool is not in the configuration
+	// Add it with the default version
+	if toolInfo == nil {
+		logger.Info("Tool not found in configuration, adding with default version", logrus.Fields{
+			"tool": name,
+		})
+
+		// Add the tool to the configuration with its default version
+		err := Config.AddToolWithDefaultVersion(name)
+		if err != nil {
+			return fmt.Errorf("failed to add tool %s to configuration: %w", name, err)
+		}
+
+		// Get the tool info from the updated configuration
+		toolInfo = Config.Tools()[name]
+		if toolInfo == nil {
+			return fmt.Errorf("tool %s still not found in configuration after adding", name)
+		}
+	}
+
+	// Check if the tool is already installed AND its runtime is available
+	isToolInstalled := Config.IsToolInstalled(name, toolInfo)
+
+	// Also check if the required runtime is installed
+	var isRuntimeInstalled bool
+	if toolInfo.Runtime != "" {
+		runtimeInfo, exists := Config.Runtimes()[toolInfo.Runtime]
+		isRuntimeInstalled = exists && Config.IsRuntimeInstalled(toolInfo.Runtime, runtimeInfo)
+	} else {
+		// No runtime dependency
+		isRuntimeInstalled = true
+	}
+
+	if isToolInstalled && isRuntimeInstalled {
+		logger.Info("Tool and runtime already installed", logrus.Fields{
 			"tool":    name,
 			"version": toolInfo.Version,
 			"runtime": toolInfo.Runtime,
 		})
-		fmt.Printf("Tool %s v%s is already installed\n", name, toolInfo.Version)
+		fmt.Printf("Tool %s v%s and its runtime are already installed\n", name, toolInfo.Version)
 		return nil
 	}
 
 	// Make sure the installation directory exists
-	err := os.MkdirAll(toolInfo.InstallDir, 0755)
+	err := os.MkdirAll(toolInfo.InstallDir, constants.DefaultDirPerms)
 	if err != nil {
 		return fmt.Errorf("failed to create installation directory: %w", err)
 	}
@@ -107,10 +141,20 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error
 }
 
 func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string) error {
-	// Get the runtime for this tool
+	// Get the runtime configuration for this tool
 	runtimeInfo, ok := Config.Runtimes()[toolInfo.Runtime]
 	if !ok {
 		return fmt.Errorf("required runtime %s not found for tool %s", toolInfo.Runtime, name)
+	}
+
+	// Check if the runtime is actually installed
+	if !Config.IsRuntimeInstalled(toolInfo.Runtime, runtimeInfo) {
+		fmt.Printf("Runtime %s v%s is not installed, installing...\n", toolInfo.Runtime, runtimeInfo.Version)
+		err := InstallRuntime(toolInfo.Runtime, runtimeInfo)
+		if err != nil {
+			return fmt.Errorf("failed to install runtime %s: %w", toolInfo.Runtime, err)
+		}
+		fmt.Printf("Runtime %s v%s installed successfully, proceeding with tool installation...\n", toolInfo.Runtime, runtimeInfo.Version)
 	}
 
 	// Prepare template data
@@ -166,6 +210,13 @@ func installRuntimeTool(name string, toolInfo *plugins.ToolInfo, registry string
 
 	// Execute the installation command using the package manager
 	cmd := exec.Command(packageManagerBinary, strings.Split(installCmd, " ")...)
+
+	// Special handling for Go tools: set GOBIN so the binary is installed in the tool's install directory
+	if toolInfo.Runtime == "go" {
+		env := os.Environ()
+		env = append(env, "GOBIN="+toolInfo.InstallDir)
+		cmd.Env = env
+	}
 
 	// Special handling for ESLint installation in Linux (WSL) environment
 	if toolInfo.Name == "eslint" && runtime.GOOS == "linux" {
@@ -241,7 +292,7 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 	defer file.Close()
 
 	// Create the installation directory
-	err = os.MkdirAll(toolInfo.InstallDir, 0755)
+	err = os.MkdirAll(toolInfo.InstallDir, constants.DefaultDirPerms)
 	if err != nil {
 		return fmt.Errorf("failed to create installation directory: %w", err)
 	}
@@ -266,7 +317,7 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 
 	// Make sure all binaries are executable
 	for _, binaryPath := range toolInfo.Binaries {
-		err = os.Chmod(filepath.Join(toolInfo.InstallDir, filepath.Base(binaryPath)), 0755)
+		err = os.Chmod(filepath.Join(toolInfo.InstallDir, filepath.Base(binaryPath)), constants.DefaultDirPerms)
 		if err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("failed to make binary executable: %w", err)
 		}
@@ -285,9 +336,20 @@ func installPythonTool(name string, toolInfo *plugins.ToolInfo) error {
 		"version": toolInfo.Version,
 	})
 
+	// Get the runtime configuration for this tool
 	runtimeInfo, ok := Config.Runtimes()[toolInfo.Runtime]
 	if !ok {
 		return fmt.Errorf("required runtime %s not found for tool %s", toolInfo.Runtime, name)
+	}
+
+	// Check if the Python runtime is actually installed
+	if !Config.IsRuntimeInstalled(toolInfo.Runtime, runtimeInfo) {
+		fmt.Printf("Python runtime %s v%s is not installed, installing...\n", toolInfo.Runtime, runtimeInfo.Version)
+		err := InstallRuntime(toolInfo.Runtime, runtimeInfo)
+		if err != nil {
+			return fmt.Errorf("failed to install runtime %s: %w", toolInfo.Runtime, err)
+		}
+		fmt.Printf("Python runtime %s v%s installed successfully, proceeding with tool installation...\n", toolInfo.Runtime, runtimeInfo.Version)
 	}
 
 	pythonBinary, ok := runtimeInfo.Binaries["python3"]
@@ -327,25 +389,6 @@ func installPythonTool(name string, toolInfo *plugins.ToolInfo) error {
 		"version": toolInfo.Version,
 	})
 	return nil
-}
-
-// isToolInstalled checks if a tool is already installed by checking for the binary
-func isToolInstalled(toolInfo *plugins.ToolInfo) bool {
-	// If there are no binaries, check the install directory
-	if len(toolInfo.Binaries) == 0 {
-		_, err := os.Stat(toolInfo.InstallDir)
-		return err == nil
-	}
-
-	// Check if at least one binary exists
-	for _, binaryPath := range toolInfo.Binaries {
-		_, err := os.Stat(binaryPath)
-		if err == nil {
-			return true
-		}
-	}
-
-	return false
 }
 
 // executeToolTemplate executes a template with the given data
