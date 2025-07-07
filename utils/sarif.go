@@ -276,3 +276,85 @@ func FilterRulesFromSarif(sarifData []byte) ([]byte, error) {
 
 	return filteredData, nil
 }
+
+// LicenseSimIssue represents a single issue from license-sim JSON output
+// Adjust fields as needed based on actual license-sim JSON output
+// Example fields: File, Function, License, Similarity, etc.
+type LicenseSimIssue struct {
+	FilePath   string  `json:"file_path"`
+	Function   string  `json:"function_name"`
+	License    string  `json:"license_type"`
+	Similarity float64 `json:"similarity"`
+	Line       int     `json:"line"`
+	Message    string  `json:"message"`
+}
+
+// ConvertLicenseSimToSarif converts license-sim JSON output to SARIF format
+func ConvertLicenseSimToSarif(licenseSimOutput []byte) []byte {
+	var issues []LicenseSimIssue
+
+	// Try to unmarshal as {"results": [...]}
+	var wrapper struct {
+		Results []LicenseSimIssue `json:"results"`
+	}
+	if err := json.Unmarshal(licenseSimOutput, &wrapper); err == nil && len(wrapper.Results) > 0 {
+		issues = wrapper.Results
+	} else {
+		// Fallback: try to unmarshal as a flat array
+		if err := json.Unmarshal(licenseSimOutput, &issues); err != nil {
+			fmt.Fprintf(os.Stderr, "[DEBUG] LicenseSimToSarif: failed to parse input as array or results wrapper: %v\nRaw input: %s\n", err, string(licenseSimOutput))
+			return createEmptySarifReport()
+		}
+	}
+
+	sarifReport := SarifReport{
+		Version: "2.1.0",
+		Schema:  "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+		Runs: []Run{
+			{
+				Tool: Tool{
+					Driver: Driver{
+						Name:           "license-sim",
+						Version:        "local",
+						InformationURI: "https://github.com/codacy/license-sim",
+					},
+				},
+				Results: make([]Result, 0, len(issues)),
+			},
+		},
+	}
+
+	for _, issue := range issues {
+		ruleId := issue.License
+		if ruleId == "" {
+			ruleId = "license-sim-match"
+		}
+		msg := issue.Message
+		if msg == "" {
+			msg = "code similar to licensed code"
+		}
+		result := Result{
+			RuleID:  ruleId,
+			Level:   "note",
+			Message: MessageText{Text: msg},
+			Locations: []Location{
+				{
+					PhysicalLocation: PhysicalLocation{
+						ArtifactLocation: ArtifactLocation{URI: issue.FilePath},
+						Region: Region{
+							StartLine: issue.Line,
+						},
+					},
+				},
+			},
+		}
+		sarifReport.Runs[0].Results = append(sarifReport.Runs[0].Results, result)
+	}
+
+	sarifData, err := json.MarshalIndent(sarifReport, "", "  ")
+	if err != nil {
+		return createEmptySarifReport()
+	}
+
+	return sarifData
+}
