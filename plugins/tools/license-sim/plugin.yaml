@@ -1,0 +1,9 @@
+name: license-sim
+description: Detects GPL and other licenses in code using ML similarity.
+default_version: "local"
+# This is a local binary tool; venv must be set up manually in ../license-sim/venv
+environment:
+  KMP_DUPLICATE_LIB_OK: "TRUE"
+binaries:
+  - name: duncan
+    path: "/Users/kendrickcurtis/Documents/GitHub/license-sim/venv/bin/python /Users/kendrickcurtis/Documents/GitHub/license-sim/duncan.py"

@@ -171,6 +171,7 @@ func TestGetSupportedTools(t *testing.T) {
 				"lizard",
 				"codacy-enigma-cli",
 				"revive",
+				"license-sim",
 			},
 			expectedError: false,
 		},

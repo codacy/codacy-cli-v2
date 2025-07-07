@@ -359,6 +359,9 @@ func runToolByName(toolName string, workDirectory string, pathsToCheck []string,
 		return tools.RunEnigma(workDirectory, tool.InstallDir, tool.Binaries["codacy-enigma-cli"], pathsToCheck, outputFile, outputFormat)
 	case "revive":
 		return reviveTool.RunRevive(workDirectory, tool.Binaries["revive"], pathsToCheck, outputFile, outputFormat)
+	case "license-sim":
+		binaryPath := tool.Binaries["duncan"]
+		return tools.RunLicenseSim(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)
 	}
 	return fmt.Errorf("unsupported tool: %s", toolName)
 }

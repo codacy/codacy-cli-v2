@@ -154,6 +154,14 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 			Environment: make(map[string]string),
 		}
 
+		// If toolRuntime is empty, set safe defaults for binary-only tools
+		if toolRuntime == "" {
+			info.PackageManager = ""
+			info.ExecutionBinary = ""
+			info.InstallCommand = ""
+			info.RegistryCommand = ""
+		}
+
 		// Handle download configuration for directly downloaded tools
 		if pluginConfig.Download.URLTemplate != "" {
 			// Get the mapped architecture
@@ -226,6 +234,12 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 			}
 
 			var buf bytes.Buffer
+			var runtimeInstallDir string
+			if toolRuntime != "" && runtimes != nil && runtimes[toolRuntime] != nil {
+				runtimeInstallDir = runtimes[toolRuntime].InstallDir
+			} else {
+				runtimeInstallDir = ""
+			}
 			err = tmpl.Execute(&buf, struct {
 				Version           string
 				InstallDir        string
@@ -234,7 +248,7 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 			}{
 				Version:           config.Version,
 				InstallDir:        installDir,
-				RuntimeInstallDir: runtimes[toolRuntime].InstallDir,
+				RuntimeInstallDir: runtimeInstallDir,
 				Path:              os.Getenv("PATH"),
 			})
 			if err != nil {
