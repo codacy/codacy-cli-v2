@@ -94,12 +94,14 @@ func GetFileExtension(filePath string) string {
 func IsToolSupportedForFile(toolName string, filePath string, langConfig *LanguagesConfig) bool {
 	if langConfig == nil {
 		// If no language config is available, assume all tools are supported
+		fmt.Printf("[DEBUG] No language config, assuming tool %s supports file %s\n", toolName, filePath)
 		return true
 	}
 
 	fileExt := GetFileExtension(filePath)
 	if fileExt == "" {
 		// If file has no extension, assume tool is supported
+		fmt.Printf("[DEBUG] File %s has no extension, assuming tool %s supports it\n", filePath, toolName)
 		return true
 	}
 
@@ -107,22 +109,26 @@ func IsToolSupportedForFile(toolName string, filePath string, langConfig *Langua
 		if tool.Name == toolName {
 			// If tool has no extensions defined, assume it supports all files
 			if len(tool.Extensions) == 0 {
+				fmt.Printf("[DEBUG] Tool %s has no extensions defined, supports all files. File: %s\n", toolName, filePath)
 				return true
 			}
 
-			// Check if file extension is supported by this tool
+			fmt.Printf("[DEBUG] Checking if tool %s supports file %s (ext: %s). Tool extensions: %v\n", toolName, filePath, fileExt, tool.Extensions)
 			for _, ext := range tool.Extensions {
 				if strings.EqualFold(ext, fileExt) {
+					fmt.Printf("[DEBUG] Tool %s supports file %s (matched ext: %s)\n", toolName, filePath, fileExt)
 					return true
 				}
 			}
 
+			fmt.Printf("[DEBUG] Tool %s does NOT support file %s (ext: %s)\n", toolName, filePath, fileExt)
 			// Extension not found in tool's supported extensions
 			return false
 		}
 	}
 
 	// If tool not found in config, assume it's supported
+	fmt.Printf("[DEBUG] Tool %s not found in language config, assuming it supports file %s\n", toolName, filePath)
 	return true
 }
 

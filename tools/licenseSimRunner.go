@@ -62,7 +62,7 @@ func RunLicenseSim(workDirectory string, binary string, files []string, outputFi
 			return fmt.Errorf("failed to read license-sim output: %w", err)
 		}
 
-		sarifOutput := utils.ConvertLicenseSimToSarif(jsonOutput)
+		sarifOutput := utils.ConvertLicenseSimToSarifWithFile(jsonOutput, fileToCheck)
 
 		if outputFile != "" {
 			err = os.WriteFile(outputFile, sarifOutput, 0644)

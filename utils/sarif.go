@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
 // PylintIssue represents a single issue in Pylint's JSON output
@@ -80,6 +81,7 @@ type ArtifactLocation struct {
 type Region struct {
 	StartLine   int `json:"startLine"`
 	StartColumn int `json:"startColumn"`
+	EndLine     int `json:"endLine,omitempty"`
 }
 
 type MessageText struct {
@@ -290,7 +292,7 @@ type LicenseSimIssue struct {
 }
 
 // ConvertLicenseSimToSarif converts license-sim JSON output to SARIF format
-func ConvertLicenseSimToSarif(licenseSimOutput []byte) []byte {
+func ConvertLicenseSimToSarifWithFile(licenseSimOutput []byte, scannedFile string) []byte {
 	var issues []LicenseSimIssue
 
 	// Try to unmarshal as {"results": [...]}
@@ -304,6 +306,21 @@ func ConvertLicenseSimToSarif(licenseSimOutput []byte) []byte {
 		if err := json.Unmarshal(licenseSimOutput, &issues); err != nil {
 			fmt.Fprintf(os.Stderr, "[DEBUG] LicenseSimToSarif: failed to parse input as array or results wrapper: %v\nRaw input: %s\n", err, string(licenseSimOutput))
 			return createEmptySarifReport()
+		}
+	}
+
+	if scannedFile == "" {
+		// Try to detect the scanned file from the input (first issue's file_path or fallback)
+		if len(issues) > 0 {
+			for _, issue := range issues {
+				if !strings.HasPrefix(issue.FilePath, "../") && issue.FilePath != "" {
+					scannedFile = issue.FilePath
+					break
+				}
+			}
+		}
+		if scannedFile == "" {
+			scannedFile = "license-sim-test.php" // fallback, ideally should be passed in
 		}
 	}
 
@@ -325,13 +342,24 @@ func ConvertLicenseSimToSarif(licenseSimOutput []byte) []byte {
 	}
 
 	for _, issue := range issues {
+		referenceFile := issue.FilePath
 		ruleId := issue.License
 		if ruleId == "" {
 			ruleId = "license-sim-match"
 		}
 		msg := issue.Message
 		if msg == "" {
-			msg = "code similar to licensed code"
+			msg = "code similar to licensed code in " + referenceFile
+		} else {
+			msg = msg + " (reference: " + referenceFile + ")"
+		}
+		startLine := issue.Line
+		if startLine <= 0 {
+			startLine = 1
+		}
+		endLine := startLine
+		if endLine <= 0 {
+			endLine = startLine
 		}
 		result := Result{
 			RuleID:  ruleId,
@@ -340,9 +368,10 @@ func ConvertLicenseSimToSarif(licenseSimOutput []byte) []byte {
 			Locations: []Location{
 				{
 					PhysicalLocation: PhysicalLocation{
-						ArtifactLocation: ArtifactLocation{URI: issue.FilePath},
+						ArtifactLocation: ArtifactLocation{URI: scannedFile},
 						Region: Region{
-							StartLine: issue.Line,
+							StartLine: startLine,
+							EndLine:   endLine,
 						},
 					},
 				},
@@ -357,4 +386,9 @@ func ConvertLicenseSimToSarif(licenseSimOutput []byte) []byte {
 	}
 
 	return sarifData
+}
+
+// Backward compatible wrapper
+func ConvertLicenseSimToSarif(licenseSimOutput []byte) []byte {
+	return ConvertLicenseSimToSarifWithFile(licenseSimOutput, "")
 }
