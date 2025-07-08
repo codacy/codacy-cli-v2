@@ -440,22 +440,6 @@ func validatePaths(paths []string) error {
 	return nil
 }
 
-func validateCloudMode(cliLocalMode bool) error {
-	if cliLocalMode {
-		fmt.Println("Warning: cannot run in cloud mode")
-	}
-	return nil
-}
-
-func runPyreflyAnalysis(workDirectory string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	pyrefly := config.Config.Tools()["pyrefly"]
-	if pyrefly == nil {
-		log.Fatal("Pyrefly tool configuration not found")
-	}
-	pyreflyBinary := pyrefly.Binaries["pyrefly"]
-	return tools.RunPyrefly(workDirectory, pyreflyBinary, pathsToCheck, outputFile, outputFormat)
-}
-
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Analyze code using configured tools",
@@ -476,8 +460,6 @@ Supports API token, provider, and repository flags to automatically fetch tool c
 		}
 
 		cliLocalMode := len(initFlags.ApiToken) == 0
-
-		validateCloudMode(cliLocalMode)
 
 		var toolsToRun map[string]*plugins.ToolInfo
 
