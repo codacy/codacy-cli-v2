@@ -22,4 +22,4 @@ tools:
     - name: trivy
       languages: [JSON, Java, Javascript, Python]
       extensions: [.java, .js, .jsm, .json, .jsx, .mjs, .py, .vue]
-      files: []
+      files: [.deps.json, Berksfile, Capfile, Cargo.lock, Cheffile, Directory.Packages.props, Dockerfile, Fastfile, Gemfile, Gemfile.lock, Guardfile, Package.resolved, Packages.props, Pipfile.lock, Podfile, Podfile.lock, Rakefile, Thorfile, Vagabondfile, Vagrantfile, build.sbt.lock, composer.lock, conan.lock, config.ru, go.mod, gradle.lockfile, mix.lock, package-lock.json, package.json, packages.config, packages.lock.json, pnpm-lock.yaml, poetry.lock, pom.xml, pubspec.lock, requirements.txt, uv.lock, yarn.lock]
