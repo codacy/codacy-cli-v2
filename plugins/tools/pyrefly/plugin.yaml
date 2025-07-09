@@ -1,0 +1,15 @@
+name: pyrefly
+# Pyrefly: Fast, modern Python type checker (https://pyrefly.org/en/docs/installation/)
+description: Pyrefly is a fast, modern static type checker for Python, designed for developer productivity and CI integration.
+default_version: 0.22.0
+runtime: python
+runtime_binaries:
+  package_manager: python3
+  execution: python3
+binaries:
+  - name: pyrefly
+    path: "venv/bin/pyrefly"
+output_options:
+  file_flag: "--output"
+analysis_options:
+  default_path: "." 

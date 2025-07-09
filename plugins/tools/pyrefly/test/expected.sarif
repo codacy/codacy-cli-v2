@@ -1,0 +1,78 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "results": [
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/test_file.py"
+                },
+                "region": {
+                  "startLine": 12,
+                  "startColumn": 24
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Argument `Literal['one']` is not assignable to parameter `a` with type `int` in function `add_numbers`"
+          },
+          "ruleId": "bad-argument-type"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/test_file.py"
+                },
+                "region": {
+                  "startLine": 14,
+                  "startColumn": 25
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Function declared to return `int` but is missing an explicit `return`"
+          },
+          "ruleId": "bad-return"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/test_file.py"
+                },
+                "region": {
+                  "startLine": 20,
+                  "startColumn": 12
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Returned type `Literal[123]` is not assignable to declared return type `str`"
+          },
+          "ruleId": "bad-return"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://pyrefly.org",
+          "name": "Pyrefly",
+          "rules": null,
+          "version": "0.22.0"
+        }
+      }
+    }
+  ]
+} 

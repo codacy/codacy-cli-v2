@@ -276,3 +276,108 @@ func FilterRulesFromSarif(sarifData []byte) ([]byte, error) {
 
 	return filteredData, nil
 }
+
+// PyreflyIssue represents a single issue in Pyrefly's JSON output.
+// Example fields: line, column, stop_line, stop_column, path, code, name, description, concise_description
+// See: https://pyrefly.org/en/docs/usage/#output-formats
+type PyreflyIssue struct {
+	Line               int    `json:"line"`
+	Column             int    `json:"column"`
+	StopLine           int    `json:"stop_line"`
+	StopColumn         int    `json:"stop_column"`
+	Path               string `json:"path"`
+	Code               int    `json:"code"`
+	Name               string `json:"name"`
+	Description        string `json:"description"`
+	ConciseDescription string `json:"concise_description"`
+}
+
+// ConvertPyreflyToSarif converts Pyrefly JSON output to SARIF format
+func ConvertPyreflyToSarif(pyreflyOutput []byte) []byte {
+	// Pyrefly outputs: { "errors": [ ... ] }
+	type pyreflyRoot struct {
+		Errors []PyreflyIssue `json:"errors"`
+	}
+	var root pyreflyRoot
+	var sarifReport SarifReport
+	if err := json.Unmarshal(pyreflyOutput, &root); err != nil {
+		// If parsing fails, return empty SARIF report with Pyrefly metadata
+		sarifReport = SarifReport{
+			Version: "2.1.0",
+			Schema:  "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+			Runs: []Run{
+				{
+					Tool: Tool{
+						Driver: Driver{
+							Name:           "Pyrefly",
+							Version:        "0.22.0",
+							InformationURI: "https://pyrefly.org",
+						},
+					},
+					Results: []Result{},
+				},
+			},
+		}
+	} else {
+		sarifReport = SarifReport{
+			Version: "2.1.0",
+			Schema:  "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+			Runs: []Run{
+				{
+					Tool: Tool{
+						Driver: Driver{
+							Name:           "Pyrefly",
+							Version:        "0.22.0",
+							InformationURI: "https://pyrefly.org",
+						},
+					},
+					Results: make([]Result, 0, len(root.Errors)),
+				},
+			},
+		}
+		for _, issue := range root.Errors {
+			result := Result{
+				RuleID: issue.Name,
+				Level:  "error", // Pyrefly only reports errors
+				Message: MessageText{
+					Text: issue.Description,
+				},
+				Locations: []Location{
+					{
+						PhysicalLocation: PhysicalLocation{
+							ArtifactLocation: ArtifactLocation{
+								URI: issue.Path,
+							},
+							Region: Region{
+								StartLine:   issue.Line,
+								StartColumn: issue.Column,
+							},
+						},
+					},
+				},
+			}
+			sarifReport.Runs[0].Results = append(sarifReport.Runs[0].Results, result)
+		}
+	}
+	sarifData, err := json.MarshalIndent(sarifReport, "", "  ")
+	if err != nil {
+		// If marshaling fails, return a minimal SARIF report with Pyrefly metadata
+		return []byte(`{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Pyrefly",
+          "version": "0.22.0",
+          "informationUri": "https://pyrefly.org"
+        }
+      },
+      "results": []
+    }
+  ]
+}`)
+	}
+	return sarifData
+}

@@ -19,10 +19,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//
-// This file is responsible for building the languages-config.yaml file.
-//
-
 // buildToolLanguageInfoFromAPI builds tool language information from API data
 // This is the core shared logic used by both GetToolLanguageMappingFromAPI and buildToolLanguageConfigFromAPI
 func buildToolLanguageInfoFromAPI() (map[string]domain.ToolLanguageInfo, error) {
@@ -95,6 +91,14 @@ func buildToolLanguageInfoFromAPI() (map[string]domain.ToolLanguageInfo, error) 
 		result[toolName] = configTool
 	}
 
+	// Fallback: Add Pyrefly mapping if not present in API
+	if _, ok := result["pyrefly"]; !ok {
+		result["pyrefly"] = domain.ToolLanguageInfo{
+			Name:       "pyrefly",
+			Languages:  []string{"Python"},
+			Extensions: []string{".py"},
+		}
+	}
 	return result, nil
 }
 
