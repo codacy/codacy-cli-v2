@@ -277,10 +277,9 @@ func FilterRulesFromSarif(sarifData []byte) ([]byte, error) {
 	return filteredData, nil
 }
 
-// PyreflyIssue represents a single issue in Pyrefly's JSON output
+// PyreflyIssue represents a single issue in Pyrefly's JSON output.
 // Example fields: line, column, stop_line, stop_column, path, code, name, description, concise_description
 // See: https://pyrefly.org/en/docs/usage/#output-formats
-
 type PyreflyIssue struct {
 	Line               int    `json:"line"`
 	Column             int    `json:"column"`
