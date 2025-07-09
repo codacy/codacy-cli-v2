@@ -76,6 +76,7 @@ func buildToolLanguageInfoFromAPI() (map[string]domain.ToolLanguageInfo, error) 
 			Name:       toolName,
 			Languages:  tool.Languages,
 			Extensions: []string{},
+			Files:      []string{},
 		}
 
 		// Build extensions and files from API language data
