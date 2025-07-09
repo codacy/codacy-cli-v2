@@ -82,6 +82,10 @@ func buildToolLanguageInfoFromAPI() (map[string]domain.ToolLanguageInfo, error) 
 		extensionsSet := make(map[string]struct{})
 		filesSet := make(map[string]struct{})
 
+		// Check if this tool supports specific files
+		toolInfo := config.Config.Tools()[toolName]
+		supportsSpecificFiles := toolInfo != nil && toolInfo.SupportsSpecificFiles
+
 		for _, apiLang := range tool.Languages {
 			lowerLang := strings.ToLower(apiLang)
 			if extensions, exists := languageExtensionsMap[lowerLang]; exists {
@@ -89,9 +93,12 @@ func buildToolLanguageInfoFromAPI() (map[string]domain.ToolLanguageInfo, error) 
 					extensionsSet[ext] = struct{}{}
 				}
 			}
-			if files, exists := languageFilesMap[lowerLang]; exists {
-				for _, file := range files {
-					filesSet[file] = struct{}{}
+			// Only populate files if the tool supports specific files
+			if supportsSpecificFiles {
+				if files, exists := languageFilesMap[lowerLang]; exists {
+					for _, file := range files {
+						filesSet[file] = struct{}{}
+					}
 				}
 			}
 		}
@@ -244,12 +251,16 @@ func buildRemoteModeLanguagesConfig(apiTools []domain.Tool, toolIDMap map[string
 		extensionsSet := make(map[string]struct{})
 		filesSet := make(map[string]struct{})
 
+		// Check if this tool supports specific files
+		toolInfo := config.Config.Tools()[shortName]
+		supportsSpecificFiles := toolInfo != nil && toolInfo.SupportsSpecificFiles
+
 		for _, lang := range tool.Languages {
 			lowerLang := strings.ToLower(lang)
 			if repoLang, exists := repositoryLanguages[lowerLang]; exists {
 				// Check if this language has either extensions or files
 				hasExtensions := len(repoLang.Extensions) > 0
-				hasFiles := len(repoLang.Files) > 0
+				hasFiles := len(repoLang.Files) > 0 && supportsSpecificFiles
 
 				if hasExtensions || hasFiles {
 					configTool.Languages = append(configTool.Languages, lang)
@@ -261,7 +272,7 @@ func buildRemoteModeLanguagesConfig(apiTools []domain.Tool, toolIDMap map[string
 						}
 					}
 
-					// Add repository-specific files if they exist
+					// Add repository-specific files if they exist (only if tool supports it)
 					if hasFiles {
 						for _, file := range repoLang.Files {
 							filesSet[file] = struct{}{}

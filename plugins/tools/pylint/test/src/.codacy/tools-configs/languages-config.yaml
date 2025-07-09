@@ -2,4 +2,4 @@ tools:
     - name: pylint
       languages: [Python]
       extensions: [.py]
-      files: [Pipfile.lock, poetry.lock, requirements.txt, uv.lock]
+      files: []
