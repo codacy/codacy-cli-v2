@@ -62,21 +62,31 @@ func TestIsToolSupportedForFile(t *testing.T) {
 			Name       string   `yaml:"name" json:"name"`
 			Languages  []string `yaml:"languages" json:"languages"`
 			Extensions []string `yaml:"extensions" json:"extensions"`
+			Files      []string `yaml:"files" json:"files"`
 		}{
 			{
 				Name:       "pylint",
 				Languages:  []string{"Python"},
 				Extensions: []string{".py"},
+				Files:      []string{},
+			},
+			{
+				Name:       "eslint",
+				Languages:  []string{"JavaScript", "TypeScript"},
+				Extensions: []string{},
+				Files:      []string{},
 			},
 			{
 				Name:       "cppcheck",
 				Languages:  []string{"C", "CPP"},
 				Extensions: []string{".c", ".cpp", ".h", ".hpp"},
+				Files:      []string{},
 			},
 			{
 				Name:       "trivy",
 				Languages:  []string{"Multiple"},
-				Extensions: []string{},
+				Extensions: []string{".yaml", ".yml"},
+				Files:      []string{"requirements.txt"},
 			},
 		},
 	}
@@ -111,7 +121,7 @@ func TestIsToolSupportedForFile(t *testing.T) {
 		},
 		{
 			name:     "Tool with no extensions specified",
-			toolName: "trivy",
+			toolName: "eslint",
 			filePath: "any.file",
 			config:   langConfig,
 			want:     true,
@@ -128,6 +138,13 @@ func TestIsToolSupportedForFile(t *testing.T) {
 			toolName: "pylint",
 			filePath: "test.cpp",
 			config:   nil,
+			want:     true,
+		},
+		{
+			name:     "Trivy with requirements.txt",
+			toolName: "trivy",
+			filePath: "requirements.txt",
+			config:   langConfig,
 			want:     true,
 		},
 	}

@@ -253,7 +253,7 @@ func GetToolsVersions() ([]domain.Tool, error) {
 }
 
 // GetRepositoryLanguages fetches the languages for a repository
-func GetRepositoryLanguages(initFlags domain.InitFlags) ([]domain.Language, error) {
+func GetRepositoryLanguages(initFlags domain.InitFlags) ([]domain.RepositoryLanguage, error) {
 	baseURL := fmt.Sprintf("%s/api/v3/organizations/%s/%s/repositories/%s/settings/languages",
 		CodacyApiBase,
 		initFlags.Provider,
