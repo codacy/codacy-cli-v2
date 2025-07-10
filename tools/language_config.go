@@ -13,6 +13,7 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/constants"
 	"codacy/cli-v2/domain"
+	"codacy/cli-v2/plugins"
 	"codacy/cli-v2/utils/logger"
 
 	"github.com/sirupsen/logrus"
@@ -84,8 +85,9 @@ func buildToolLanguageInfoFromAPI() (map[string]domain.ToolLanguageInfo, error) 
 		filesSet := make(map[string]struct{})
 
 		// Check if this tool supports specific files
-		toolInfo := config.Config.Tools()[toolName]
-		supportsSpecificFiles := toolInfo != nil && toolInfo.SupportsSpecificFiles
+		pluginManager := plugins.GetPluginManager()
+		pluginConfig, err := pluginManager.GetToolConfig(toolName)
+		supportsSpecificFiles := err == nil && pluginConfig.SupportsSpecificFiles
 
 		for _, apiLang := range tool.Languages {
 			lowerLang := strings.ToLower(apiLang)
@@ -253,8 +255,9 @@ func buildRemoteModeLanguagesConfig(apiTools []domain.Tool, toolIDMap map[string
 		filesSet := make(map[string]struct{})
 
 		// Check if this tool supports specific files
-		toolInfo := config.Config.Tools()[shortName]
-		supportsSpecificFiles := toolInfo != nil && toolInfo.SupportsSpecificFiles
+		pluginManager := plugins.GetPluginManager()
+		pluginConfig, err := pluginManager.GetToolConfig(shortName)
+		supportsSpecificFiles := err == nil && pluginConfig.SupportsSpecificFiles
 
 		for _, lang := range tool.Languages {
 			lowerLang := strings.ToLower(lang)
