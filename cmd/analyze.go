@@ -99,6 +99,12 @@ func IsToolSupportedForFile(toolName string, filePath string, langConfig *Langua
 	}
 
 	fileExt := GetFileExtension(filePath)
+
+	if fileExt == "" {
+		// If file has no extension, assume tool is supported
+		return true
+	}
+
 	fileName := filepath.Base(filePath)
 
 	for _, tool := range langConfig.Tools {
