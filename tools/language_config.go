@@ -23,6 +23,12 @@ import (
 // This file is responsible for building the languages-config.yaml file.
 //
 
+// Tools that support specific files (hardcoded list)
+// We want to move this to the API in the future
+var supportSpecificFiles = map[string]bool{
+	"trivy": true,
+}
+
 // buildToolLanguageInfoFromAPI builds tool language information from API data
 // This is the core shared logic used by both GetToolLanguageMappingFromAPI and buildToolLanguageConfigFromAPI
 func buildToolLanguageInfoFromAPI() (map[string]domain.ToolLanguageInfo, error) {
@@ -90,9 +96,12 @@ func buildToolLanguageInfoFromAPI() (map[string]domain.ToolLanguageInfo, error) 
 					extensionsSet[ext] = struct{}{}
 				}
 			}
-			if files, exists := languageFilesMap[lowerLang]; exists {
-				for _, file := range files {
-					filesSet[file] = struct{}{}
+			// Only populate files if the tool supports specific files
+			if supportSpecificFiles[toolName] {
+				if files, exists := languageFilesMap[lowerLang]; exists {
+					for _, file := range files {
+						filesSet[file] = struct{}{}
+					}
 				}
 			}
 		}
@@ -262,8 +271,8 @@ func buildRemoteModeLanguagesConfig(apiTools []domain.Tool, toolIDMap map[string
 						}
 					}
 
-					// Add repository-specific files if they exist
-					if hasFiles {
+					// Add repository-specific files if they exist and tool supports specific files
+					if hasFiles && supportSpecificFiles[shortName] {
 						for _, file := range repoLang.Files {
 							filesSet[file] = struct{}{}
 						}

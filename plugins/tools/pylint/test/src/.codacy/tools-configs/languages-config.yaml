@@ -2,3 +2,4 @@ tools:
     - name: pylint
       languages: [Python]
       extensions: [.py]
+      files: []

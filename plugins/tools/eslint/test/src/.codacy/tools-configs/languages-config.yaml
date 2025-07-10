@@ -1,0 +1,4 @@
+tools:
+    - name: eslint
+      languages: [Javascript, TypeScript]
+      extensions: [.js, .jsm, .jsx, .mjs, .ts, .tsx, .vue]
