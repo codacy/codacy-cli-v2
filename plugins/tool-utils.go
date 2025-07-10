@@ -55,19 +55,18 @@ type RuntimeBinaries struct {
 
 // ToolPluginConfig holds the structure of the tool plugin.yaml file
 type ToolPluginConfig struct {
-	Name                  string             `yaml:"name"`
-	Description           string             `yaml:"description"`
-	DefaultVersion        string             `yaml:"default_version"`
-	SupportsSpecificFiles bool               `yaml:"support_specific_files"`
-	Runtime               string             `yaml:"runtime"`
-	RuntimeBinaries       RuntimeBinaries    `yaml:"runtime_binaries"`
-	Installation          InstallationConfig `yaml:"installation"`
-	Download              DownloadConfig     `yaml:"download"`
-	Environment           map[string]string  `yaml:"environment"`
-	Binaries              []ToolBinary       `yaml:"binaries"`
-	Formatters            []Formatter        `yaml:"formatters"`
-	OutputOptions         OutputOptions      `yaml:"output_options"`
-	AnalysisOptions       AnalysisOptions    `yaml:"analysis_options"`
+	Name            string             `yaml:"name"`
+	Description     string             `yaml:"description"`
+	DefaultVersion  string             `yaml:"default_version"`
+	Runtime         string             `yaml:"runtime"`
+	RuntimeBinaries RuntimeBinaries    `yaml:"runtime_binaries"`
+	Installation    InstallationConfig `yaml:"installation"`
+	Download        DownloadConfig     `yaml:"download"`
+	Environment     map[string]string  `yaml:"environment"`
+	Binaries        []ToolBinary       `yaml:"binaries"`
+	Formatters      []Formatter        `yaml:"formatters"`
+	OutputOptions   OutputOptions      `yaml:"output_options"`
+	AnalysisOptions AnalysisOptions    `yaml:"analysis_options"`
 }
 
 // ToolConfig represents configuration for a tool
@@ -79,16 +78,15 @@ type ToolConfig struct {
 
 // ToolInfo contains all processed information about a tool
 type ToolInfo struct {
-	Name                  string
-	Version               string
-	Runtime               string
-	InstallDir            string
-	Binaries              map[string]string // Map of binary name to full path
-	Formatters            map[string]string // Map of formatter name to flag
-	OutputFlag            string
-	AutofixFlag           string
-	DefaultPath           string
-	SupportsSpecificFiles bool // Whether tool supports specific file analysis
+	Name        string
+	Version     string
+	Runtime     string
+	InstallDir  string
+	Binaries    map[string]string // Map of binary name to full path
+	Formatters  map[string]string // Map of formatter name to flag
+	OutputFlag  string
+	AutofixFlag string
+	DefaultPath string
 	// Runtime binaries
 	PackageManager  string
 	ExecutionBinary string
@@ -137,16 +135,15 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 		}
 		// Create ToolInfo with basic information
 		info := &ToolInfo{
-			Name:                  config.Name,
-			Version:               config.Version,
-			Runtime:               toolRuntime,
-			InstallDir:            installDir,
-			Binaries:              make(map[string]string),
-			Formatters:            make(map[string]string),
-			OutputFlag:            pluginConfig.OutputOptions.FileFlag,
-			AutofixFlag:           pluginConfig.AnalysisOptions.AutofixFlag,
-			DefaultPath:           pluginConfig.AnalysisOptions.DefaultPath,
-			SupportsSpecificFiles: pluginConfig.SupportsSpecificFiles,
+			Name:        config.Name,
+			Version:     config.Version,
+			Runtime:     toolRuntime,
+			InstallDir:  installDir,
+			Binaries:    make(map[string]string),
+			Formatters:  make(map[string]string),
+			OutputFlag:  pluginConfig.OutputOptions.FileFlag,
+			AutofixFlag: pluginConfig.AnalysisOptions.AutofixFlag,
+			DefaultPath: pluginConfig.AnalysisOptions.DefaultPath,
 			// Store runtime binary information
 			PackageManager:  pluginConfig.RuntimeBinaries.PackageManager,
 			ExecutionBinary: pluginConfig.RuntimeBinaries.Execution,

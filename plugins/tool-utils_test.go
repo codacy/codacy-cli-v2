@@ -66,9 +66,6 @@ func TestProcessTools(t *testing.T) {
 	// Assert installation command templates are correctly set
 	assert.Equal(t, "install --prefix {{.InstallDir}} {{.PackageName}}@{{.Version}} @microsoft/eslint-formatter-sarif", eslintInfo.InstallCommand)
 	assert.Equal(t, "config set registry {{.Registry}}", eslintInfo.RegistryCommand)
-
-	// Assert that eslint does not support specific files (default false)
-	assert.False(t, eslintInfo.SupportsSpecificFiles, "eslint should not support specific files")
 }
 
 func TestProcessToolsWithDownload(t *testing.T) {
@@ -122,9 +119,6 @@ func TestProcessToolsWithDownload(t *testing.T) {
 	// Check if trivy binary is present
 	trivyBinary := filepath.Join(expectedInstallDir, "trivy")
 	assert.Equal(t, trivyBinary, trivyInfo.Binaries["trivy"])
-
-	// Assert that trivy supports specific files (from plugin.yaml)
-	assert.True(t, trivyInfo.SupportsSpecificFiles, "trivy should support specific files")
 
 	// Verify URL components
 	assert.Contains(t, trivyInfo.DownloadURL, "aquasecurity/trivy/releases/download")
@@ -202,50 +196,6 @@ func TestGetSupportedTools(t *testing.T) {
 
 			// Check that we have exactly the expected number of tools
 			assert.Equal(t, len(tt.expectedTools), len(supportedTools), "number of supported tools should match")
-		})
-	}
-}
-
-func TestGetToolConfig(t *testing.T) {
-	pluginManager := GetPluginManager()
-
-	tests := []struct {
-		name                          string
-		toolName                      string
-		expectedSupportsSpecificFiles bool
-		expectedError                 bool
-	}{
-		{
-			name:                          "trivy should support specific files",
-			toolName:                      "trivy",
-			expectedSupportsSpecificFiles: true,
-			expectedError:                 false,
-		},
-		{
-			name:                          "eslint should not support specific files",
-			toolName:                      "eslint",
-			expectedSupportsSpecificFiles: false,
-			expectedError:                 false,
-		},
-		{
-			name:          "non-existent tool should return error",
-			toolName:      "non-existent-tool",
-			expectedError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			config, err := pluginManager.GetToolConfig(tt.toolName)
-
-			if tt.expectedError {
-				assert.Error(t, err)
-				return
-			}
-
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedSupportsSpecificFiles, config.SupportsSpecificFiles,
-				"SupportsSpecificFiles should match expected value for %s", tt.toolName)
 		})
 	}
 }
