@@ -1,0 +1,2 @@
+# This file should be successfully ignored by Codacy CLI as pylint does not support it.
+django==1.11.29

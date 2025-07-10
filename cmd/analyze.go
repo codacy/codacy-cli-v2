@@ -41,6 +41,7 @@ type LanguagesConfig struct {
 		Name       string   `yaml:"name" json:"name"`
 		Languages  []string `yaml:"languages" json:"languages"`
 		Extensions []string `yaml:"extensions" json:"extensions"`
+		Files      []string `yaml:"files" json:"files"`
 	} `yaml:"tools" json:"tools"`
 }
 
@@ -90,7 +91,7 @@ func GetFileExtension(filePath string) string {
 	return strings.ToLower(filepath.Ext(filePath))
 }
 
-// IsToolSupportedForFile checks if a tool supports a given file based on its extension
+// IsToolSupportedForFile checks if a tool supports a given file based on its extension or filename
 func IsToolSupportedForFile(toolName string, filePath string, langConfig *LanguagesConfig) bool {
 	if langConfig == nil {
 		// If no language config is available, assume all tools are supported
@@ -98,10 +99,13 @@ func IsToolSupportedForFile(toolName string, filePath string, langConfig *Langua
 	}
 
 	fileExt := GetFileExtension(filePath)
+
 	if fileExt == "" {
 		// If file has no extension, assume tool is supported
 		return true
 	}
+
+	fileName := filepath.Base(filePath)
 
 	for _, tool := range langConfig.Tools {
 		if tool.Name == toolName {
@@ -113,6 +117,13 @@ func IsToolSupportedForFile(toolName string, filePath string, langConfig *Langua
 			// Check if file extension is supported by this tool
 			for _, ext := range tool.Extensions {
 				if strings.EqualFold(ext, fileExt) {
+					return true
+				}
+			}
+
+			// Check if filename is supported by this tool (exact match)
+			for _, file := range tool.Files {
+				if strings.EqualFold(file, fileName) {
 					return true
 				}
 			}

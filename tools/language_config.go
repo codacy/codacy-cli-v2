@@ -23,6 +23,12 @@ import (
 // This file is responsible for building the languages-config.yaml file.
 //
 
+// Tools that support specific files (hardcoded list)
+// We want to move this to the API in the future
+var supportSpecificFiles = map[string]bool{
+	"trivy": true,
+}
+
 // buildToolLanguageInfoFromAPI builds tool language information from API data
 // This is the core shared logic used by both GetToolLanguageMappingFromAPI and buildToolLanguageConfigFromAPI
 func buildToolLanguageInfoFromAPI() (map[string]domain.ToolLanguageInfo, error) {
@@ -42,6 +48,12 @@ func buildToolLanguageInfoFromAPI() (map[string]domain.ToolLanguageInfo, error) 
 	languageExtensionsMap := make(map[string][]string)
 	for _, langTool := range languageTools {
 		languageExtensionsMap[strings.ToLower(langTool.Name)] = langTool.FileExtensions
+	}
+
+	// Create map of language name to files
+	languageFilesMap := make(map[string][]string)
+	for _, langTool := range languageTools {
+		languageFilesMap[strings.ToLower(langTool.Name)] = langTool.Files
 	}
 
 	// Build tool language configurations from API data
@@ -70,10 +82,13 @@ func buildToolLanguageInfoFromAPI() (map[string]domain.ToolLanguageInfo, error) 
 			Name:       toolName,
 			Languages:  tool.Languages,
 			Extensions: []string{},
+			Files:      []string{},
 		}
 
-		// Build extensions from API language data
+		// Build extensions and files from API language data
 		extensionsSet := make(map[string]struct{})
+		filesSet := make(map[string]struct{})
+
 		for _, apiLang := range tool.Languages {
 			lowerLang := strings.ToLower(apiLang)
 			if extensions, exists := languageExtensionsMap[lowerLang]; exists {
@@ -81,13 +96,25 @@ func buildToolLanguageInfoFromAPI() (map[string]domain.ToolLanguageInfo, error) 
 					extensionsSet[ext] = struct{}{}
 				}
 			}
+			// Only populate files if the tool supports specific files
+			if supportSpecificFiles[toolName] {
+				if files, exists := languageFilesMap[lowerLang]; exists {
+					for _, file := range files {
+						filesSet[file] = struct{}{}
+					}
+				}
+			}
 		}
 
-		// Convert set to sorted slice
+		// Convert sets to sorted slices
 		for ext := range extensionsSet {
 			configTool.Extensions = append(configTool.Extensions, ext)
 		}
 		slices.Sort(configTool.Extensions)
+		for file := range filesSet {
+			configTool.Files = append(configTool.Files, file)
+		}
+		slices.Sort(configTool.Files)
 
 		// Sort languages alphabetically
 		slices.Sort(configTool.Languages)
@@ -201,18 +228,6 @@ func CreateLanguagesConfigFile(apiTools []domain.Tool, toolsConfigDir string, to
 
 // buildRemoteModeLanguagesConfig builds the languages config for remote mode using repository languages as source of truth
 func buildRemoteModeLanguagesConfig(apiTools []domain.Tool, toolIDMap map[string]string, initFlags domain.InitFlags) ([]domain.ToolLanguageInfo, error) {
-	// Get language file extensions from API
-	languageTools, err := codacyclient.GetLanguageTools()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get language tools from API: %w", err)
-	}
-
-	// Create map of language name to file extensions
-	languageExtensionsMap := make(map[string][]string)
-	for _, langTool := range languageTools {
-		languageExtensionsMap[strings.ToLower(langTool.Name)] = langTool.FileExtensions
-	}
-
 	// Get repository languages - this is the single source of truth for remote mode
 	repositoryLanguages, err := getRepositoryLanguages(initFlags)
 	if err != nil {
@@ -232,18 +247,36 @@ func buildRemoteModeLanguagesConfig(apiTools []domain.Tool, toolIDMap map[string
 			Name:       shortName,
 			Languages:  []string{},
 			Extensions: []string{},
+			Files:      []string{},
 		}
 
 		// Use only languages that exist in the repository
 		extensionsSet := make(map[string]struct{})
+		filesSet := make(map[string]struct{})
 
 		for _, lang := range tool.Languages {
 			lowerLang := strings.ToLower(lang)
-			if repoExts, exists := repositoryLanguages[lowerLang]; exists && len(repoExts) > 0 {
-				configTool.Languages = append(configTool.Languages, lang)
-				// Add repository-specific extensions
-				for _, ext := range repoExts {
-					extensionsSet[ext] = struct{}{}
+			if repoLang, exists := repositoryLanguages[lowerLang]; exists {
+				// Check if this language has either extensions or files
+				hasExtensions := len(repoLang.Extensions) > 0
+				hasFiles := len(repoLang.Files) > 0
+
+				if hasExtensions || hasFiles {
+					configTool.Languages = append(configTool.Languages, lang)
+
+					// Add repository-specific extensions if they exist
+					if hasExtensions {
+						for _, ext := range repoLang.Extensions {
+							extensionsSet[ext] = struct{}{}
+						}
+					}
+
+					// Add repository-specific files if they exist and tool supports specific files
+					if hasFiles && supportSpecificFiles[shortName] {
+						for _, file := range repoLang.Files {
+							filesSet[file] = struct{}{}
+						}
+					}
 				}
 			}
 		}
@@ -253,6 +286,12 @@ func buildRemoteModeLanguagesConfig(apiTools []domain.Tool, toolIDMap map[string
 			configTool.Extensions = append(configTool.Extensions, ext)
 		}
 		slices.Sort(configTool.Extensions)
+
+		// Convert files set to sorted slice
+		for file := range filesSet {
+			configTool.Files = append(configTool.Files, file)
+		}
+		slices.Sort(configTool.Files)
 
 		// Sort languages alphabetically
 		slices.Sort(configTool.Languages)
@@ -264,14 +303,14 @@ func buildRemoteModeLanguagesConfig(apiTools []domain.Tool, toolIDMap map[string
 	return configTools, nil
 }
 
-func getRepositoryLanguages(initFlags domain.InitFlags) (map[string][]string, error) {
+func getRepositoryLanguages(initFlags domain.InitFlags) (map[string]domain.Language, error) {
 	response, err := codacyclient.GetRepositoryLanguages(initFlags)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get repository languages: %w", err)
 	}
 
-	// Create map to store language name -> combined extensions
-	result := make(map[string][]string)
+	// Create map to store language name -> Language struct
+	result := make(map[string]domain.Language)
 
 	// Filter and process languages
 	for _, lang := range response {
@@ -285,17 +324,32 @@ func getRepositoryLanguages(initFlags domain.InitFlags) (map[string][]string, er
 				extensions[ext] = struct{}{}
 			}
 
-			// Convert map to slice
+			// Combine and deduplicate files
+			files := make(map[string]struct{})
+			for _, file := range lang.DefaultFiles {
+				files[file] = struct{}{}
+			}
+
+			// Convert extension map to slice
 			extSlice := make([]string, 0, len(extensions))
 			for ext := range extensions {
 				extSlice = append(extSlice, ext)
 			}
-
-			// Sort extensions for consistent ordering in the config file
 			slices.Sort(extSlice)
 
+			// Convert files map to slice
+			fileSlice := make([]string, 0, len(files))
+			for file := range files {
+				fileSlice = append(fileSlice, file)
+			}
+			slices.Sort(fileSlice)
+
 			// Add to result map with lowercase key for case-insensitive matching
-			result[strings.ToLower(lang.Name)] = extSlice
+			result[strings.ToLower(lang.Name)] = domain.Language{
+				Name:       lang.Name,
+				Extensions: extSlice,
+				Files:      fileSlice,
+			}
 		}
 	}
 
