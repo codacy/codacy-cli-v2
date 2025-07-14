@@ -41,6 +41,7 @@ type LanguagesConfig struct {
 		Name       string   `yaml:"name" json:"name"`
 		Languages  []string `yaml:"languages" json:"languages"`
 		Extensions []string `yaml:"extensions" json:"extensions"`
+		Files      []string `yaml:"files" json:"files"`
 	} `yaml:"tools" json:"tools"`
 }
 
@@ -90,7 +91,7 @@ func GetFileExtension(filePath string) string {
 	return strings.ToLower(filepath.Ext(filePath))
 }
 
-// IsToolSupportedForFile checks if a tool supports a given file based on its extension
+// IsToolSupportedForFile checks if a tool supports a given file based on its extension or filename
 func IsToolSupportedForFile(toolName string, filePath string, langConfig *LanguagesConfig) bool {
 	if langConfig == nil {
 		// If no language config is available, assume all tools are supported
@@ -99,11 +100,14 @@ func IsToolSupportedForFile(toolName string, filePath string, langConfig *Langua
 	}
 
 	fileExt := GetFileExtension(filePath)
+
 	if fileExt == "" {
 		// If file has no extension, assume tool is supported
 		fmt.Printf("[DEBUG] File %s has no extension, assuming tool %s supports it\n", filePath, toolName)
 		return true
 	}
+
+	fileName := filepath.Base(filePath)
 
 	for _, tool := range langConfig.Tools {
 		if tool.Name == toolName {
@@ -121,7 +125,13 @@ func IsToolSupportedForFile(toolName string, filePath string, langConfig *Langua
 				}
 			}
 
-			fmt.Printf("[DEBUG] Tool %s does NOT support file %s (ext: %s)\n", toolName, filePath, fileExt)
+			// Check if filename is supported by this tool (exact match)
+			for _, file := range tool.Files {
+				if strings.EqualFold(file, fileName) {
+					return true
+				}
+			}
+
 			// Extension not found in tool's supported extensions
 			return false
 		}
@@ -485,12 +495,7 @@ Supports API token, provider, and repository flags to automatically fetch tool c
 		}
 
 		// Filter tools by language support
-		// HOT FIX - disable for now, file extensions are not considered during the analysis
-		// Need to support special `files` for languages like the ones defined here:
-		// https://github.com/codacy/codacy-plugins-api/blob/ed456e612382c688b6146f70ca0df6b4dfdf0bf9/codacy-plugins-api/src/main/scala/com/codacy/plugins/api/languages/Language.scala#L102
-		//
-
-		// toolsToRun = FilterToolsByLanguageSupport(toolsToRun, args)
+		toolsToRun = FilterToolsByLanguageSupport(toolsToRun, args)
 
 		if len(toolsToRun) == 0 {
 			log.Println("No tools support the specified file(s). Skipping analysis.")
