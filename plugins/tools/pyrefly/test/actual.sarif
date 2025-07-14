@@ -1,6 +1,5 @@
 {
   "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
-  "version": "2.1.0",
   "runs": [
     {
       "results": [
@@ -10,7 +9,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "test_file.py"
+                  "uri": "src/test_file.py"
                 },
                 "region": {
                   "startColumn": 24,
@@ -50,7 +49,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "test_file.py"
+                  "uri": "src/test_file.py"
                 },
                 "region": {
                   "startColumn": 12,
@@ -74,5 +73,6 @@
         }
       }
     }
-  ]
-} 
+  ],
+  "version": "2.1.0"
+}

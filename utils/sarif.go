@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // PylintIssue represents a single issue in Pylint's JSON output
@@ -21,8 +22,8 @@ type PylintIssue struct {
 
 // SarifReport represents the SARIF report structure
 type SarifReport struct {
-	Version string `json:"version"`
 	Schema  string `json:"$schema"`
+	Version string `json:"version"`
 	Runs    []Run  `json:"runs"`
 }
 
@@ -300,11 +301,12 @@ func ConvertPyreflyToSarif(pyreflyOutput []byte) []byte {
 	}
 	var root pyreflyRoot
 	var sarifReport SarifReport
+	cwd, _ := os.Getwd()
 	if err := json.Unmarshal(pyreflyOutput, &root); err != nil {
 		// If parsing fails, return empty SARIF report with Pyrefly metadata
 		sarifReport = SarifReport{
-			Version: "2.1.0",
 			Schema:  "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+			Version: "2.1.0",
 			Runs: []Run{
 				{
 					Tool: Tool{
@@ -320,8 +322,8 @@ func ConvertPyreflyToSarif(pyreflyOutput []byte) []byte {
 		}
 	} else {
 		sarifReport = SarifReport{
-			Version: "2.1.0",
 			Schema:  "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+			Version: "2.1.0",
 			Runs: []Run{
 				{
 					Tool: Tool{
@@ -336,6 +338,10 @@ func ConvertPyreflyToSarif(pyreflyOutput []byte) []byte {
 			},
 		}
 		for _, issue := range root.Errors {
+			relPath := issue.Path
+			if rel, err := filepath.Rel(cwd, issue.Path); err == nil {
+				relPath = rel
+			}
 			result := Result{
 				RuleID: issue.Name,
 				Level:  "error", // Pyrefly only reports errors
@@ -346,7 +352,7 @@ func ConvertPyreflyToSarif(pyreflyOutput []byte) []byte {
 					{
 						PhysicalLocation: PhysicalLocation{
 							ArtifactLocation: ArtifactLocation{
-								URI: issue.Path,
+								URI: relPath,
 							},
 							Region: Region{
 								StartLine:   issue.Line,
