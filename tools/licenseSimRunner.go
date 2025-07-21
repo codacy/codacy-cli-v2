@@ -32,6 +32,9 @@ func RunLicenseSim(workDirectory string, binary string, files []string, outputFi
 	parts := strings.Split(binary, " ")
 	cmdArgs := append(parts[1:], "search", "-f", fileToCheck, "-e", ext)
 
+	// Always add --json for machine-readable output
+	cmdArgs = append(cmdArgs, "--json")
+
 	if outputFormat == "sarif" {
 		tempFile, err := os.CreateTemp("", "license-sim-*.json")
 		if err != nil {
@@ -41,7 +44,6 @@ func RunLicenseSim(workDirectory string, binary string, files []string, outputFi
 		tempFile.Close()
 		defer os.Remove(tempFilePath)
 
-		cmdArgs = append(cmdArgs, "--json")
 		cmd := exec.Command(parts[0], cmdArgs...)
 		cmd.Dir = workDirectory
 		cmd.Env = append(os.Environ(), "KMP_DUPLICATE_LIB_OK=TRUE")

@@ -62,6 +62,8 @@ func LoadLanguageConfig() (*LanguagesConfig, error) {
 			return nil, fmt.Errorf("failed to parse YAML languages configuration file: %w", err)
 		}
 
+		// Ensure license-sim entry for PHP files
+		ensureLicenseSimEntry(&config)
 		return &config, nil
 	}
 
@@ -83,7 +85,36 @@ func LoadLanguageConfig() (*LanguagesConfig, error) {
 		return nil, fmt.Errorf("failed to parse JSON languages configuration file: %w", err)
 	}
 
+	// Ensure license-sim entry for PHP files
+	ensureLicenseSimEntry(&config)
 	return &config, nil
+}
+
+// ensureLicenseSimEntry adds or updates the license-sim entry to only support .php files
+func ensureLicenseSimEntry(config *LanguagesConfig) {
+	found := false
+	for i, tool := range config.Tools {
+		if tool.Name == "license-sim" {
+			// Overwrite to only support .php files
+			config.Tools[i].Extensions = []string{".php"}
+			config.Tools[i].Languages = []string{"PHP"}
+			found = true
+			break
+		}
+	}
+	if !found {
+		config.Tools = append(config.Tools, struct {
+			Name       string   `yaml:"name" json:"name"`
+			Languages  []string `yaml:"languages" json:"languages"`
+			Extensions []string `yaml:"extensions" json:"extensions"`
+			Files      []string `yaml:"files" json:"files"`
+		}{
+			Name:       "license-sim",
+			Languages:  []string{"PHP"},
+			Extensions: []string{".php"},
+			Files:      nil,
+		})
+	}
 }
 
 // GetFileExtension extracts the file extension from a path
@@ -113,14 +144,14 @@ func IsToolSupportedForFile(toolName string, filePath string, langConfig *Langua
 		if tool.Name == toolName {
 			// If tool has no extensions defined, assume it supports all files
 			if len(tool.Extensions) == 0 {
-				fmt.Printf("[DEBUG] Tool %s has no extensions defined, supports all files. File: %s\n", toolName, filePath)
+				fmt.Printf("[DEBUG1] Tool %s has no extensions defined, supports all files. File: %s\n", toolName, filePath)
 				return true
 			}
 
-			fmt.Printf("[DEBUG] Checking if tool %s supports file %s (ext: %s). Tool extensions: %v\n", toolName, filePath, fileExt, tool.Extensions)
+			//fmt.Printf("[DEBUG] Checking if tool %s supports file %s (ext: %s). Tool extensions: %v\n", toolName, filePath, fileExt, tool.Extensions)
 			for _, ext := range tool.Extensions {
 				if strings.EqualFold(ext, fileExt) {
-					fmt.Printf("[DEBUG] Tool %s supports file %s (matched ext: %s)\n", toolName, filePath, fileExt)
+					//fmt.Printf("[DEBUG2] Tool %s supports file %s (matched ext: %s)\n", toolName, filePath, fileExt)
 					return true
 				}
 			}
@@ -138,7 +169,7 @@ func IsToolSupportedForFile(toolName string, filePath string, langConfig *Langua
 	}
 
 	// If tool not found in config, assume it's supported
-	fmt.Printf("[DEBUG] Tool %s not found in language config, assuming it supports file %s\n", toolName, filePath)
+	//fmt.Printf("[DEBUG3] Tool %s not found in language config, assuming it supports file %s\n", toolName, filePath)
 	return true
 }
 

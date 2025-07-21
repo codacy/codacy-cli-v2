@@ -380,6 +380,14 @@ func (c *ConfigType) IsRuntimeInstalled(name string, runtime *plugins.RuntimeInf
 
 // IsToolInstalled checks if a tool is already installed
 func (c *ConfigType) IsToolInstalled(name string, tool *plugins.ToolInfo) bool {
+	// Special case for license-sim: treat as installed if duncan.py exists in a sibling directory
+	if name == "license-sim" {
+		repoParent := filepath.Dir(c.repositoryDirectory)
+		scriptPath := filepath.Join(repoParent, "license-sim", "duncan.py")
+		if _, err := os.Stat(scriptPath); err == nil {
+			return true
+		}
+	}
 	// If there are no binaries, check the install directory
 	if len(tool.Binaries) == 0 {
 		_, err := os.Stat(tool.InstallDir)

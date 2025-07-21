@@ -342,16 +342,18 @@ func ConvertLicenseSimToSarifWithFile(licenseSimOutput []byte, scannedFile strin
 	}
 
 	for _, issue := range issues {
-		referenceFile := issue.FilePath
 		ruleId := issue.License
 		if ruleId == "" {
 			ruleId = "license-sim-match"
 		}
+		// Compose message with similarity score and reference file if available
+		percent := int(issue.Similarity * 100)
 		msg := issue.Message
 		if msg == "" {
-			msg = "code similar to licensed code in " + referenceFile
-		} else {
-			msg = msg + " (reference: " + referenceFile + ")"
+			msg = fmt.Sprintf("code similar to licensed code (%d%%)", percent)
+			if issue.FilePath != "" {
+				msg += " in " + issue.FilePath
+			}
 		}
 		startLine := issue.Line
 		if startLine <= 0 {

@@ -31,6 +31,7 @@ const (
 	Semgrep      string = "6792c561-236d-41b7-ba5e-9d6bee0d548b"
 	Lizard       string = "76348462-84b3-409a-90d3-955e90abfb87"
 	Revive       string = "bd81d1f4-1406-402d-9181-1274ee09f1aa"
+	LicenseSim   string = "b7e1c2a4-5f3d-4e2a-9c8b-1a2b3c4d5e6f" // generated UUID
 )
 
 type ToolInfo struct {
@@ -50,4 +51,5 @@ var SupportedToolsMetadata = map[string]ToolInfo{
 	Lizard:       {Name: "lizard", Priority: 0},
 	Semgrep:      {Name: "semgrep", Priority: 0},
 	Revive:       {Name: "revive", Priority: 0},
+	LicenseSim:   {Name: "license-sim", Priority: 0},
 }

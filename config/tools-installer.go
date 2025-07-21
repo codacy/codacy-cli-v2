@@ -92,9 +92,9 @@ func InstallTool(name string, toolInfo *plugins.ToolInfo, registry string) error
 		isRuntimeInstalled = true
 	}
 
-	// Skip installation for local binary tools (no runtime, no download URL)
-	if toolInfo.Runtime == "" && toolInfo.DownloadURL == "" {
-		logger.Info("Skipping installation for local binary tool", logrus.Fields{
+	// Skip installation for local binary tools (no runtime, no download URL, and version == "local")
+	if toolInfo.Version == "local" {
+		logger.Info("Skipping installation for local binary tool (version=local)", logrus.Fields{
 			"tool":    name,
 			"version": toolInfo.Version,
 		})
