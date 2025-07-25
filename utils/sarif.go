@@ -283,16 +283,18 @@ func FilterRulesFromSarif(sarifData []byte) ([]byte, error) {
 // Adjust fields as needed based on actual license-sim JSON output
 // Example fields: File, Function, License, Similarity, etc.
 type LicenseSimIssue struct {
-	FilePath   string  `json:"file_path"`
-	Function   string  `json:"function_name"`
-	License    string  `json:"license_type"`
-	Similarity float64 `json:"similarity"`
-	Line       int     `json:"line"`
-	Message    string  `json:"message"`
+	FilePath        string  `json:"file_path"`
+	Function        string  `json:"function_name"`
+	License         string  `json:"license_type"`
+	Similarity      float64 `json:"similarity"`
+	Line            int     `json:"line"`
+	Message         string  `json:"message"`
+	SeverityLevel   string  `json:"severity_level"`
+	EnhancedMessage string  `json:"enhanced_message"`
 }
 
-// ConvertLicenseSimToSarif converts license-sim JSON output to SARIF format
-func ConvertLicenseSimToSarifWithFile(licenseSimOutput []byte, scannedFile string) []byte {
+// parseLicenseSimInput parses the license-sim JSON output into issues
+func parseLicenseSimInput(licenseSimOutput []byte) ([]LicenseSimIssue, error) {
 	var issues []LicenseSimIssue
 
 	// Try to unmarshal as {"results": [...]}
@@ -300,29 +302,94 @@ func ConvertLicenseSimToSarifWithFile(licenseSimOutput []byte, scannedFile strin
 		Results []LicenseSimIssue `json:"results"`
 	}
 	if err := json.Unmarshal(licenseSimOutput, &wrapper); err == nil && len(wrapper.Results) > 0 {
-		issues = wrapper.Results
-	} else {
-		// Fallback: try to unmarshal as a flat array
-		if err := json.Unmarshal(licenseSimOutput, &issues); err != nil {
-			fmt.Fprintf(os.Stderr, "[DEBUG] LicenseSimToSarif: failed to parse input as array or results wrapper: %v\nRaw input: %s\n", err, string(licenseSimOutput))
-			return createEmptySarifReport()
+		return wrapper.Results, nil
+	}
+
+	// Fallback: try to unmarshal as a flat array
+	if err := json.Unmarshal(licenseSimOutput, &issues); err != nil {
+		return nil, fmt.Errorf("failed to parse input: %w", err)
+	}
+	return issues, nil
+}
+
+// determineScannedFile determines the scanned file name from issues or uses fallback
+func determineScannedFile(issues []LicenseSimIssue, scannedFile string) string {
+	if scannedFile != "" {
+		return scannedFile
+	}
+
+	// Try to detect the scanned file from the input (first issue's file_path or fallback)
+	if len(issues) > 0 {
+		for _, issue := range issues {
+			if !strings.HasPrefix(issue.FilePath, "../") && issue.FilePath != "" {
+				return issue.FilePath
+			}
+		}
+	}
+	return "license-sim-test.php" // fallback
+}
+
+// processLicenseSimIssue converts a single license-sim issue to a SARIF result
+func processLicenseSimIssue(issue LicenseSimIssue, scannedFile string) *Result {
+	ruleId := issue.License
+	if ruleId == "" {
+		ruleId = "license-sim-match"
+	}
+
+	// Use severity level and message from license-sim if available
+	level := issue.SeverityLevel
+	if level == "" {
+		// Fallback to note if not provided
+		level = "note"
+	}
+
+	message := issue.EnhancedMessage
+	if message == "" {
+		// Fallback to basic message if enhanced message not available
+		percent := int(issue.Similarity * 100)
+		if issue.FilePath != "" {
+			message = fmt.Sprintf("code similar to licensed code (%d%%) in %s", percent, issue.FilePath)
+		} else {
+			message = fmt.Sprintf("code similar to licensed code (%d%%)", percent)
 		}
 	}
 
-	if scannedFile == "" {
-		// Try to detect the scanned file from the input (first issue's file_path or fallback)
-		if len(issues) > 0 {
-			for _, issue := range issues {
-				if !strings.HasPrefix(issue.FilePath, "../") && issue.FilePath != "" {
-					scannedFile = issue.FilePath
-					break
-				}
-			}
-		}
-		if scannedFile == "" {
-			scannedFile = "license-sim-test.php" // fallback, ideally should be passed in
-		}
+	startLine := issue.Line
+	if startLine <= 0 {
+		startLine = 1
 	}
+	endLine := startLine
+	if endLine <= 0 {
+		endLine = startLine
+	}
+
+	return &Result{
+		RuleID:  ruleId,
+		Level:   level,
+		Message: MessageText{Text: message},
+		Locations: []Location{
+			{
+				PhysicalLocation: PhysicalLocation{
+					ArtifactLocation: ArtifactLocation{URI: scannedFile},
+					Region: Region{
+						StartLine: startLine,
+						EndLine:   endLine,
+					},
+				},
+			},
+		},
+	}
+}
+
+// ConvertLicenseSimToSarif converts license-sim JSON output to SARIF format
+func ConvertLicenseSimToSarifWithFile(licenseSimOutput []byte, scannedFile string) []byte {
+	issues, err := parseLicenseSimInput(licenseSimOutput)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[DEBUG] LicenseSimToSarif: %v\nRaw input: %s\n", err, string(licenseSimOutput))
+		return createEmptySarifReport()
+	}
+
+	scannedFile = determineScannedFile(issues, scannedFile)
 
 	sarifReport := SarifReport{
 		Version: "2.1.0",
@@ -342,44 +409,9 @@ func ConvertLicenseSimToSarifWithFile(licenseSimOutput []byte, scannedFile strin
 	}
 
 	for _, issue := range issues {
-		ruleId := issue.License
-		if ruleId == "" {
-			ruleId = "license-sim-match"
+		if result := processLicenseSimIssue(issue, scannedFile); result != nil {
+			sarifReport.Runs[0].Results = append(sarifReport.Runs[0].Results, *result)
 		}
-		// Compose message with similarity score and reference file if available
-		percent := int(issue.Similarity * 100)
-		msg := issue.Message
-		if msg == "" {
-			msg = fmt.Sprintf("code similar to licensed code (%d%%)", percent)
-			if issue.FilePath != "" {
-				msg += " in " + issue.FilePath
-			}
-		}
-		startLine := issue.Line
-		if startLine <= 0 {
-			startLine = 1
-		}
-		endLine := startLine
-		if endLine <= 0 {
-			endLine = startLine
-		}
-		result := Result{
-			RuleID:  ruleId,
-			Level:   "note",
-			Message: MessageText{Text: msg},
-			Locations: []Location{
-				{
-					PhysicalLocation: PhysicalLocation{
-						ArtifactLocation: ArtifactLocation{URI: scannedFile},
-						Region: Region{
-							StartLine: startLine,
-							EndLine:   endLine,
-						},
-					},
-				},
-			},
-		}
-		sarifReport.Runs[0].Results = append(sarifReport.Runs[0].Results, result)
 	}
 
 	sarifData, err := json.MarshalIndent(sarifReport, "", "  ")

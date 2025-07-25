@@ -436,7 +436,24 @@ func runTool(workDirectory string, toolName string, pathsToCheck []string, outpu
 		isToolInstalled = true
 	}
 
-	if tool == nil || !isToolInstalled {
+	// Special handling for license-sim: always treat as installed and configured
+	if toolName == "license-sim" {
+		// Ensure tool is loaded even if not in config
+		if tool == nil {
+			// Add license-sim to config if not present
+			err := config.Config.AddToolWithDefaultVersion(toolName)
+			if err != nil {
+				return fmt.Errorf("failed to add license-sim to configuration: %w", err)
+			}
+			tool = config.Config.Tools()[toolName]
+		}
+		isToolInstalled = true // Always treat license-sim as installed
+	}
+
+	// Skip installation for @local tools (version == "local")
+	shouldSkipInstallation := tool != nil && tool.Version == "local"
+
+	if (tool == nil || !isToolInstalled) && !shouldSkipInstallation {
 		if tool == nil {
 			fmt.Println("Tool configuration not found, adding and installing...")
 		}
