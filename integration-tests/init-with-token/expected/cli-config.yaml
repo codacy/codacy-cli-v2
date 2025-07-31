@@ -1,1 +1,4 @@
 mode: remote
+provider: gh
+organization: troubleshoot-codacy-dev
+repository: codacy-cli-test

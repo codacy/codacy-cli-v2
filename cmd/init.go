@@ -42,7 +42,7 @@ var initCmd = &cobra.Command{
 			fmt.Println()
 			fmt.Println("ℹ️  No project token was specified, fetching codacy default configurations")
 			noTools := []domain.Tool{}
-			err := configsetup.CreateConfigurationFiles(noTools, cliLocalMode)
+			err := configsetup.CreateConfigurationFiles(noTools, cliLocalMode, initFlags)
 			if err != nil {
 				log.Fatal(err)
 			}

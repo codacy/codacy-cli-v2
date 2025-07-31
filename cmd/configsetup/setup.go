@@ -212,7 +212,7 @@ func CreateGitIgnoreFile() error {
 	return writeConfigFile(gitIgnorePath, []byte(content))
 }
 
-func CreateConfigurationFiles(tools []domain.Tool, cliLocalMode bool) error {
+func CreateConfigurationFiles(tools []domain.Tool, cliLocalMode bool, flags domain.InitFlags) error {
 	// Create project config file
 	configContent := ConfigFileTemplate(tools)
 	if err := writeConfigFile(config.Config.ProjectConfigFile(), []byte(configContent)); err != nil {
@@ -220,7 +220,7 @@ func CreateConfigurationFiles(tools []domain.Tool, cliLocalMode bool) error {
 	}
 
 	// Create CLI config file
-	cliConfigContent := buildCliConfigContent(cliLocalMode)
+	cliConfigContent := buildCliConfigContent(cliLocalMode, flags)
 	if err := writeConfigFile(config.Config.CliConfigFile(), []byte(cliConfigContent)); err != nil {
 		return fmt.Errorf("failed to write CLI config file: %w", err)
 	}
@@ -229,12 +229,12 @@ func CreateConfigurationFiles(tools []domain.Tool, cliLocalMode bool) error {
 }
 
 // buildCliConfigContent creates the CLI configuration content
-func buildCliConfigContent(cliLocalMode bool) string {
-	mode := "remote"
+func buildCliConfigContent(cliLocalMode bool, initFlags domain.InitFlags) string {
 	if cliLocalMode {
-		mode = "local"
+		return fmt.Sprintf("mode: local")
+	} else {
+		return fmt.Sprintf("mode: remote\nprovider: %s\norganization: %s\nrepository: %s", initFlags.Provider, initFlags.Organization, initFlags.Repository)
 	}
-	return fmt.Sprintf("mode: %s", mode)
 }
 
 // RuntimePluginConfig holds the structure of the runtime plugin.yaml file
@@ -425,7 +425,7 @@ func BuildRepositoryConfigurationFiles(flags domain.InitFlags) error {
 	logVersionConflicts(familyToVersions, toolsWithLatestVersion)
 
 	// Create main config files with all enabled API tools (including cli-config.yaml)
-	if err := CreateConfigurationFiles(toolsWithLatestVersion, false); err != nil {
+	if err := CreateConfigurationFiles(toolsWithLatestVersion, false, flags); err != nil {
 		return err
 	}
 
