@@ -112,7 +112,7 @@ func runConfigResetLogic(cmd *cobra.Command, args []string, flags domain.InitFla
 		fmt.Println()
 		fmt.Println("ℹ️  Resetting to local default configurations.")
 		noTools := []domain.Tool{} // Empty slice for tools as we are in local mode without specific toolset from API initially
-		if err := configsetup.CreateConfigurationFiles(noTools, cliLocalMode); err != nil {
+		if err := configsetup.CreateConfigurationFiles(noTools, cliLocalMode, flags); err != nil {
 			log.Fatalf("Failed to create base configuration files: %v", err)
 		}
 		// Create default configuration files for tools
