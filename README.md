@@ -3,6 +3,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/8cae070168cf488db82478ba6505a005)](https://app.codacy.com/gh/codacy/codacy-cli-v2/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade) [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/8cae070168cf488db82478ba6505a005)](https://app.codacy.com/gh/codacy/codacy-cli-v2/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 
 
+
 Codacy CLI (version 2) is a command-line tool for running code analysis and integrating with Codacy. If your repository exists in Codacy, you can sync your configuration to ensure consistency with your organization's standards. 
 
 You can also use Codacy CLI for local code analysis without a Codacy account, leveraging the linter configuration files found in your project's root or Codacy's suggested defaults.
