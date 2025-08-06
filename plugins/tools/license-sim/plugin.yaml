@@ -6,4 +6,4 @@ environment:
   KMP_DUPLICATE_LIB_OK: "TRUE"
 binaries:
   - name: duncan
-    path: "/Users/kendrickcurtis/Documents/GitHub/license-sim/venv/bin/python /Users/kendrickcurtis/Documents/GitHub/license-sim/duncan.py"
+    path: "/Users/luia.ventura/Work/Repos/gh/license-sim/.venv/bin/python /Users/luia.ventura/Work/Repos/gh/license-sim/duncan.py"

@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"codacy/cli-v2/config"
 	"codacy/cli-v2/utils/logger"
 
 	"github.com/sirupsen/logrus"
@@ -16,7 +15,8 @@ import (
 // validateCodacyYAML validates that codacy.yaml exists and is not empty
 // Returns an error if validation fails, nil if validation passes
 func validateCodacyYAML() error {
-	codacyYAMLPath := config.Config.ProjectConfigFile()
+	//codacyYAMLPath := config.Config.ProjectConfigFile()
+	codacyYAMLPath := "/Users/luia.ventura/Work/Repos/gh/codacy-cli-v2/.codacy/codacy2.yaml"
 
 	// Check if file exists
 	if _, err := os.Stat(codacyYAMLPath); os.IsNotExist(err) {

@@ -432,7 +432,7 @@ func runTool(workDirectory string, toolName string, pathsToCheck []string, outpu
 
 	var runtime *plugins.RuntimeInfo
 
-	if toolName == "codacy-enigma-cli" {
+	if toolName == "license-sim" {
 		isToolInstalled = true
 	}
 
@@ -506,7 +506,7 @@ Supports API token, provider, and repository flags to automatically fetch tool c
 			log.Fatalf("Failed to get current working directory: %v", err)
 		}
 
-		cliLocalMode := len(initFlags.ApiToken) == 0
+		cliLocalMode := true
 
 		var toolsToRun map[string]*plugins.ToolInfo
 

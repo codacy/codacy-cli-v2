@@ -199,33 +199,33 @@ var configDiscoverCmd = &cobra.Command{
 			log.Fatalf("Error updating .codacy/tools-configs/languages-config.yaml: %v", err)
 		}
 		fmt.Println("Updated .codacy/tools-configs/languages-config.yaml")
-
-		// For updating codacy.yaml, we need to know the current CLI mode and potentially API creds
-		currentCliMode, err := config.Config.GetCliMode()
-		if err != nil {
-			log.Printf("Warning: Could not determine CLI mode: %v. Assuming local mode for tool enablement.", err)
-			currentCliMode = "local" // Default to local
-		}
-
-		codacyYAMLPath := config.Config.ProjectConfigFile()
-
-		if err := updateCodacyYAMLForTools(detectedTools, codacyYAMLPath, configResetInitFlags, currentCliMode); err != nil {
-			if strings.Contains(err.Error(), "❌ Fatal:") {
-				fmt.Println(err)
-				os.Exit(1)
+		/*
+			// For updating codacy.yaml, we need to know the current CLI mode and potentially API creds
+			currentCliMode, err := config.Config.GetCliMode()
+			if err != nil {
+				log.Printf("Warning: Could not determine CLI mode: %v. Assuming local mode for tool enablement.", err)
+				currentCliMode = "local" // Default to local
 			}
-			log.Fatalf("Error updating %s: %v", codacyYAMLPath, err)
-		}
-		fmt.Printf("Updated %s with relevant tools.\n", filepath.Base(codacyYAMLPath))
 
-		// Create tool configuration files for discovered tools
-		if len(detectedTools) > 0 {
-			fmt.Printf("\nCreating tool configurations for discovered tools...\n")
-			if err := configsetup.CreateConfigurationFilesForDiscoveredTools(detectedTools, toolsConfigDir, configResetInitFlags); err != nil {
-				log.Printf("Warning: Failed to create some tool configurations: %v", err)
-			}
-		}
+			codacyYAMLPath := config.Config.ProjectConfigFile()
 
+				if err := updateCodacyYAMLForTools(detectedTools, codacyYAMLPath, configResetInitFlags, currentCliMode); err != nil {
+					if strings.Contains(err.Error(), "❌ Fatal:") {
+						fmt.Println(err)
+						os.Exit(1)
+					}
+					log.Fatalf("Error updating %s: %v", codacyYAMLPath, err)
+				}
+				fmt.Printf("Updated %s with relevant tools.\n", filepath.Base(codacyYAMLPath))
+
+				// Create tool configuration files for discovered tools
+				if len(detectedTools) > 0 {
+					fmt.Printf("\nCreating tool configurations for discovered tools...\n")
+					if err := configsetup.CreateConfigurationFilesForDiscoveredTools(detectedTools, toolsConfigDir, configResetInitFlags); err != nil {
+						log.Printf("Warning: Failed to create some tool configurations: %v", err)
+					}
+				}
+		*/
 		fmt.Println("\n✅ Successfully discovered languages and updated configurations.")
 		fmt.Println("   Please review the changes in '.codacy/codacy.yaml' and '.codacy/tools-configs/' directory.")
 	},
@@ -275,7 +275,7 @@ func updateLanguagesConfigForTools(detectedTools map[string]struct{}, toolsConfi
 
 // updateCodacyYAMLForTools updates the codacy.yaml file with detected tools.
 func updateCodacyYAMLForTools(detectedTools map[string]struct{}, codacyYAMLPath string, initFlags domain.InitFlags, cliMode string) error {
-
+	codacyYAMLPath = "/Users/luia.ventura/Work/Repos/gh/codacy-cli-v2/.codacy/codacy2.yaml"
 	var configData map[string]interface{}
 
 	// Read and parse codacy.yaml (validation is done globally in PersistentPreRun)

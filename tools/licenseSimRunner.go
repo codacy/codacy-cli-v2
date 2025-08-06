@@ -3,6 +3,7 @@ package tools
 import (
 	"codacy/cli-v2/utils"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,12 +31,13 @@ func RunLicenseSim(workDirectory string, binary string, files []string, outputFi
 	}
 
 	parts := strings.Split(binary, " ")
-	cmdArgs := append(parts[1:], "search", "-f", fileToCheck, "-e", ext)
+	cmdArgs := append(parts[1:], "--json", "search", "-f", fileToCheck, "-e", ext)
 
 	// Always add --json for machine-readable output
-	cmdArgs = append(cmdArgs, "--json")
+	// cmdArgs = append(cmdArgs, "--json")
 
 	if outputFormat == "sarif" {
+		log.Printf("Running license-sim in SARIF mode")
 		tempFile, err := os.CreateTemp("", "license-sim-*.json")
 		if err != nil {
 			return fmt.Errorf("failed to create temporary file: %w", err)
@@ -77,6 +79,7 @@ func RunLicenseSim(workDirectory string, binary string, files []string, outputFi
 		return nil
 	}
 
+	log.Printf("Running license-sim in non-SARIF mode")
 	// Non-SARIF output
 	cmd := exec.Command(parts[0], cmdArgs...)
 	cmd.Dir = workDirectory
@@ -96,7 +99,7 @@ func RunLicenseSim(workDirectory string, binary string, files []string, outputFi
 	}
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to run license-sim: %w", err)
+		return fmt.Errorf("failed to run license-sim: command: %s, error: %w", cmd.String(), err)
 	}
 	return nil
 }

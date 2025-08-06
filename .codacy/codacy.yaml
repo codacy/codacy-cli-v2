@@ -1,11 +1,4 @@
 runtimes:
-    - dart@3.7.2
-    - go@1.22.3
-    - java@17.0.10
-    - node@22.2.0
     - python@3.11.11
 tools:
-    - lizard@1.17.19
-    - semgrep@1.78.0
-    - trivy@0.59.1
     - license-sim@local
