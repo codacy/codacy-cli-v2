@@ -237,7 +237,7 @@ func init() {
 	rootCmd.AddCommand(analyzeCmd)
 }
 
-func loadsToolAndPatterns(toolName string) (domain.Tool, []domain.PatternConfiguration) {
+func loadsToolAndPatterns(toolName string, onlyEnabledPatterns bool) (domain.Tool, []domain.PatternConfiguration) {
 	var toolsResponse, err = codacyclient.GetToolsVersions()
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -251,7 +251,7 @@ func loadsToolAndPatterns(toolName string) (domain.Tool, []domain.PatternConfigu
 		}
 	}
 	var patterns []domain.PatternConfiguration
-	patterns, err = codacyclient.GetDefaultToolPatternsConfig(domain.InitFlags{}, tool.Uuid)
+	patterns, err = codacyclient.GetDefaultToolPatternsConfig(domain.InitFlags{}, tool.Uuid, onlyEnabledPatterns)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return domain.Tool{}, []domain.PatternConfiguration{}

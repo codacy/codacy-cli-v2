@@ -86,7 +86,8 @@ func processSarif(sarif Sarif) [][]map[string]interface{} {
 
 	for _, run := range sarif.Runs {
 		var toolName = getToolName(strings.ToLower(run.Tool.Driver.Name), run.Tool.Driver.Version)
-		tool, patterns := loadsToolAndPatterns(toolName)
+		tool, patterns := loadsToolAndPatterns(toolName, false)
+
 		for _, result := range run.Results {
 			modifiedType := tool.Prefix + strings.Replace(result.RuleID, "/", "_", -1)
 			pattern := getPatternByID(patterns, modifiedType)

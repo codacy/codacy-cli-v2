@@ -481,7 +481,7 @@ func CreateToolConfigurationFile(toolName string, flags domain.InitFlags) error 
 		return fmt.Errorf("tool '%s' not found in supported tools", toolName)
 	}
 
-	patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(flags, toolUuid)
+	patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(flags, toolUuid, true)
 	if err != nil {
 		return fmt.Errorf("failed to get default patterns: %w", err)
 	}
@@ -734,7 +734,7 @@ func createDefaultConfigurationsForSpecificTools(discoveredToolNames map[string]
 // createToolConfigurationsForUUIDs creates tool configurations for specific UUIDs
 func createToolConfigurationsForUUIDs(uuids []string, toolsConfigDir string, initFlags domain.InitFlags) error {
 	for _, uuid := range uuids {
-		patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(initFlags, uuid)
+		patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(initFlags, uuid, true)
 		if err != nil {
 			logToolConfigWarning(uuid, "Failed to get default patterns", err)
 			continue
