@@ -25,7 +25,7 @@ func TestRunLizardWithSarifOutput(t *testing.T) {
 
 	// Construct the path to the Lizard binary
 	globalCache := filepath.Join(homeDirectory, ".cache", "codacy")
-	lizardBinary := filepath.Join(globalCache, "tools/lizard@1.17.19/venv/bin/python")
+	lizardBinary := filepath.Join(globalCache, "tools/lizard@1.17.31/venv/bin/python")
 
 	// Construct the path to the test file
 	complexPyPath := filepath.Join(currentDir, "complex.py")

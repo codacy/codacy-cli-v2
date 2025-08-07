@@ -4,8 +4,8 @@ runtimes:
     - python@3.11.11
 tools:
     - eslint@8.57.0
-    - lizard@1.17.19
+    - lizard@1.17.31
     - pmd@6.55.0
     - pylint@3.3.7
     - semgrep@1.78.0
-    - trivy@0.59.1
+    - trivy@0.65.0
