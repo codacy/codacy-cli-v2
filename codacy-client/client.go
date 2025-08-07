@@ -171,8 +171,11 @@ func parsePatternConfigurations(response []byte) ([]domain.PatternConfiguration,
 }
 
 // GetDefaultToolPatternsConfig fetches the default patterns for a tool
-func GetDefaultToolPatternsConfig(initFlags domain.InitFlags, toolUUID string) ([]domain.PatternConfiguration, error) {
-	baseURL := fmt.Sprintf("%s/api/v3/tools/%s/patterns?enabled=true", CodacyApiBase, toolUUID)
+func GetDefaultToolPatternsConfig(initFlags domain.InitFlags, toolUUID string, onlyEnabledPatterns bool) ([]domain.PatternConfiguration, error) {
+	baseURL := fmt.Sprintf("%s/api/v3/tools/%s/patterns", CodacyApiBase, toolUUID)
+	if onlyEnabledPatterns {
+		baseURL += "?enabled=true"
+	}
 
 	return getAllPages(baseURL, initFlags, parseDefaultPatternConfigurations)
 }
