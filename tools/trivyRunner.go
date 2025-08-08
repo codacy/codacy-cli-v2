@@ -9,7 +9,7 @@ import (
 
 // RunTrivy executes Trivy vulnerability scanner with the specified options
 func RunTrivy(repositoryToAnalyseDirectory string, trivyBinary string, pathsToCheck []string, outputFile string, outputFormat string) error {
-	cmd := exec.Command(trivyBinary, "fs")
+	cmd := exec.Command(trivyBinary, "fs", "--detection-priority", "comprehensive")
 
 	// Add config file from tools-configs directory if it exists
 	if configFile, exists := ConfigFileExists(config.Config, "trivy.yaml"); exists {
