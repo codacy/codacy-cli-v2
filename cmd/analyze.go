@@ -245,7 +245,7 @@ func loadsToolAndPatterns(toolName string, onlyEnabledPatterns bool) (domain.Too
 	}
 	var tool domain.Tool
 	for _, t := range toolsResponse {
-		if t.Name == toolName {
+		if t.ShortName == toolName {
 			tool = t
 			break
 		}
