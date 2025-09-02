@@ -260,9 +260,8 @@ func loadsToolAndPatterns(toolName string, onlyEnabledPatterns bool) (domain.Too
 }
 
 func getToolName(toolName string, version string) string {
-
+	majorVersion := getMajorVersion(version)
 	if toolName == "eslint" {
-		majorVersion := getMajorVersion(version)
 		switch majorVersion {
 		case 7:
 			return "eslint"
@@ -271,19 +270,16 @@ func getToolName(toolName string, version string) string {
 		case 9:
 			return "eslint-9"
 		}
-
 	} else {
 		if toolName == "pmd" {
-		majorVersion := getMajorVersion(version)
-		switch majorVersion {
-		case 6:
-			return "pmd"
-		case 7:
-			return "pmd-7"
-		}
+			switch majorVersion {
+			case 6:
+				return "pmd"
+			case 7:
+				return "pmd-7"
+			}
 		}
 	}
-
 	return toolName
 }
 
