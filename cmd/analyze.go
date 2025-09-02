@@ -272,6 +272,16 @@ func getToolName(toolName string, version string) string {
 			return "eslint-9"
 		}
 
+	} else {
+		if toolName == "pmd" {
+		majorVersion := getMajorVersion(version)
+		switch majorVersion {
+		case 6:
+			return "pmd"
+		case 7:
+			return "pmd-7"
+		}
+		}
 	}
 
 	return toolName
