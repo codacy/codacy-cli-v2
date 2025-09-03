@@ -66,6 +66,7 @@ func TestProcessTools(t *testing.T) {
 	// Assert installation command templates are correctly set
 	assert.Equal(t, "install --prefix {{.InstallDir}} {{.PackageName}}@{{.Version}} @microsoft/eslint-formatter-sarif", eslintInfo.InstallCommand)
 	assert.Equal(t, "config set registry {{.Registry}}", eslintInfo.RegistryCommand)
+	assert.Equal(t, eslintInfo.NeedsSourceIDUpload, false)
 }
 
 func TestProcessToolsWithDownload(t *testing.T) {
@@ -151,6 +152,7 @@ func TestProcessToolsWithDownload(t *testing.T) {
 		expectedArch = runtime.GOARCH
 	}
 	assert.Contains(t, trivyInfo.DownloadURL, expectedArch)
+	assert.Equal(t, trivyInfo.NeedsSourceIDUpload, true)
 }
 
 func TestGetSupportedTools(t *testing.T) {

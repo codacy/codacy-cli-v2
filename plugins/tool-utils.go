@@ -55,18 +55,19 @@ type RuntimeBinaries struct {
 
 // ToolPluginConfig holds the structure of the tool plugin.yaml file
 type ToolPluginConfig struct {
-	Name            string             `yaml:"name"`
-	Description     string             `yaml:"description"`
-	DefaultVersion  string             `yaml:"default_version"`
-	Runtime         string             `yaml:"runtime"`
-	RuntimeBinaries RuntimeBinaries    `yaml:"runtime_binaries"`
-	Installation    InstallationConfig `yaml:"installation"`
-	Download        DownloadConfig     `yaml:"download"`
-	Environment     map[string]string  `yaml:"environment"`
-	Binaries        []ToolBinary       `yaml:"binaries"`
-	Formatters      []Formatter        `yaml:"formatters"`
-	OutputOptions   OutputOptions      `yaml:"output_options"`
-	AnalysisOptions AnalysisOptions    `yaml:"analysis_options"`
+	Name                string             `yaml:"name"`
+	Description         string             `yaml:"description"`
+	DefaultVersion      string             `yaml:"default_version"`
+	Runtime             string             `yaml:"runtime"`
+	RuntimeBinaries     RuntimeBinaries    `yaml:"runtime_binaries"`
+	Installation        InstallationConfig `yaml:"installation"`
+	Download            DownloadConfig     `yaml:"download"`
+	Environment         map[string]string  `yaml:"environment"`
+	Binaries            []ToolBinary       `yaml:"binaries"`
+	Formatters          []Formatter        `yaml:"formatters"`
+	OutputOptions       OutputOptions      `yaml:"output_options"`
+	AnalysisOptions     AnalysisOptions    `yaml:"analysis_options"`
+	NeedsSourceIDUpload bool               `yaml:"needs_source_id_upload"`
 }
 
 // ToolConfig represents configuration for a tool
@@ -98,7 +99,8 @@ type ToolInfo struct {
 	FileName    string
 	Extension   string
 	// Environment variables
-	Environment map[string]string
+	Environment         map[string]string
+	NeedsSourceIDUpload bool
 }
 
 // ProcessTools processes a list of tool configurations and returns a map of tool information
@@ -151,7 +153,8 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 			InstallCommand:  pluginConfig.Installation.Command,
 			RegistryCommand: pluginConfig.Installation.RegistryTemplate,
 			// Store environment variables
-			Environment: make(map[string]string),
+			Environment:         make(map[string]string),
+			NeedsSourceIDUpload: pluginConfig.NeedsSourceIDUpload,
 		}
 
 		// Handle download configuration for directly downloaded tools
