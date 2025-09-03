@@ -103,6 +103,7 @@ func processSarif(sarif Sarif) [][]map[string]interface{} {
 					"message":  result.Message.Text,
 					"level":    pattern.Level,
 					"category": pattern.Category,
+					"sourceId": result.RuleID,
 				})
 			}
 		}
@@ -133,6 +134,7 @@ func processSarif(sarif Sarif) [][]map[string]interface{} {
 						"line": obj["line"].(int),
 					},
 				},
+				"sourceId": obj["sourceId"].(string),
 			}
 
 			// Check if we already have an entry for this filename
