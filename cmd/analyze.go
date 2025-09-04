@@ -280,6 +280,7 @@ func getToolName(toolName string, version string) string {
 			}
 		}
 	}
+
 	return toolName
 }
 
