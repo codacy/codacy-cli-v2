@@ -16,7 +16,7 @@ download:
     "darwin": "macOS"
     "linux": "Linux"
     "windows": "Windows"
-    
 binaries:
   - name: trivy
     path: "trivy"
+needs_source_id_upload: true

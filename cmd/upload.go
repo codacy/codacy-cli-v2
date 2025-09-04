@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"bytes"
+	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
+	"codacy/cli-v2/plugins"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -37,11 +39,11 @@ var uploadResultsCmd = &cobra.Command{
 	Short: "Uploads a sarif file to Codacy",
 	Long:  "YADA",
 	Run: func(cmd *cobra.Command, args []string) {
-		processSarifAndSendResults(sarifPath, commitUuid, projectToken, apiToken)
+		processSarifAndSendResults(sarifPath, commitUuid, projectToken, apiToken, config.Config.Tools())
 	},
 }
 
-func processSarifAndSendResults(sarifPath string, commitUUID string, projectToken string, apiToken string) {
+func processSarifAndSendResults(sarifPath string, commitUUID string, projectToken string, apiToken string, tools map[string]*plugins.ToolInfo) {
 	if projectToken == "" && apiToken == "" && provider == "" && repository == "" {
 		fmt.Println("Error: api-token, provider and repository are required when project-token is not provided")
 		os.Exit(1)
@@ -64,7 +66,7 @@ func processSarifAndSendResults(sarifPath string, commitUUID string, projectToke
 	}
 
 	fmt.Println("Loading Codacy patterns...")
-	payloads := processSarif(sarif)
+	payloads := processSarif(sarif, tools)
 	if projectToken != "" {
 		for _, payload := range payloads {
 			sendResultsWithProjectToken(payload, commitUUID, projectToken)
@@ -80,7 +82,7 @@ func processSarifAndSendResults(sarifPath string, commitUUID string, projectToke
 
 }
 
-func processSarif(sarif Sarif) [][]map[string]interface{} {
+func processSarif(sarif Sarif, tools map[string]*plugins.ToolInfo) [][]map[string]interface{} {
 	var codacyIssues []map[string]interface{}
 	var payloads [][]map[string]interface{}
 
@@ -96,14 +98,21 @@ func processSarif(sarif Sarif) [][]map[string]interface{} {
 				continue
 			}
 			for _, location := range result.Locations {
-				codacyIssues = append(codacyIssues, map[string]interface{}{
+				issue := map[string]interface{}{
 					"source":   location.PhysicalLocation.ArtifactLocation.URI,
 					"line":     location.PhysicalLocation.Region.StartLine,
 					"type":     pattern.ID,
 					"message":  result.Message.Text,
 					"level":    pattern.Level,
 					"category": pattern.Category,
-				})
+				}
+
+				// Only add sourceId for tools that need it
+				if toolInfo, exists := tools[toolName]; exists && toolInfo.NeedsSourceIDUpload {
+					issue["sourceId"] = result.RuleID
+				}
+
+				codacyIssues = append(codacyIssues, issue)
 			}
 		}
 		var results []map[string]interface{}
@@ -133,6 +142,11 @@ func processSarif(sarif Sarif) [][]map[string]interface{} {
 						"line": obj["line"].(int),
 					},
 				},
+			}
+
+			// Only add sourceId for tools that need it
+			if toolInfo, exists := tools[toolName]; exists && toolInfo.NeedsSourceIDUpload {
+				issue["sourceId"] = obj["sourceId"].(string)
 			}
 
 			// Check if we already have an entry for this filename
