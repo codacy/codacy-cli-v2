@@ -245,7 +245,7 @@ func loadsToolAndPatterns(toolName string, onlyEnabledPatterns bool) (domain.Too
 	}
 	var tool domain.Tool
 	for _, t := range toolsResponse {
-		if t.Name == toolName {
+		if t.ShortName == toolName {
 			tool = t
 			break
 		}
@@ -260,9 +260,8 @@ func loadsToolAndPatterns(toolName string, onlyEnabledPatterns bool) (domain.Too
 }
 
 func getToolName(toolName string, version string) string {
-
+	majorVersion := getMajorVersion(version)
 	if toolName == "eslint" {
-		majorVersion := getMajorVersion(version)
 		switch majorVersion {
 		case 7:
 			return "eslint"
@@ -271,7 +270,15 @@ func getToolName(toolName string, version string) string {
 		case 9:
 			return "eslint-9"
 		}
-
+	} else {
+		if toolName == "pmd" {
+			switch majorVersion {
+			case 6:
+				return "pmd"
+			case 7:
+				return "pmd-7"
+			}
+		}
 	}
 
 	return toolName
