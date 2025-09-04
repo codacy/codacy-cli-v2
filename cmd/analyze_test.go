@@ -56,6 +56,39 @@ func TestGetFileExtension(t *testing.T) {
 	}
 }
 
+func TestGetToolName(t *testing.T) {
+	tests := []struct {
+		name     string
+		tool     string
+		version  string
+		expected string
+	}{
+		// ESLint cases
+		{"eslint v7", "eslint", "7.32.0", "eslint"},
+		{"eslint v8", "eslint", "8.15.0", "eslint-8"},
+		{"eslint v9", "eslint", "9.1.0", "eslint-9"},
+		{"eslint unknown version", "eslint", "10.0.0", "eslint"},
+
+		// PMD cases
+		{"pmd v6", "pmd", "6.55.0", "pmd"},
+		{"pmd v7", "pmd", "7.0.0", "pmd-7"},
+		{"pmd unknown version", "pmd", "8.0.0", "pmd"},
+
+		// Other tools should remain unchanged
+		{"unknown tool", "bandit", "1.7.4", "bandit"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getToolName(tt.tool, tt.version)
+			if got != tt.expected {
+				t.Errorf("getToolName(%q, %q) = %q; want %q",
+					tt.tool, tt.version, got, tt.expected)
+			}
+		})
+	}
+}
+
 func TestIsToolSupportedForFile(t *testing.T) {
 	langConfig := &LanguagesConfig{
 		Tools: []struct {
