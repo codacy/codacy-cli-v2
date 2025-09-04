@@ -254,20 +254,6 @@ func FilterRulesFromSarif(sarifData []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to parse SARIF data: %w", err)
 	}
 
-	// Navigate to the runs array and remove rules from each run
-	if runs, ok := report["runs"].([]interface{}); ok {
-		for _, run := range runs {
-			if runMap, ok := run.(map[string]interface{}); ok {
-				if tool, ok := runMap["tool"].(map[string]interface{}); ok {
-					if driver, ok := tool["driver"].(map[string]interface{}); ok {
-						// Always set rules to null to maintain consistent output format
-						driver["rules"] = nil
-					}
-				}
-			}
-		}
-	}
-
 	// Marshal back to JSON with indentation
 	filteredData, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {

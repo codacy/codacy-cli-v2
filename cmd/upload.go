@@ -83,13 +83,33 @@ func processSarifAndSendResults(sarifPath string, commitUUID string, projectToke
 func processSarif(sarif Sarif) [][]map[string]interface{} {
 	var codacyIssues []map[string]interface{}
 	var payloads [][]map[string]interface{}
-
+	var modifiedType string
 	for _, run := range sarif.Runs {
 		var toolName = getToolName(strings.ToLower(run.Tool.Driver.Name), run.Tool.Driver.Version)
 		tool, patterns := loadsToolAndPatterns(toolName, false)
 
 		for _, result := range run.Results {
-			modifiedType := tool.Prefix + strings.Replace(result.RuleID, "/", "_", -1)
+			if toolName == "pmd" || toolName == "pmd-7" {
+				var language string
+				var ruleset string
+				// Try to extract ruleset from tool.driver.rules if available
+				rules := run.Tool.Driver.Rules[result.RuleIndex]
+				if rules.HelpURI != "" {
+					if parts := strings.Split(rules.HelpURI, "pmd_rules_"); len(parts) > 1 {
+						subParts := strings.SplitN(parts[1], "_", 2)
+						if len(subParts) == 2 {
+							language = subParts[0]
+							rulesetPart := strings.SplitN(subParts[1], ".html", 2)[0]
+							ruleset = rulesetPart
+						}
+					}
+				}
+				modifiedType = fmt.Sprintf(tool.Prefix+"category_%s_%s_%s", language, ruleset, result.RuleID)
+
+			} else {
+				modifiedType = tool.Prefix + strings.Replace(result.RuleID, "/", "_", -1)
+			}
+
 			pattern := getPatternByID(patterns, modifiedType)
 			if pattern == nil {
 				fmt.Printf("Rule '%s' doesn't have a direct mapping on Codacy\n", modifiedType)
