@@ -92,7 +92,7 @@ func processSarif(sarif Sarif) [][]map[string]interface{} {
 			if toolName == "pmd" || toolName == "pmd-7" {
 				var language string
 				var ruleset string
-				// Try to extract ruleset from tool.driver.rules if available
+				// Extract ruleset and language from rules properties if available
 				rules := run.Tool.Driver.Rules[result.RuleIndex]
 				if rules.HelpURI != "" {
 					if parts := strings.Split(rules.HelpURI, "pmd_rules_"); len(parts) > 1 {
