@@ -34,7 +34,7 @@
             "text": "Package: brace-expansion\nInstalled Version: 1.1.11\nVulnerability CVE-2025-5889\nSeverity: LOW\nFixed Version: 2.0.2, 1.1.12, 3.0.1, 4.0.1\nLink: [CVE-2025-5889](https://avd.aquasec.com/nvd/cve-2025-5889)"
           },
           "ruleId": "CVE-2025-5889",
-          "ruleIndex": 0
+          "ruleIndex": 4
         },
         {
           "level": "error",
@@ -115,7 +115,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2021-33203\nSeverity: MEDIUM\nFixed Version: 2.2.24, 3.1.12, 3.2.4\nLink: [CVE-2021-33203](https://avd.aquasec.com/nvd/cve-2021-33203)"
           },
           "ruleId": "CVE-2021-33203",
-          "ruleIndex": 3
+          "ruleIndex": 5
         },
         {
           "level": "warning",
@@ -142,7 +142,34 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2024-45231\nSeverity: MEDIUM\nFixed Version: 5.1.1, 5.0.9, 4.2.16\nLink: [CVE-2024-45231](https://avd.aquasec.com/nvd/cve-2024-45231)"
           },
           "ruleId": "CVE-2024-45231",
-          "ruleIndex": 4
+          "ruleIndex": 6
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "message": {
+                "text": "requirements.txt: django@1.11.29"
+              },
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "requirements.txt",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "endColumn": 1,
+                  "endLine": 1,
+                  "startColumn": 1,
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2025-57833\nSeverity: HIGH\nFixed Version: 4.2.24, 5.1.12, 5.2.6\nLink: [CVE-2025-57833](https://avd.aquasec.com/nvd/cve-2025-57833)"
+          },
+          "ruleId": "CVE-2025-57833",
+          "ruleIndex": 3
         },
         {
           "level": "warning",
@@ -178,7 +205,7 @@
           "informationUri": "https://github.com/aquasecurity/trivy",
           "name": "Trivy",
           "rules": null,
-          "version": "0.65.0"
+          "version": "0.66.0"
         }
       }
     }

@@ -35,7 +35,7 @@ func FilterRulesFromFile(rulesData []byte, config []domain.PatternConfiguration)
 	// Create a map of enabled pattern IDs for faster lookup
 	enabledPatterns := make(map[string]bool)
 	for _, pattern := range config {
-		if pattern.Enabled && pattern.PatternDefinition.Enabled {
+		if pattern.Enabled {
 			// Extract rule ID from pattern ID
 			parts := strings.SplitN(pattern.PatternDefinition.Id, "_", 2)
 			if len(parts) == 2 {
