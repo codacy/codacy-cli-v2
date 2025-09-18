@@ -29501,6 +29501,43 @@ rules:
             }
         - focus-metavariable: $SECRET
       severity: WARNING
+    - id: terraform.aws.security.aws-provisioner-exec.aws-provisioner-exec
+      languages:
+        - terraform
+      message: Provisioners are a tool of last resort and should be avoided where possible. Provisioner behavior cannot be mapped by Terraform as part of a plan, and execute arbitrary shell commands by design.
+      metadata:
+        category: security
+        confidence: HIGH
+        cwe:
+            - 'CWE-77: Improper Neutralization of Special Elements used in a Command (''Command Injection'')'
+            - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
+        impact: MEDIUM
+        likelihood: HIGH
+        owasp:
+            - A03:2021 - Injection
+            - A01:2017 - Injection
+        references:
+            - https://developer.hashicorp.com/terraform/language/resources/provisioners/remote-exec
+            - https://developer.hashicorp.com/terraform/language/resources/provisioners/local-exec
+        subcategory:
+            - guardrail
+        technology:
+            - terraform
+      patterns:
+        - pattern-either:
+            - pattern: |
+                provisioner "remote-exec" {
+                    ...
+                }
+            - pattern: |
+                provisioner "local-exec" {
+                    ...
+                }
+        - pattern-inside: |
+            resource "aws_instance" "..." {
+                ...
+            }
+      severity: WARNING
     - id: terraform.aws.security.aws-rds-backup-no-retention.aws-rds-backup-no-retention
       languages:
         - hcl
@@ -34374,8 +34411,12 @@ rules:
             - A3:2017 Sensitive Data Exposure
       options:
         generic_ellipsis_max_span: 0
-      pattern: |
-        $PASSWORD VARCHAR2($LENGTH) := $...VALUE;
+      patterns:
+        - pattern: |
+            $PASSWORD VARCHAR2($LENGTH) := $...VALUE;
+        - metavariable-regex:
+            metavariable: $PASSWORD
+            regex: (?i).*(password|motdepasse|heslo|adgangskode|wachtwoord|salasana|passwort|passord|senha|geslo|clave|losenord|clave|parola|secret|pwd).*
       severity: ERROR
     - id: codacy.generic.plsql.resource-injection
       languages:

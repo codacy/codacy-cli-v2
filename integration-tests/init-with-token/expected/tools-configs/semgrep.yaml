@@ -1,4 +1,22 @@
 rules:
+    - id: bash.lang.correctness.unquoted-expansion.unquoted-variable-expansion-in-command
+      languages:
+        - bash
+      message: Variable expansions must be double-quoted so as to prevent being split into multiple pieces according to whitespace or whichever separator is specified by the IFS variable. If you really wish to split the variable's contents, you may use a variable that starts with an underscore e.g. $_X instead of $X, and semgrep will ignore it. If what you need is an array, consider using a proper bash array.
+      metadata:
+        category: correctness
+        technology:
+            - bash
+      patterns:
+        - pattern-either:
+            - pattern: |
+                ... ${$VAR} ...
+            - pattern: |
+                ... ...${$VAR}... ...
+        - metavariable-regex:
+            metavariable: $VAR
+            regex: '[*@0-9]|[A-Za-z].*'
+      severity: INFO
     - id: clojure.lang.security.use-of-md5.use-of-md5
       languages:
         - clojure
@@ -29,6 +47,19 @@ rules:
         - pattern: (java.security.MessageDigest/getInstance "MD5")
         - pattern: (java.security.MessageDigest/getInstance MessageDigestAlgorithms/MD5)
         - pattern: (java.security.MessageDigest/getInstance org.apache.commons.codec.digest.MessageDigestAlgorithms/MD5)
+      severity: WARNING
+    - fix: Bitwise.bnot($VAL)
+      id: elixir.lang.best-practice.deprecated-bnot-operator.deprecated_bnot_operator
+      languages:
+        - elixir
+      message: The bitwise operator (`^^^`) is already deprecated. Please use `Bitwise.bnot($VAL)` instead.
+      metadata:
+        category: best-practice
+        references:
+            - https://github.com/elixir-lang/elixir/commit/f1b9d3e818e5bebd44540f87be85979f24b9abfc
+        technology:
+            - elixir
+      pattern: ~~~$VAL
       severity: WARNING
     - id: codacy.generic.plsql.empty-strings
       languages:
