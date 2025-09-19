@@ -1,6 +1,6 @@
 module codacy/cli-v2
 
-go 1.22.3
+go 1.22.4
 
 require (
 	github.com/fatih/color v1.18.0
