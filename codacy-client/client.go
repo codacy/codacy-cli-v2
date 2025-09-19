@@ -172,12 +172,29 @@ func parsePatternConfigurations(response []byte) ([]domain.PatternConfiguration,
 
 // GetDefaultToolPatternsConfig fetches the default patterns for a tool
 func GetDefaultToolPatternsConfig(initFlags domain.InitFlags, toolUUID string, onlyEnabledPatterns bool) ([]domain.PatternConfiguration, error) {
-	baseURL := fmt.Sprintf("%s/api/v3/tools/%s/patterns", CodacyApiBase, toolUUID)
+	return GetDefaultToolPatternsConfigWithCodacyAPIBase(CodacyApiBase, initFlags, toolUUID, onlyEnabledPatterns)
+}
+
+// GetDefaultToolPatternsConfigWithCodacyAPIBase fetches the default patterns for a tool, and a base api url
+func GetDefaultToolPatternsConfigWithCodacyAPIBase(codacyAPIBaseURL string, initFlags domain.InitFlags, toolUUID string, onlyEnabledPatterns bool) ([]domain.PatternConfiguration, error) {
+	baseURL := fmt.Sprintf("%s/api/v3/tools/%s/patterns", codacyAPIBaseURL, toolUUID)
 	if onlyEnabledPatterns {
 		baseURL += "?enabled=true"
 	}
 
-	return getAllPages(baseURL, initFlags, parseDefaultPatternConfigurations)
+	allPaterns, err := getAllPages(baseURL, initFlags, parseDefaultPatternConfigurations)
+	if err != nil {
+		return nil, err
+	}
+
+	onlyRecommendedPatterns := make([]domain.PatternConfiguration, 0)
+	for _, pattern := range allPaterns {
+		if pattern.PatternDefinition.Enabled {
+			onlyRecommendedPatterns = append(onlyRecommendedPatterns, pattern)
+		}
+	}
+
+	return onlyRecommendedPatterns, nil
 }
 
 // GetRepositoryToolPatterns fetches the patterns for a tool in a repository

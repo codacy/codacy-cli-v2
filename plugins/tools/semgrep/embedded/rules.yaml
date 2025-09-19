@@ -507,6 +507,7 @@ rules:
           # unsafe: $* $@ $0 $15 $_ $foo $FOO
           # unsafe but tolerated: $_foo $_FOO $_42
         regex: "[*@0-9]|[A-Za-z].*"
+
 - id: bash.lang.correctness.unquoted-expansion.unquoted-command-substitution-in-command
   languages: [bash]
   severity: INFO
@@ -64528,7 +64529,7 @@ rules:
       resource "aws_instance" "..." {
           ...
       }
-  id: aws-provisioner-exec
+  id: terraform.aws.security.aws-provisioner-exec.aws-provisioner-exec
   message: Provisioners are a tool of last resort and should be avoided where possible. Provisioner behavior cannot be mapped by Terraform as part of a plan, and execute arbitrary shell commands by design.
   languages:
   - terraform
@@ -78894,7 +78895,7 @@ rules:
       - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/
       
 - fix: bash
-  id: lang-consistency-bash
+  id: yaml.semgrep.consistency.lang-consistency-bash.lang-consistency-bash
   languages:
   - yaml
   message: Found '$X' in language config which diverges from semgrep.dev normalization.
@@ -78911,7 +78912,7 @@ rules:
       regex: ^(sh)$
   severity: WARNING
 - fix: cpp
-  id: lang-consistency-cpp
+  id: yaml.semgrep.consistency.lang-consistency-cpp.lang-consistency-cpp
   languages:
   - yaml
   message: Found '$X' in language config which diverges from semgrep.dev normalization.
@@ -78928,7 +78929,7 @@ rules:
       regex: ^(c\+\+)$
   severity: WARNING
 - fix: csharp
-  id: lang-consistency-csharp
+  id: yaml.semgrep.consistency.lang-consistency-csharp.lang-consistency-csharp
   languages:
   - yaml
   message: Found '$X' in language config which diverges from semgrep.dev normalization.
@@ -78945,7 +78946,7 @@ rules:
       regex: ^(c\#)$
   severity: WARNING
 - fix: dockerfile
-  id: lang-consistency-dockerfile
+  id: yaml.semgrep.consistency.lang-consistency-dockerfile.lang-consistency-dockerfile
   languages:
   - yaml
   message: Found '$X' in language config which diverges from semgrep.dev normalization.
@@ -78962,7 +78963,7 @@ rules:
       regex: ^(docker)$
   severity: WARNING
 - fix: elixir
-  id: lang-consistency-elixir
+  id: yaml.semgrep.consistency.lang-consistency-elixir.lang-consistency-elixir
   languages:
   - yaml
   message: Found '$X' in language config which diverges from semgrep.dev normalization.
@@ -78979,7 +78980,7 @@ rules:
       regex: ^(ex)$
   severity: WARNING
 - fix: go
-  id: lang-consistency-go
+  id: yaml.semgrep.consistency.lang-consistency-go.lang-consistency-go
   languages:
   - yaml
   message: Found '$X' in language config which diverges from semgrep.dev normalization.
@@ -78996,7 +78997,7 @@ rules:
       regex: ^(golang)$
   severity: WARNING
 - fix: hcl
-  id: lang-consistency-hcl
+  id: yaml.semgrep.consistency.lang-consistency-hcl.lang-consistency-hcl
   languages:
   - yaml
   message: Found '$X' in language config which diverges from semgrep.dev normalization.
@@ -79013,7 +79014,7 @@ rules:
       regex: ^(tf|terraform)$
   severity: WARNING
 - fix: js
-  id: lang-consistency-js
+  id: yaml.semgrep.consistency.lang-consistency-js.lang-consistency-js
   languages:
   - yaml
   message: Found '$X' in language config which diverges from semgrep.dev normalization.
@@ -79030,7 +79031,7 @@ rules:
       regex: ^(javascript)$
   severity: WARNING
 - fix: kotlin
-  id: lang-consistency-kotlin
+  id: yaml.semgrep.consistency.lang-consistency-kotlin.lang-consistency-kotlin
   languages:
   - yaml
   message: Found '$X' in language config which diverges from semgrep.dev normalization.
@@ -79047,7 +79048,7 @@ rules:
       regex: ^(kt)$
   severity: WARNING
 - fix: python
-  id: lang-consistency-python
+  id: yaml.semgrep.consistency.lang-consistency-python.lang-consistency-python
   languages:
   - yaml
   message: Found '$X' in language config which diverges from semgrep.dev normalization.
@@ -79064,7 +79065,7 @@ rules:
       regex: ^(py)$
   severity: WARNING
 - fix: regex
-  id: lang-consistency-regex
+  id: yaml.semgrep.consistency.lang-consistency-regex.lang-consistency-regex
   languages:
   - yaml
   message: Found '$X' in language config which diverges from semgrep.dev normalization.
@@ -79081,7 +79082,7 @@ rules:
       regex: ^(none)$
   severity: WARNING
 - fix: solidity
-  id: lang-consistency-solidity
+  id: yaml.semgrep.consistency.lang-consistency-solidity.lang-consistency-solidity
   languages:
   - yaml
   message: Found '$X' in language config which diverges from semgrep.dev normalization.
@@ -79098,7 +79099,7 @@ rules:
       regex: ^(sol)$
   severity: WARNING
 - fix: ts
-  id: lang-consistency-ts
+  id: yaml.semgrep.consistency.lang-consistency-ts.lang-consistency-ts
   languages:
   - yaml
   message: Found '$X' in language config which diverges from semgrep.dev normalization.
@@ -84143,8 +84144,9 @@ rules:
     - pattern: "os.WriteFile(...,$MASK)"
   - metavariable-comparison:
       metavariable: "$MASK"
-      comparison: "$MASK > 0o640"
-      base: 8
+      comparison: "int($MASK) > 0o640"
+      # comparison: "$MASK > 0o640"
+      # base: 8
   message: |
     The application was found setting file permissions to overly permissive values. Consider
     using the following values if the application user is the only process to access
@@ -94913,6 +94915,98 @@ rules:
     shortDescription: "Missing validation of OpenSSL certificate"
     security-severity: "MEDIUM"
     category: "security"
+- id: kotlin_pathtraversal_rule-FilePathTraversal
+  languages:
+    - kotlin
+  message: |
+    The application is found using untrusted user input with file 
+    operations, which can potentially lead to Path Traversal vulnerabilities. 
+    Path traversal (also known as directory traversal) allows attackers to 
+    access files and directories outside of intended boundaries by inserting 
+    special characters or sequences (like ../, ..\\, or URL-encoded variants) 
+    to navigate to arbitrary locations in the filesystem.
+    The vulnerability can lead to unauthorized access to sensitive files 
+    (configuration files, credentials), code execution (if attackers can write 
+    to or include executable files), information disclosure, or complete system 
+    compromise.
+
+    Where possible, do not send user input to file operation methods. If that 
+    cannot be avoided, follow the below mitigation strategy:
+    1. Validate and sanitize all user inputs used in file operations 
+    2. Use allowlisting approaches to validate file paths where possible
+    3. Apply canonicalization before validation to prevent bypass techniques
+    4. Restrict operations to a specific designated directory
+    5. Use application-specific user accounts with limited privileges
+
+    Secure Code Example:
+    ```
+    fun safeWrite(filename: String, content: String) {
+        val baseDir = File("/safe-dir/")
+        val target = File(baseDir, filename).canonicalFile
+
+        // Ensure the target path is within the allowed directory
+        if (!target.path.startsWith(baseDir.canonicalPath)) {
+            throw SecurityException("Invalid file path: $filename")
+        }
+
+        FileWriter(target).use { writer ->
+            writer.write(content)
+        }
+    }
+    ```
+  metadata:
+    shortDescription: "Improper limitation of a pathname to a restricted directory ('Path Traversal')"
+    cwe: "CWE-22"
+    owasp:
+      - "A5:2017-Broken Access Control"
+      - "A01:2021-Broken Access Control"
+    security-severity: "High"
+    technology:
+      - "kotlin"
+    category: "security"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - patterns:
+        - patterns:
+            - pattern-inside: |
+                import $IMPORT
+                ...
+            - metavariable-regex:
+                metavariable: $IMPORT
+                regex: .*springframework.*
+            - focus-metavariable: $VAR
+            - patterns:
+                - pattern-either:
+                    - pattern-inside: |
+                        fun $_(..., @$REQ(...) $VAR: $TYPE,...): $_ {
+                          ...
+                        }
+                    - pattern-inside: |
+                        fun $_(..., @$REQ $VAR: $TYPE,...): $_ {
+                          ...
+                        }
+                - metavariable-regex:
+                    metavariable: $TYPE
+                    regex: ^(?!(Int|Long|Float|Double|Char|Boolean))
+                - metavariable-regex:
+                    metavariable: $REQ
+                    regex: (RequestBody|PathVariable|RequestParam|RequestHeader|CookieValue|ModelAttribute|RequestPart)
+    - pattern: |
+        ($REQ: javax.servlet.ServletRequest)
+    - pattern: |
+        ($REQ: javax.servlet.http.HttpServletRequest)                  
+  pattern-sinks:
+    - pattern: java.io.File(...)
+    - pattern: java.io.FileInputStream(...)      
+    - pattern: java.io.FileReader(...)
+    - patterns:
+        - pattern-either:
+            - pattern: java.io.FileOutputStream($TAINT, ...)
+            - pattern: java.io.FileWriter($TAINT, ...)
+            - pattern: java.io.RandomAccessFile($TAINT, ...)
+        - focus-metavariable: $TAINT   
+    - pattern: kotlin.io.path.Path(...)                
 - id: python_exec_rule-start-process-partial-path
   languages:
   - "python"
@@ -100203,7 +100297,7 @@ rules:
       - "A01:2021-Broken Access Control"
     cwe: "CWE-22"
     shortDescription: "Improper limitation of a pathname to a restricted directory 
-      ('Path Traversal')"    
+    ('Path Traversal')"    
     references:
       - "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/07-Input_Validation_Testing/11.1-Testing_for_Local_File_Inclusion"
       - "https://github.com/semgrep/semgrep-rules/blob/develop/ruby/rails/security/brakeman/check-render-local-file-include.yaml"
@@ -103349,6 +103443,12 @@ rules:
     - metavariable-regex:
         metavariable: "$FUNC"
         regex: "^(body|params|query|baseUrl|cookies|hostname|subdomains|ip|ips|originalUrl|path)$"
+  pattern-sanitizers:
+  - patterns:
+    - pattern: $OBJ.slice($X, $Y)
+    - pattern-not: $OBJ.slice($X)
+    - pattern-not: $OBJ.slice(..., $OBJ.length)
+    - pattern-not: $OBJ.slice(..., Object.keys($OBJ).length)
   pattern-sinks:
   - patterns:
     - pattern: |
@@ -113132,8 +113232,12 @@ rules:
   severity: ERROR
   languages:
     - generic
-  pattern: |
-    $PASSWORD VARCHAR2($LENGTH) := $...VALUE;
+  patterns:
+    - pattern: |
+        $PASSWORD VARCHAR2($LENGTH) := $...VALUE;
+    - metavariable-regex:
+        metavariable: "$PASSWORD"
+        regex: "(?i).*(password|motdepasse|heslo|adgangskode|wachtwoord|salasana|passwort|passord|senha|geslo|clave|losenord|clave|parola|secret|pwd).*"
   options:
     generic_ellipsis_max_span: 0
   message: >
@@ -113324,5 +113428,95 @@ rules:
     technology:
       - .net
     impact: LOW
+    confidence: LOW
+- id: codacy.generic.sql.hardcoded-language-currency-orgid
+  severity: ERROR
+  languages:
+    - generic
+  patterns:
+    - pattern-either:
+      - pattern-regex: "(?i)\\b\\w*language\\w*\\b\\s*(=|:=)\\s*'?\\b[A-Z]{2}\\b'?"
+      - pattern-regex: "(?i)\\b\\w*currency\\w*\\b\\s*(=|:=)\\s*'?\\b[A-Z]{3}\\b'?"
+      - pattern-regex: "(?i)\\b(\\w*\\.)?org_id\\b\\s*(=|:=|IN|!=|<>)\\s*(\\(?\\s*'?\\d+'?(,\\s*'?\\d+'?)*\\s*\\)?)?"
+  paths:
+    include:
+      - "*.sql"
+  message: >
+    Hardcoded Language, Currency, or Org_Id values detected in SQL.Avoid hardcoding such values; use parameters or configuration instead.
+  metadata:
+    description: >
+      Detects hardcoded values for fields containing 'language', 'currency', or 'org_id' in SQL queries. These should be parameterized or retrieved from configuration.
+    category: performance
+    impact: MEDIUM
+    confidence: LOW
+- id: codacy.generic.sql.lookup-type-without-language-or-apps-fnd
+  severity: ERROR
+  languages:
+    - generic
+  patterns:
+    - pattern-either:
+        - pattern-regex: "(?i)lookup_type(?![^;]{0,200}language\\s*=)"  
+        - pattern-regex: "apps\\.fnd_lookup_values"                     
+  paths:
+    include:
+      - "*.sql"
+  message: >
+    Usage of 'lookup_type' without a language clause or reference to 'apps.fnd_lookup_values' detected.These patterns must be reviewed for localization and security risks.
+  metadata:
+    description: >
+      Flags usage of 'lookup_type' when no 'language = ...' clause is present, and flags any use of 'apps.fnd_lookup_values'.
+    category: performance
+    impact: MEDIUM
+    confidence: LOW
+- id: codacy.generic.sql.from-all-without-orgid
+  severity: ERROR
+  languages:
+    - generic
+  patterns:
+    - pattern-regex: "(?i)from\\s+[a-z0-9_]*_all[a-z0-9_]*(?![^;]{0,300}\\b[a-z0-9_]*org_id\\b\\s*(=|:=))"
+  paths:
+    include:
+      - "*.sql"
+  message: >
+    Detected use of *_ALL* table without an org_id clause.These queries must include an org_id condition to ensure data partitioning.
+  metadata:
+    description: >
+      Flags any SQL query selecting from *_ALL* tables without checking for an org_id condition like org_id = ... or org_id := ...
+    category: performance
+    impact: MEDIUM
+    confidence: LOW
+- id: codacy.generic.sql.rac-table-access
+  severity: ERROR
+  languages:
+    - generic
+  patterns:
+    - pattern-regex: '(?i)\b(SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM)\b(?![^\n;]*\bRAC_\w*\b)[^\n;]*'
+  paths:
+    include:
+      - "*.sql"
+  message: >
+    All queries must target RAC_* tables.Query does not reference RAC_* table.
+  metadata:
+    description: >
+      Enforce that all SELECT, INSERT, UPDATE, and DELETE queries must be performed only on RAC_* tables.
+    category: performance
+    impact: MEDIUM
+    confidence: LOW
+- id: codacy.generic.sql.rownum
+  severity: ERROR
+  languages:
+    - generic
+  patterns:
+    - pattern-regex: (?i)\bROWNUM\b
+  paths:
+    include:
+      - "*.sql"
+  message: >
+    The file contains ROWNUM usage which must be reviewed for performance and correctness.
+  metadata:
+    description: >
+      The file contains ROWNUM usage which must be reviewed for performance and correctness.
+    category: security
+    impact: MEDIUM
     confidence: LOW
 

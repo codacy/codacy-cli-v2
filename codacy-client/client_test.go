@@ -2,6 +2,7 @@ package codacyclient
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -100,15 +101,55 @@ func TestGetDefaultToolPatternsConfig_Empty(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	// TODO: Refactor GetDefaultToolPatternsConfig to accept a baseURL for easier testing
-	// oldBase := CodacyApiBase
-	// CodacyApiBase = ts.URL
-	// defer func() { CodacyApiBase = oldBase }()
+	CodacyApiBase = ts.URL
 
-	// Placeholder: test cannot be run until function is refactored for testability
-	_ = ts // avoid unused warning
-	// initFlags := domain.InitFlags{ApiToken: "dummy"}
-	// patterns, err := GetDefaultToolPatternsConfig(initFlags, "tool-uuid")
-	// assert.NoError(t, err)
-	// assert.Empty(t, patterns)
+	initFlags := domain.InitFlags{ApiToken: "dummy"}
+	patterns, err := GetDefaultToolPatternsConfigWithCodacyAPIBase(CodacyApiBase, initFlags, "tool-uuid", true)
+	assert.NoError(t, err)
+	assert.Empty(t, patterns)
+}
+
+func TestGetDefaultToolPatternsConfig_WithNonRecommended(t *testing.T) {
+
+	config := []domain.PatternDefinition{
+		{
+			Id:      "internal_id_1",
+			Enabled: true,
+		},
+		{
+			Id:      "internal_id_2",
+			Enabled: false,
+		},
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		resp := map[string]interface{}{
+			"data":       config,
+			"pagination": map[string]interface{}{"cursor": ""},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer ts.Close()
+
+	expected := []domain.PatternConfiguration{
+		{
+			Enabled: true,
+			PatternDefinition: domain.PatternDefinition{
+				Id:      "internal_id_1",
+				Enabled: true,
+			},
+		},
+	}
+
+	CodacyApiBase = ts.URL
+
+	initFlags := domain.InitFlags{ApiToken: "dummy"}
+	patterns, err := GetDefaultToolPatternsConfigWithCodacyAPIBase(CodacyApiBase, initFlags, "tool-uuid", true)
+
+	fmt.Println(len(patterns))
+
+	assert.NoError(t, err)
+	assert.Equal(t, expected, patterns)
 }

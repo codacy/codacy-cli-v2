@@ -25,7 +25,7 @@ func TestConfigFileTemplate(t *testing.T) {
 				"node@22.2.0",
 				"python@3.11.11",
 				"eslint@8.57.0",
-				"trivy@0.65.0",
+				"trivy@0.66.0",
 				"pylint@3.3.6",
 				"pmd@7.11.0",
 			},
