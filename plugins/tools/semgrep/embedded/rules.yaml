@@ -113519,4 +113519,89 @@ rules:
     category: security
     impact: MEDIUM
     confidence: LOW
+- id: codacy.python.openai.non-guardrails-direct-call
+  message: "Direct OpenAI SDK call detected. Use Guardrails client (GuardrailsOpenAI/GuardrailsAsyncOpenAI) instead."
+  severity: WARNING
+  languages: [python]
+  metadata:
+    category: security
+    cwe: "CWE-20: Improper Input Validation"
+    references:
+      - https://openai.github.io/openai-guardrails-python/
+    justification: >
+      Guardrails is a drop-in replacement that automatically validates inputs/outputs.
+      Prefer Guardrails clients over raw openai.* calls.
+    confidence: MEDIUM
+  patterns:
+    - pattern-either:
+      - pattern: openai.ChatCompletion.create(...)
+      - pattern: openai.Completion.create(...)
+      - pattern: openai.chat.completions.create(...)
+      - pattern: openai.responses.create(...)
+      - pattern: openai.embeddings.create(...)
+      - pattern: openai.images.generate(...)
+      - pattern: openai.audio.transcriptions.create(...)
+      - pattern: openai.audio.speech.create(...)
+- id: codacy.python.openai.non-guardrails-client-usage
+  message: "OpenAI client used without Guardrails. Replace with GuardrailsOpenAI / GuardrailsAsyncOpenAI."
+  severity: WARNING
+  languages: [python]
+  metadata:
+    category: security
+    cwe: "CWE-20: Improper Input Validation"
+    references:
+      - https://openai.github.io/openai-guardrails-python/
+    justification: >
+      Guardrails advises using GuardrailsOpenAI/GuardrailsAsyncOpenAI as a drop-in replacement
+      so validation runs automatically on every API call.
+    confidence: MEDIUM
+  # Catch typical client flows while avoiding false hits when the client *is* a Guardrails client.
+  patterns:
+    - pattern-either:
+        # Synchronous client patterns
+        - pattern: |
+            $C = OpenAI(...)
+            ...
+            $C.chat.completions.create(...)
+        - pattern: |
+            $C = OpenAI(...)
+            ...
+            $C.responses.create(...)
+        - pattern: |
+            $C = OpenAI(...)
+            ...
+            $C.embeddings.create(...)
+        # Async client patterns
+        - pattern: |
+            $C = AsyncOpenAI(...)
+            ...
+            $C.chat.completions.create(...)
+        - pattern: |
+            $C = AsyncOpenAI(...)
+            ...
+            $C.responses.create(...)
+        - pattern: |
+            $C = AsyncOpenAI(...)
+            ...
+            $C.embeddings.create(...)
+    - pattern-not: |
+        $C = GuardrailsOpenAI(...)
+    - pattern-not: |
+        $C = GuardrailsAsyncOpenAI(...)
+- id: codacy.python.openai.import-without-guardrails
+  message: "OpenAI SDK imported without Guardrails import. Consider GuardrailsOpenAI / GuardrailsAsyncOpenAI."
+  severity: INFO
+  languages: [python]
+  metadata:
+    category: security
+    references:
+      - https://openai.github.io/openai-guardrails-python/
+    confidence: MEDIUM
+  # Soft signal: import present but no Guardrails import in same file.
+  # This is informational to help teams spot likely non-guardrailed files early.
+  pattern: |
+    import openai
+  pattern-not: |
+    from guardrails import GuardrailsOpenAI |
+    from guardrails import GuardrailsAsyncOpenAI    
 
