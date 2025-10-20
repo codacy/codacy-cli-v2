@@ -72,11 +72,11 @@ func RunLizard(workDirectory string, binary string, files []string, outputFile s
 		var stdout bytes.Buffer
 		cmd.Stdout = &stdout
 
-		cmd.Run()
+		err = cmd.Run()
 
 		if stderr.Len() > 0 {
 			logger.Debug("Failed to run Lizard: ", logrus.Fields{
-				"error":  err.Error(),
+				"error":  err != nil ? err.Error() : "unknown error",
 				"stderr": string(stderr.Bytes()),
 			})
 
@@ -115,9 +115,9 @@ func RunLizard(workDirectory string, binary string, files []string, outputFile s
 		cmd.Stdout = os.Stdout
 		err = cmd.Run()
 
-		if stderr.Len() > 0 {
+		if stderr.Len() > 0 && err != nil {
 			logger.Debug("Failed to run Lizard: ", logrus.Fields{
-				"error":  err.Error(),
+				"error":  err != nil ? err.Error() : "unknown error",
 				"stderr": string(stderr.Bytes()),
 			})
 
