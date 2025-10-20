@@ -141,10 +141,6 @@ func (s *semgrepConfigCreator) GetToolName() string       { return "Semgrep" }
 type lizardConfigCreator struct{}
 
 func (l *lizardConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
-	// patternDefinitions := make([]domain.PatternDefinition, len(patterns))
-	// for i, pattern := range patterns {
-	// 	patternDefinitions[i] = pattern.PatternDefinition
-	// }
 	err := lizard.CreateLizardConfig(toolsConfigDir, patterns)
 	if err != nil {
 		return fmt.Errorf("failed to create Lizard configuration: %w", err)
