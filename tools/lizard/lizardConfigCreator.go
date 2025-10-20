@@ -25,7 +25,14 @@ func CreateLizardConfig(toolsConfigDir string, patterns []domain.PatternConfigur
 			continue
 		}
 
-		threshold := getThresholdFromParams(pattern.Parameters)
+		// if pattern.Parameters is empty, use pattermDefinition.Parameters
+		parameters := pattern.Parameters
+		if len(parameters) == 0 {
+			parameters = patternDefinition.Parameters
+		}
+
+		threshold := getThresholdFromParams(parameters)
+
 		if threshold != 0 {
 			// Create a unique key for this pattern that includes the severity
 			patternKey := patternDefinition.Id
