@@ -1,3 +1,5 @@
+// Package configsetup provides helpers to create Codacy configuration
+// files (codacy.yaml and related tool/runtime sections).
 package configsetup
 
 import (
@@ -17,6 +19,8 @@ type RuntimePluginConfig struct {
 	DefaultVersion string `yaml:"default_version"`
 }
 
+// ConfigFileTemplate returns the content of codacy.yaml given the enabled
+// tools. It lists required runtimes and tools with their versions.
 func ConfigFileTemplate(tools []domain.Tool) string {
 	toolsMap := make(map[string]bool)
 	toolVersions := make(map[string]string)
@@ -47,7 +51,7 @@ func ConfigFileTemplate(tools []domain.Tool) string {
 	return sb.String()
 }
 
-// getToolVersion returns the version for a tool, preferring tool.Version over default
+// getToolVersion returns the version for a tool, preferring tool.Version over default.
 func getToolVersion(tool domain.Tool, defaultVersions map[string]string) string {
 	if tool.Version != "" {
 		return tool.Version
@@ -60,9 +64,9 @@ func getToolVersion(tool domain.Tool, defaultVersions map[string]string) string 
 	return ""
 }
 
-// addRequiredRuntime adds the runtime requirement for a tool
-func addRequiredRuntime(toolUuid string, neededRuntimes map[string]bool, runtimeDependencies map[string]string) {
-	if meta, ok := domain.SupportedToolsMetadata[toolUuid]; ok {
+// addRequiredRuntime adds the runtime requirement for a tool.
+func addRequiredRuntime(toolUUID string, neededRuntimes map[string]bool, runtimeDependencies map[string]string) {
+    if meta, ok := domain.SupportedToolsMetadata[toolUUID]; ok {
 		if runtime, ok := runtimeDependencies[meta.Name]; ok {
 			if meta.Name == "dartanalyzer" {
 				// For dartanalyzer, default to dart runtime
@@ -74,7 +78,7 @@ func addRequiredRuntime(toolUuid string, neededRuntimes map[string]bool, runtime
 	}
 }
 
-// buildRuntimesSection builds the runtimes section of the configuration
+// buildRuntimesSection builds the runtimes section of the configuration.
 func buildRuntimesSection(sb *strings.Builder, tools []domain.Tool, neededRuntimes map[string]bool, runtimeVersions map[string]string, runtimeDependencies map[string]string) {
 	sb.WriteString("runtimes:\n")
 
@@ -86,7 +90,7 @@ func buildRuntimesSection(sb *strings.Builder, tools []domain.Tool, neededRuntim
 	writeRuntimesList(sb, neededRuntimes, runtimeVersions)
 }
 
-// addAllSupportedRuntimes adds all runtimes needed by supported tools
+// addAllSupportedRuntimes adds all runtimes needed by supported tools.
 func addAllSupportedRuntimes(neededRuntimes map[string]bool, runtimeDependencies map[string]string) {
 	supportedTools, err := plugins.GetSupportedTools()
 	if err != nil {
@@ -105,7 +109,7 @@ func addAllSupportedRuntimes(neededRuntimes map[string]bool, runtimeDependencies
 	}
 }
 
-// writeRuntimesList writes the sorted runtimes list to the string builder
+// writeRuntimesList writes the sorted runtimes list to the string builder.
 func writeRuntimesList(sb *strings.Builder, neededRuntimes map[string]bool, runtimeVersions map[string]string) {
 	var sortedRuntimes []string
 	for runtime := range neededRuntimes {
@@ -118,7 +122,7 @@ func writeRuntimesList(sb *strings.Builder, neededRuntimes map[string]bool, runt
 	}
 }
 
-// buildToolsSection builds the tools section of the configuration
+// buildToolsSection builds the tools section of the configuration.
 func buildToolsSection(sb *strings.Builder, tools []domain.Tool, toolsMap map[string]bool, toolVersions map[string]string, defaultVersions map[string]string) {
 	sb.WriteString("tools:\n")
 
@@ -129,7 +133,7 @@ func buildToolsSection(sb *strings.Builder, tools []domain.Tool, toolsMap map[st
 	}
 }
 
-// writeEnabledTools writes the enabled tools to the string builder
+// writeEnabledTools writes the enabled tools to the string builder.
 func writeEnabledTools(sb *strings.Builder, toolsMap map[string]bool, toolVersions map[string]string) {
 	var sortedTools []string
 	for uuid, meta := range domain.SupportedToolsMetadata {
@@ -150,7 +154,7 @@ func writeEnabledTools(sb *strings.Builder, toolsMap map[string]bool, toolVersio
 	}
 }
 
-// writeAllSupportedTools writes all supported tools to the string builder
+// writeAllSupportedTools writes all supported tools to the string builder.
 func writeAllSupportedTools(sb *strings.Builder, defaultVersions map[string]string) {
 	supportedTools, err := plugins.GetSupportedTools()
 	if err != nil {

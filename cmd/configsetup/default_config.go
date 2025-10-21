@@ -1,66 +1,77 @@
+// Package configsetup contains defaults and helpers to generate
+// configuration for supported tools.
 package configsetup
 
 import (
-	"fmt"
-	"log"
-	"strings"
+    "fmt"
+    "log"
+    "strings"
 
-	codacyclient "codacy/cli-v2/codacy-client"
-	"codacy/cli-v2/config"
-	"codacy/cli-v2/domain"
-	"codacy/cli-v2/plugins"
-	"codacy/cli-v2/tools"
+    codacyclient "codacy/cli-v2/codacy-client"
+    "codacy/cli-v2/config"
+    "codacy/cli-v2/domain"
+    "codacy/cli-v2/plugins"
+    "codacy/cli-v2/tools"
 )
 
-// KeepToolsWithLatestVersion filters the tools to keep only the latest version of each tool family.
+// KeepToolsWithLatestVersion filters the tools to keep only the latest
+// version of each tool family.
 func KeepToolsWithLatestVersion(tools []domain.Tool) (
-	toolsWithLatestVersion []domain.Tool,
-	uuidToName map[string]string,
-	familyToVersions map[string][]string,
+    toolsWithLatestVersion []domain.Tool,
+    uuidToName map[string]string,
+    familyToVersions map[string][]string,
 ) {
-	latestTools := map[string]domain.Tool{}
-	uuidToName = map[string]string{}
-	seen := map[string][]domain.Tool{}
-	familyToVersions = map[string][]string{}
+    latestTools := map[string]domain.Tool{}
+    uuidToName = map[string]string{}
+    seen := map[string][]domain.Tool{}
 
-	for _, tool := range tools {
-		meta, ok := domain.SupportedToolsMetadata[tool.Uuid]
-		if !ok {
-			continue
-		}
+    for _, tool := range tools {
+        processToolForLatest(tool, latestTools, uuidToName, seen)
+    }
 
-		// Track all tools seen per family
-		seen[meta.Name] = append(seen[meta.Name], tool)
+    familyToVersions = buildFamilyVersionMap(seen)
 
-		// Pick the best version
-		current, exists := latestTools[meta.Name]
-		if !exists || domain.SupportedToolsMetadata[current.Uuid].Priority > meta.Priority {
-			latestTools[meta.Name] = tool
-			uuidToName[tool.Uuid] = meta.Name
-		}
-	}
+    for _, tool := range latestTools {
+        toolsWithLatestVersion = append(toolsWithLatestVersion, tool)
+    }
 
-	// Populate final list and version map for logging
-	for family, tools := range seen {
-		var versions []string
-		for _, t := range tools {
-			v := t.Version
-			if v == "" {
-				v = "(unknown)"
-			}
-			versions = append(versions, v)
-		}
-		familyToVersions[family] = versions
-	}
-
-	for _, tool := range latestTools {
-		toolsWithLatestVersion = append(toolsWithLatestVersion, tool)
-	}
-
-	return
+    return
 }
 
-// BuildDefaultConfigurationFiles creates default configuration files for all tools
+// processToolForLatest updates the latest tool per family and tracking maps.
+func processToolForLatest(tool domain.Tool, latestTools map[string]domain.Tool, uuidToName map[string]string, seen map[string][]domain.Tool) {
+    meta, ok := domain.SupportedToolsMetadata[tool.Uuid]
+    if !ok {
+        return
+    }
+
+    seen[meta.Name] = append(seen[meta.Name], tool)
+
+    current, exists := latestTools[meta.Name]
+    if !exists || domain.SupportedToolsMetadata[current.Uuid].Priority > meta.Priority {
+        latestTools[meta.Name] = tool
+        uuidToName[tool.Uuid] = meta.Name
+    }
+}
+
+// buildFamilyVersionMap builds a map of tool family to discovered versions.
+func buildFamilyVersionMap(seen map[string][]domain.Tool) map[string][]string {
+    familyToVersions := make(map[string][]string)
+    for family, tools := range seen {
+        var versions []string
+        for _, t := range tools {
+            v := t.Version
+            if v == "" {
+                v = "(unknown)"
+            }
+            versions = append(versions, v)
+        }
+        familyToVersions[family] = versions
+    }
+    return familyToVersions
+}
+
+// BuildDefaultConfigurationFiles creates default configuration files for all tools.
 func BuildDefaultConfigurationFiles(toolsConfigDir string, flags domain.InitFlags) error {
 	// Get default tool versions to determine correct UUIDs
 	defaultVersions := plugins.GetToolVersions()
@@ -83,7 +94,7 @@ func BuildDefaultConfigurationFiles(toolsConfigDir string, flags domain.InitFlag
 	return createToolConfigurationsForUUIDs(allUUIDs, toolsConfigDir, flags)
 }
 
-// CreateConfigurationFilesForDiscoveredTools creates tool configuration files for discovered tools
+// CreateConfigurationFilesForDiscoveredTools creates tool configuration files for discovered tools.
 func CreateConfigurationFilesForDiscoveredTools(discoveredToolNames map[string]struct{}, toolsConfigDir string, initFlags domain.InitFlags) error {
 	// Determine CLI mode
 	currentCliMode, err := config.Config.GetCliMode()
@@ -92,18 +103,16 @@ func CreateConfigurationFilesForDiscoveredTools(discoveredToolNames map[string]s
 		currentCliMode = "local" // Default to local
 	}
 
-	if currentCliMode == "remote" && initFlags.ApiToken != "" {
-		// Remote mode - create configurations based on cloud repository settings
-		return createRemoteToolConfigurationsForDiscovered(discoveredToolNames, initFlags)
-	} else {
-		// Local mode - create default configurations for discovered tools
-		return createDefaultConfigurationsForSpecificTools(discoveredToolNames, toolsConfigDir, initFlags)
-	}
+    if currentCliMode == "remote" && initFlags.ApiToken != "" {
+        // Remote mode - create configurations based on cloud repository settings
+        return createRemoteToolConfigurationsForDiscovered(discoveredToolNames, initFlags)
+    }
+    // Local mode - create default configurations for discovered tools
+    return createDefaultConfigurationsForSpecificTools(discoveredToolNames, toolsConfigDir, initFlags)
 }
 
-// createRemoteToolConfigurationsForDiscovered creates tool configurations for remote mode based on cloud settings
+// createRemoteToolConfigurationsForDiscovered creates tool configurations for remote mode based on cloud settings.
 func createRemoteToolConfigurationsForDiscovered(discoveredToolNames map[string]struct{}, initFlags domain.InitFlags) error {
-	
 	// Get repository tools from API
 	apiTools, err := tools.GetRepositoryTools(initFlags)
 	if err != nil {
@@ -136,39 +145,34 @@ func createRemoteToolConfigurationsForDiscovered(discoveredToolNames map[string]
 	return createToolConfigurationFiles(configuredTools, initFlags)
 }
 
-// selectCorrectToolUUID selects the correct UUID for a tool based on its version
+// selectCorrectToolUUID selects the correct UUID for a tool based on its version.
 func selectCorrectToolUUID(toolName string, defaultVersions map[string]string) string {
-	version, hasVersion := defaultVersions[toolName]
+    version := defaultVersions[toolName]
 
-	// Special case for PMD: choose PMD7 UUID for version 7.x, PMD UUID for version 6.x
-	if toolName == "pmd" && hasVersion {
-		if strings.HasPrefix(version, "7.") {
-			return domain.PMD7
-		} else {
-			return domain.PMD
-		}
-	}
+    switch toolName {
+    case "pmd":
+        if strings.HasPrefix(version, "7.") {
+            return domain.PMD7
+        }
+        return domain.PMD
+    case "eslint":
+        if strings.HasPrefix(version, "9.") {
+            return domain.ESLint9
+        }
+        return domain.ESLint
+    }
 
-	// Special case for ESLint: choose ESLint9 UUID for version 9.x, ESLint UUID for older versions
-	if toolName == "eslint" && hasVersion {
-		if strings.HasPrefix(version, "9.") {
-			return domain.ESLint9
-		} else {
-			return domain.ESLint
-		}
-	}
+    // For other tools, find the first matching UUID
+    for uuid, meta := range domain.SupportedToolsMetadata {
+        if meta.Name == toolName {
+            return uuid
+        }
+    }
 
-	// For other tools, find the first matching UUID
-	for uuid, meta := range domain.SupportedToolsMetadata {
-		if meta.Name == toolName {
-			return uuid
-		}
-	}
-
-	return ""
+    return ""
 }
 
-// createDefaultConfigurationsForSpecificTools creates default configurations for specific tools only
+// createDefaultConfigurationsForSpecificTools creates default configurations for specific tools only.
 func createDefaultConfigurationsForSpecificTools(discoveredToolNames map[string]struct{}, toolsConfigDir string, initFlags domain.InitFlags) error {
 	fmt.Printf("Creating default configurations for %d discovered tools...\n", len(discoveredToolNames))
 

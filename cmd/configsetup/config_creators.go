@@ -1,3 +1,5 @@
+// Package configsetup provides helpers to create Codacy configuration
+// and helper files locally.
 package configsetup
 
 import (
@@ -12,6 +14,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// CreateLanguagesConfigFileLocal writes the languages configuration file to
+// the provided directory using data from the Codacy API.
 func CreateLanguagesConfigFileLocal(toolsConfigDir string) error {
 	// Build tool language configurations from API
 	configTools, err := tools.BuildLanguagesConfigFromAPI()
@@ -33,12 +37,16 @@ func CreateLanguagesConfigFileLocal(toolsConfigDir string) error {
 	return writeConfigFile(filepath.Join(toolsConfigDir, constants.LanguagesConfigFileName), data)
 }
 
+// CreateGitIgnoreFile creates a default .gitignore in the local Codacy
+// directory to avoid committing generated files.
 func CreateGitIgnoreFile() error {
 	gitIgnorePath := filepath.Join(config.Config.LocalCodacyDirectory(), constants.GitIgnoreFileName)
 	content := "# Codacy CLI\ntools-configs/\n.gitignore\ncli-config.yaml\nlogs/\n"
 	return writeConfigFile(gitIgnorePath, []byte(content))
 }
 
+// CreateConfigurationFiles generates project configuration files
+// (codacy.yaml and cli-config.yaml).
 func CreateConfigurationFiles(tools []domain.Tool, cliLocalMode bool, flags domain.InitFlags) error {
 	// Create project config file
 	configContent := ConfigFileTemplate(tools)
@@ -55,11 +63,10 @@ func CreateConfigurationFiles(tools []domain.Tool, cliLocalMode bool, flags doma
 	return nil
 }
 
-// buildCliConfigContent creates the CLI configuration content
+// buildCliConfigContent creates the CLI configuration content.
 func buildCliConfigContent(cliLocalMode bool, initFlags domain.InitFlags) string {
-	if cliLocalMode {
-		return fmt.Sprintf("mode: local")
-	} else {
-		return fmt.Sprintf("mode: remote\nprovider: %s\norganization: %s\nrepository: %s", initFlags.Provider, initFlags.Organization, initFlags.Repository)
-	}
+    if cliLocalMode {
+        return fmt.Sprintf("mode: local")
+    }
+    return fmt.Sprintf("mode: remote\nprovider: %s\norganization: %s\nrepository: %s", initFlags.Provider, initFlags.Organization, initFlags.Repository)
 }

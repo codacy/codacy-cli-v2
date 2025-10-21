@@ -1,3 +1,5 @@
+// Package configsetup provides functions to build repository configuration
+// files based on Codacy settings.
 package configsetup
 
 import (
@@ -13,6 +15,8 @@ import (
 	"codacy/cli-v2/tools"
 )
 
+// BuildRepositoryConfigurationFiles downloads repository configuration from
+// Codacy and generates local configuration files.
 func BuildRepositoryConfigurationFiles(flags domain.InitFlags) error {
 	fmt.Println("Fetching repository configuration from codacy ...")
 
@@ -87,25 +91,26 @@ func createToolConfigurationFiles(tools []domain.Tool, flags domain.InitFlags) e
 }
 
 // CreateToolConfigurationFile creates a configuration file for a single tool
+// CreateToolConfigurationFile generates a configuration file for a single tool.
 func CreateToolConfigurationFile(toolName string, flags domain.InitFlags) error {
 	// Find the tool UUID by tool name
-	toolUuid := getToolUuidByName(toolName)
-	if toolUuid == "" {
+    toolUUID := getToolUUIDByName(toolName)
+    if toolUUID == "" {
 		return fmt.Errorf("tool '%s' not found in supported tools", toolName)
 	}
 
-	patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(flags, toolUuid, true)
+    patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(flags, toolUUID, true)
 	if err != nil {
 		return fmt.Errorf("failed to get default patterns: %w", err)
 	}
 
 	// Get the tool object to pass to createToolFileConfiguration
-	tool := domain.Tool{Uuid: toolUuid}
+    tool := domain.Tool{Uuid: toolUUID}
 	return createToolFileConfiguration(tool, patternsConfig)
 }
 
-// getToolUuidByName finds the UUID for a tool given its name
-func getToolUuidByName(toolName string) string {
+// getToolUUIDByName finds the UUID for a tool given its name.
+func getToolUUIDByName(toolName string) string {
 	for uuid, toolInfo := range domain.SupportedToolsMetadata {
 		if toolInfo.Name == toolName {
 			return uuid

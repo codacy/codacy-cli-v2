@@ -1,3 +1,5 @@
+// Package configsetup contains helpers to generate tool-specific configuration
+// files based on Codacy settings.
 package configsetup
 
 import (
