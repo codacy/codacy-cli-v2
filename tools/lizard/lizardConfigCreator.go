@@ -25,7 +25,7 @@ func CreateLizardConfig(toolsConfigDir string, patterns []domain.PatternConfigur
 			continue
 		}
 
-		// if pattern.Parameters is empty, use pattermDefinition.Parameters
+		// if pattern.Parameters is empty, use patternDefinition.Parameters
 		parameters := pattern.Parameters
 		if len(parameters) == 0 {
 			parameters = patternDefinition.Parameters

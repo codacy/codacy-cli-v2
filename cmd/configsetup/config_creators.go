@@ -65,8 +65,8 @@ func CreateConfigurationFiles(tools []domain.Tool, cliLocalMode bool, flags doma
 
 // buildCliConfigContent creates the CLI configuration content.
 func buildCliConfigContent(cliLocalMode bool, initFlags domain.InitFlags) string {
-    if cliLocalMode {
-        return fmt.Sprintf("mode: local")
-    }
-    return fmt.Sprintf("mode: remote\nprovider: %s\norganization: %s\nrepository: %s", initFlags.Provider, initFlags.Organization, initFlags.Repository)
+	if cliLocalMode {
+		return fmt.Sprintf("mode: local")
+	}
+	return fmt.Sprintf("mode: remote\nprovider: %s\norganization: %s\nrepository: %s", initFlags.Provider, initFlags.Organization, initFlags.Repository)
 }

@@ -94,18 +94,18 @@ func createToolConfigurationFiles(tools []domain.Tool, flags domain.InitFlags) e
 // CreateToolConfigurationFile generates a configuration file for a single tool.
 func CreateToolConfigurationFile(toolName string, flags domain.InitFlags) error {
 	// Find the tool UUID by tool name
-    toolUUID := getToolUUIDByName(toolName)
-    if toolUUID == "" {
+	toolUUID := getToolUUIDByName(toolName)
+	if toolUUID == "" {
 		return fmt.Errorf("tool '%s' not found in supported tools", toolName)
 	}
 
-    patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(flags, toolUUID, true)
+	patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(flags, toolUUID, true)
 	if err != nil {
 		return fmt.Errorf("failed to get default patterns: %w", err)
 	}
 
 	// Get the tool object to pass to createToolFileConfiguration
-    tool := domain.Tool{Uuid: toolUUID}
+	tool := domain.Tool{Uuid: toolUUID}
 	return createToolFileConfiguration(tool, patternsConfig)
 }
 

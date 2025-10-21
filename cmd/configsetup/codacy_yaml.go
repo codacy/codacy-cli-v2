@@ -66,7 +66,7 @@ func getToolVersion(tool domain.Tool, defaultVersions map[string]string) string 
 
 // addRequiredRuntime adds the runtime requirement for a tool.
 func addRequiredRuntime(toolUUID string, neededRuntimes map[string]bool, runtimeDependencies map[string]string) {
-    if meta, ok := domain.SupportedToolsMetadata[toolUUID]; ok {
+	if meta, ok := domain.SupportedToolsMetadata[toolUUID]; ok {
 		if runtime, ok := runtimeDependencies[meta.Name]; ok {
 			if meta.Name == "dartanalyzer" {
 				// For dartanalyzer, default to dart runtime

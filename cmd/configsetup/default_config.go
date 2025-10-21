@@ -3,72 +3,72 @@
 package configsetup
 
 import (
-    "fmt"
-    "log"
-    "strings"
+	"fmt"
+	"log"
+	"strings"
 
-    codacyclient "codacy/cli-v2/codacy-client"
-    "codacy/cli-v2/config"
-    "codacy/cli-v2/domain"
-    "codacy/cli-v2/plugins"
-    "codacy/cli-v2/tools"
+	codacyclient "codacy/cli-v2/codacy-client"
+	"codacy/cli-v2/config"
+	"codacy/cli-v2/domain"
+	"codacy/cli-v2/plugins"
+	"codacy/cli-v2/tools"
 )
 
 // KeepToolsWithLatestVersion filters the tools to keep only the latest
 // version of each tool family.
 func KeepToolsWithLatestVersion(tools []domain.Tool) (
-    toolsWithLatestVersion []domain.Tool,
-    uuidToName map[string]string,
-    familyToVersions map[string][]string,
+	toolsWithLatestVersion []domain.Tool,
+	uuidToName map[string]string,
+	familyToVersions map[string][]string,
 ) {
-    latestTools := map[string]domain.Tool{}
-    uuidToName = map[string]string{}
-    seen := map[string][]domain.Tool{}
+	latestTools := map[string]domain.Tool{}
+	uuidToName = map[string]string{}
+	seen := map[string][]domain.Tool{}
 
-    for _, tool := range tools {
-        processToolForLatest(tool, latestTools, uuidToName, seen)
-    }
+	for _, tool := range tools {
+		processToolForLatest(tool, latestTools, uuidToName, seen)
+	}
 
-    familyToVersions = buildFamilyVersionMap(seen)
+	familyToVersions = buildFamilyVersionMap(seen)
 
-    for _, tool := range latestTools {
-        toolsWithLatestVersion = append(toolsWithLatestVersion, tool)
-    }
+	for _, tool := range latestTools {
+		toolsWithLatestVersion = append(toolsWithLatestVersion, tool)
+	}
 
-    return
+	return
 }
 
 // processToolForLatest updates the latest tool per family and tracking maps.
 func processToolForLatest(tool domain.Tool, latestTools map[string]domain.Tool, uuidToName map[string]string, seen map[string][]domain.Tool) {
-    meta, ok := domain.SupportedToolsMetadata[tool.Uuid]
-    if !ok {
-        return
-    }
+	meta, ok := domain.SupportedToolsMetadata[tool.Uuid]
+	if !ok {
+		return
+	}
 
-    seen[meta.Name] = append(seen[meta.Name], tool)
+	seen[meta.Name] = append(seen[meta.Name], tool)
 
-    current, exists := latestTools[meta.Name]
-    if !exists || domain.SupportedToolsMetadata[current.Uuid].Priority > meta.Priority {
-        latestTools[meta.Name] = tool
-        uuidToName[tool.Uuid] = meta.Name
-    }
+	current, exists := latestTools[meta.Name]
+	if !exists || domain.SupportedToolsMetadata[current.Uuid].Priority > meta.Priority {
+		latestTools[meta.Name] = tool
+		uuidToName[tool.Uuid] = meta.Name
+	}
 }
 
 // buildFamilyVersionMap builds a map of tool family to discovered versions.
 func buildFamilyVersionMap(seen map[string][]domain.Tool) map[string][]string {
-    familyToVersions := make(map[string][]string)
-    for family, tools := range seen {
-        var versions []string
-        for _, t := range tools {
-            v := t.Version
-            if v == "" {
-                v = "(unknown)"
-            }
-            versions = append(versions, v)
-        }
-        familyToVersions[family] = versions
-    }
-    return familyToVersions
+	familyToVersions := make(map[string][]string)
+	for family, tools := range seen {
+		var versions []string
+		for _, t := range tools {
+			v := t.Version
+			if v == "" {
+				v = "(unknown)"
+			}
+			versions = append(versions, v)
+		}
+		familyToVersions[family] = versions
+	}
+	return familyToVersions
 }
 
 // BuildDefaultConfigurationFiles creates default configuration files for all tools.
@@ -103,12 +103,12 @@ func CreateConfigurationFilesForDiscoveredTools(discoveredToolNames map[string]s
 		currentCliMode = "local" // Default to local
 	}
 
-    if currentCliMode == "remote" && initFlags.ApiToken != "" {
-        // Remote mode - create configurations based on cloud repository settings
-        return createRemoteToolConfigurationsForDiscovered(discoveredToolNames, initFlags)
-    }
-    // Local mode - create default configurations for discovered tools
-    return createDefaultConfigurationsForSpecificTools(discoveredToolNames, toolsConfigDir, initFlags)
+	if currentCliMode == "remote" && initFlags.ApiToken != "" {
+		// Remote mode - create configurations based on cloud repository settings
+		return createRemoteToolConfigurationsForDiscovered(discoveredToolNames, initFlags)
+	}
+	// Local mode - create default configurations for discovered tools
+	return createDefaultConfigurationsForSpecificTools(discoveredToolNames, toolsConfigDir, initFlags)
 }
 
 // createRemoteToolConfigurationsForDiscovered creates tool configurations for remote mode based on cloud settings.
@@ -147,29 +147,29 @@ func createRemoteToolConfigurationsForDiscovered(discoveredToolNames map[string]
 
 // selectCorrectToolUUID selects the correct UUID for a tool based on its version.
 func selectCorrectToolUUID(toolName string, defaultVersions map[string]string) string {
-    version := defaultVersions[toolName]
+	version := defaultVersions[toolName]
 
-    switch toolName {
-    case "pmd":
-        if strings.HasPrefix(version, "7.") {
-            return domain.PMD7
-        }
-        return domain.PMD
-    case "eslint":
-        if strings.HasPrefix(version, "9.") {
-            return domain.ESLint9
-        }
-        return domain.ESLint
-    }
+	switch toolName {
+	case "pmd":
+		if strings.HasPrefix(version, "7.") {
+			return domain.PMD7
+		}
+		return domain.PMD
+	case "eslint":
+		if strings.HasPrefix(version, "9.") {
+			return domain.ESLint9
+		}
+		return domain.ESLint
+	}
 
-    // For other tools, find the first matching UUID
-    for uuid, meta := range domain.SupportedToolsMetadata {
-        if meta.Name == toolName {
-            return uuid
-        }
-    }
+	// For other tools, find the first matching UUID
+	for uuid, meta := range domain.SupportedToolsMetadata {
+		if meta.Name == toolName {
+			return uuid
+		}
+	}
 
-    return ""
+	return ""
 }
 
 // createDefaultConfigurationsForSpecificTools creates default configurations for specific tools only.
