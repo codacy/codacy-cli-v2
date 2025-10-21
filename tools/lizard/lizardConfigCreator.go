@@ -13,29 +13,38 @@ import (
 )
 
 // CreateLizardConfig generates a Lizard configuration file content based on the API configuration
-func CreateLizardConfig(toolsConfigDir string, patterns []domain.PatternDefinition) error {
+func CreateLizardConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
 	patternInfo := make(map[string]map[string]interface{})
 
 	for _, pattern := range patterns {
-		metricType := getMetricTypeFromPatternId(pattern.Id)
+		patternDefinition := pattern.PatternDefinition
+		metricType := getMetricTypeFromPatternId(patternDefinition.Id)
+		
 		if metricType == "" {
-			fmt.Printf("Warning: Invalid pattern ID format: %s\n", pattern.Id)
+			fmt.Printf("Warning: Invalid pattern ID format: %s\n", patternDefinition.Id)
 			continue
 		}
 
-		threshold := getThresholdFromParams(pattern.Parameters)
+		// if pattern.Parameters is empty, use patternDefinition.Parameters
+		parameters := pattern.Parameters
+		if len(parameters) == 0 {
+			parameters = patternDefinition.Parameters
+		}
+
+		threshold := getThresholdFromParams(parameters)
+
 		if threshold != 0 {
 			// Create a unique key for this pattern that includes the severity
-			patternKey := pattern.Id
+			patternKey := patternDefinition.Id
 			patternInfo[patternKey] = map[string]interface{}{
-				"id":            pattern.Id,
-				"category":      pattern.Category,
-				"level":         pattern.Level,
-				"severityLevel": pattern.SeverityLevel,
-				"title":         pattern.Title,
-				"description":   pattern.Description,
-				"explanation":   pattern.Explanation,
-				"timeToFix":     pattern.TimeToFix,
+				"id":            patternDefinition.Id,
+				"category":      patternDefinition.Category,
+				"level":         patternDefinition.Level,
+				"severityLevel": patternDefinition.SeverityLevel,
+				"title":         patternDefinition.Title,
+				"description":   patternDefinition.Description,
+				"explanation":   patternDefinition.Explanation,
+				"timeToFix":     patternDefinition.TimeToFix,
 				"threshold":     threshold,
 			}
 		}
