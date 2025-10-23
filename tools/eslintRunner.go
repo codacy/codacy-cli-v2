@@ -11,14 +11,14 @@ import (
 // * Run from the root of the repo we want to analyse
 // * NODE_PATH="<the installed eslint path>/node_modules"
 // * The local installed ESLint should have the @microsoft/eslint-formatter-sarif installed
-func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory string, nodeBinary string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string, userUsesConfigurationFile bool) error {
+func RunEslint(repositoryToAnalyseDirectory string, eslintInstallationDirectory string, nodeBinary string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string, UsesConfigurationFile bool) error {
 	eslintInstallationNodeModules := filepath.Join(eslintInstallationDirectory, "node_modules")
 	eslintJsPath := filepath.Join(eslintInstallationNodeModules, ".bin", "eslint")
 
 	cmd := exec.Command(nodeBinary, eslintJsPath)
 
 	// Add config file from tools-configs directory if it exists
-	if !userUsesConfigurationFile {
+	if !UsesConfigurationFile {
 		if configFile, exists := ConfigFileExists(config.Config, "eslint.config.mjs"); exists {
 			// For Eslint compatibility with version 8.
 			// https://eslint.org/docs/v8.x/use/configure/configuration-files-new

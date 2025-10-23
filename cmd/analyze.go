@@ -354,6 +354,7 @@ func runToolByName(toolName string, workDirectory string, pathsToCheck []string,
 
 	// Get the tool name with the right version e.g. ESLint9, PMD7, etc.
 	toolRightVersion := getToolName(toolName, tool.Version)
+	fmt.Printf(toolName)
 
 	// Get the repository tools to access tool settings
 	repositoryTools, _ := codacyclient.GetRepositoryTools(initFlags)
