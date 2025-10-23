@@ -352,26 +352,32 @@ func runToolByName(toolName string, workDirectory string, pathsToCheck []string,
 		return err
 	}
 
-	// Get the tool name with the right version e.g. ESLint9, PMD7, etc.
-	toolRightVersion := getToolName(toolName, tool.Version)
-	fmt.Printf(toolName)
-
-	// Get the repository tools to access tool settings
-	repositoryTools, _ := codacyclient.GetRepositoryTools(initFlags)
-
-	// Find the matching tool in repositoryTools
 	var t *domain.Tool
-	for i, tool := range repositoryTools {
-		if tool.Name == toolRightVersion {
-			t = &repositoryTools[i]
-			break
+	var usesConfigurationFile = false
+
+	// If the user doesn't provide init flags, we skip fetching repository tools
+	if initFlags != (domain.InitFlags{}) {
+		// Get the tool name with the right version e.g. ESLint9, PMD7, etc.
+		toolRightVersion := getToolName(toolName, tool.Version)
+
+		// Get the repository tools to access tool settings
+		repositoryTools, _ := codacyclient.GetRepositoryTools(initFlags)
+
+		// Find the matching tool in repositoryTools
+
+		for i, tool := range repositoryTools {
+			if tool.Name == toolRightVersion {
+				t = &repositoryTools[i]
+				usesConfigurationFile = t.Settings.UsesConfigurationFile
+				break
+			}
 		}
 	}
 
 	switch toolName {
 	case "eslint":
 		binaryPath := runtime.Binaries[tool.Runtime]
-		return tools.RunEslint(workDirectory, tool.InstallDir, binaryPath, pathsToCheck, autoFix, outputFile, outputFormat, t.Settings.UsesConfigurationFile)
+		return tools.RunEslint(workDirectory, tool.InstallDir, binaryPath, pathsToCheck, autoFix, outputFile, outputFormat, usesConfigurationFile)
 	case "trivy":
 		binaryPath := tool.Binaries[toolName]
 		return tools.RunTrivy(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)
