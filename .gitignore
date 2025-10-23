@@ -27,8 +27,8 @@ go.work.sum
 # Codacy CLI 
 cli-v2
 codacy-cli
-**/.codacy/logs/
 .codacy/
+.github/instructions/
 
 
 #Ignore cursor AI rules
