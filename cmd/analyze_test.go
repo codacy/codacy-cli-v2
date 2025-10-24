@@ -72,7 +72,7 @@ func TestGetToolName(t *testing.T) {
 		// PMD cases
 		{"pmd v6", "pmd", "6.55.0", "PMD"},
 		{"pmd v7", "pmd", "7.0.0", "PMD7"},
-		{"pmd unknown version", "pmd", "8.0.0", "PMD"},
+		{"pmd unknown version", "pmd", "8.0.0", "pmd"},
 
 		// Other tools should remain unchanged
 		{"unknown tool", "bandit", "1.7.4", "bandit"},
