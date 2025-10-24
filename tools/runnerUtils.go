@@ -21,10 +21,10 @@ func ConfigFileExists(conf config.ConfigType, fileNames ...string) (string, bool
 		generatedConfigFile := filepath.Join(conf.ToolsConfigDirectory(), fileName)
 		existingConfigFile := filepath.Join(conf.RepositoryDirectory(), fileName)
 
-		if _, err := os.Stat(existingConfigFile); err == nil {
-			return existingConfigFile, true
-		} else if _, err := os.Stat(generatedConfigFile); err == nil {
+		if _, err := os.Stat(generatedConfigFile); err == nil {
 			return generatedConfigFile, true
+		} else if _, err := os.Stat(existingConfigFile); err == nil {
+			return existingConfigFile, true
 		}
 	}
 
