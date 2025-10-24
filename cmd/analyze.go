@@ -245,7 +245,7 @@ func loadsToolAndPatterns(toolName string, onlyEnabledPatterns bool) (domain.Too
 	}
 	var tool domain.Tool
 	for _, t := range toolsResponse {
-		if t.ShortName == toolName {
+		if t.Name == toolName {
 			tool = t
 			break
 		}
@@ -264,19 +264,19 @@ func getToolName(toolName string, version string) string {
 	if toolName == "eslint" {
 		switch majorVersion {
 		case 7:
-			return "eslint"
+			return "ESLint (deprecated)"
 		case 8:
-			return "eslint-8"
+			return "ESLint"
 		case 9:
-			return "eslint-9"
+			return "ESLint9"
 		}
 	} else {
 		if toolName == "pmd" {
 			switch majorVersion {
 			case 6:
-				return "pmd"
+				return "PMD"
 			case 7:
-				return "pmd-7"
+				return "PMD7"
 			}
 		}
 	}
@@ -351,10 +351,33 @@ func runToolByName(toolName string, workDirectory string, pathsToCheck []string,
 	if err != nil {
 		return err
 	}
+
+	var t *domain.Tool
+	var usesConfigurationFile = false
+
+	// If the user doesn't provide init flags, we skip fetching repository tools
+	if initFlags != (domain.InitFlags{}) {
+		// Get the tool name with the right version e.g. ESLint9, PMD7, etc.
+		toolRightVersion := getToolName(toolName, tool.Version)
+
+		// Get the repository tools to access tool settings
+		repositoryTools, _ := codacyclient.GetRepositoryTools(initFlags)
+
+		// Find the matching tool in repositoryTools
+
+		for i, tool := range repositoryTools {
+			if tool.Name == toolRightVersion {
+				t = &repositoryTools[i]
+				usesConfigurationFile = t.Settings.UsesConfigurationFile
+				break
+			}
+		}
+	}
+
 	switch toolName {
 	case "eslint":
 		binaryPath := runtime.Binaries[tool.Runtime]
-		return tools.RunEslint(workDirectory, tool.InstallDir, binaryPath, pathsToCheck, autoFix, outputFile, outputFormat)
+		return tools.RunEslint(workDirectory, tool.InstallDir, binaryPath, pathsToCheck, autoFix, outputFile, outputFormat, usesConfigurationFile)
 	case "trivy":
 		binaryPath := tool.Binaries[toolName]
 		return tools.RunTrivy(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)

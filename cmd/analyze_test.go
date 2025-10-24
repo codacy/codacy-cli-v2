@@ -64,14 +64,14 @@ func TestGetToolName(t *testing.T) {
 		expected string
 	}{
 		// ESLint cases
-		{"eslint v7", "eslint", "7.32.0", "eslint"},
-		{"eslint v8", "eslint", "8.15.0", "eslint-8"},
-		{"eslint v9", "eslint", "9.1.0", "eslint-9"},
+		{"eslint v7", "eslint", "7.32.0", "ESLint (deprecated)"},
+		{"eslint v8", "eslint", "8.15.0", "ESLint"},
+		{"eslint v9", "eslint", "9.1.0", "ESLint9"},
 		{"eslint unknown version", "eslint", "10.0.0", "eslint"},
 
 		// PMD cases
-		{"pmd v6", "pmd", "6.55.0", "pmd"},
-		{"pmd v7", "pmd", "7.0.0", "pmd-7"},
+		{"pmd v6", "pmd", "6.55.0", "PMD"},
+		{"pmd v7", "pmd", "7.0.0", "PMD7"},
 		{"pmd unknown version", "pmd", "8.0.0", "pmd"},
 
 		// Other tools should remain unchanged
