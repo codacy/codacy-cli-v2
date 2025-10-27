@@ -7,11 +7,12 @@ import (
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/tools"
 	"codacy/cli-v2/utils/logger"
-	"github.com/sirupsen/logrus"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/sirupsen/logrus"
 )
 
 // RunLizard runs the Lizard tool and returns any issues found
@@ -20,8 +21,6 @@ func RunLizard(workDirectory string, binary string, files []string, outputFile s
 	configFile, exists := tools.ConfigFileExists(config.Config, "lizard.yaml")
 	var patterns []domain.PatternDefinition
 	var errConfigs error
-
-
 	if exists {
 		// Configuration exists, read from file
 		patterns, errConfigs = ReadConfig(configFile)
@@ -38,8 +37,6 @@ func RunLizard(workDirectory string, binary string, files []string, outputFile s
 	if len(patterns) == 0 {
 		return fmt.Errorf("no valid patterns found in configuration")
 	}
-
-
 	// Construct base command with lizard module
 	args := []string{"-m", "lizard", "-V"}
 
@@ -50,23 +47,20 @@ func RunLizard(workDirectory string, binary string, files []string, outputFile s
 		args = append(args, ".")
 	}
 
-
 	// For non-SARIF output, let Lizard handle file output directly
 	if outputFormat != "sarif" && outputFile != "" {
 		args = append(args, "-o", outputFile)
 	}
 
-
 	// Run the command
 	cmd := exec.Command(binary, args...)
 	cmd.Dir = workDirectory
 
-
 	var err error
 	var stderr bytes.Buffer
-	
+
 	cmd.Stderr = &stderr
-	
+
 	// For SARIF output, we need to capture and parse the output
 	if outputFormat == "sarif" {
 		var stdout bytes.Buffer
