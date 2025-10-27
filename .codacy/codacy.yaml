@@ -1,0 +1,16 @@
+runtimes:
+    - go@1.22.3
+    - java@17.0.10
+    - node@22.2.0
+    - python@3.11.11
+    - dart@3.7.2
+tools:
+    - codacy-enigma-cli@0.0.1-main.8.49310c3
+    - dartanalyzer@3.7.2
+    - eslint@8.57.0
+    - lizard@1.17.31
+    - pmd@6.55.0
+    - pylint@3.3.7
+    - revive@1.11.0
+    - semgrep@1.78.0
+    - trivy@0.66.0 

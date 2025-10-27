@@ -27,7 +27,8 @@ go.work.sum
 # Codacy CLI 
 cli-v2
 codacy-cli
-.codacy/
+.codacy/*
+!.codacy/codacy.yaml
 .github/instructions/
 
 
