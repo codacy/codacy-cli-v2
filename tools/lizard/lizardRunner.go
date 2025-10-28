@@ -21,6 +21,7 @@ func RunLizard(workDirectory string, binary string, files []string, outputFile s
 	configFile, exists := tools.ConfigFileExists(config.Config, "lizard.yaml")
 	var patterns []domain.PatternDefinition
 	var errConfigs error
+
 	if exists {
 		// Configuration exists, read from file
 		patterns, errConfigs = ReadConfig(configFile)
@@ -34,6 +35,7 @@ func RunLizard(workDirectory string, binary string, files []string, outputFile s
 			return fmt.Errorf("failed to fetch default patterns: %v", errConfigs)
 		}
 	}
+
 	if len(patterns) == 0 {
 		return fmt.Errorf("no valid patterns found in configuration")
 	}

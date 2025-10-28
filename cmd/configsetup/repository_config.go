@@ -93,7 +93,6 @@ func createToolConfigurationFiles(tools []domain.Tool, flags domain.InitFlags) e
 // CreateToolConfigurationFile creates a configuration file for a single tool
 func CreateToolConfigurationFile(toolName string, flags domain.InitFlags) error {
 	// Find the tool UUID by tool name
-	fmt.Printf("Creating configuration file for tool %s\n", toolName)
 	toolUUID := getToolUUIDByName(toolName)
 	if toolUUID == "" {
 		return fmt.Errorf("tool '%s' not found in supported tools", toolName)

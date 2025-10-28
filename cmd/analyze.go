@@ -312,6 +312,7 @@ func checkIfConfigExistsAndIsNeeded(toolName string, cliLocalMode bool) error {
 	// Use the configuration system to get the tools config directory
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
 	toolConfigPath := filepath.Join(toolsConfigDir, configFileName)
+
 	// Check if the config file exists
 	if _, err := os.Stat(toolConfigPath); os.IsNotExist(err) {
 		// Config file does not exist - create it if we have the means to do so
