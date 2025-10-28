@@ -312,7 +312,6 @@ func checkIfConfigExistsAndIsNeeded(toolName string, cliLocalMode bool) error {
 	// Use the configuration system to get the tools config directory
 	toolsConfigDir := config.Config.ToolsConfigDirectory()
 	toolConfigPath := filepath.Join(toolsConfigDir, configFileName)
-
 	// Check if the config file exists
 	if _, err := os.Stat(toolConfigPath); os.IsNotExist(err) {
 		// Config file does not exist - create it if we have the means to do so
@@ -347,14 +346,10 @@ func checkIfConfigExistsAndIsNeeded(toolName string, cliLocalMode bool) error {
 }
 
 func runToolByName(toolName string, workDirectory string, pathsToCheck []string, autoFix bool, outputFile string, outputFormat string, tool *plugins.ToolInfo, runtime *plugins.RuntimeInfo, cliLocalMode bool) error {
-	err := checkIfConfigExistsAndIsNeeded(toolName, cliLocalMode)
-	if err != nil {
-		return err
-	}
-
 	var t *domain.Tool
 	var usesConfigurationFile = false
 
+	//Check if the user is using the repository configuration file
 	// If the user doesn't provide init flags, we skip fetching repository tools
 	if initFlags != (domain.InitFlags{}) {
 		// Get the tool name with the right version e.g. ESLint9, PMD7, etc.
@@ -364,13 +359,20 @@ func runToolByName(toolName string, workDirectory string, pathsToCheck []string,
 		repositoryTools, _ := codacyclient.GetRepositoryTools(initFlags)
 
 		// Find the matching tool in repositoryTools
-
 		for i, tool := range repositoryTools {
 			if tool.Name == toolRightVersion {
 				t = &repositoryTools[i]
 				usesConfigurationFile = t.Settings.UsesConfigurationFile
 				break
 			}
+		}
+	}
+
+	// If the user is not using configuration file from repository, we check if there's a local one
+	if !usesConfigurationFile {
+		err := checkIfConfigExistsAndIsNeeded(toolName, cliLocalMode)
+		if err != nil {
+			return err
 		}
 	}
 
