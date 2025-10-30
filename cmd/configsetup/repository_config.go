@@ -91,7 +91,6 @@ func createToolConfigurationFiles(tools []domain.Tool, flags domain.InitFlags) e
 }
 
 // CreateToolConfigurationFile creates a configuration file for a single tool
-// CreateToolConfigurationFile generates a configuration file for a single tool.
 func CreateToolConfigurationFile(toolName string, flags domain.InitFlags) error {
 	// Find the tool UUID by tool name
 	toolUUID := getToolUUIDByName(toolName)
