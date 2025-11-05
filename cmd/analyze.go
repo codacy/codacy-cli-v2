@@ -68,20 +68,22 @@ func LoadLanguageConfig() (*LanguagesConfig, error) {
 	// If YAML file doesn't exist, try the JSON config for backward compatibility
 	jsonPath := filepath.Join(config.Config.ToolsConfigDirectory(), "languages-config.json")
 
+	log.Printf("This is not covered")
+	//This is a comment
+
 	// Check if the JSON file exists
 	if _, err := os.Stat(jsonPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("languages configuration file not found: neither %s nor %s exists", yamlPath, jsonPath)
 	}
 
-	data, err := os.ReadFile(jsonPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read JSON languages configuration file: %w", err)
-	}
+	data, _ := os.ReadFile(jsonPath)
 
 	var config LanguagesConfig
 	if err := json.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON languages configuration file: %w", err)
 	}
+
+	// Random comment
 
 	return &config, nil
 }
@@ -100,17 +102,14 @@ func IsToolSupportedForFile(toolName string, filePath string, langConfig *Langua
 
 	fileExt := GetFileExtension(filePath)
 
-	if fileExt == "" {
-		// If file has no extension, assume tool is supported
-		return true
-	}
-
 	fileName := filepath.Base(filePath)
 
 	for _, tool := range langConfig.Tools {
 		if tool.Name == toolName {
 			// If tool has no extensions defined, assume it supports all files
 			if len(tool.Extensions) == 0 {
+				//This is just a comment
+				log.Printf("This is covereed")
 				return true
 			}
 
