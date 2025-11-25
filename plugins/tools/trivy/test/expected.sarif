@@ -1,214 +1,295 @@
 {
-  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
-  "runs": [
-    {
-      "columnKind": "utf16CodeUnits",
-      "originalUriBaseIds": {
-        "ROOTPATH": {
-          "uri": "file:///plugins/tools/trivy/test/src/"
-        }
+"$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+"runs": [
+  {
+    "columnKind": "utf16CodeUnits",
+    "originalUriBaseIds": {
+      "ROOTPATH": {
+        "uri": "file:///plugins/tools/trivy/test/src/"
+      }
+    },
+    "results": [
+      {
+        "level": "warning",
+        "locations": [
+          {
+            "message": {
+              "text": "requirements.txt: django@1.11.29"
+            },
+            "physicalLocation": {
+              "artifactLocation": {
+                "uri": "requirements.txt",
+                "uriBaseId": "ROOTPATH"
+              },
+              "region": {
+                "endColumn": 1,
+                "endLine": 1,
+                "startColumn": 1,
+                "startLine": 1
+              }
+            }
+          }
+        ],
+        "message": {
+          "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2021-33203\nSeverity: MEDIUM\nFixed Version: 2.2.24, 3.1.12, 3.2.4\nLink: [CVE-2021-33203](https://avd.aquasec.com/nvd/cve-2021-33203)"
+        },
+        "ruleId": "CVE-2021-33203",
+        "ruleIndex": 7
       },
-      "results": [
-        {
-          "level": "warning",
-          "locations": [
-            {
-              "message": {
-                "text": "requirements.txt: django@1.11.29"
+      {
+        "level": "error",
+        "locations": [
+          {
+            "message": {
+              "text": "requirements.txt: django@1.11.29"
+            },
+            "physicalLocation": {
+              "artifactLocation": {
+                "uri": "requirements.txt",
+                "uriBaseId": "ROOTPATH"
               },
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "requirements.txt",
-                  "uriBaseId": "ROOTPATH"
-                },
-                "region": {
-                  "endColumn": 1,
-                  "endLine": 1,
-                  "startColumn": 1,
-                  "startLine": 1
-                }
+              "region": {
+                "endColumn": 1,
+                "endLine": 1,
+                "startColumn": 1,
+                "startLine": 1
               }
             }
-          ],
-          "message": {
-            "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2021-33203\nSeverity: MEDIUM\nFixed Version: 2.2.24, 3.1.12, 3.2.4\nLink: [CVE-2021-33203](https://avd.aquasec.com/nvd/cve-2021-33203)"
-          },
-          "ruleId": "CVE-2021-33203",
-          "ruleIndex": 4
+          }
+        ],
+        "message": {
+          "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2022-36359\nSeverity: HIGH\nFixed Version: 3.2.15, 4.0.7\nLink: [CVE-2022-36359](https://avd.aquasec.com/nvd/cve-2022-36359)"
         },
-        {
-          "level": "error",
-          "locations": [
-            {
-              "message": {
-                "text": "requirements.txt: django@1.11.29"
+        "ruleId": "CVE-2022-36359",
+        "ruleIndex": 4
+      },
+      {
+        "level": "error",
+        "locations": [
+          {
+            "message": {
+              "text": "package-lock.json: cross-spawn@7.0.3"
+            },
+            "physicalLocation": {
+              "artifactLocation": {
+                "uri": "package-lock.json",
+                "uriBaseId": "ROOTPATH"
               },
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "requirements.txt",
-                  "uriBaseId": "ROOTPATH"
-                },
-                "region": {
-                  "endColumn": 1,
-                  "endLine": 1,
-                  "startColumn": 1,
-                  "startLine": 1
-                }
+              "region": {
+                "endColumn": 1,
+                "endLine": 527,
+                "startColumn": 1,
+                "startLine": 515
               }
             }
-          ],
-          "message": {
-            "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2022-36359\nSeverity: HIGH\nFixed Version: 3.2.15, 4.0.7\nLink: [CVE-2022-36359](https://avd.aquasec.com/nvd/cve-2022-36359)"
-          },
-          "ruleId": "CVE-2022-36359",
-          "ruleIndex": 2
+          }
+        ],
+        "message": {
+          "text": "Package: cross-spawn\nInstalled Version: 7.0.3\nVulnerability CVE-2024-21538\nSeverity: HIGH\nFixed Version: 7.0.5, 6.0.6\nLink: [CVE-2024-21538](https://avd.aquasec.com/nvd/cve-2024-21538)"
         },
-        {
-          "level": "error",
-          "locations": [
-            {
-              "message": {
-                "text": "package-lock.json: cross-spawn@7.0.3"
+        "ruleId": "CVE-2024-21538",
+        "ruleIndex": 1
+      },
+      {
+        "level": "warning",
+        "locations": [
+          {
+            "message": {
+              "text": "requirements.txt: django@1.11.29"
+            },
+            "physicalLocation": {
+              "artifactLocation": {
+                "uri": "requirements.txt",
+                "uriBaseId": "ROOTPATH"
               },
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "package-lock.json",
-                  "uriBaseId": "ROOTPATH"
-                },
-                "region": {
-                  "endColumn": 1,
-                  "endLine": 527,
-                  "startColumn": 1,
-                  "startLine": 515
-                }
+              "region": {
+                "endColumn": 1,
+                "endLine": 1,
+                "startColumn": 1,
+                "startLine": 1
               }
             }
-          ],
-          "message": {
-            "text": "Package: cross-spawn\nInstalled Version: 7.0.3\nVulnerability CVE-2024-21538\nSeverity: HIGH\nFixed Version: 7.0.5, 6.0.6\nLink: [CVE-2024-21538](https://avd.aquasec.com/nvd/cve-2024-21538)"
-          },
-          "ruleId": "CVE-2024-21538",
-          "ruleIndex": 1
+          }
+        ],
+        "message": {
+          "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2024-45231\nSeverity: MEDIUM\nFixed Version: 5.1.1, 5.0.9, 4.2.16\nLink: [CVE-2024-45231](https://avd.aquasec.com/nvd/cve-2024-45231)"
         },
-        {
-          "level": "warning",
-          "locations": [
-            {
-              "message": {
-                "text": "requirements.txt: django@1.11.29"
+        "ruleId": "CVE-2024-45231",
+        "ruleIndex": 8
+      },
+      {
+        "level": "warning",
+        "locations": [
+          {
+            "message": {
+              "text": "requirements.txt: django@1.11.29"
+            },
+            "physicalLocation": {
+              "artifactLocation": {
+                "uri": "requirements.txt",
+                "uriBaseId": "ROOTPATH"
               },
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "requirements.txt",
-                  "uriBaseId": "ROOTPATH"
-                },
-                "region": {
-                  "endColumn": 1,
-                  "endLine": 1,
-                  "startColumn": 1,
-                  "startLine": 1
-                }
+              "region": {
+                "endColumn": 1,
+                "endLine": 1,
+                "startColumn": 1,
+                "startLine": 1
               }
             }
-          ],
-          "message": {
-            "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2024-45231\nSeverity: MEDIUM\nFixed Version: 5.1.1, 5.0.9, 4.2.16\nLink: [CVE-2024-45231](https://avd.aquasec.com/nvd/cve-2024-45231)"
-          },
-          "ruleId": "CVE-2024-45231",
-          "ruleIndex": 5
+          }
+        ],
+        "message": {
+          "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2025-48432\nSeverity: MEDIUM\nFixed Version: 5.2.2, 5.1.10, 4.2.22\nLink: [CVE-2025-48432](https://avd.aquasec.com/nvd/cve-2025-48432)"
         },
-        {
-          "level": "warning",
-          "locations": [
-            {
-              "message": {
-                "text": "requirements.txt: django@1.11.29"
+        "ruleId": "CVE-2025-48432",
+        "ruleIndex": 9
+      },
+      {
+        "level": "error",
+        "locations": [
+          {
+            "message": {
+              "text": "requirements.txt: django@1.11.29"
+            },
+            "physicalLocation": {
+              "artifactLocation": {
+                "uri": "requirements.txt",
+                "uriBaseId": "ROOTPATH"
               },
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "requirements.txt",
-                  "uriBaseId": "ROOTPATH"
-                },
-                "region": {
-                  "endColumn": 1,
-                  "endLine": 1,
-                  "startColumn": 1,
-                  "startLine": 1
-                }
+              "region": {
+                "endColumn": 1,
+                "endLine": 1,
+                "startColumn": 1,
+                "startLine": 1
               }
             }
-          ],
-          "message": {
-            "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2025-48432\nSeverity: MEDIUM\nFixed Version: 5.2.2, 5.1.10, 4.2.22\nLink: [CVE-2025-48432](https://avd.aquasec.com/nvd/cve-2025-48432)"
-          },
-          "ruleId": "CVE-2025-48432",
-          "ruleIndex": 6
+          }
+        ],
+        "message": {
+          "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2025-57833\nSeverity: HIGH\nFixed Version: 4.2.24, 5.1.12, 5.2.6\nLink: [CVE-2025-57833](https://avd.aquasec.com/nvd/cve-2025-57833)"
         },
-        {
-          "level": "error",
-          "locations": [
-            {
-              "message": {
-                "text": "requirements.txt: django@1.11.29"
+        "ruleId": "CVE-2025-57833",
+        "ruleIndex": 5
+      },
+      {
+        "level": "note",
+        "locations": [
+          {
+            "message": {
+              "text": "package-lock.json: brace-expansion@1.1.11"
+            },
+            "physicalLocation": {
+              "artifactLocation": {
+                "uri": "package-lock.json",
+                "uriBaseId": "ROOTPATH"
               },
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "requirements.txt",
-                  "uriBaseId": "ROOTPATH"
-                },
-                "region": {
-                  "endColumn": 1,
-                  "endLine": 1,
-                  "startColumn": 1,
-                  "startLine": 1
-                }
+              "region": {
+                "endColumn": 1,
+                "endLine": 357,
+                "startColumn": 1,
+                "startLine": 349
               }
             }
-          ],
-          "message": {
-            "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2025-57833\nSeverity: HIGH\nFixed Version: 4.2.24, 5.1.12, 5.2.6\nLink: [CVE-2025-57833](https://avd.aquasec.com/nvd/cve-2025-57833)"
-          },
-          "ruleId": "CVE-2025-57833",
-          "ruleIndex": 3
+          }
+        ],
+        "message": {
+          "text": "Package: brace-expansion\nInstalled Version: 1.1.11\nVulnerability CVE-2025-5889\nSeverity: LOW\nFixed Version: 2.0.2, 1.1.12, 3.0.1, 4.0.1\nLink: [CVE-2025-5889](https://avd.aquasec.com/nvd/cve-2025-5889)"
         },
-        {
-          "level": "note",
-          "locations": [
-            {
-              "message": {
-                "text": "package-lock.json: brace-expansion@1.1.11"
+        "ruleId": "CVE-2025-5889",
+        "ruleIndex": 0
+      },
+      {
+        "level": "error",
+        "locations": [
+          {
+            "message": {
+              "text": "requirements.txt: django@1.11.29"
+            },
+            "physicalLocation": {
+              "artifactLocation": {
+                "uri": "requirements.txt",
+                "uriBaseId": "ROOTPATH"
               },
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "package-lock.json",
-                  "uriBaseId": "ROOTPATH"
-                },
-                "region": {
-                  "endColumn": 1,
-                  "endLine": 357,
-                  "startColumn": 1,
-                  "startLine": 349
-                }
+              "region": {
+                "endColumn": 1,
+                "endLine": 1,
+                "startColumn": 1,
+                "startLine": 1
               }
             }
-          ],
-          "message": {
-            "text": "Package: brace-expansion\nInstalled Version: 1.1.11\nVulnerability CVE-2025-5889\nSeverity: LOW\nFixed Version: 2.0.2, 1.1.12, 3.0.1, 4.0.1\nLink: [CVE-2025-5889](https://avd.aquasec.com/nvd/cve-2025-5889)"
-          },
-          "ruleId": "CVE-2025-5889",
-          "ruleIndex": 0
-        }
-      ],
-      "tool": {
-        "driver": {
-          "fullName": "Trivy Vulnerability Scanner",
-          "informationUri": "https://github.com/aquasecurity/trivy",
-          "name": "Trivy",
-          "rules": null,
-          "version": "0.66.0"
-        }
+          }
+        ],
+        "message": {
+          "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2025-64458\nSeverity: HIGH\nFixed Version: 5.2.8, 5.1.14, 4.2.26\nLink: [CVE-2025-64458](https://avd.aquasec.com/nvd/cve-2025-64458)"
+        },
+        "ruleId": "CVE-2025-64458",
+        "ruleIndex": 6
+      },
+      {
+        "level": "error",
+        "locations": [
+          {
+            "message": {
+              "text": "requirements.txt: django@1.11.29"
+            },
+            "physicalLocation": {
+              "artifactLocation": {
+                "uri": "requirements.txt",
+                "uriBaseId": "ROOTPATH"
+              },
+              "region": {
+                "endColumn": 1,
+                "endLine": 1,
+                "startColumn": 1,
+                "startLine": 1
+              }
+            }
+          }
+        ],
+        "message": {
+          "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2025-64459\nSeverity: CRITICAL\nFixed Version: 5.2.8, 5.1.14, 4.2.26\nLink: [CVE-2025-64459](https://avd.aquasec.com/nvd/cve-2025-64459)"
+        },
+        "ruleId": "CVE-2025-64459",
+        "ruleIndex": 3
+      },
+      {
+        "level": "warning",
+        "locations": [
+          {
+            "message": {
+              "text": "package-lock.json: js-yaml@4.1.0"
+            },
+            "physicalLocation": {
+              "artifactLocation": {
+                "uri": "package-lock.json",
+                "uriBaseId": "ROOTPATH"
+              },
+              "region": {
+                "endColumn": 1,
+                "endLine": 1003,
+                "startColumn": 1,
+                "startLine": 993
+              }
+            }
+          }
+        ],
+        "message": {
+          "text": "Package: js-yaml\nInstalled Version: 4.1.0\nVulnerability CVE-2025-64718\nSeverity: MEDIUM\nFixed Version: 4.1.1, 3.14.2\nLink: [CVE-2025-64718](https://avd.aquasec.com/nvd/cve-2025-64718)"
+        },
+        "ruleId": "CVE-2025-64718",
+        "ruleIndex": 2
+      }
+    ],
+    "tool": {
+      "driver": {
+        "fullName": "Trivy Vulnerability Scanner",
+        "informationUri": "https://github.com/aquasecurity/trivy",
+        "name": "Trivy",
+        "rules": null,
+        "version": "0.66.0"
       }
     }
-  ],
-  "version": "2.1.0"
+  }
+],
+"version": "2.1.0"
 }
