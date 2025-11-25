@@ -154,6 +154,7 @@ var rulesWithoutOptions = map[string]bool{
 func CreateEslintConfig(toolsConfigDir string, configuration []domain.PatternConfiguration) error {
 	result := `export default [
     {
+        files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx"],
         rules: {
 `
 
