@@ -317,7 +317,6 @@ func checkIfConfigExistsAndIsNeeded(toolName string, cliLocalMode bool) error {
 	if _, err := os.Stat(toolConfigPath); os.IsNotExist(err) {
 		// Config file does not exist - create it if we have the means to do so
 		if (!cliLocalMode && initFlags.ApiToken != "") || cliLocalMode {
-			logger.Info(fmt.Sprintf("Creating new config file for tool %s\n", toolName))
 			if err := configsetup.CreateToolConfigurationFile(toolName, initFlags); err != nil {
 				return fmt.Errorf("failed to create config file for tool %s: %w", toolName, err)
 			}
