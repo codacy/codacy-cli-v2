@@ -200,7 +200,7 @@ func createDefaultConfigurationsForSpecificTools(discoveredToolNames map[string]
 // createToolConfigurationsForUUIDs creates tool configurations for specific UUIDs
 func createToolConfigurationsForUUIDs(uuids []string, toolsConfigDir string, initFlags domain.InitFlags) error {
 	for _, uuid := range uuids {
-		patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(initFlags, uuid, true)
+		patternsConfig, err := codacyclient.GetToolPatternsConfig(initFlags, uuid, true)
 		if err != nil {
 			logToolConfigWarning(uuid, "Failed to get default patterns", err)
 			continue

@@ -251,7 +251,7 @@ func loadsToolAndPatterns(toolName string, onlyEnabledPatterns bool) (domain.Too
 		}
 	}
 	var patterns []domain.PatternConfiguration
-	patterns, err = codacyclient.GetDefaultToolPatternsConfig(domain.InitFlags{}, tool.Uuid, onlyEnabledPatterns)
+	patterns, err = codacyclient.GetToolPatternsConfig(domain.InitFlags{}, tool.Uuid, onlyEnabledPatterns)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return domain.Tool{}, []domain.PatternConfiguration{}

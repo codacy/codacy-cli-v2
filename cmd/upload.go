@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -41,6 +43,48 @@ var uploadResultsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		processSarifAndSendResults(sarifPath, commitUuid, projectToken, apiToken, config.Config.Tools())
 	},
+}
+
+var sarifShortNameMap = map[string]string{
+	// The keys here MUST match the exact string found in run.Tool.Driver.Name
+	"ESLint (deprecated)": "eslint",
+	"ESLint":              "eslint-8",
+	"ESLint9":             "eslint-9",
+	"PMD":                 "pmd",
+	"PMD7":                "pmd-7",
+	"Trivy":               "trivy",
+	"Pylint":              "pylintpython3",
+	"dartanalyzer":        "dartanalyzer",
+	"Semgrep":             "semgrep",
+	"Lizard":              "lizard",
+	"revive":              "revive",
+}
+
+// Helper to look up the short name
+func getToolShortName(fullName string) string {
+	if shortName, ok := sarifShortNameMap[fullName]; ok {
+		return shortName
+	}
+	// Fallback: Use the original name if no mapping is found
+	return fullName
+}
+
+func getRelativePath(baseDir string, fullURI string) string {
+
+	localPath := fullURI
+	u, err := url.Parse(fullURI)
+	if err == nil && u.Scheme == "file" {
+		// url.Path extracts the local path component correctly
+		localPath = u.Path
+	}
+	relativePath, err := filepath.Rel(baseDir, localPath)
+	if err != nil {
+		// Fallback to the normalized absolute path if calculation fails
+		fmt.Printf("Warning: Could not get relative path for '%s' relative to '%s': %v. Using absolute path.\n", localPath, baseDir, err)
+		return localPath
+	}
+
+	return relativePath
 }
 
 func processSarifAndSendResults(sarifPath string, commitUUID string, projectToken string, apiToken string, tools map[string]*plugins.ToolInfo) {
@@ -86,6 +130,12 @@ func processSarif(sarif Sarif, tools map[string]*plugins.ToolInfo) [][]map[strin
 	var codacyIssues []map[string]interface{}
 	var payloads [][]map[string]interface{}
 
+	baseDir, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("Error getting current working directory: %v\n", err)
+		os.Exit(1)
+	}
+
 	for _, run := range sarif.Runs {
 		var toolName = getToolName(strings.ToLower(run.Tool.Driver.Name), run.Tool.Driver.Version)
 		tool, patterns := loadsToolAndPatterns(toolName, false)
@@ -98,8 +148,12 @@ func processSarif(sarif Sarif, tools map[string]*plugins.ToolInfo) [][]map[strin
 				continue
 			}
 			for _, location := range result.Locations {
+
+				fullURI := location.PhysicalLocation.ArtifactLocation.URI
+				relativePath := getRelativePath(baseDir, fullURI)
+
 				issue := map[string]interface{}{
-					"source":   location.PhysicalLocation.ArtifactLocation.URI,
+					"source":   relativePath,
 					"line":     location.PhysicalLocation.Region.StartLine,
 					"type":     pattern.ID,
 					"message":  result.Message.Text,
@@ -119,8 +173,12 @@ func processSarif(sarif Sarif, tools map[string]*plugins.ToolInfo) [][]map[strin
 		// Iterate through run.Artifacts and create entries in the results object
 		for _, artifact := range run.Artifacts {
 			if artifact.Location.URI != "" {
+
+				fullURI := artifact.Location.URI
+				relativePath := getRelativePath(baseDir, fullURI)
+
 				results = append(results, map[string]interface{}{
-					"filename": artifact.Location.URI,
+					"filename": relativePath,
 					"results":  []map[string]interface{}{},
 				})
 			}
@@ -169,10 +227,10 @@ func processSarif(sarif Sarif, tools map[string]*plugins.ToolInfo) [][]map[strin
 			}
 
 		}
-
+		var toolShortName = getToolShortName(toolName)
 		payload := []map[string]interface{}{
 			{
-				"tool": toolName,
+				"tool": toolShortName,
 				"issues": map[string]interface{}{
 					"Success": map[string]interface{}{
 						"results": results,

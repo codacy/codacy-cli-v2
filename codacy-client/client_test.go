@@ -91,7 +91,7 @@ func TestGetPageAndGetAllPages(t *testing.T) {
 	assert.Len(t, allItems, 3)
 }
 
-func TestGetDefaultToolPatternsConfig_Empty(t *testing.T) {
+func TestGetToolPatternsConfig_Empty(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]interface{}{
 			"data":       []interface{}{},
@@ -104,12 +104,12 @@ func TestGetDefaultToolPatternsConfig_Empty(t *testing.T) {
 	CodacyApiBase = ts.URL
 
 	initFlags := domain.InitFlags{ApiToken: "dummy"}
-	patterns, err := GetDefaultToolPatternsConfigWithCodacyAPIBase(CodacyApiBase, initFlags, "tool-uuid", true)
+	patterns, err := GetToolPatternsConfigWithCodacyAPIBase(CodacyApiBase, initFlags, "tool-uuid", true)
 	assert.NoError(t, err)
 	assert.Empty(t, patterns)
 }
 
-func TestGetDefaultToolPatternsConfig_WithNonRecommended(t *testing.T) {
+func TestGetToolPatternsConfig_WithNonRecommended(t *testing.T) {
 
 	config := []domain.PatternDefinition{
 		{
@@ -146,7 +146,7 @@ func TestGetDefaultToolPatternsConfig_WithNonRecommended(t *testing.T) {
 	CodacyApiBase = ts.URL
 
 	initFlags := domain.InitFlags{ApiToken: "dummy"}
-	patterns, err := GetDefaultToolPatternsConfigWithCodacyAPIBase(CodacyApiBase, initFlags, "tool-uuid", true)
+	patterns, err := GetToolPatternsConfigWithCodacyAPIBase(CodacyApiBase, initFlags, "tool-uuid", true)
 
 	fmt.Println(len(patterns))
 
