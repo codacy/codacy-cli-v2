@@ -60,7 +60,6 @@ var sarifShortNameMap = map[string]string{
 	"revive":              "revive",
 }
 
-// Helper to look up the short name
 func getToolShortName(fullName string) string {
 	if shortName, ok := sarifShortNameMap[fullName]; ok {
 		return shortName
