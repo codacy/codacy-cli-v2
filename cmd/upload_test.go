@@ -75,3 +75,55 @@ func TestGetRelativePath(t *testing.T) {
 		})
 	}
 }
+func TestGetToolShortName(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "MappedTool_ESLint8",
+			input:    "ESLint",
+			expected: "eslint-8",
+		},
+		{
+			name:     "MappedTool_PMD7",
+			input:    "PMD7",
+			expected: "pmd-7",
+		},
+		{
+			name:     "MappedTool_Pylint",
+			input:    "Pylint",
+			expected: "pylintpython3",
+		},
+		{
+			name:     "UnmappedTool_Fallback",
+			input:    "NewToolName",
+			expected: "NewToolName",
+		},
+		{
+			name:     "UnmappedTool_AnotherFallback",
+			input:    "SomeAnalyzer",
+			expected: "SomeAnalyzer",
+		},
+		{
+			name:     "EmptyInput_Fallback",
+			input:    "",
+			expected: "",
+		},
+		{
+			name:     "MappedTool_Deprecated",
+			input:    "ESLint (deprecated)",
+			expected: "eslint",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := getToolShortName(tt.input)
+			if actual != tt.expected {
+				t.Errorf("getToolShortName(%q) = %q; want %q", tt.input, actual, tt.expected)
+			}
+		})
+	}
+}
