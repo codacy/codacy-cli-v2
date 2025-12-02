@@ -293,7 +293,7 @@ func getToolName(toolName string, version string) string {
 		return codacyToolName
 	}
 
-	// 3. Default: Return the original tool name if no map or version matches
+	// Default: Return the original tool name if no map or version matches
 	return toolName
 }
 
