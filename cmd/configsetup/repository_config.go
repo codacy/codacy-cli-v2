@@ -98,7 +98,7 @@ func CreateToolConfigurationFile(toolName string, flags domain.InitFlags) error 
 		return fmt.Errorf("tool '%s' not found in supported tools", toolName)
 	}
 
-	patternsConfig, err := codacyclient.GetDefaultToolPatternsConfig(flags, toolUUID, true)
+	patternsConfig, err := codacyclient.GetToolPatternsConfig(flags, toolUUID, true)
 	if err != nil {
 		return fmt.Errorf("failed to get default patterns: %w", err)
 	}

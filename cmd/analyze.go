@@ -251,7 +251,7 @@ func loadsToolAndPatterns(toolName string, onlyEnabledPatterns bool) (domain.Too
 		}
 	}
 	var patterns []domain.PatternConfiguration
-	patterns, err = codacyclient.GetDefaultToolPatternsConfig(domain.InitFlags{}, tool.Uuid, onlyEnabledPatterns)
+	patterns, err = codacyclient.GetToolPatternsConfig(domain.InitFlags{}, tool.Uuid, onlyEnabledPatterns)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return domain.Tool{}, []domain.PatternConfiguration{}
@@ -259,28 +259,41 @@ func loadsToolAndPatterns(toolName string, onlyEnabledPatterns bool) (domain.Too
 	return tool, patterns
 }
 
+var versionedToolNames = map[string]map[int]string{
+	"eslint": {
+		7: "ESLint (deprecated)",
+		8: "ESLint",
+		9: "ESLint9",
+	},
+	"pmd": {
+		6: "PMD",
+		7: "PMD7",
+	},
+}
+
+var simpleToolAliases = map[string]string{
+	"lizard":  "Lizard",
+	"semgrep": "Semgrep",
+	"pylint":  "pylintpython3",
+	"trivy":   "Trivy",
+}
+
 func getToolName(toolName string, version string) string {
 	majorVersion := getMajorVersion(version)
-	if toolName == "eslint" {
-		switch majorVersion {
-		case 7:
-			return "ESLint (deprecated)"
-		case 8:
-			return "ESLint"
-		case 9:
-			return "ESLint9"
-		}
-	} else {
-		if toolName == "pmd" {
-			switch majorVersion {
-			case 6:
-				return "PMD"
-			case 7:
-				return "PMD7"
-			}
+
+	// Check for version-specific tool name: for eslint and pmd
+	if versions, ok := versionedToolNames[toolName]; ok {
+		if name, ok := versions[majorVersion]; ok {
+			return name
 		}
 	}
 
+	// Check for non-versioned tool name alias
+	if codacyToolName, ok := simpleToolAliases[toolName]; ok {
+		return codacyToolName
+	}
+
+	// Default: Return the original tool name if no map or version matches
 	return toolName
 }
 
