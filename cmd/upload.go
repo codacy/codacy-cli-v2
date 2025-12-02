@@ -136,6 +136,8 @@ func processSarif(sarif Sarif, tools map[string]*plugins.ToolInfo) [][]map[strin
 	}
 
 	for _, run := range sarif.Runs {
+		//getToolName will take care of mapping sarif tool names to codacy tool names
+		//especially for eslint and pmd that have multiple versions
 		var toolName = getToolName(strings.ToLower(run.Tool.Driver.Name), run.Tool.Driver.Version)
 		tool, patterns := loadsToolAndPatterns(toolName, false)
 
