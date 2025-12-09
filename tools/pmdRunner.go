@@ -86,11 +86,15 @@ func RunPmd(repositoryToAnalyseDirectory string, pmdBinary string, pathsToCheck 
 	// Output file
 	if outputFile != "" {
 		cmd.Args = append(cmd.Args, "-r", outputFile)
+		// When storing results in a file, all the logs output should go to stderr
+		// Note that for formats like SARIF, tools output their results to a temporary file
+		cmd.Stdout = os.Stderr
+	} else {
+		cmd.Stdout = os.Stdout
 	}
 
-	cmd.Dir = repositoryToAnalyseDirectory
 	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
+	cmd.Dir = repositoryToAnalyseDirectory
 
 	// Get Java runtime info
 	javaRuntime := config.Runtimes()["java"]
