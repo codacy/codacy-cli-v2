@@ -1,5 +1,6 @@
 export default [
     {
+        files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
         rules: {
           "constructor-super": ["error"],
           "for-direction": ["error"],
