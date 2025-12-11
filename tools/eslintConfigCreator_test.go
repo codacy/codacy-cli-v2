@@ -33,7 +33,7 @@ func TestCreateEslintConfigEmptyConfig(t *testing.T) {
 		[]domain.PatternConfiguration{},
 		`export default [
     {
-		files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
+        files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
         rules: {
         }
     }
@@ -51,7 +51,7 @@ func TestCreateEslintConfigConfig1(t *testing.T) {
 		},
 		`export default [
     {
-		files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
+        files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
         rules: {
           "semi": ["error"],
         }
@@ -76,7 +76,7 @@ func TestCreateEslintConfigUnnamedParam(t *testing.T) {
 		},
 		`export default [
     {
-		files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
+        files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
         rules: {
           "semi": ["error", "never"],
         }
@@ -101,7 +101,7 @@ func TestCreateEslintConfigNamedParam(t *testing.T) {
 		},
 		`export default [
     {
-		files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
+        files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
         rules: {
           "consistent-return": ["error", {"treatUndefinedAsUnspecified": false}],
         }
@@ -130,7 +130,7 @@ func TestCreateEslintConfigUnnamedAndNamedParam(t *testing.T) {
 		},
 		`export default [
     {
-		files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
+        files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
         rules: {
           "consistent-return": ["error", "foo", {"treatUndefinedAsUnspecified": false}],
         }
@@ -149,7 +149,7 @@ func TestCreateEslintConfigDoNotSupportPlugins(t *testing.T) {
 		},
 		`export default [
     {
-		files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
+        files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
         rules: {
         }
     }
@@ -187,7 +187,7 @@ func TestCreateEslintConfigWithDefaultValues(t *testing.T) {
 		},
 		`export default [
     {
-		files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
+        files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
         rules: {
           "no-fallthrough": ["error", {"allowEmptyCase": false}],
         }
@@ -218,7 +218,7 @@ func TestCreateEslintConfigWithUnnamedDefaultValues(t *testing.T) {
 		},
 		`export default [
     {
-		files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
+        files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.vue"],
         rules: {
           "no-inner-declarations": ["error", "functions"],
         }
