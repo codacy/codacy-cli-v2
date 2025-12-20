@@ -18,4 +18,5 @@ binaries:
   - name: java
     path:
       darwin: "Contents/Home/bin/java"
-      linux: "bin/java" 
+      linux: "bin/java"
+      windows: "bin/java"
