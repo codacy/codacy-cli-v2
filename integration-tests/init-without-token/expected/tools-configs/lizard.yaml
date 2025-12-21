@@ -15,7 +15,10 @@ patterns:
     Lizard_file-nloc-medium:
         category: Complexity
         description: This rule checks if the number of lines of code (excluding comments) in a file exceeds a medium threshold, typically 500 lines.
-        explanation: ""
+        explanation: |-
+            # Medium File NLOC control
+
+            Check the number of lines of code (without comments) in a file. If the threshold is not met, raise a Medium issue. The default threshold is 500.
         id: Lizard_file-nloc-medium
         level: Warning
         severityLevel: Warning
@@ -41,7 +44,7 @@ patterns:
         explanation: |-
             # Medium Parameter count control
 
-            Check the number of parameters sent to a function. If the threshold is not met, raise a Medium issue. The default threshold is 5.
+            Check the number of parameters sent to a function. If the threshold is not met, raise a Medium issue. The default threshold is 8.
         id: Lizard_parameter-count-medium
         level: Warning
         severityLevel: Warning

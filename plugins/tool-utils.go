@@ -5,9 +5,8 @@ import (
 	"embed"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"runtime"
-	"strings"
 	"text/template"
 
 	"gopkg.in/yaml.v3"
@@ -121,8 +120,8 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 		if err != nil {
 			return nil, fmt.Errorf("error parsing plugin.yaml for %s: %w", config.Name, err)
 		}
-		// Create the install directory path
-		installDir := path.Join(toolDir, fmt.Sprintf("%s@%s", config.Name, config.Version))
+		// Create the install directory path (normalize separators for the OS)
+		installDir := filepath.Join(filepath.FromSlash(toolDir), fmt.Sprintf("%s@%s", config.Name, config.Version))
 
 		// Handle special case for dartanalyzer since it can be used with either dart or flutter
 		toolRuntime := pluginConfig.Runtime
@@ -200,16 +199,12 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 				return nil, fmt.Errorf("error executing binary path template for %s: %w", config.Name, err)
 			}
 
-			binaryPath = buf.String()
+			binaryPath = filepath.FromSlash(buf.String())
 
-			// If the binary path is relative, join it with the install directory
-			if !path.IsAbs(binaryPath) {
-				binaryPath = path.Join(installDir, binaryPath)
-			}
-
-			// Add file extension for Windows executables
-			if runtime.GOOS == "windows" && !strings.HasSuffix(binaryPath, ".exe") {
-				binaryPath += ".exe"
+			if filepath.IsAbs(binaryPath) {
+				binaryPath = filepath.Clean(binaryPath)
+			} else {
+				binaryPath = filepath.Join(installDir, binaryPath)
 			}
 
 			info.Binaries[binary.Name] = binaryPath

@@ -351,12 +351,49 @@ func Init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Repository directory is the current working directory
-	repositoryDirectory := ""
-	repositoryCache := ".codacy"
+	repositoryDirectory, err := findRepositoryRoot()
+	if err != nil {
+		log.Fatal(err)
+	}
+	repositoryCache := filepath.Join(repositoryDirectory, ".codacy")
 	globalCache := filepath.Join(homePath, ".cache", "codacy")
 
 	setupGlobalConfig(repositoryDirectory, repositoryCache, globalCache)
+}
+
+func findRepositoryRoot() (string, error) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	absDir, err := filepath.Abs(currentDir)
+	if err != nil {
+		return "", err
+	}
+
+	dir := absDir
+	for {
+		if isRepositoryRoot(dir) {
+			return dir, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return absDir, nil
+		}
+
+		dir = parent
+	}
+}
+
+func isRepositoryRoot(dir string) bool {
+	indicators := []string{".git", "go.mod", ".codacy"}
+	for _, indicator := range indicators {
+		if _, err := os.Stat(filepath.Join(dir, indicator)); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 // IsRuntimeInstalled checks if a runtime is already installed
