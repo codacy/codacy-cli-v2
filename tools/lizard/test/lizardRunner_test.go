@@ -1,6 +1,7 @@
 package test
 
 import (
+	"codacy/cli-v2/config"
 	"codacy/cli-v2/tools/lizard"
 	"os"
 	"path/filepath"
@@ -11,6 +12,8 @@ import (
 )
 
 func TestRunLizardWithSarifOutput(t *testing.T) {
+	config.Init()
+
 	// Get the current directory
 	currentDir, err := os.Getwd()
 	if err != nil {

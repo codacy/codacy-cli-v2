@@ -56,48 +56,7 @@
           ]
         }
       },
-      "results": [
-        {
-          "ruleId": "Lizard_nloc-medium",
-          "level": "warning",
-          "message": {
-            "text": "Method complex_analysis has 65 lines of code (limit is 50)"
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "complex.py"
-                },
-                "region": {
-                  "startLine": 1,
-                  "startColumn": 1
-                }
-              }
-            }
-          ]
-        },
-        {
-          "ruleId": "Lizard_ccn-medium",
-          "level": "warning",
-          "message": {
-            "text": "Method complex_analysis has a cyclomatic complexity of 31 (limit is 8)"
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "complex.py"
-                },
-                "region": {
-                  "startLine": 1,
-                  "startColumn": 1
-                }
-              }
-            }
-          ]
-        }
-      ]
+      "results": []
     }
   ]
-} 
+}

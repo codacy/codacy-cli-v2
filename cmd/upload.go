@@ -265,7 +265,7 @@ func buildResultsFromIssues(codacyIssues []map[string]interface{}, artifacts []s
 		found := false
 		for i, result := range results {
 			if result["filename"] == source {
-				results[i]["results"] = append(results[i]["results"].([]map[string]interface{}), map[string]interface{}{ "Issue": issue })
+				results[i]["results"] = append(results[i]["results"].([]map[string]interface{}), map[string]interface{}{"Issue": issue})
 				found = true
 				break
 			}
