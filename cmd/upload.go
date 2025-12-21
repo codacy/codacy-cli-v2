@@ -40,7 +40,7 @@ var uploadResultsCmd = &cobra.Command{
 	Use:   "upload",
 	Short: "Uploads a sarif file to Codacy",
 	Long:  "YADA",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		processSarifAndSendResults(sarifPath, commitUuid, projectToken, apiToken, config.Config.Tools())
 	},
 }
@@ -132,7 +132,6 @@ func processSarifAndSendResults(sarifPath string, commitUUID string, projectToke
 }
 
 func processSarif(sarif Sarif, tools map[string]*plugins.ToolInfo) [][]map[string]interface{} {
-	var codacyIssues []map[string]interface{}
 	var payloads [][]map[string]interface{}
 
 	baseDir, err := os.Getwd()
@@ -147,93 +146,8 @@ func processSarif(sarif Sarif, tools map[string]*plugins.ToolInfo) [][]map[strin
 		var toolName = getToolName(strings.ToLower(run.Tool.Driver.Name), run.Tool.Driver.Version)
 		tool, patterns := loadsToolAndPatterns(toolName, false)
 
-		for _, result := range run.Results {
-			modifiedType := tool.Prefix + strings.Replace(result.RuleID, "/", "_", -1)
-			pattern := getPatternByID(patterns, modifiedType)
-			if pattern == nil {
-				fmt.Printf("Rule '%s' doesn't have a direct mapping on Codacy\n", modifiedType)
-				continue
-			}
-			for _, location := range result.Locations {
-
-				fullURI := location.PhysicalLocation.ArtifactLocation.URI
-				relativePath := getRelativePath(baseDir, fullURI)
-
-				issue := map[string]interface{}{
-					"source":   relativePath,
-					"line":     location.PhysicalLocation.Region.StartLine,
-					"type":     pattern.ID,
-					"message":  result.Message.Text,
-					"level":    pattern.Level,
-					"category": pattern.Category,
-				}
-
-				// Only add sourceId for tools that need it
-				if toolInfo, exists := tools[toolName]; exists && toolInfo.NeedsSourceIDUpload {
-					issue["sourceId"] = result.RuleID
-				}
-
-				codacyIssues = append(codacyIssues, issue)
-			}
-		}
-		var results []map[string]interface{}
-		// Iterate through run.Artifacts and create entries in the results object
-		for _, artifact := range run.Artifacts {
-			if artifact.Location.URI != "" {
-
-				fullURI := artifact.Location.URI
-				relativePath := getRelativePath(baseDir, fullURI)
-
-				results = append(results, map[string]interface{}{
-					"filename": relativePath,
-					"results":  []map[string]interface{}{},
-				})
-			}
-		}
-		for _, obj := range codacyIssues {
-			source := obj["source"].(string)
-			issue := map[string]interface{}{
-				"patternId": map[string]string{
-					"value": obj["type"].(string),
-				},
-				"filename": source,
-				"message": map[string]string{
-					"text": obj["message"].(string),
-				},
-				"level": obj["level"].(string),
-				//"category": obj["category"].(string),
-				"location": map[string]interface{}{
-					"LineLocation": map[string]int{
-						"line": obj["line"].(int),
-					},
-				},
-			}
-
-			// Only add sourceId for tools that need it
-			if toolInfo, exists := tools[toolName]; exists && toolInfo.NeedsSourceIDUpload {
-				issue["sourceId"] = obj["sourceId"].(string)
-			}
-
-			// Check if we already have an entry for this filename
-			found := false
-			for i, result := range results {
-				if result["filename"] == source {
-					// If we do, append this issue to its results
-					results[i]["results"] = append(results[i]["results"].([]map[string]interface{}), map[string]interface{}{"Issue": issue})
-					found = true
-					break
-				}
-			}
-
-			// If we don't, create a new entry
-			if !found {
-				results = append(results, map[string]interface{}{
-					"filename": source,
-					"results":  []map[string]interface{}{{"Issue": issue}},
-				})
-			}
-
-		}
+		codacyIssues := collectCodacyIssues(run.Results, baseDir, toolName, tool.Prefix, patterns, tools)
+		results := buildResultsFromIssues(codacyIssues, run.Artifacts, baseDir)
 		var toolShortName = getToolShortName(toolName)
 		payload := []map[string]interface{}{
 			{
@@ -249,6 +163,123 @@ func processSarif(sarif Sarif, tools map[string]*plugins.ToolInfo) [][]map[strin
 	}
 
 	return payloads
+}
+
+func collectCodacyIssues(results []struct {
+	Level   string `json:"level"`
+	Message struct {
+		Text string `json:"text"`
+	} `json:"message"`
+	Locations []struct {
+		PhysicalLocation struct {
+			ArtifactLocation struct {
+				URI   string `json:"uri"`
+				Index int    `json:"index"`
+			} `json:"artifactLocation"`
+			Region struct {
+				StartLine   int `json:"startLine"`
+				StartColumn int `json:"startColumn"`
+				EndLine     int `json:"endLine"`
+				EndColumn   int `json:"endColumn"`
+			} `json:"region"`
+		} `json:"physicalLocation"`
+	} `json:"locations"`
+	RuleID    string `json:"ruleId"`
+	RuleIndex int    `json:"ruleIndex"`
+}, baseDir string, toolName string, toolPrefix string, patterns []domain.PatternConfiguration, tools map[string]*plugins.ToolInfo) []map[string]interface{} {
+	var codacyIssues []map[string]interface{}
+
+	for _, result := range results {
+		modifiedType := toolPrefix + strings.Replace(result.RuleID, "/", "_", -1)
+		pattern := getPatternByID(patterns, modifiedType)
+		if pattern == nil {
+			fmt.Printf("Rule '%s' doesn't have a direct mapping on Codacy\n", modifiedType)
+			continue
+		}
+		for _, location := range result.Locations {
+
+			fullURI := location.PhysicalLocation.ArtifactLocation.URI
+			relativePath := getRelativePath(baseDir, fullURI)
+
+			issue := map[string]interface{}{
+				"source":   relativePath,
+				"line":     location.PhysicalLocation.Region.StartLine,
+				"type":     pattern.ID,
+				"message":  result.Message.Text,
+				"level":    pattern.Level,
+				"category": pattern.Category,
+			}
+
+			// Only add sourceId for tools that need it
+			if toolInfo, exists := tools[toolName]; exists && toolInfo.NeedsSourceIDUpload {
+				issue["sourceId"] = result.RuleID
+			}
+
+			codacyIssues = append(codacyIssues, issue)
+		}
+	}
+
+	return codacyIssues
+}
+
+func buildResultsFromIssues(codacyIssues []map[string]interface{}, artifacts []struct {
+	Location struct {
+		URI string `json:"uri"`
+	} `json:"location"`
+}, baseDir string) []map[string]interface{} {
+	results := make([]map[string]interface{}, 0, len(artifacts)+len(codacyIssues))
+
+	for _, artifact := range artifacts {
+		if artifact.Location.URI == "" {
+			continue
+		}
+		fullURI := artifact.Location.URI
+		relativePath := getRelativePath(baseDir, fullURI)
+		results = append(results, map[string]interface{}{
+			"filename": relativePath,
+			"results":  []map[string]interface{}{},
+		})
+	}
+
+	for _, obj := range codacyIssues {
+		source := obj["source"].(string)
+		issue := map[string]interface{}{
+			"patternId": map[string]string{
+				"value": obj["type"].(string),
+			},
+			"filename": source,
+			"message": map[string]string{
+				"text": obj["message"].(string),
+			},
+			"level": obj["level"].(string),
+			"location": map[string]interface{}{
+				"LineLocation": map[string]int{
+					"line": obj["line"].(int),
+				},
+			},
+		}
+		if sourceID, ok := obj["sourceId"]; ok {
+			issue["sourceId"] = sourceID.(string)
+		}
+
+		found := false
+		for i, result := range results {
+			if result["filename"] == source {
+				results[i]["results"] = append(results[i]["results"].([]map[string]interface{}), map[string]interface{}{ "Issue": issue })
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			results = append(results, map[string]interface{}{
+				"filename": source,
+				"results":  []map[string]interface{}{{"Issue": issue}},
+			})
+		}
+	}
+
+	return results
 }
 
 func resultsFinalWithProjectToken(commitUUID string, projectToken string) {
