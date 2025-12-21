@@ -69,21 +69,27 @@ func getToolShortName(fullName string) string {
 }
 
 func getRelativePath(baseDir string, fullURI string) string {
-
 	localPath := fullURI
-	u, err := url.Parse(fullURI)
-	if err == nil && u.Scheme == "file" {
-		// url.Path extracts the local path component correctly
-		localPath = u.Path
+	if u, err := url.Parse(fullURI); err == nil && u.Scheme == "file" {
+		// url.Path extracts the local path component correctly and may be URL-encoded
+		if decodedPath, err := url.PathUnescape(u.Path); err == nil {
+			localPath = decodedPath
+		} else {
+			localPath = u.Path
+		}
 	}
-	relativePath, err := filepath.Rel(baseDir, localPath)
+
+	baseDirNormalized := filepath.FromSlash(baseDir)
+	localPathNormalized := filepath.FromSlash(localPath)
+
+	relativePath, err := filepath.Rel(baseDirNormalized, localPathNormalized)
 	if err != nil {
 		// Fallback to the normalized absolute path if calculation fails
-		fmt.Printf("Warning: Could not get relative path for '%s' relative to '%s': %v. Using absolute path.\n", localPath, baseDir, err)
-		return localPath
+		fmt.Printf("Warning: Could not get relative path for '%s' relative to '%s': %v. Using absolute path.\n", localPathNormalized, baseDirNormalized, err)
+		return localPathNormalized
 	}
 
-	return relativePath
+	return filepath.FromSlash(relativePath)
 }
 
 func processSarifAndSendResults(sarifPath string, commitUUID string, projectToken string, apiToken string, tools map[string]*plugins.ToolInfo) {
