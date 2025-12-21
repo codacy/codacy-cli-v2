@@ -410,7 +410,6 @@ func sendResultsWithAPIToken(payload []map[string]interface{}, commitUUID string
 	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("Error sending results, status code: %d\n", resp.StatusCode)
 		os.Exit(1)
-	} else {
-		fmt.Println("Results sent successfully")
 	}
+	fmt.Println("Results sent successfully")
 }
