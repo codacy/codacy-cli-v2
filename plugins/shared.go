@@ -13,9 +13,17 @@ type ExtensionConfig struct {
 	Default string `yaml:"default"`
 }
 
+type CustomURLConfig struct {
+	Linux   string `yaml:"linux"`
+	Windows string `yaml:"windows"`
+	MacOS   string `yaml:"macos"`
+	Default string `yaml:"default"`
+}
+
 // DownloadConfig holds the download configuration from the plugin.yaml
 type DownloadConfig struct {
 	URLTemplate      string            `yaml:"url_template"`
+	CustomURLConfig  CustomURLConfig   `yaml:"custom_url_config,omitempty"`
 	FileNameTemplate string            `yaml:"file_name_template"`
 	Extension        ExtensionConfig   `yaml:"extension"`
 	ArchMapping      map[string]string `yaml:"arch_mapping"`
@@ -85,6 +93,27 @@ func GetExtension(extension ExtensionConfig, goos string) string {
 		return extension.Linux
 	}
 	return extension.Default
+}
+
+func getCustomDownloadURL(customURLConfig CustomURLConfig, goos string) (string, bool) {
+	switch goos {
+	case "linux":
+		if customURLConfig.Linux != "" {
+			return customURLConfig.Linux, true
+		}
+	case "windows":
+		if customURLConfig.Windows != "" {
+			return customURLConfig.Windows, true
+		}
+	case "darwin":
+		if customURLConfig.MacOS != "" {
+			return customURLConfig.MacOS, true
+		}
+	}
+	if customURLConfig.Default != "" {
+		return customURLConfig.Default, true
+	}
+	return "", false
 }
 
 // GetMajorVersion extracts the major version from a version string (e.g. "17.0.10" -> "17")
