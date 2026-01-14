@@ -14,6 +14,10 @@ func TestProcessRuntimes(t *testing.T) {
 			Name:    "node",
 			Version: "18.17.1",
 		},
+		{
+			Name:    "flutter",
+			Version: "3.35.7",
+		},
 	}
 
 	// Define a test runtime directory
@@ -27,9 +31,15 @@ func TestProcessRuntimes(t *testing.T) {
 
 	// Assert we have the expected runtime in the results
 	assert.Contains(t, runtimeInfos, "node")
+	assert.Contains(t, runtimeInfos, "flutter")
 
 	// Get the node runtime info
 	nodeInfo := runtimeInfos["node"]
+	flutterInfo := runtimeInfos["flutter"]
+
+	// Basic assertions for flutter
+	assert.Equal(t, "flutter", flutterInfo.Name)
+	assert.Equal(t, "3.35.7", flutterInfo.Version)
 
 	// Assert the basic runtime info is correct
 	assert.Equal(t, "node", nodeInfo.Name)
@@ -69,21 +79,21 @@ func TestProcessRuntimes(t *testing.T) {
 	// Assert the download URL is correctly formatted
 	expectedDownloadURL := "https://nodejs.org/dist/v18.17.1/" + expectedFileName + "." + expectedExtension
 	assert.Equal(t, expectedDownloadURL, nodeInfo.DownloadURL)
-	
+
 	// Assert binary paths are correctly set
 	assert.NotNil(t, nodeInfo.Binaries)
 	assert.Greater(t, len(nodeInfo.Binaries), 0)
-	
+
 	// Check if node and npm binaries are present
 	nodeBinary := nodeInfo.InstallDir + "/bin/node"
 	npmBinary := nodeInfo.InstallDir + "/bin/npm"
-	
+
 	// Add .exe extension for Windows
 	if runtime.GOOS == "windows" {
 		nodeBinary += ".exe"
 		npmBinary += ".exe"
 	}
-	
+
 	assert.Equal(t, nodeBinary, nodeInfo.Binaries["node"])
 	assert.Equal(t, npmBinary, nodeInfo.Binaries["npm"])
 }
