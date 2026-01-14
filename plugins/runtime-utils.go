@@ -46,8 +46,14 @@ func processRuntime(config RuntimeConfig, runtimesDir string) (*RuntimeInfo, err
 	// Get the filename using the template
 	fileName := GetFileName(pluginConfig.Download.FileNameTemplate, config.Version, mappedArch, runtime.GOOS)
 
+	customURLConfig, hasCustomURL := getCustomDownloadURL(pluginConfig.Download.CustomURLConfig, runtime.GOOS)
 	// Get the download URL using the template
-	downloadURL := GetDownloadURL(pluginConfig.Download.URLTemplate, fileName, config.Version, mappedArch, mappedOS, extension, pluginConfig.Download.ReleaseVersion)
+	downloadURL := ""
+	if hasCustomURL {
+		downloadURL = GetDownloadURL(customURLConfig, fileName, config.Version, mappedArch, mappedOS, extension, pluginConfig.Download.ReleaseVersion)
+	} else {
+		downloadURL = GetDownloadURL(pluginConfig.Download.URLTemplate, fileName, config.Version, mappedArch, mappedOS, extension, pluginConfig.Download.ReleaseVersion)
+	}
 
 	// For Python, we want to use a simpler directory structure
 	var installDir string

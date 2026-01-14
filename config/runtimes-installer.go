@@ -128,10 +128,11 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 
 	if strings.HasSuffix(fileName, ".zip") {
 		err = utils.ExtractZip(file.Name(), runtimesDir)
+	} else if strings.HasSuffix(fileName, ".tar.xz") || strings.HasSuffix(fileName, ".txz") {
+		err = utils.ExtractTarXz(file, runtimesDir)
 	} else {
 		err = utils.ExtractTarGz(file, runtimesDir)
 	}
-
 	if err != nil {
 		return fmt.Errorf("failed to extract runtime: %w", err)
 	}

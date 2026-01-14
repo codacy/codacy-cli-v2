@@ -14,8 +14,16 @@ import (
 )
 
 func ExtractTarGz(archive *os.File, targetDir string) error {
+	return ExtractTar(archive, targetDir, archiver.Gz{})
+}
+
+func ExtractTarXz(archive *os.File, targetDir string) error {
+	return ExtractTar(archive, targetDir, archiver.Xz{})
+}
+
+func ExtractTar(archive *os.File, targetDir string, compression archiver.Compression) error {
 	format := archiver.CompressedArchive{
-		Compression: archiver.Gz{},
+		Compression: compression,
 		Archival:    archiver.Tar{},
 	}
 

@@ -32,6 +32,10 @@ func TestAddTools(t *testing.T) {
 			Name:    "eslint",
 			Version: "8.38.0",
 		},
+		{
+			Name:    "dartanalyzer",
+			Version: "3.7.2",
+		},
 	}
 
 	// Add tools to the config
