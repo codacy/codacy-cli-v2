@@ -8,6 +8,7 @@ import (
 
 // ExtensionConfig defines the file extension based on OS
 type ExtensionConfig struct {
+	Linux  string `yaml:"linux"`
 	Windows string `yaml:"windows"`
 	Default string `yaml:"default"`
 }
@@ -79,6 +80,9 @@ func GetMappedArch(archMapping map[string]string, goarch string) string {
 func GetExtension(extension ExtensionConfig, goos string) string {
 	if goos == "windows" {
 		return extension.Windows
+	}
+	if goos == "linux" {
+		return extension.Linux
 	}
 	return extension.Default
 }

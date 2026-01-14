@@ -2,14 +2,14 @@ name: flutter
 description: Dart Flutterruntime
 default_version: "3.7.2"
 download:
-  url_template: "https://storage.googleapis.com/flutter_infra_release/releases/stable/{{.OS}}/flutter_{{.OS}}_{{.Arch}}_{{.Version}}-stable.{{.Extension}}"
+  url_template: "https://storage.googleapis.com/flutter_infra_release/releases/stable/{{.OS}}/flutter_{{.OS}}_{{.Version}}-stable.{{.Extension}}"
   file_name_template: "flutter"
   extension:
-    default: "zip"
     linux: "tar.xz"
+    default: "zip"
   arch_mapping:
-    "386": "ia32"
-    "amd64": "x64"
+    "386": ""
+    "amd64": ""
     "arm": "arm"
     "arm64": "arm64"
   os_mapping:
