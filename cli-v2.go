@@ -39,10 +39,10 @@ func main() {
 		}
 	}
 
-	// Check if command is init/update/version/help - these don't require configuration
+	// Check if command is init/update/version/help/container-scan - these don't require configuration
 	if len(os.Args) > 1 {
 		cmdName := os.Args[1]
-		if cmdName == "init" || cmdName == "update" || cmdName == "version" || cmdName == "help" {
+		if cmdName == "init" || cmdName == "update" || cmdName == "version" || cmdName == "help" || cmdName == "container-scan" {
 			cmd.Execute()
 			return
 		}
