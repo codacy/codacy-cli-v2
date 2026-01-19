@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
+	"strings"
 
 	"codacy/cli-v2/utils/logger"
 
@@ -11,6 +13,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
+
+// validImageNamePattern validates Docker image references
+// Allows: registry/namespace/image:tag or image@sha256:digest
+// Based on Docker image reference specification
+var validImageNamePattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._\-/:@]*$`)
 
 // Flag variables for container-scan command
 var (
@@ -51,72 +58,91 @@ the command fails when vulnerabilities are found.`,
 	Run:  runContainerScan,
 }
 
-func runContainerScan(cmd *cobra.Command, args []string) {
-	imageName := args[0]
+// validateImageName checks if the image name is a valid Docker image reference
+// and doesn't contain shell metacharacters that could be used for command injection
+func validateImageName(imageName string) error {
+	if imageName == "" {
+		return fmt.Errorf("image name cannot be empty")
+	}
 
-	logger.Info("Starting container scan", logrus.Fields{
-		"image": imageName,
-	})
+	// Check for maximum length (Docker has a practical limit)
+	if len(imageName) > 256 {
+		return fmt.Errorf("image name is too long (max 256 characters)")
+	}
 
-	// Check if Trivy is installed
+	// Validate against allowed pattern
+	if !validImageNamePattern.MatchString(imageName) {
+		return fmt.Errorf("invalid image name format: contains disallowed characters")
+	}
+
+	// Additional check for dangerous shell metacharacters
+	dangerousChars := []string{";", "&", "|", "$", "`", "(", ")", "{", "}", "<", ">", "!", "\\", "\n", "\r", "'", "\""}
+	for _, char := range dangerousChars {
+		if strings.Contains(imageName, char) {
+			return fmt.Errorf("invalid image name: contains disallowed character '%s'", char)
+		}
+	}
+
+	return nil
+}
+
+// getTrivyPath returns the path to the Trivy binary or exits if not found
+func getTrivyPath() string {
 	trivyPath, err := exec.LookPath("trivy")
 	if err != nil {
-		logger.Error("Trivy not found", logrus.Fields{
-			"error": err.Error(),
-		})
+		logger.Error("Trivy not found", logrus.Fields{"error": err.Error()})
 		color.Red("❌ Error: Trivy is not installed or not found in PATH")
 		fmt.Println("Please install Trivy to use container scanning.")
 		fmt.Println("Visit: https://trivy.dev/latest/getting-started/installation/")
 		os.Exit(1)
 	}
+	logger.Info("Found Trivy", logrus.Fields{"path": trivyPath})
+	return trivyPath
+}
 
-	logger.Info("Found Trivy", logrus.Fields{
-		"path": trivyPath,
-	})
+// handleTrivyResult processes the Trivy command result and exits appropriately
+func handleTrivyResult(err error, imageName string) {
+	if err == nil {
+		logger.Info("Container scan completed successfully", logrus.Fields{"image": imageName})
+		fmt.Println()
+		color.Green("✅ Success: No vulnerabilities found matching the specified criteria")
+		return
+	}
 
-	// Build Trivy command arguments
-	trivyArgs := buildTrivyArgs(imageName)
-
-	trivyCmd := exec.Command(trivyPath, trivyArgs...)
-	trivyCmd.Stdout = os.Stdout
-	trivyCmd.Stderr = os.Stderr
-
-	logger.Info("Running Trivy container scan", logrus.Fields{
-		"command": trivyCmd.String(),
-	})
-
-	fmt.Printf("🔍 Scanning container image: %s\n\n", imageName)
-
-	err = trivyCmd.Run()
-	if err != nil {
-		// Check if the error is due to exit code 1 (vulnerabilities found)
-		if exitError, ok := err.(*exec.ExitError); ok {
-			exitCode := exitError.ExitCode()
-			logger.Warn("Container scan completed with vulnerabilities", logrus.Fields{
-				"image":     imageName,
-				"exit_code": exitCode,
-			})
-			if exitCode == 1 {
-				fmt.Println()
-				color.Red("❌ Scanning failed: vulnerabilities found in the container image")
-				os.Exit(1)
-			}
-		}
-
-		// Other errors
-		logger.Error("Failed to run Trivy", logrus.Fields{
-			"error": err.Error(),
+	if exitError, ok := err.(*exec.ExitError); ok && exitError.ExitCode() == 1 {
+		logger.Warn("Container scan completed with vulnerabilities", logrus.Fields{
+			"image": imageName, "exit_code": 1,
 		})
-		color.Red("❌ Error: Failed to run Trivy: %v", err)
+		fmt.Println()
+		color.Red("❌ Scanning failed: vulnerabilities found in the container image")
 		os.Exit(1)
 	}
 
-	logger.Info("Container scan completed successfully", logrus.Fields{
-		"image": imageName,
-	})
+	logger.Error("Failed to run Trivy", logrus.Fields{"error": err.Error()})
+	color.Red("❌ Error: Failed to run Trivy: %v", err)
+	os.Exit(1)
+}
 
-	fmt.Println()
-	color.Green("✅ Success: No vulnerabilities found matching the specified criteria")
+func runContainerScan(cmd *cobra.Command, args []string) {
+	imageName := args[0]
+
+	if err := validateImageName(imageName); err != nil {
+		logger.Error("Invalid image name", logrus.Fields{"image": imageName, "error": err.Error()})
+		color.Red("❌ Error: %v", err)
+		os.Exit(1)
+	}
+
+	logger.Info("Starting container scan", logrus.Fields{"image": imageName})
+
+	trivyPath := getTrivyPath()
+	trivyCmd := exec.Command(trivyPath, buildTrivyArgs(imageName)...)
+	trivyCmd.Stdout = os.Stdout
+	trivyCmd.Stderr = os.Stderr
+
+	logger.Info("Running Trivy container scan", logrus.Fields{"command": trivyCmd.String()})
+	fmt.Printf("🔍 Scanning container image: %s\n\n", imageName)
+
+	handleTrivyResult(trivyCmd.Run(), imageName)
 }
 
 // buildTrivyArgs constructs the Trivy command arguments based on flags
