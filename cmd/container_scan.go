@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 // validImageNamePattern validates Docker image references
@@ -19,42 +22,61 @@ import (
 // Based on Docker image reference specification
 var validImageNamePattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._\-/:@]*$`)
 
+// dockerfileFromPattern matches FROM instructions in Dockerfiles
+var dockerfileFromPattern = regexp.MustCompile(`(?i)^\s*FROM\s+([^\s]+)`)
+
 // Flag variables for container-scan command
 var (
 	severityFlag      string
 	pkgTypesFlag      string
 	ignoreUnfixedFlag bool
+	dockerfileFlag    string
+	composeFileFlag   string
 )
 
 func init() {
 	containerScanCmd.Flags().StringVar(&severityFlag, "severity", "", "Comma-separated list of severities to scan for (default: HIGH,CRITICAL)")
 	containerScanCmd.Flags().StringVar(&pkgTypesFlag, "pkg-types", "", "Comma-separated list of package types to scan (default: os)")
 	containerScanCmd.Flags().BoolVar(&ignoreUnfixedFlag, "ignore-unfixed", true, "Ignore unfixed vulnerabilities")
+	containerScanCmd.Flags().StringVar(&dockerfileFlag, "dockerfile", "", "Path to Dockerfile for image auto-detection (useful in CI)")
+	containerScanCmd.Flags().StringVar(&composeFileFlag, "compose-file", "", "Path to docker-compose.yml for image auto-detection (useful in CI)")
 	rootCmd.AddCommand(containerScanCmd)
 }
 
 var containerScanCmd = &cobra.Command{
-	Use:   "container-scan [FLAGS] <IMAGE_NAME>",
+	Use:   "container-scan [FLAGS] [IMAGE_NAME]",
 	Short: "Scan container images for vulnerabilities using Trivy",
 	Long: `Scan container images for vulnerabilities using Trivy.
 
 By default, scans for HIGH and CRITICAL vulnerabilities in OS packages,
 ignoring unfixed issues. Use flags to override these defaults.
 
+If no image is specified, the command will auto-detect images from:
+1. Dockerfile (FROM instruction) - scans the base image
+2. docker-compose.yml (image fields) - scans all referenced images
+
+Use --dockerfile or --compose-file flags to specify explicit paths (useful in CI/CD).
+
 The --exit-code 1 flag is always applied (not user-configurable) to ensure
 the command fails when vulnerabilities are found.`,
-	Example: `  # Default behavior (HIGH,CRITICAL severity, os packages only)
+	Example: `  # Auto-detect from Dockerfile or docker-compose.yml in current directory
+  codacy-cli container-scan
+
+  # Specify Dockerfile path (useful in CI/CD)
+  codacy-cli container-scan --dockerfile ./docker/Dockerfile.prod
+
+  # Specify docker-compose file path
+  codacy-cli container-scan --compose-file ./deploy/docker-compose.yml
+
+  # Scan a specific image
   codacy-cli container-scan myapp:latest
 
   # Scan only for CRITICAL vulnerabilities
   codacy-cli container-scan --severity CRITICAL myapp:latest
 
-  # Scan all severities and package types
-  codacy-cli container-scan --severity LOW,MEDIUM,HIGH,CRITICAL --pkg-types os,library myapp:latest
-
-  # Include unfixed vulnerabilities
-  codacy-cli container-scan --ignore-unfixed=false myapp:latest`,
-	Args: cobra.ExactArgs(1),
+  # CI/CD example: scan all images before deploy
+  codacy-cli container-scan --dockerfile ./Dockerfile --severity HIGH,CRITICAL`,
+	Args: cobra.MaximumNArgs(1),
 	Run:  runContainerScan,
 }
 
@@ -124,25 +146,223 @@ func handleTrivyResult(err error, imageName string) {
 }
 
 func runContainerScan(cmd *cobra.Command, args []string) {
-	imageName := args[0]
+	var images []string
 
-	if err := validateImageName(imageName); err != nil {
-		logger.Error("Invalid image name", logrus.Fields{"image": imageName, "error": err.Error()})
-		color.Red("❌ Error: %v", err)
-		os.Exit(1)
+	if len(args) > 0 {
+		images = []string{args[0]}
+	} else {
+		images = detectImages()
+		if len(images) == 0 {
+			color.Red("❌ Error: No image specified and none found in Dockerfile or docker-compose.yml")
+			fmt.Println("Usage: codacy-cli container-scan <IMAGE_NAME>")
+			os.Exit(1)
+		}
 	}
 
-	logger.Info("Starting container scan", logrus.Fields{"image": imageName})
+	scanImages(images)
+}
 
+// scanImages validates and scans multiple images
+func scanImages(images []string) {
 	trivyPath := getTrivyPath()
-	trivyCmd := exec.Command(trivyPath, buildTrivyArgs(imageName)...)
-	trivyCmd.Stdout = os.Stdout
-	trivyCmd.Stderr = os.Stderr
+	hasFailures := false
 
-	logger.Info("Running Trivy container scan", logrus.Fields{"command": trivyCmd.String()})
-	fmt.Printf("🔍 Scanning container image: %s\n\n", imageName)
+	for _, imageName := range images {
+		if err := validateImageName(imageName); err != nil {
+			logger.Error("Invalid image name", logrus.Fields{"image": imageName, "error": err.Error()})
+			color.Red("❌ Error: %v", err)
+			hasFailures = true
+			continue
+		}
 
-	handleTrivyResult(trivyCmd.Run(), imageName)
+		logger.Info("Starting container scan", logrus.Fields{"image": imageName})
+		fmt.Printf("🔍 Scanning container image: %s\n\n", imageName)
+
+		trivyCmd := exec.Command(trivyPath, buildTrivyArgs(imageName)...)
+		trivyCmd.Stdout = os.Stdout
+		trivyCmd.Stderr = os.Stderr
+
+		logger.Info("Running Trivy container scan", logrus.Fields{"command": trivyCmd.String()})
+
+		if err := trivyCmd.Run(); err != nil {
+			hasFailures = true
+			handleScanError(err, imageName)
+		} else {
+			logger.Info("Container scan completed successfully", logrus.Fields{"image": imageName})
+			fmt.Println()
+			color.Green("✅ Success: No vulnerabilities found in %s", imageName)
+		}
+
+		if len(images) > 1 {
+			fmt.Println("\n" + strings.Repeat("-", 60) + "\n")
+		}
+	}
+
+	if hasFailures {
+		os.Exit(1)
+	}
+}
+
+// handleScanError processes scan errors without exiting (for multi-image scans)
+func handleScanError(err error, imageName string) {
+	if exitError, ok := err.(*exec.ExitError); ok && exitError.ExitCode() == 1 {
+		logger.Warn("Container scan completed with vulnerabilities", logrus.Fields{
+			"image": imageName, "exit_code": 1,
+		})
+		fmt.Println()
+		color.Red("❌ Vulnerabilities found in %s", imageName)
+		return
+	}
+	logger.Error("Failed to run Trivy", logrus.Fields{"error": err.Error()})
+	color.Red("❌ Error scanning %s: %v", imageName, err)
+}
+
+// detectImages auto-detects images from Dockerfile or docker-compose.yml
+func detectImages() []string {
+	// Priority 0: Check explicit --dockerfile flag
+	if dockerfileFlag != "" {
+		if images := parseDockerfile(dockerfileFlag); len(images) > 0 {
+			color.Cyan("📄 Found images in %s:", dockerfileFlag)
+			for _, img := range images {
+				fmt.Printf("   • %s\n", img)
+			}
+			fmt.Println()
+			return images
+		}
+		color.Yellow("⚠️  No FROM instructions found in %s", dockerfileFlag)
+		return nil
+	}
+
+	// Priority 0: Check explicit --compose-file flag
+	if composeFileFlag != "" {
+		if images := parseDockerCompose(composeFileFlag); len(images) > 0 {
+			color.Cyan("📄 Found images in %s:", composeFileFlag)
+			for _, img := range images {
+				fmt.Printf("   • %s\n", img)
+			}
+			fmt.Println()
+			return images
+		}
+		color.Yellow("⚠️  No images found in %s", composeFileFlag)
+		return nil
+	}
+
+	// Priority 1: Auto-detect Dockerfile in current directory
+	if images := parseDockerfile("Dockerfile"); len(images) > 0 {
+		color.Cyan("📄 Found images in Dockerfile:")
+		for _, img := range images {
+			fmt.Printf("   • %s\n", img)
+		}
+		fmt.Println()
+		return images
+	}
+
+	// Priority 2: Auto-detect docker-compose files
+	composeFiles := []string{"docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"}
+	for _, composeFile := range composeFiles {
+		if images := parseDockerCompose(composeFile); len(images) > 0 {
+			color.Cyan("📄 Found images in %s:", composeFile)
+			for _, img := range images {
+				fmt.Printf("   • %s\n", img)
+			}
+			fmt.Println()
+			return images
+		}
+	}
+
+	return nil
+}
+
+// parseDockerfile extracts FROM images from a Dockerfile
+func parseDockerfile(path string) []string {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer file.Close()
+
+	var images []string
+	seen := make(map[string]bool)
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		matches := dockerfileFromPattern.FindStringSubmatch(line)
+		if len(matches) > 1 {
+			image := matches[1]
+			// Skip build stage aliases (e.g., FROM golang:1.21 AS builder)
+			// and scratch images
+			if image != "scratch" && !seen[image] {
+				seen[image] = true
+				images = append(images, image)
+			}
+		}
+	}
+
+	return images
+}
+
+// dockerComposeConfig represents the structure of docker-compose.yml
+type dockerComposeConfig struct {
+	Services map[string]struct {
+		Image string `yaml:"image"`
+		Build *struct {
+			Context    string `yaml:"context"`
+			Dockerfile string `yaml:"dockerfile"`
+		} `yaml:"build"`
+	} `yaml:"services"`
+}
+
+// parseDockerCompose extracts images from docker-compose.yml
+func parseDockerCompose(path string) []string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+
+	var config dockerComposeConfig
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		logger.Warn("Failed to parse docker-compose file", logrus.Fields{"path": path, "error": err.Error()})
+		return nil
+	}
+
+	var images []string
+	seen := make(map[string]bool)
+
+	for serviceName, service := range config.Services {
+		// If service has an image defined, use it
+		if service.Image != "" && !seen[service.Image] {
+			seen[service.Image] = true
+			images = append(images, service.Image)
+		}
+
+		// If service has a build context with Dockerfile, parse it
+		if service.Build != nil {
+			dockerfilePath := "Dockerfile"
+			if service.Build.Dockerfile != "" {
+				dockerfilePath = service.Build.Dockerfile
+			}
+			if service.Build.Context != "" {
+				dockerfilePath = filepath.Join(service.Build.Context, dockerfilePath)
+			}
+
+			if dockerfileImages := parseDockerfile(dockerfilePath); len(dockerfileImages) > 0 {
+				for _, img := range dockerfileImages {
+					if !seen[img] {
+						seen[img] = true
+						images = append(images, img)
+						logger.Info("Found base image from Dockerfile", logrus.Fields{
+							"service":    serviceName,
+							"dockerfile": dockerfilePath,
+							"image":      img,
+						})
+					}
+				}
+			}
+		}
+	}
+
+	return images
 }
 
 // buildTrivyArgs constructs the Trivy command arguments based on flags

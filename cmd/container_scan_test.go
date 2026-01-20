@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -192,19 +194,21 @@ func TestContainerScanCommandSkipsValidation(t *testing.T) {
 	assert.True(t, result, "container-scan should skip validation")
 }
 
-func TestContainerScanCommandRequiresArg(t *testing.T) {
-	// Test that the command requires exactly one argument
-	assert.Equal(t, "container-scan [FLAGS] <IMAGE_NAME>", containerScanCmd.Use, "Command use should match expected format")
+func TestContainerScanCommandArgs(t *testing.T) {
+	// Test that the command accepts 0 or 1 arguments (MaximumNArgs(1))
+	assert.Equal(t, "container-scan [FLAGS] [IMAGE_NAME]", containerScanCmd.Use, "Command use should match expected format")
 
-	// Verify Args is set to ExactArgs(1)
+	// Verify Args allows 0 args (for auto-detection)
 	err := containerScanCmd.Args(containerScanCmd, []string{})
-	assert.Error(t, err, "Should error when no args provided")
+	assert.NoError(t, err, "Should not error when no args provided (auto-detection mode)")
 
+	// Verify Args allows 1 arg
+	err = containerScanCmd.Args(containerScanCmd, []string{"myapp:latest"})
+	assert.NoError(t, err, "Should not error when one arg provided")
+
+	// Verify Args rejects 2+ args
 	err = containerScanCmd.Args(containerScanCmd, []string{"image1", "image2"})
 	assert.Error(t, err, "Should error when too many args provided")
-
-	err = containerScanCmd.Args(containerScanCmd, []string{"myapp:latest"})
-	assert.NoError(t, err, "Should not error when exactly one arg provided")
 }
 
 func TestContainerScanFlagDefaults(t *testing.T) {
@@ -212,16 +216,22 @@ func TestContainerScanFlagDefaults(t *testing.T) {
 	severityFlagDef := containerScanCmd.Flags().Lookup("severity")
 	pkgTypesFlagDef := containerScanCmd.Flags().Lookup("pkg-types")
 	ignoreUnfixedFlagDef := containerScanCmd.Flags().Lookup("ignore-unfixed")
+	dockerfileFlagDef := containerScanCmd.Flags().Lookup("dockerfile")
+	composeFileFlagDef := containerScanCmd.Flags().Lookup("compose-file")
 
 	// Verify flags exist
 	assert.NotNil(t, severityFlagDef, "severity flag should exist")
 	assert.NotNil(t, pkgTypesFlagDef, "pkg-types flag should exist")
 	assert.NotNil(t, ignoreUnfixedFlagDef, "ignore-unfixed flag should exist")
+	assert.NotNil(t, dockerfileFlagDef, "dockerfile flag should exist")
+	assert.NotNil(t, composeFileFlagDef, "compose-file flag should exist")
 
 	// Verify default values
 	assert.Equal(t, "", severityFlagDef.DefValue, "severity default should be empty (uses HIGH,CRITICAL in buildTrivyArgs)")
 	assert.Equal(t, "", pkgTypesFlagDef.DefValue, "pkg-types default should be empty (uses 'os' in buildTrivyArgs)")
 	assert.Equal(t, "true", ignoreUnfixedFlagDef.DefValue, "ignore-unfixed default should be true")
+	assert.Equal(t, "", dockerfileFlagDef.DefValue, "dockerfile default should be empty")
+	assert.Equal(t, "", composeFileFlagDef.DefValue, "compose-file default should be empty")
 }
 
 func TestValidateImageName(t *testing.T) {
@@ -373,6 +383,196 @@ func TestValidateImageName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseDockerfile(t *testing.T) {
+	tests := []struct {
+		name           string
+		content        string
+		expectedImages []string
+	}{
+		{
+			name:           "simple FROM",
+			content:        "FROM alpine:3.16\nRUN echo hello",
+			expectedImages: []string{"alpine:3.16"},
+		},
+		{
+			name:           "FROM with AS",
+			content:        "FROM golang:1.21 AS builder\nRUN go build\nFROM alpine:latest\nCOPY --from=builder /app /app",
+			expectedImages: []string{"golang:1.21", "alpine:latest"},
+		},
+		{
+			name:           "multiple FROM stages",
+			content:        "FROM node:18 AS build\nRUN npm install\nFROM nginx:alpine\nCOPY --from=build /app /usr/share/nginx/html",
+			expectedImages: []string{"node:18", "nginx:alpine"},
+		},
+		{
+			name:           "FROM with registry",
+			content:        "FROM ghcr.io/codacy/base:1.0.0\nRUN echo test",
+			expectedImages: []string{"ghcr.io/codacy/base:1.0.0"},
+		},
+		{
+			name:           "skip scratch",
+			content:        "FROM golang:1.21 AS builder\nRUN go build\nFROM scratch\nCOPY --from=builder /app /app",
+			expectedImages: []string{"golang:1.21"},
+		},
+		{
+			name:           "case insensitive FROM",
+			content:        "from ubuntu:22.04\nrun apt-get update",
+			expectedImages: []string{"ubuntu:22.04"},
+		},
+		{
+			name:           "empty dockerfile",
+			content:        "",
+			expectedImages: nil,
+		},
+		{
+			name:           "no FROM instruction",
+			content:        "# Just a comment\nRUN echo hello",
+			expectedImages: nil,
+		},
+		{
+			name:           "duplicate images",
+			content:        "FROM alpine:3.16\nRUN echo 1\nFROM alpine:3.16\nRUN echo 2",
+			expectedImages: []string{"alpine:3.16"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create temp directory and Dockerfile
+			tmpDir := t.TempDir()
+			dockerfilePath := filepath.Join(tmpDir, "Dockerfile")
+			err := os.WriteFile(dockerfilePath, []byte(tt.content), 0644)
+			assert.NoError(t, err)
+
+			images := parseDockerfile(dockerfilePath)
+			assert.Equal(t, tt.expectedImages, images)
+		})
+	}
+}
+
+func TestParseDockerfileNotFound(t *testing.T) {
+	images := parseDockerfile("/nonexistent/Dockerfile")
+	assert.Nil(t, images, "Should return nil for nonexistent file")
+}
+
+func TestParseDockerCompose(t *testing.T) {
+	tests := []struct {
+		name           string
+		content        string
+		expectedImages []string
+	}{
+		{
+			name: "simple service with image",
+			content: `services:
+  web:
+    image: nginx:latest`,
+			expectedImages: []string{"nginx:latest"},
+		},
+		{
+			name: "multiple services with images",
+			content: `services:
+  web:
+    image: nginx:alpine
+  db:
+    image: postgres:15
+  cache:
+    image: redis:7`,
+			expectedImages: []string{"nginx:alpine", "postgres:15", "redis:7"},
+		},
+		{
+			name: "service without image (build only)",
+			content: `services:
+  app:
+    build: .`,
+			expectedImages: nil,
+		},
+		{
+			name: "mixed services",
+			content: `services:
+  web:
+    image: nginx:latest
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile`,
+			expectedImages: []string{"nginx:latest"},
+		},
+		{
+			name:           "empty compose",
+			content:        "",
+			expectedImages: nil,
+		},
+		{
+			name: "duplicate images",
+			content: `services:
+  web1:
+    image: nginx:latest
+  web2:
+    image: nginx:latest`,
+			expectedImages: []string{"nginx:latest"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			composePath := filepath.Join(tmpDir, "docker-compose.yml")
+			err := os.WriteFile(composePath, []byte(tt.content), 0644)
+			assert.NoError(t, err)
+
+			images := parseDockerCompose(composePath)
+
+			// Sort both slices for comparison since map iteration order is random
+			if tt.expectedImages == nil {
+				assert.Nil(t, images)
+			} else {
+				assert.ElementsMatch(t, tt.expectedImages, images)
+			}
+		})
+	}
+}
+
+func TestParseDockerComposeNotFound(t *testing.T) {
+	images := parseDockerCompose("/nonexistent/docker-compose.yml")
+	assert.Nil(t, images, "Should return nil for nonexistent file")
+}
+
+func TestParseDockerComposeWithBuildDockerfile(t *testing.T) {
+	// Create temp directory and change to it for relative path resolution
+	tmpDir := t.TempDir()
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(tmpDir)
+
+	// Create a Dockerfile in a subdirectory
+	appDir := filepath.Join(tmpDir, "app")
+	err := os.MkdirAll(appDir, 0755)
+	assert.NoError(t, err)
+
+	dockerfileContent := "FROM python:3.11\nRUN pip install flask"
+	err = os.WriteFile(filepath.Join(appDir, "Dockerfile"), []byte(dockerfileContent), 0644)
+	assert.NoError(t, err)
+
+	// Create docker-compose.yml that references the Dockerfile
+	composeContent := `services:
+  api:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+  web:
+    image: nginx:alpine`
+
+	composePath := filepath.Join(tmpDir, "docker-compose.yml")
+	err = os.WriteFile(composePath, []byte(composeContent), 0644)
+	assert.NoError(t, err)
+
+	images := parseDockerCompose(composePath)
+
+	// Should include both the direct image and the base image from Dockerfile
+	assert.Contains(t, images, "nginx:alpine", "Should include direct image reference")
+	assert.Contains(t, images, "python:3.11", "Should include base image from Dockerfile")
 }
 
 func TestBuildTrivyArgsDefaultsApplied(t *testing.T) {
