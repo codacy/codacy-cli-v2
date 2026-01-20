@@ -145,7 +145,7 @@ func handleTrivyResult(err error, imageName string) {
 	os.Exit(1)
 }
 
-func runContainerScan(cmd *cobra.Command, args []string) {
+func runContainerScan(_ *cobra.Command, args []string) {
 	var images []string
 
 	if len(args) > 0 {
@@ -217,59 +217,66 @@ func handleScanError(err error, imageName string) {
 	color.Red("❌ Error scanning %s: %v", imageName, err)
 }
 
+// printFoundImages displays the found images to the user
+func printFoundImages(source string, images []string) {
+	color.Cyan("📄 Found images in %s:", source)
+	for _, img := range images {
+		fmt.Printf("   • %s\n", img)
+	}
+	fmt.Println()
+}
+
 // detectImages auto-detects images from Dockerfile or docker-compose.yml
 func detectImages() []string {
 	// Priority 0: Check explicit --dockerfile flag
 	if dockerfileFlag != "" {
-		if images := parseDockerfile(dockerfileFlag); len(images) > 0 {
-			color.Cyan("📄 Found images in %s:", dockerfileFlag)
-			for _, img := range images {
-				fmt.Printf("   • %s\n", img)
-			}
-			fmt.Println()
-			return images
-		}
-		color.Yellow("⚠️  No FROM instructions found in %s", dockerfileFlag)
-		return nil
+		return detectFromDockerfile(dockerfileFlag, true)
 	}
 
 	// Priority 0: Check explicit --compose-file flag
 	if composeFileFlag != "" {
-		if images := parseDockerCompose(composeFileFlag); len(images) > 0 {
-			color.Cyan("📄 Found images in %s:", composeFileFlag)
-			for _, img := range images {
-				fmt.Printf("   • %s\n", img)
-			}
-			fmt.Println()
-			return images
-		}
-		color.Yellow("⚠️  No images found in %s", composeFileFlag)
-		return nil
+		return detectFromCompose(composeFileFlag, true)
 	}
 
 	// Priority 1: Auto-detect Dockerfile in current directory
-	if images := parseDockerfile("Dockerfile"); len(images) > 0 {
-		color.Cyan("📄 Found images in Dockerfile:")
-		for _, img := range images {
-			fmt.Printf("   • %s\n", img)
-		}
-		fmt.Println()
+	if images := detectFromDockerfile("Dockerfile", false); images != nil {
 		return images
 	}
 
 	// Priority 2: Auto-detect docker-compose files
 	composeFiles := []string{"docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"}
 	for _, composeFile := range composeFiles {
-		if images := parseDockerCompose(composeFile); len(images) > 0 {
-			color.Cyan("📄 Found images in %s:", composeFile)
-			for _, img := range images {
-				fmt.Printf("   • %s\n", img)
-			}
-			fmt.Println()
+		if images := detectFromCompose(composeFile, false); images != nil {
 			return images
 		}
 	}
 
+	return nil
+}
+
+// detectFromDockerfile tries to detect images from a Dockerfile
+func detectFromDockerfile(path string, showWarning bool) []string {
+	images := parseDockerfile(path)
+	if len(images) > 0 {
+		printFoundImages(path, images)
+		return images
+	}
+	if showWarning {
+		color.Yellow("⚠️  No FROM instructions found in %s", path)
+	}
+	return nil
+}
+
+// detectFromCompose tries to detect images from a docker-compose file
+func detectFromCompose(path string, showWarning bool) []string {
+	images := parseDockerCompose(path)
+	if len(images) > 0 {
+		printFoundImages(path, images)
+		return images
+	}
+	if showWarning {
+		color.Yellow("⚠️  No images found in %s", path)
+	}
 	return nil
 }
 
@@ -330,39 +337,58 @@ func parseDockerCompose(path string) []string {
 	seen := make(map[string]bool)
 
 	for serviceName, service := range config.Services {
-		// If service has an image defined, use it
-		if service.Image != "" && !seen[service.Image] {
-			seen[service.Image] = true
-			images = append(images, service.Image)
-		}
-
-		// If service has a build context with Dockerfile, parse it
-		if service.Build != nil {
-			dockerfilePath := "Dockerfile"
-			if service.Build.Dockerfile != "" {
-				dockerfilePath = service.Build.Dockerfile
-			}
-			if service.Build.Context != "" {
-				dockerfilePath = filepath.Join(service.Build.Context, dockerfilePath)
-			}
-
-			if dockerfileImages := parseDockerfile(dockerfilePath); len(dockerfileImages) > 0 {
-				for _, img := range dockerfileImages {
-					if !seen[img] {
-						seen[img] = true
-						images = append(images, img)
-						logger.Info("Found base image from Dockerfile", logrus.Fields{
-							"service":    serviceName,
-							"dockerfile": dockerfilePath,
-							"image":      img,
-						})
-					}
-				}
-			}
-		}
+		images = processServiceImage(service.Image, images, seen)
+		images = processServiceBuild(serviceName, service.Build, images, seen)
 	}
 
 	return images
+}
+
+// processServiceImage adds a service's image to the list if not already seen
+func processServiceImage(image string, images []string, seen map[string]bool) []string {
+	if image != "" && !seen[image] {
+		seen[image] = true
+		images = append(images, image)
+	}
+	return images
+}
+
+// processServiceBuild extracts images from a service's build context Dockerfile
+func processServiceBuild(serviceName string, build *struct {
+	Context    string `yaml:"context"`
+	Dockerfile string `yaml:"dockerfile"`
+}, images []string, seen map[string]bool) []string {
+	if build == nil {
+		return images
+	}
+
+	dockerfilePath := resolveDockerfilePath(build.Context, build.Dockerfile)
+	dockerfileImages := parseDockerfile(dockerfilePath)
+
+	for _, img := range dockerfileImages {
+		if !seen[img] {
+			seen[img] = true
+			images = append(images, img)
+			logger.Info("Found base image from Dockerfile", logrus.Fields{
+				"service":    serviceName,
+				"dockerfile": dockerfilePath,
+				"image":      img,
+			})
+		}
+	}
+	return images
+}
+
+// resolveDockerfilePath constructs the full path to a Dockerfile
+func resolveDockerfilePath(context, dockerfile string) string {
+	path := "Dockerfile"
+	if dockerfile != "" {
+		path = dockerfile
+	}
+	if context != "" {
+		path = filepath.Join(context, path)
+	}
+	return path
 }
 
 // buildTrivyArgs constructs the Trivy command arguments based on flags
