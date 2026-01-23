@@ -31,11 +31,11 @@ var trivyArgsTestCases = []trivyArgsTestCase{
 		},
 	},
 	{
-		name:          "custom severity only",
-		imageName:     "codacy/engine:1.0.0",
-		severity:      "CRITICAL",
-		pkgTypes:      "",
-		ignoreUnfixed: true,
+		name:                "custom severity only",
+		imageName:           "codacy/engine:1.0.0",
+		severity:            "CRITICAL",
+		pkgTypes:            "",
+		ignoreUnfixed:       true,
 		expectedContains:    []string{"--severity", "CRITICAL", "--pkg-types", "os", "--ignore-unfixed", "codacy/engine:1.0.0"},
 		expectedNotContains: []string{"HIGH,CRITICAL"},
 	},
@@ -153,7 +153,7 @@ func TestContainerScanCommandSkipsValidation(t *testing.T) {
 }
 
 func TestContainerScanCommandRequiresArg(t *testing.T) {
-	assert.Equal(t, "container-scan [FLAGS] <IMAGE_NAME> [IMAGE_NAME...]", containerScanCmd.Use, "Command use should match expected format")
+	assert.Equal(t, "container-scan <IMAGE_NAME> [IMAGE_NAME...]", containerScanCmd.Use, "Command use should match expected format")
 
 	err := containerScanCmd.Args(containerScanCmd, []string{})
 	assert.Error(t, err, "Should error when no args provided")
@@ -254,4 +254,85 @@ func TestBuildTrivyArgsDefaultsApplied(t *testing.T) {
 	assert.Equal(t, "os", args[pkgTypesIdx+1], "Default pkg-types should be 'os'")
 
 	assert.Contains(t, args, "--ignore-unfixed", "--ignore-unfixed should be present when enabled")
+}
+
+// Tests for multiple image support
+
+func TestValidateMultipleImages(t *testing.T) {
+	// All valid images should pass
+	validImages := []string{"alpine:latest", "nginx:1.21", "redis:7"}
+	for _, img := range validImages {
+		err := validateImageName(img)
+		assert.NoError(t, err, "Valid image %s should not error", img)
+	}
+}
+
+func TestValidateMultipleImagesFailsOnInvalid(t *testing.T) {
+	// Test that validation catches invalid images in a list
+	images := []string{"alpine:latest", "nginx;malicious", "redis:7"}
+
+	var firstError error
+	for _, img := range images {
+		if err := validateImageName(img); err != nil {
+			firstError = err
+			break
+		}
+	}
+
+	assert.Error(t, firstError, "Should catch invalid image in list")
+	assert.Contains(t, firstError.Error(), "disallowed character", "Should report specific error")
+}
+
+func TestBuildTrivyArgsForMultipleImages(t *testing.T) {
+	severityFlag = "CRITICAL"
+	pkgTypesFlag = ""
+	ignoreUnfixedFlag = true
+
+	images := []string{"alpine:latest", "nginx:1.21", "redis:7"}
+
+	// Verify each image gets correct args with same flags
+	for _, img := range images {
+		args := buildTrivyArgs(img)
+
+		assert.Equal(t, img, args[len(args)-1], "Image name should be last argument")
+		assert.Contains(t, args, "--severity", "Should contain severity flag")
+		assert.Contains(t, args, "CRITICAL", "Should use configured severity")
+	}
+}
+
+func TestContainerScanCommandAcceptsMultipleImages(t *testing.T) {
+	tests := []struct {
+		name   string
+		args   []string
+		errMsg string
+	}{
+		{
+			name: "single image",
+			args: []string{"alpine:latest"},
+		},
+		{
+			name: "two images",
+			args: []string{"alpine:latest", "nginx:1.21"},
+		},
+		{
+			name: "three images",
+			args: []string{"alpine:latest", "nginx:1.21", "redis:7"},
+		},
+		{
+			name: "many images",
+			args: []string{"img1:v1", "img2:v2", "img3:v3", "img4:v4", "img5:v5"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := containerScanCmd.Args(containerScanCmd, tt.args)
+			assert.NoError(t, err, "Command should accept %d image(s)", len(tt.args))
+		})
+	}
+}
+
+func TestContainerScanCommandRejectsNoImages(t *testing.T) {
+	err := containerScanCmd.Args(containerScanCmd, []string{})
+	assert.Error(t, err, "Command should reject empty image list")
 }
