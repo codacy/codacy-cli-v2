@@ -1,10 +1,307 @@
 package cmd
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+// MockCommandRunner is a mock implementation of CommandRunner for testing
+type MockCommandRunner struct {
+	RunFunc func(name string, args []string) error
+	Calls   []struct {
+		Name string
+		Args []string
+	}
+}
+
+func (m *MockCommandRunner) Run(name string, args []string) error {
+	m.Calls = append(m.Calls, struct {
+		Name string
+		Args []string
+	}{Name: name, Args: args})
+	if m.RunFunc != nil {
+		return m.RunFunc(name, args)
+	}
+	return nil
+}
+
+// Helper to save and restore global state for tests
+type testState struct {
+	lookPath      func(file string) (string, error)
+	exitFunc      func(code int)
+	commandRunner CommandRunner
+	severityFlag  string
+	pkgTypesFlag  string
+	ignoreUnfixed bool
+}
+
+func saveState() testState {
+	return testState{
+		lookPath:      lookPath,
+		exitFunc:      exitFunc,
+		commandRunner: commandRunner,
+		severityFlag:  severityFlag,
+		pkgTypesFlag:  pkgTypesFlag,
+		ignoreUnfixed: ignoreUnfixedFlag,
+	}
+}
+
+func (s testState) restore() {
+	lookPath = s.lookPath
+	exitFunc = s.exitFunc
+	commandRunner = s.commandRunner
+	severityFlag = s.severityFlag
+	pkgTypesFlag = s.pkgTypesFlag
+	ignoreUnfixedFlag = s.ignoreUnfixed
+}
+
+// Tests for getTrivyPath
+
+func TestGetTrivyPath_Found(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	lookPath = func(file string) (string, error) {
+		assert.Equal(t, "trivy", file)
+		return "/usr/local/bin/trivy", nil
+	}
+
+	path, err := getTrivyPath()
+	assert.NoError(t, err)
+	assert.Equal(t, "/usr/local/bin/trivy", path)
+}
+
+func TestGetTrivyPath_NotFound(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	lookPath = func(_ string) (string, error) {
+		return "", errors.New("executable file not found in $PATH")
+	}
+
+	path, err := getTrivyPath()
+	assert.Error(t, err)
+	assert.Equal(t, "", path)
+	assert.Contains(t, err.Error(), "not found")
+}
+
+// Tests for executeContainerScan
+
+func TestExecuteContainerScan_Success(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	// Mock trivy found
+	lookPath = func(_ string) (string, error) {
+		return "/usr/local/bin/trivy", nil
+	}
+
+	// Mock successful command execution
+	mockRunner := &MockCommandRunner{
+		RunFunc: func(_ string, _ []string) error {
+			return nil // Success - no vulnerabilities
+		},
+	}
+	commandRunner = mockRunner
+
+	// Reset flags to defaults
+	severityFlag = ""
+	pkgTypesFlag = ""
+	ignoreUnfixedFlag = true
+
+	exitCode := executeContainerScan([]string{"alpine:latest"})
+	assert.Equal(t, 0, exitCode)
+	assert.Len(t, mockRunner.Calls, 1)
+	assert.Equal(t, "/usr/local/bin/trivy", mockRunner.Calls[0].Name)
+	assert.Contains(t, mockRunner.Calls[0].Args, "alpine:latest")
+}
+
+// mockExitError simulates exec.ExitError with a specific exit code
+type mockExitError struct {
+	code int
+}
+
+func (e *mockExitError) Error() string {
+	return "exit status 1"
+}
+
+func (e *mockExitError) ExitCode() int {
+	return e.code
+}
+
+func TestExecuteContainerScan_VulnerabilitiesFound(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	lookPath = func(_ string) (string, error) {
+		return "/usr/local/bin/trivy", nil
+	}
+
+	// Mock trivy finding vulnerabilities (exit code 1)
+	mockRunner := &MockCommandRunner{
+		RunFunc: func(_ string, _ []string) error {
+			return &mockExitError{code: 1}
+		},
+	}
+	commandRunner = mockRunner
+
+	severityFlag = ""
+	pkgTypesFlag = ""
+	ignoreUnfixedFlag = true
+
+	exitCode := executeContainerScan([]string{"alpine:latest"})
+	assert.Equal(t, 1, exitCode, "Should return exit code 1 when vulnerabilities are found")
+	assert.Len(t, mockRunner.Calls, 1)
+}
+
+func TestExecuteContainerScan_MultipleImages_SomeWithVulnerabilities(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	lookPath = func(_ string) (string, error) {
+		return "/usr/local/bin/trivy", nil
+	}
+
+	callCount := 0
+	mockRunner := &MockCommandRunner{
+		RunFunc: func(_ string, _ []string) error {
+			callCount++
+			// Second image has vulnerabilities
+			if callCount == 2 {
+				return &mockExitError{code: 1}
+			}
+			return nil
+		},
+	}
+	commandRunner = mockRunner
+
+	severityFlag = ""
+	pkgTypesFlag = ""
+	ignoreUnfixedFlag = true
+
+	exitCode := executeContainerScan([]string{"alpine:latest", "nginx:latest", "redis:7"})
+	assert.Equal(t, 1, exitCode, "Should return exit code 1 when any image has vulnerabilities")
+	assert.Len(t, mockRunner.Calls, 3, "Should scan all images even if one has vulnerabilities")
+}
+
+func TestExecuteContainerScan_InvalidImageName(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	exitCode := executeContainerScan([]string{"nginx;rm -rf /"})
+	assert.Equal(t, 2, exitCode)
+}
+
+func TestExecuteContainerScan_TrivyNotFound(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	lookPath = func(_ string) (string, error) {
+		return "", errors.New("executable file not found in $PATH")
+	}
+
+	// Mock exitFunc to capture exit code instead of exiting
+	var capturedExitCode int
+	exitFunc = func(code int) {
+		capturedExitCode = code
+	}
+
+	exitCode := executeContainerScan([]string{"alpine:latest"})
+	// handleTrivyNotFound calls exitFunc(2), then returns 2
+	assert.Equal(t, 2, capturedExitCode)
+	assert.Equal(t, 2, exitCode)
+}
+
+func TestExecuteContainerScan_MultipleImages_AllPass(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	lookPath = func(_ string) (string, error) {
+		return "/usr/local/bin/trivy", nil
+	}
+
+	mockRunner := &MockCommandRunner{
+		RunFunc: func(_ string, _ []string) error {
+			return nil
+		},
+	}
+	commandRunner = mockRunner
+
+	severityFlag = ""
+	pkgTypesFlag = ""
+	ignoreUnfixedFlag = true
+
+	exitCode := executeContainerScan([]string{"alpine:latest", "nginx:latest", "redis:7"})
+	assert.Equal(t, 0, exitCode)
+	assert.Len(t, mockRunner.Calls, 3)
+}
+
+func TestExecuteContainerScan_MultipleImages_OneInvalid(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	// Should fail validation before running any scans
+	exitCode := executeContainerScan([]string{"alpine:latest", "nginx;bad", "redis:7"})
+	assert.Equal(t, 2, exitCode)
+}
+
+func TestExecuteContainerScan_TrivyExecutionError(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	lookPath = func(_ string) (string, error) {
+		return "/usr/local/bin/trivy", nil
+	}
+
+	// Mock a non-exit-code-1 error (e.g., trivy crashed)
+	mockRunner := &MockCommandRunner{
+		RunFunc: func(_ string, _ []string) error {
+			return errors.New("trivy crashed unexpectedly")
+		},
+	}
+	commandRunner = mockRunner
+
+	severityFlag = ""
+	pkgTypesFlag = ""
+	ignoreUnfixedFlag = true
+
+	exitCode := executeContainerScan([]string{"alpine:latest"})
+	assert.Equal(t, 2, exitCode)
+}
+
+func TestExecuteContainerScan_EmptyImageList(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	lookPath = func(_ string) (string, error) {
+		return "/usr/local/bin/trivy", nil
+	}
+
+	mockRunner := &MockCommandRunner{}
+	commandRunner = mockRunner
+
+	// Empty list should succeed with no scans performed
+	exitCode := executeContainerScan([]string{})
+	assert.Equal(t, 0, exitCode)
+	assert.Len(t, mockRunner.Calls, 0)
+}
+
+// Tests for handleTrivyNotFound
+
+func TestHandleTrivyNotFound(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	var capturedExitCode int
+	exitFunc = func(code int) {
+		capturedExitCode = code
+	}
+
+	handleTrivyNotFound(errors.New("trivy not found"))
+	assert.Equal(t, 2, capturedExitCode)
+}
 
 type trivyArgsTestCase struct {
 	name                string
