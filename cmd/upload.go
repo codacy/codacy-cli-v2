@@ -93,7 +93,6 @@ func getRelativePath(baseDir string, fullURI string) string {
 	}
 
 	relativePath, err := filepath.Rel(baseDir, localPath)
-	fmt.Println(baseDir, localPath)
 	if err != nil {
 		// Fallback to the normalized absolute path if calculation fails
 		fmt.Printf("Warning: Could not get relative path for '%s' relative to '%s': %v. Using absolute path.\n", localPath, baseDir, err)
