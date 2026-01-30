@@ -75,30 +75,27 @@ func init() {
 }
 
 var containerScanCmd = &cobra.Command{
-	Use:   "container-scan <IMAGE_NAME> [IMAGE_NAME...]",
-	Short: "Scan container images for vulnerabilities using Trivy",
-	Long: `Scan one or more container images for vulnerabilities using Trivy.
+	Use:   "container-scan <IMAGE_NAME>",
+	Short: "Scan a container image for vulnerabilities using Trivy",
+	Long: `Scan a container image for vulnerabilities using Trivy.
 
 By default, scans for HIGH and CRITICAL vulnerabilities in OS packages,
 ignoring unfixed issues. Use flags to override these defaults.
 
 The --exit-code 1 flag is always applied (not user-configurable) to ensure
-the command fails when vulnerabilities are found in any image.`,
-	Example: `  # Scan a single image
+the command fails when vulnerabilities are found.`,
+	Example: `  # Scan an image
   codacy-cli container-scan myapp:latest
 
-  # Scan multiple images
-  codacy-cli container-scan myapp:latest nginx:alpine redis:7
-
-  # Scan only for CRITICAL vulnerabilities across multiple images
-  codacy-cli container-scan --severity CRITICAL myapp:latest nginx:alpine
+  # Scan only for CRITICAL vulnerabilities
+  codacy-cli container-scan --severity CRITICAL myapp:latest
 
   # Scan all severities and package types
   codacy-cli container-scan --severity LOW,MEDIUM,HIGH,CRITICAL --pkg-types os,library myapp:latest
 
   # Include unfixed vulnerabilities
   codacy-cli container-scan --ignore-unfixed=false myapp:latest`,
-	Args: cobra.MinimumNArgs(1),
+	Args: cobra.ExactArgs(1),
 	Run:  runContainerScan,
 }
 
@@ -170,17 +167,20 @@ func handleTrivyNotFound(err error) {
 }
 
 func runContainerScan(_ *cobra.Command, args []string) {
-	exitCode := executeContainerScan(args)
+	exitCode := executeContainerScan(args[0])
 	exitFunc(exitCode)
 }
 
 // executeContainerScan performs the container scan and returns an exit code
 // Exit codes: 0 = success, 1 = vulnerabilities found, 2 = error
-func executeContainerScan(imageNames []string) int {
-	if code := validateAllImages(imageNames); code != 0 {
-		return code
+func executeContainerScan(imageName string) int {
+	if err := validateImageName(imageName); err != nil {
+		logger.Error("Invalid image name", logrus.Fields{"image": imageName, "error": err.Error()})
+		color.Red("❌ Error: %v", err)
+		fmt.Println("exit-code 2")
+		return 2
 	}
-	logger.Info("Starting container scan", logrus.Fields{"images": imageNames, "count": len(imageNames)})
+	logger.Info("Starting container scan", logrus.Fields{"image": imageName})
 
 	trivyPath, err := getTrivyPath()
 	if err != nil {
@@ -188,71 +188,42 @@ func executeContainerScan(imageNames []string) int {
 		return 2
 	}
 
-	hasVulnerabilities := scanAllImages(imageNames, trivyPath)
+	hasVulnerabilities := scanImage(imageName, trivyPath)
 	if hasVulnerabilities == -1 {
 		return 2
 	}
-	return printScanSummary(hasVulnerabilities == 1, imageNames)
+	return printScanSummary(hasVulnerabilities == 1)
 }
 
-func validateAllImages(imageNames []string) int {
-	for _, imageName := range imageNames {
-		if err := validateImageName(imageName); err != nil {
-			logger.Error("Invalid image name", logrus.Fields{"image": imageName, "error": err.Error()})
-			color.Red("❌ Error: %v", err)
-			fmt.Println("exit-code 2")
-			return 2
+// scanImage scans the image and returns: 0=no vulns, 1=vulns found, -1=error
+func scanImage(imageName, trivyPath string) int {
+	fmt.Printf("🔍 Scanning container image: %s\n\n", imageName)
+	args := buildTrivyArgs(imageName)
+	logger.Info("Running Trivy container scan", logrus.Fields{"command": fmt.Sprintf("%s %v", trivyPath, args)})
+
+	if err := commandRunner.Run(trivyPath, args); err != nil {
+		if getExitCode(err) == 1 {
+			logger.Warn("Vulnerabilities found in image", logrus.Fields{"image": imageName})
+			return 1
 		}
+		logger.Error("Failed to run Trivy", logrus.Fields{"error": err.Error(), "image": imageName})
+		color.Red("❌ Error: Failed to run Trivy for %s: %v", imageName, err)
+		fmt.Println("exit-code 2")
+		return -1
 	}
+	logger.Info("No vulnerabilities found in image", logrus.Fields{"image": imageName})
 	return 0
 }
 
-// scanAllImages scans all images and returns: 0=no vulns, 1=vulns found, -1=error
-func scanAllImages(imageNames []string, trivyPath string) int {
-	hasVulnerabilities := false
-	for i, imageName := range imageNames {
-		printScanHeader(imageNames, imageName, i)
-		args := buildTrivyArgs(imageName)
-		logger.Info("Running Trivy container scan", logrus.Fields{"command": fmt.Sprintf("%s %v", trivyPath, args)})
-
-		if err := commandRunner.Run(trivyPath, args); err != nil {
-			if getExitCode(err) == 1 {
-				logger.Warn("Vulnerabilities found in image", logrus.Fields{"image": imageName})
-				hasVulnerabilities = true
-			} else {
-				logger.Error("Failed to run Trivy", logrus.Fields{"error": err.Error(), "image": imageName})
-				color.Red("❌ Error: Failed to run Trivy for %s: %v", imageName, err)
-				fmt.Println("exit-code 2")
-				return -1
-			}
-		} else {
-			logger.Info("No vulnerabilities found in image", logrus.Fields{"image": imageName})
-		}
-	}
-	if hasVulnerabilities {
-		return 1
-	}
-	return 0
-}
-
-func printScanHeader(imageNames []string, imageName string, index int) {
-	if len(imageNames) > 1 {
-		fmt.Printf("\n📦 [%d/%d] Scanning image: %s\n", index+1, len(imageNames), imageName)
-		fmt.Println(strings.Repeat("-", 50))
-	} else {
-		fmt.Printf("🔍 Scanning container image: %s\n\n", imageName)
-	}
-}
-
-func printScanSummary(hasVulnerabilities bool, imageNames []string) int {
+func printScanSummary(hasVulnerabilities bool) int {
 	fmt.Println()
 	if hasVulnerabilities {
-		logger.Warn("Container scan completed with vulnerabilities", logrus.Fields{"images": imageNames})
-		color.Red("❌ Scanning failed: vulnerabilities found in one or more container images")
+		logger.Warn("Container scan completed with vulnerabilities", logrus.Fields{})
+		color.Red("❌ Scanning failed: vulnerabilities found in the container image")
 		fmt.Println("exit-code 1")
 		return 1
 	}
-	logger.Info("Container scan completed successfully", logrus.Fields{"images": imageNames})
+	logger.Info("Container scan completed successfully", logrus.Fields{})
 	color.Green("✅ Success: No vulnerabilities found matching the specified criteria")
 	return 0
 }

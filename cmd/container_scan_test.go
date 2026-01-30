@@ -109,7 +109,7 @@ func TestExecuteContainerScan_Success(t *testing.T) {
 	pkgTypesFlag = ""
 	ignoreUnfixedFlag = true
 
-	exitCode := executeContainerScan([]string{"alpine:latest"})
+	exitCode := executeContainerScan("alpine:latest")
 	assert.Equal(t, 0, exitCode)
 	assert.Len(t, mockRunner.Calls, 1)
 	assert.Equal(t, "/usr/local/bin/trivy", mockRunner.Calls[0].Name)
@@ -149,46 +149,16 @@ func TestExecuteContainerScan_VulnerabilitiesFound(t *testing.T) {
 	pkgTypesFlag = ""
 	ignoreUnfixedFlag = true
 
-	exitCode := executeContainerScan([]string{"alpine:latest"})
+	exitCode := executeContainerScan("alpine:latest")
 	assert.Equal(t, 1, exitCode, "Should return exit code 1 when vulnerabilities are found")
 	assert.Len(t, mockRunner.Calls, 1)
-}
-
-func TestExecuteContainerScan_MultipleImages_SomeWithVulnerabilities(t *testing.T) {
-	state := saveState()
-	defer state.restore()
-
-	getTrivyPathResolver = func() (string, error) {
-		return "/usr/local/bin/trivy", nil
-	}
-
-	callCount := 0
-	mockRunner := &MockCommandRunner{
-		RunFunc: func(_ string, _ []string) error {
-			callCount++
-			// Second image has vulnerabilities
-			if callCount == 2 {
-				return &mockExitError{code: 1}
-			}
-			return nil
-		},
-	}
-	commandRunner = mockRunner
-
-	severityFlag = ""
-	pkgTypesFlag = ""
-	ignoreUnfixedFlag = true
-
-	exitCode := executeContainerScan([]string{"alpine:latest", "nginx:latest", "redis:7"})
-	assert.Equal(t, 1, exitCode, "Should return exit code 1 when any image has vulnerabilities")
-	assert.Len(t, mockRunner.Calls, 3, "Should scan all images even if one has vulnerabilities")
 }
 
 func TestExecuteContainerScan_InvalidImageName(t *testing.T) {
 	state := saveState()
 	defer state.restore()
 
-	exitCode := executeContainerScan([]string{"nginx;rm -rf /"})
+	exitCode := executeContainerScan("nginx;rm -rf /")
 	assert.Equal(t, 2, exitCode)
 }
 
@@ -206,42 +176,9 @@ func TestExecuteContainerScan_TrivyNotFound(t *testing.T) {
 		capturedExitCode = code
 	}
 
-	exitCode := executeContainerScan([]string{"alpine:latest"})
+	exitCode := executeContainerScan("alpine:latest")
 	// handleTrivyNotFound calls exitFunc(2), then returns 2
 	assert.Equal(t, 2, capturedExitCode)
-	assert.Equal(t, 2, exitCode)
-}
-
-func TestExecuteContainerScan_MultipleImages_AllPass(t *testing.T) {
-	state := saveState()
-	defer state.restore()
-
-	getTrivyPathResolver = func() (string, error) {
-		return "/usr/local/bin/trivy", nil
-	}
-
-	mockRunner := &MockCommandRunner{
-		RunFunc: func(_ string, _ []string) error {
-			return nil
-		},
-	}
-	commandRunner = mockRunner
-
-	severityFlag = ""
-	pkgTypesFlag = ""
-	ignoreUnfixedFlag = true
-
-	exitCode := executeContainerScan([]string{"alpine:latest", "nginx:latest", "redis:7"})
-	assert.Equal(t, 0, exitCode)
-	assert.Len(t, mockRunner.Calls, 3)
-}
-
-func TestExecuteContainerScan_MultipleImages_OneInvalid(t *testing.T) {
-	state := saveState()
-	defer state.restore()
-
-	// Should fail validation before running any scans
-	exitCode := executeContainerScan([]string{"alpine:latest", "nginx;bad", "redis:7"})
 	assert.Equal(t, 2, exitCode)
 }
 
@@ -265,25 +202,8 @@ func TestExecuteContainerScan_TrivyExecutionError(t *testing.T) {
 	pkgTypesFlag = ""
 	ignoreUnfixedFlag = true
 
-	exitCode := executeContainerScan([]string{"alpine:latest"})
+	exitCode := executeContainerScan("alpine:latest")
 	assert.Equal(t, 2, exitCode)
-}
-
-func TestExecuteContainerScan_EmptyImageList(t *testing.T) {
-	state := saveState()
-	defer state.restore()
-
-	getTrivyPathResolver = func() (string, error) {
-		return "/usr/local/bin/trivy", nil
-	}
-
-	mockRunner := &MockCommandRunner{}
-	commandRunner = mockRunner
-
-	// Empty list should succeed with no scans performed
-	exitCode := executeContainerScan([]string{})
-	assert.Equal(t, 0, exitCode)
-	assert.Len(t, mockRunner.Calls, 0)
 }
 
 // Tests for handleTrivyNotFound
@@ -448,7 +368,7 @@ func TestContainerScanCommandSkipsValidation(t *testing.T) {
 }
 
 func TestContainerScanCommandRequiresArg(t *testing.T) {
-	assert.Equal(t, "container-scan <IMAGE_NAME> [IMAGE_NAME...]", containerScanCmd.Use, "Command use should match expected format")
+	assert.Equal(t, "container-scan <IMAGE_NAME>", containerScanCmd.Use, "Command use should match expected format")
 
 	err := containerScanCmd.Args(containerScanCmd, []string{})
 	assert.Error(t, err, "Should error when no args provided")
@@ -457,10 +377,7 @@ func TestContainerScanCommandRequiresArg(t *testing.T) {
 	assert.NoError(t, err, "Should not error when one arg provided")
 
 	err = containerScanCmd.Args(containerScanCmd, []string{"image1", "image2"})
-	assert.NoError(t, err, "Should not error when multiple args provided")
-
-	err = containerScanCmd.Args(containerScanCmd, []string{"image1", "image2", "image3"})
-	assert.NoError(t, err, "Should not error when many args provided")
+	assert.Error(t, err, "Should error when multiple args provided")
 }
 
 func TestContainerScanFlagDefaults(t *testing.T) {
@@ -551,80 +468,24 @@ func TestBuildTrivyArgsDefaultsApplied(t *testing.T) {
 	assert.Contains(t, args, "--ignore-unfixed", "--ignore-unfixed should be present when enabled")
 }
 
-// Tests for multiple image support
-
-func TestValidateMultipleImages(t *testing.T) {
-	// All valid images should pass
-	validImages := []string{"alpine:latest", "nginx:1.21", "redis:7"}
-	for _, img := range validImages {
-		err := validateImageName(img)
-		assert.NoError(t, err, "Valid image %s should not error", img)
-	}
-}
-
-func TestValidateMultipleImagesFailsOnInvalid(t *testing.T) {
-	// Test that validation catches invalid images in a list
-	images := []string{"alpine:latest", "nginx;malicious", "redis:7"}
-
-	var firstError error
-	for _, img := range images {
-		if err := validateImageName(img); err != nil {
-			firstError = err
-			break
-		}
-	}
-
-	assert.Error(t, firstError, "Should catch invalid image in list")
-	assert.Contains(t, firstError.Error(), "disallowed character", "Should report specific error")
-}
-
-func TestBuildTrivyArgsForMultipleImages(t *testing.T) {
+func TestBuildTrivyArgsWithDifferentImages(t *testing.T) {
 	severityFlag = "CRITICAL"
 	pkgTypesFlag = ""
 	ignoreUnfixedFlag = true
 
 	images := []string{"alpine:latest", "nginx:1.21", "redis:7"}
 
-	// Verify each image gets correct args with same flags
 	for _, img := range images {
 		args := buildTrivyArgs(img)
-
 		assert.Equal(t, img, args[len(args)-1], "Image name should be last argument")
 		assert.Contains(t, args, "--severity", "Should contain severity flag")
 		assert.Contains(t, args, "CRITICAL", "Should use configured severity")
 	}
 }
 
-func TestContainerScanCommandAcceptsMultipleImages(t *testing.T) {
-	tests := []struct {
-		name   string
-		args   []string
-		errMsg string
-	}{
-		{
-			name: "single image",
-			args: []string{"alpine:latest"},
-		},
-		{
-			name: "two images",
-			args: []string{"alpine:latest", "nginx:1.21"},
-		},
-		{
-			name: "three images",
-			args: []string{"alpine:latest", "nginx:1.21", "redis:7"},
-		},
-		{
-			name: "many images",
-			args: []string{"img1:v1", "img2:v2", "img3:v3", "img4:v4", "img5:v5"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := containerScanCmd.Args(containerScanCmd, tt.args)
-			assert.NoError(t, err, "Command should accept %d image(s)", len(tt.args))
-		})
-	}
+func TestContainerScanCommandAcceptsExactlyOneImage(t *testing.T) {
+	err := containerScanCmd.Args(containerScanCmd, []string{"alpine:latest"})
+	assert.NoError(t, err, "Command should accept single image")
 }
 
 func TestContainerScanCommandRejectsNoImages(t *testing.T) {
