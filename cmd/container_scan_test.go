@@ -29,27 +29,27 @@ func (m *MockCommandRunner) Run(name string, args []string) error {
 
 // Helper to save and restore global state for tests
 type testState struct {
-	lookPath      func(file string) (string, error)
-	exitFunc      func(code int)
-	commandRunner CommandRunner
-	severityFlag  string
-	pkgTypesFlag  string
-	ignoreUnfixed bool
+	getTrivyPathResolver func() (string, error)
+	exitFunc             func(code int)
+	commandRunner        CommandRunner
+	severityFlag         string
+	pkgTypesFlag         string
+	ignoreUnfixed        bool
 }
 
 func saveState() testState {
 	return testState{
-		lookPath:      lookPath,
-		exitFunc:      exitFunc,
-		commandRunner: commandRunner,
-		severityFlag:  severityFlag,
-		pkgTypesFlag:  pkgTypesFlag,
-		ignoreUnfixed: ignoreUnfixedFlag,
+		getTrivyPathResolver: getTrivyPathResolver,
+		exitFunc:             exitFunc,
+		commandRunner:        commandRunner,
+		severityFlag:         severityFlag,
+		pkgTypesFlag:         pkgTypesFlag,
+		ignoreUnfixed:        ignoreUnfixedFlag,
 	}
 }
 
 func (s testState) restore() {
-	lookPath = s.lookPath
+	getTrivyPathResolver = s.getTrivyPathResolver
 	exitFunc = s.exitFunc
 	commandRunner = s.commandRunner
 	severityFlag = s.severityFlag
@@ -63,8 +63,7 @@ func TestGetTrivyPath_Found(t *testing.T) {
 	state := saveState()
 	defer state.restore()
 
-	lookPath = func(file string) (string, error) {
-		assert.Equal(t, "trivy", file)
+	getTrivyPathResolver = func() (string, error) {
 		return "/usr/local/bin/trivy", nil
 	}
 
@@ -77,8 +76,8 @@ func TestGetTrivyPath_NotFound(t *testing.T) {
 	state := saveState()
 	defer state.restore()
 
-	lookPath = func(_ string) (string, error) {
-		return "", errors.New("executable file not found in $PATH")
+	getTrivyPathResolver = func() (string, error) {
+		return "", errors.New("trivy not found")
 	}
 
 	path, err := getTrivyPath()
@@ -93,8 +92,7 @@ func TestExecuteContainerScan_Success(t *testing.T) {
 	state := saveState()
 	defer state.restore()
 
-	// Mock trivy found
-	lookPath = func(_ string) (string, error) {
+	getTrivyPathResolver = func() (string, error) {
 		return "/usr/local/bin/trivy", nil
 	}
 
@@ -135,7 +133,7 @@ func TestExecuteContainerScan_VulnerabilitiesFound(t *testing.T) {
 	state := saveState()
 	defer state.restore()
 
-	lookPath = func(_ string) (string, error) {
+	getTrivyPathResolver = func() (string, error) {
 		return "/usr/local/bin/trivy", nil
 	}
 
@@ -160,7 +158,7 @@ func TestExecuteContainerScan_MultipleImages_SomeWithVulnerabilities(t *testing.
 	state := saveState()
 	defer state.restore()
 
-	lookPath = func(_ string) (string, error) {
+	getTrivyPathResolver = func() (string, error) {
 		return "/usr/local/bin/trivy", nil
 	}
 
@@ -198,8 +196,8 @@ func TestExecuteContainerScan_TrivyNotFound(t *testing.T) {
 	state := saveState()
 	defer state.restore()
 
-	lookPath = func(_ string) (string, error) {
-		return "", errors.New("executable file not found in $PATH")
+	getTrivyPathResolver = func() (string, error) {
+		return "", errors.New("trivy not in config after install")
 	}
 
 	// Mock exitFunc to capture exit code instead of exiting
@@ -218,7 +216,7 @@ func TestExecuteContainerScan_MultipleImages_AllPass(t *testing.T) {
 	state := saveState()
 	defer state.restore()
 
-	lookPath = func(_ string) (string, error) {
+	getTrivyPathResolver = func() (string, error) {
 		return "/usr/local/bin/trivy", nil
 	}
 
@@ -251,7 +249,7 @@ func TestExecuteContainerScan_TrivyExecutionError(t *testing.T) {
 	state := saveState()
 	defer state.restore()
 
-	lookPath = func(_ string) (string, error) {
+	getTrivyPathResolver = func() (string, error) {
 		return "/usr/local/bin/trivy", nil
 	}
 
@@ -275,7 +273,7 @@ func TestExecuteContainerScan_EmptyImageList(t *testing.T) {
 	state := saveState()
 	defer state.restore()
 
-	lookPath = func(_ string) (string, error) {
+	getTrivyPathResolver = func() (string, error) {
 		return "/usr/local/bin/trivy", nil
 	}
 

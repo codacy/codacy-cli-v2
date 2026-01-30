@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	"codacy/cli-v2/config"
+	config_file "codacy/cli-v2/config-file"
 	"codacy/cli-v2/utils/logger"
 
 	"github.com/fatih/color"
@@ -19,9 +21,6 @@ import (
 // Allows: registry/namespace/image:tag or image@sha256:digest
 // Based on Docker image reference specification
 var validImageNamePattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._\-/:@]*$`)
-
-// lookPath is a variable to allow mocking exec.LookPath in tests
-var lookPath = exec.LookPath
 
 // exitFunc is a variable to allow mocking os.Exit in tests
 var exitFunc = os.Exit
@@ -36,7 +35,7 @@ type ExecCommandRunner struct{}
 
 // Run executes a command and returns its exit error
 func (r *ExecCommandRunner) Run(name string, args []string) error {
-	// #nosec G204 -- name comes from exec.LookPath("trivy") with a literal string,
+	// #nosec G204 -- name comes from config (codacy-installed Trivy path),
 	// and args are validated by validateImageName() which checks for shell metacharacters.
 	// exec.Command passes arguments directly without shell interpretation.
 	cmd := exec.Command(name, args...)
@@ -131,11 +130,31 @@ func validateImageName(imageName string) error {
 	return nil
 }
 
-// getTrivyPath returns the path to the Trivy binary and an error if not found
+// getTrivyPathResolver is set by tests to mock Trivy path resolution; when nil, real config/install logic is used
+var getTrivyPathResolver func() (string, error)
+
+// getTrivyPath returns the path to the Trivy binary (codacy-installed, installed on demand if needed) and an error if not found
 func getTrivyPath() (string, error) {
-	trivyPath, err := lookPath("trivy")
-	if err != nil {
-		return "", err
+	if getTrivyPathResolver != nil {
+		return getTrivyPathResolver()
+	}
+	if err := config.Config.CreateCodacyDirs(); err != nil {
+		return "", fmt.Errorf("failed to create codacy directories: %w", err)
+	}
+	_ = config_file.ReadConfigFile(config.Config.ProjectConfigFile())
+	tool := config.Config.Tools()["trivy"]
+	if tool == nil || !config.Config.IsToolInstalled("trivy", tool) {
+		if err := config.InstallTool("trivy", tool, ""); err != nil {
+			return "", fmt.Errorf("failed to install Trivy: %w", err)
+		}
+		tool = config.Config.Tools()["trivy"]
+	}
+	if tool == nil {
+		return "", fmt.Errorf("trivy not in config after install")
+	}
+	trivyPath, ok := tool.Binaries["trivy"]
+	if !ok || trivyPath == "" {
+		return "", fmt.Errorf("trivy binary path not found")
 	}
 	logger.Info("Found Trivy", logrus.Fields{"path": trivyPath})
 	return trivyPath, nil
@@ -144,9 +163,8 @@ func getTrivyPath() (string, error) {
 // handleTrivyNotFound prints error message and exits with code 2
 func handleTrivyNotFound(err error) {
 	logger.Error("Trivy not found", logrus.Fields{"error": err.Error()})
-	color.Red("❌ Error: Trivy is not installed or not found in PATH")
-	fmt.Println("Please install Trivy to use container scanning.")
-	fmt.Println("Visit: https://trivy.dev/latest/getting-started/installation/")
+	color.Red("❌ Error: Trivy could not be installed or found")
+	fmt.Println("Run 'codacy-cli init' if you have no project yet, then try container-scan again so Trivy can be installed automatically.")
 	fmt.Println("exit-code 2")
 	exitFunc(2)
 }
@@ -236,7 +254,6 @@ func printScanSummary(hasVulnerabilities bool, imageNames []string) int {
 	}
 	logger.Info("Container scan completed successfully", logrus.Fields{"images": imageNames})
 	color.Green("✅ Success: No vulnerabilities found matching the specified criteria")
-	fmt.Println("exit-code 0")
 	return 0
 }
 
