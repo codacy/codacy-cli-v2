@@ -2,7 +2,9 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"regexp"
@@ -28,6 +30,8 @@ var exitFunc = os.Exit
 // CommandRunner interface for running external commands (allows mocking in tests)
 type CommandRunner interface {
 	Run(name string, args []string) error
+	// RunWithStderr runs the command; if stderr is not nil, Trivy stderr is written to both os.Stderr and stderr.
+	RunWithStderr(name string, args []string, stderr io.Writer) error
 }
 
 // ExecCommandRunner runs commands using exec.Command
@@ -35,12 +39,21 @@ type ExecCommandRunner struct{}
 
 // Run executes a command and returns its exit error
 func (r *ExecCommandRunner) Run(name string, args []string) error {
+	return r.RunWithStderr(name, args, nil)
+}
+
+// RunWithStderr runs the command; if stderr is not nil, command stderr is written to both os.Stderr and stderr.
+func (r *ExecCommandRunner) RunWithStderr(name string, args []string, stderr io.Writer) error {
 	// #nosec G204 -- name comes from config (codacy-installed Trivy path),
 	// and args are validated by validateImageName() which checks for shell metacharacters.
 	// exec.Command passes arguments directly without shell interpretation.
 	cmd := exec.Command(name, args...)
 	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if stderr != nil {
+		cmd.Stderr = io.MultiWriter(os.Stderr, stderr)
+	} else {
+		cmd.Stderr = os.Stderr
+	}
 	return cmd.Run()
 }
 
@@ -162,7 +175,6 @@ func handleTrivyNotFound(err error) {
 	logger.Error("Trivy not found", logrus.Fields{"error": err.Error()})
 	color.Red("❌ Error: Trivy could not be installed or found")
 	fmt.Println("Run 'codacy-cli init' if you have no project yet, then try container-scan again so Trivy can be installed automatically.")
-	fmt.Println("exit-code 2")
 	exitFunc(2)
 }
 
@@ -177,7 +189,6 @@ func executeContainerScan(imageName string) int {
 	if err := validateImageName(imageName); err != nil {
 		logger.Error("Invalid image name", logrus.Fields{"image": imageName, "error": err.Error()})
 		color.Red("❌ Error: %v", err)
-		fmt.Println("exit-code 2")
 		return 2
 	}
 	logger.Info("Starting container scan", logrus.Fields{"image": imageName})
@@ -195,20 +206,36 @@ func executeContainerScan(imageName string) int {
 	return printScanSummary(hasVulnerabilities == 1)
 }
 
+// isScanFailure returns true if Trivy stderr indicates the scan failed (e.g. image not found, no runtime)
+// rather than a successful scan that found vulnerabilities. Trivy uses exit code 1 for both cases.
+func isScanFailure(stderr []byte) bool {
+	s := string(stderr)
+	return strings.Contains(s, "FATAL") ||
+		strings.Contains(s, "run error") ||
+		strings.Contains(s, "image scan error") ||
+		strings.Contains(s, "unable to find the specified image")
+}
+
 // scanImage scans the image and returns: 0=no vulns, 1=vulns found, -1=error
 func scanImage(imageName, trivyPath string) int {
 	fmt.Printf("🔍 Scanning container image: %s\n\n", imageName)
 	args := buildTrivyArgs(imageName)
 	logger.Info("Running Trivy container scan", logrus.Fields{"command": fmt.Sprintf("%s %v", trivyPath, args)})
 
-	if err := commandRunner.Run(trivyPath, args); err != nil {
-		if getExitCode(err) == 1 {
+	var stderrBuf bytes.Buffer
+	if err := commandRunner.RunWithStderr(trivyPath, args, &stderrBuf); err != nil {
+		code := getExitCode(err)
+		if code == 1 && isScanFailure(stderrBuf.Bytes()) {
+			logger.Error("Scan failed (e.g. image not found or no container runtime)", logrus.Fields{"image": imageName, "error": err.Error()})
+			color.Red("❌ Scanning failed: unable to scan the container image (e.g. image not found or no container runtime)")
+			return -1
+		}
+		if code == 1 {
 			logger.Warn("Vulnerabilities found in image", logrus.Fields{"image": imageName})
 			return 1
 		}
 		logger.Error("Failed to run Trivy", logrus.Fields{"error": err.Error(), "image": imageName})
 		color.Red("❌ Error: Failed to run Trivy for %s: %v", imageName, err)
-		fmt.Println("exit-code 2")
 		return -1
 	}
 	logger.Info("No vulnerabilities found in image", logrus.Fields{"image": imageName})
@@ -220,7 +247,6 @@ func printScanSummary(hasVulnerabilities bool) int {
 	if hasVulnerabilities {
 		logger.Warn("Container scan completed with vulnerabilities", logrus.Fields{})
 		color.Red("❌ Scanning failed: vulnerabilities found in the container image")
-		fmt.Println("exit-code 1")
 		return 1
 	}
 	logger.Info("Container scan completed successfully", logrus.Fields{})

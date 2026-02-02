@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,18 +10,26 @@ import (
 
 // MockCommandRunner is a mock implementation of CommandRunner for testing
 type MockCommandRunner struct {
-	RunFunc func(name string, args []string) error
-	Calls   []struct {
+	RunFunc         func(name string, args []string) error
+	RunWithStderrFunc func(name string, args []string, stderr io.Writer) error
+	Calls           []struct {
 		Name string
 		Args []string
 	}
 }
 
 func (m *MockCommandRunner) Run(name string, args []string) error {
+	return m.RunWithStderr(name, args, nil)
+}
+
+func (m *MockCommandRunner) RunWithStderr(name string, args []string, stderr io.Writer) error {
 	m.Calls = append(m.Calls, struct {
 		Name string
 		Args []string
 	}{Name: name, Args: args})
+	if m.RunWithStderrFunc != nil {
+		return m.RunWithStderrFunc(name, args, stderr)
+	}
 	if m.RunFunc != nil {
 		return m.RunFunc(name, args)
 	}
@@ -204,6 +213,44 @@ func TestExecuteContainerScan_TrivyExecutionError(t *testing.T) {
 
 	exitCode := executeContainerScan("alpine:latest")
 	assert.Equal(t, 2, exitCode)
+}
+
+func TestExecuteContainerScan_ScanFailureExit1(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	getTrivyPathResolver = func() (string, error) {
+		return "/usr/local/bin/trivy", nil
+	}
+
+	// Trivy exits 1 with FATAL/run error in stderr (e.g. image not found) -> we treat as scan error, not vulnerabilities
+	scanFailureStderr := "FATAL   Fatal error     run error: image scan error: unable to find the specified image"
+	mockRunner := &MockCommandRunner{
+		RunWithStderrFunc: func(_ string, _ []string, stderr io.Writer) error {
+			if stderr != nil {
+				_, _ = stderr.Write([]byte(scanFailureStderr))
+			}
+			return &mockExitError{code: 1}
+		},
+	}
+	commandRunner = mockRunner
+
+	severityFlag = ""
+	pkgTypesFlag = ""
+	ignoreUnfixedFlag = true
+
+	exitCode := executeContainerScan("random-string")
+	assert.Equal(t, 2, exitCode, "Should return exit code 2 when scan failed (not vulnerabilities found)")
+	assert.Len(t, mockRunner.Calls, 1)
+}
+
+func TestIsScanFailure(t *testing.T) {
+	assert.False(t, isScanFailure(nil), "nil stderr is not a scan failure")
+	assert.False(t, isScanFailure([]byte("")), "empty stderr is not a scan failure")
+	assert.False(t, isScanFailure([]byte("Total: 5 (HIGH: 2, CRITICAL: 3)")), "vulnerability table is not a scan failure")
+	assert.True(t, isScanFailure([]byte("FATAL   Fatal error")), "FATAL indicates scan failure")
+	assert.True(t, isScanFailure([]byte("run error: image scan error")), "run error indicates scan failure")
+	assert.True(t, isScanFailure([]byte("unable to find the specified image")), "unable to find image indicates scan failure")
 }
 
 // Tests for handleTrivyNotFound
