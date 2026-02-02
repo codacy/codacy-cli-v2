@@ -1,0 +1,475 @@
+package cmd
+
+import (
+	"errors"
+	"io"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+// MockCommandRunner is a mock implementation of CommandRunner for testing
+type MockCommandRunner struct {
+	RunFunc           func(name string, args []string) error
+	RunWithStderrFunc func(name string, args []string, stderr io.Writer) error
+	Calls             []struct {
+		Name string
+		Args []string
+	}
+}
+
+func (m *MockCommandRunner) Run(name string, args []string) error {
+	return m.RunWithStderr(name, args, nil)
+}
+
+func (m *MockCommandRunner) RunWithStderr(name string, args []string, stderr io.Writer) error {
+	m.Calls = append(m.Calls, struct {
+		Name string
+		Args []string
+	}{Name: name, Args: args})
+	if m.RunWithStderrFunc != nil {
+		return m.RunWithStderrFunc(name, args, stderr)
+	}
+	if m.RunFunc != nil {
+		return m.RunFunc(name, args)
+	}
+	return nil
+}
+
+// Helper to save and restore global state for tests
+type testState struct {
+	getTrivyPathResolver func() (string, error)
+	exitFunc             func(code int)
+	commandRunner        CommandRunner
+	ignoreUnfixed        bool
+}
+
+func saveState() testState {
+	return testState{
+		getTrivyPathResolver: getTrivyPathResolver,
+		exitFunc:             exitFunc,
+		commandRunner:        commandRunner,
+		ignoreUnfixed:        ignoreUnfixedFlag,
+	}
+}
+
+func (s testState) restore() {
+	getTrivyPathResolver = s.getTrivyPathResolver
+	exitFunc = s.exitFunc
+	commandRunner = s.commandRunner
+	ignoreUnfixedFlag = s.ignoreUnfixed
+}
+
+// Tests for getTrivyPath
+
+func TestGetTrivyPath_Found(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	getTrivyPathResolver = func() (string, error) {
+		return "/usr/local/bin/trivy", nil
+	}
+
+	path, err := getTrivyPath()
+	assert.NoError(t, err)
+	assert.Equal(t, "/usr/local/bin/trivy", path)
+}
+
+func TestGetTrivyPath_NotFound(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	getTrivyPathResolver = func() (string, error) {
+		return "", errors.New("trivy not found")
+	}
+
+	path, err := getTrivyPath()
+	assert.Error(t, err)
+	assert.Equal(t, "", path)
+	assert.Contains(t, err.Error(), "not found")
+}
+
+// Tests for executeContainerScan
+
+func TestExecuteContainerScan_Success(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	getTrivyPathResolver = func() (string, error) {
+		return "/usr/local/bin/trivy", nil
+	}
+
+	// Mock successful command execution
+	mockRunner := &MockCommandRunner{
+		RunFunc: func(_ string, _ []string) error {
+			return nil // Success - no vulnerabilities
+		},
+	}
+	commandRunner = mockRunner
+
+	// Reset flags to defaults
+	ignoreUnfixedFlag = true
+
+	exitCode := executeContainerScan("alpine:latest")
+	assert.Equal(t, 0, exitCode)
+	assert.Len(t, mockRunner.Calls, 1)
+	assert.Equal(t, "/usr/local/bin/trivy", mockRunner.Calls[0].Name)
+	assert.Contains(t, mockRunner.Calls[0].Args, "alpine:latest")
+}
+
+// mockExitError simulates exec.ExitError with a specific exit code
+type mockExitError struct {
+	code int
+}
+
+func (e *mockExitError) Error() string {
+	return "exit status 1"
+}
+
+func (e *mockExitError) ExitCode() int {
+	return e.code
+}
+
+func TestExecuteContainerScan_VulnerabilitiesFound(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	getTrivyPathResolver = func() (string, error) {
+		return "/usr/local/bin/trivy", nil
+	}
+
+	// Mock trivy finding vulnerabilities (exit code 1)
+	mockRunner := &MockCommandRunner{
+		RunFunc: func(_ string, _ []string) error {
+			return &mockExitError{code: 1}
+		},
+	}
+	commandRunner = mockRunner
+
+	ignoreUnfixedFlag = true
+
+	exitCode := executeContainerScan("alpine:latest")
+	assert.Equal(t, 1, exitCode, "Should return exit code 1 when vulnerabilities are found")
+	assert.Len(t, mockRunner.Calls, 1)
+}
+
+func TestExecuteContainerScan_InvalidImageName(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	exitCode := executeContainerScan("nginx;rm -rf /")
+	assert.Equal(t, 2, exitCode)
+}
+
+func TestExecuteContainerScan_TrivyNotFound(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	getTrivyPathResolver = func() (string, error) {
+		return "", errors.New("trivy not in config after install")
+	}
+
+	// Mock exitFunc to capture exit code instead of exiting
+	var capturedExitCode int
+	exitFunc = func(code int) {
+		capturedExitCode = code
+	}
+
+	exitCode := executeContainerScan("alpine:latest")
+	// handleTrivyNotFound calls exitFunc(2), then returns 2
+	assert.Equal(t, 2, capturedExitCode)
+	assert.Equal(t, 2, exitCode)
+}
+
+func TestExecuteContainerScan_TrivyExecutionError(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	getTrivyPathResolver = func() (string, error) {
+		return "/usr/local/bin/trivy", nil
+	}
+
+	// Mock a non-exit-code-1 error (e.g., trivy crashed)
+	mockRunner := &MockCommandRunner{
+		RunFunc: func(_ string, _ []string) error {
+			return errors.New("trivy crashed unexpectedly")
+		},
+	}
+	commandRunner = mockRunner
+
+	ignoreUnfixedFlag = true
+
+	exitCode := executeContainerScan("alpine:latest")
+	assert.Equal(t, 2, exitCode)
+}
+
+func TestExecuteContainerScan_ScanFailureExit1(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	getTrivyPathResolver = func() (string, error) {
+		return "/usr/local/bin/trivy", nil
+	}
+
+	// Trivy exits 1 with FATAL/run error in stderr (e.g. image not found) -> we treat as scan error, not vulnerabilities
+	scanFailureStderr := "FATAL   Fatal error     run error: image scan error: unable to find the specified image"
+	mockRunner := &MockCommandRunner{
+		RunWithStderrFunc: func(_ string, _ []string, stderr io.Writer) error {
+			if stderr != nil {
+				_, _ = stderr.Write([]byte(scanFailureStderr))
+			}
+			return &mockExitError{code: 1}
+		},
+	}
+	commandRunner = mockRunner
+
+	ignoreUnfixedFlag = true
+
+	exitCode := executeContainerScan("random-string")
+	assert.Equal(t, 2, exitCode, "Should return exit code 2 when scan failed (not vulnerabilities found)")
+	assert.Len(t, mockRunner.Calls, 1)
+}
+
+func TestIsScanFailure(t *testing.T) {
+	assert.False(t, isScanFailure(nil), "nil stderr is not a scan failure")
+	assert.False(t, isScanFailure([]byte("")), "empty stderr is not a scan failure")
+	assert.False(t, isScanFailure([]byte("Total: 5 (HIGH: 2, CRITICAL: 3)")), "vulnerability table is not a scan failure")
+	assert.True(t, isScanFailure([]byte("FATAL   Fatal error")), "FATAL indicates scan failure")
+	assert.True(t, isScanFailure([]byte("run error: image scan error")), "run error indicates scan failure")
+	assert.True(t, isScanFailure([]byte("unable to find the specified image")), "unable to find image indicates scan failure")
+}
+
+// Tests for handleTrivyNotFound
+
+func TestHandleTrivyNotFound(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+
+	var capturedExitCode int
+	exitFunc = func(code int) {
+		capturedExitCode = code
+	}
+
+	handleTrivyNotFound(errors.New("trivy not found"))
+	assert.Equal(t, 2, capturedExitCode)
+}
+
+type trivyArgsTestCase struct {
+	name                string
+	imageName           string
+	ignoreUnfixed       bool
+	expectedArgs        []string
+	expectedContains    []string
+	expectedNotContains []string
+}
+
+var trivyArgsTestCases = []trivyArgsTestCase{
+	{
+		name:          "default flags",
+		imageName:     "myapp:latest",
+		ignoreUnfixed: true,
+		expectedArgs: []string{
+			"image", "--scanners", "vuln", "--ignore-unfixed",
+			"--severity", "HIGH,CRITICAL", "--pkg-types", "os",
+			"--exit-code", "1", "myapp:latest",
+		},
+	},
+	{
+		name:                "ignore-unfixed disabled",
+		imageName:           "alpine:latest",
+		ignoreUnfixed:       false,
+		expectedContains:    []string{"--severity", "HIGH,CRITICAL", "--pkg-types", "os", "alpine:latest"},
+		expectedNotContains: []string{"--ignore-unfixed"},
+	},
+	{
+		name:             "exit-code always present",
+		imageName:        "test:v1",
+		ignoreUnfixed:    false,
+		expectedContains: []string{"--exit-code", "1"},
+	},
+	{
+		name:             "image with registry prefix",
+		imageName:        "ghcr.io/codacy/codacy-cli:latest",
+		ignoreUnfixed:    true,
+		expectedContains: []string{"ghcr.io/codacy/codacy-cli:latest"},
+	},
+	{
+		name:             "image with digest",
+		imageName:        "nginx@sha256:abc123",
+		ignoreUnfixed:    true,
+		expectedContains: []string{"nginx@sha256:abc123"},
+	},
+}
+
+func TestBuildTrivyArgs(t *testing.T) {
+	for _, tt := range trivyArgsTestCases {
+		t.Run(tt.name, func(t *testing.T) {
+			ignoreUnfixedFlag = tt.ignoreUnfixed
+
+			args := buildTrivyArgs(tt.imageName)
+
+			if tt.expectedArgs != nil {
+				assert.Equal(t, tt.expectedArgs, args, "Args should match exactly")
+			}
+			for _, exp := range tt.expectedContains {
+				assert.Contains(t, args, exp, "Args should contain %s", exp)
+			}
+			for _, notExp := range tt.expectedNotContains {
+				assert.NotContains(t, args, notExp, "Args should not contain %s", notExp)
+			}
+			assertTrivyArgsBaseRequirements(t, args, tt.imageName)
+		})
+	}
+}
+
+func assertTrivyArgsBaseRequirements(t *testing.T, args []string, imageName string) {
+	t.Helper()
+	assert.Contains(t, args, "image", "First arg should be 'image'")
+	assert.Contains(t, args, "--scanners", "Should contain --scanners")
+	assert.Contains(t, args, "vuln", "Should contain 'vuln' scanner")
+	assert.Contains(t, args, "--exit-code", "Should always contain --exit-code")
+	assert.Contains(t, args, "1", "Exit code should be 1")
+	assert.Equal(t, imageName, args[len(args)-1], "Image name should be the last argument")
+}
+
+func TestBuildTrivyArgsOrder(t *testing.T) {
+	ignoreUnfixedFlag = true
+
+	args := buildTrivyArgs("test:latest")
+
+	assert.Equal(t, "image", args[0], "First arg should be 'image'")
+	assert.Equal(t, "test:latest", args[len(args)-1], "Image name should be last")
+
+	exitCodeIdx := findArgIndex(args, "--exit-code")
+	assert.NotEqual(t, -1, exitCodeIdx, "--exit-code should be present")
+	assert.Equal(t, "1", args[exitCodeIdx+1], "1 should follow --exit-code")
+}
+
+func findArgIndex(args []string, target string) int {
+	for i, arg := range args {
+		if arg == target {
+			return i
+		}
+	}
+	return -1
+}
+
+func TestContainerScanCommandSkipsValidation(t *testing.T) {
+	result := shouldSkipValidation("container-scan")
+	assert.True(t, result, "container-scan should skip validation")
+}
+
+func TestContainerScanCommandRequiresArg(t *testing.T) {
+	assert.Equal(t, "container-scan <IMAGE_NAME>", containerScanCmd.Use, "Command use should match expected format")
+
+	err := containerScanCmd.Args(containerScanCmd, []string{})
+	assert.Error(t, err, "Should error when no args provided")
+
+	err = containerScanCmd.Args(containerScanCmd, []string{"myapp:latest"})
+	assert.NoError(t, err, "Should not error when one arg provided")
+
+	err = containerScanCmd.Args(containerScanCmd, []string{"image1", "image2"})
+	assert.Error(t, err, "Should error when multiple args provided")
+}
+
+func TestContainerScanFlagDefaults(t *testing.T) {
+	ignoreUnfixedFlagDef := containerScanCmd.Flags().Lookup("ignore-unfixed")
+
+	assert.NotNil(t, ignoreUnfixedFlagDef, "ignore-unfixed flag should exist")
+	assert.Equal(t, "true", ignoreUnfixedFlagDef.DefValue, "ignore-unfixed default should be true")
+}
+
+type imageNameTestCase struct {
+	name        string
+	imageName   string
+	expectError bool
+	errorMsg    string
+}
+
+var validImageNameTestCases = []imageNameTestCase{
+	{name: "simple image name", imageName: "nginx", expectError: false},
+	{name: "image with tag", imageName: "nginx:latest", expectError: false},
+	{name: "image with version tag", imageName: "nginx:1.21.0", expectError: false},
+	{name: "image with registry", imageName: "docker.io/library/nginx:latest", expectError: false},
+	{name: "image with private registry", imageName: "ghcr.io/codacy/codacy-cli:v1.0.0", expectError: false},
+	{name: "image with digest", imageName: "nginx@sha256:abc123def456", expectError: false},
+	{name: "image with underscore", imageName: "my_app:latest", expectError: false},
+	{name: "image with hyphen", imageName: "my-app:latest", expectError: false},
+	{name: "image with dots", imageName: "my.app:v1.0.0", expectError: false},
+}
+
+var invalidImageNameTestCases = []imageNameTestCase{
+	{name: "command injection with semicolon", imageName: "nginx; rm -rf /", expectError: true, errorMsg: "disallowed character"},
+	{name: "command injection with pipe", imageName: "nginx | cat /etc/passwd", expectError: true, errorMsg: "disallowed character"},
+	{name: "command injection with ampersand", imageName: "nginx && malicious", expectError: true, errorMsg: "disallowed character"},
+	{name: "command injection with backticks", imageName: "nginx`whoami`", expectError: true, errorMsg: "disallowed character"},
+	{name: "command injection with dollar", imageName: "nginx$(whoami)", expectError: true, errorMsg: "disallowed character"},
+	{name: "command injection with newline", imageName: "nginx\nmalicious", expectError: true, errorMsg: "disallowed character"},
+	{name: "command injection with quotes", imageName: "nginx'malicious'", expectError: true, errorMsg: "disallowed character"},
+	{name: "command injection with double quotes", imageName: "nginx\"malicious\"", expectError: true, errorMsg: "disallowed character"},
+	{name: "command injection with redirect", imageName: "nginx > /tmp/output", expectError: true, errorMsg: "disallowed character"},
+	{name: "command injection with backslash", imageName: "nginx\\malicious", expectError: true, errorMsg: "disallowed character"},
+	{name: "empty image name", imageName: "", expectError: true, errorMsg: "cannot be empty"},
+	{name: "image name too long", imageName: string(make([]byte, 300)), expectError: true, errorMsg: "too long"},
+	{name: "image starting with hyphen", imageName: "-nginx", expectError: true, errorMsg: "invalid image name format"},
+}
+
+func TestValidateImageNameValid(t *testing.T) {
+	for _, tt := range validImageNameTestCases {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateImageName(tt.imageName)
+			assert.NoError(t, err, "Did not expect error for image name: %s", tt.imageName)
+		})
+	}
+}
+
+func TestValidateImageNameInvalid(t *testing.T) {
+	for _, tt := range invalidImageNameTestCases {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateImageName(tt.imageName)
+			assert.Error(t, err, "Expected error for image name: %s", tt.imageName)
+			if tt.errorMsg != "" {
+				assert.Contains(t, err.Error(), tt.errorMsg, "Error message should contain: %s", tt.errorMsg)
+			}
+		})
+	}
+}
+
+func TestBuildTrivyArgsDefaultsApplied(t *testing.T) {
+	ignoreUnfixedFlag = true
+
+	args := buildTrivyArgs("test:latest")
+
+	severityIdx := findArgIndex(args, "--severity")
+	assert.NotEqual(t, -1, severityIdx, "--severity should be present")
+	assert.Equal(t, "HIGH,CRITICAL", args[severityIdx+1], "Severity should be HIGH,CRITICAL")
+
+	pkgTypesIdx := findArgIndex(args, "--pkg-types")
+	assert.NotEqual(t, -1, pkgTypesIdx, "--pkg-types should be present")
+	assert.Equal(t, "os", args[pkgTypesIdx+1], "Pkg-types should be 'os'")
+
+	assert.Contains(t, args, "--ignore-unfixed", "--ignore-unfixed should be present when enabled")
+}
+
+func TestBuildTrivyArgsWithDifferentImages(t *testing.T) {
+	ignoreUnfixedFlag = true
+
+	images := []string{"alpine:latest", "nginx:1.21", "redis:7"}
+
+	for _, img := range images {
+		args := buildTrivyArgs(img)
+		assert.Equal(t, img, args[len(args)-1], "Image name should be last argument")
+		assert.Contains(t, args, "--severity", "Should contain severity flag")
+		assert.Contains(t, args, "HIGH,CRITICAL", "Should use fixed severity HIGH,CRITICAL")
+	}
+}
+
+func TestContainerScanCommandAcceptsExactlyOneImage(t *testing.T) {
+	err := containerScanCmd.Args(containerScanCmd, []string{"alpine:latest"})
+	assert.NoError(t, err, "Command should accept single image")
+}
+
+func TestContainerScanCommandRejectsNoImages(t *testing.T) {
+	err := containerScanCmd.Args(containerScanCmd, []string{})
+	assert.Error(t, err, "Command should reject empty image list")
+}
