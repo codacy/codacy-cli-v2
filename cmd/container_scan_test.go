@@ -10,9 +10,9 @@ import (
 
 // MockCommandRunner is a mock implementation of CommandRunner for testing
 type MockCommandRunner struct {
-	RunFunc         func(name string, args []string) error
+	RunFunc           func(name string, args []string) error
 	RunWithStderrFunc func(name string, args []string, stderr io.Writer) error
-	Calls           []struct {
+	Calls             []struct {
 		Name string
 		Args []string
 	}
@@ -41,8 +41,6 @@ type testState struct {
 	getTrivyPathResolver func() (string, error)
 	exitFunc             func(code int)
 	commandRunner        CommandRunner
-	severityFlag         string
-	pkgTypesFlag         string
 	ignoreUnfixed        bool
 }
 
@@ -51,8 +49,6 @@ func saveState() testState {
 		getTrivyPathResolver: getTrivyPathResolver,
 		exitFunc:             exitFunc,
 		commandRunner:        commandRunner,
-		severityFlag:         severityFlag,
-		pkgTypesFlag:         pkgTypesFlag,
 		ignoreUnfixed:        ignoreUnfixedFlag,
 	}
 }
@@ -61,8 +57,6 @@ func (s testState) restore() {
 	getTrivyPathResolver = s.getTrivyPathResolver
 	exitFunc = s.exitFunc
 	commandRunner = s.commandRunner
-	severityFlag = s.severityFlag
-	pkgTypesFlag = s.pkgTypesFlag
 	ignoreUnfixedFlag = s.ignoreUnfixed
 }
 
@@ -114,8 +108,6 @@ func TestExecuteContainerScan_Success(t *testing.T) {
 	commandRunner = mockRunner
 
 	// Reset flags to defaults
-	severityFlag = ""
-	pkgTypesFlag = ""
 	ignoreUnfixedFlag = true
 
 	exitCode := executeContainerScan("alpine:latest")
@@ -154,8 +146,6 @@ func TestExecuteContainerScan_VulnerabilitiesFound(t *testing.T) {
 	}
 	commandRunner = mockRunner
 
-	severityFlag = ""
-	pkgTypesFlag = ""
 	ignoreUnfixedFlag = true
 
 	exitCode := executeContainerScan("alpine:latest")
@@ -207,8 +197,6 @@ func TestExecuteContainerScan_TrivyExecutionError(t *testing.T) {
 	}
 	commandRunner = mockRunner
 
-	severityFlag = ""
-	pkgTypesFlag = ""
 	ignoreUnfixedFlag = true
 
 	exitCode := executeContainerScan("alpine:latest")
@@ -235,8 +223,6 @@ func TestExecuteContainerScan_ScanFailureExit1(t *testing.T) {
 	}
 	commandRunner = mockRunner
 
-	severityFlag = ""
-	pkgTypesFlag = ""
 	ignoreUnfixedFlag = true
 
 	exitCode := executeContainerScan("random-string")
@@ -271,8 +257,6 @@ func TestHandleTrivyNotFound(t *testing.T) {
 type trivyArgsTestCase struct {
 	name                string
 	imageName           string
-	severity            string
-	pkgTypes            string
 	ignoreUnfixed       bool
 	expectedArgs        []string
 	expectedContains    []string
@@ -283,8 +267,6 @@ var trivyArgsTestCases = []trivyArgsTestCase{
 	{
 		name:          "default flags",
 		imageName:     "myapp:latest",
-		severity:      "",
-		pkgTypes:      "",
 		ignoreUnfixed: true,
 		expectedArgs: []string{
 			"image", "--scanners", "vuln", "--ignore-unfixed",
@@ -293,35 +275,8 @@ var trivyArgsTestCases = []trivyArgsTestCase{
 		},
 	},
 	{
-		name:                "custom severity only",
-		imageName:           "codacy/engine:1.0.0",
-		severity:            "CRITICAL",
-		pkgTypes:            "",
-		ignoreUnfixed:       true,
-		expectedContains:    []string{"--severity", "CRITICAL", "--pkg-types", "os", "--ignore-unfixed", "codacy/engine:1.0.0"},
-		expectedNotContains: []string{"HIGH,CRITICAL"},
-	},
-	{
-		name:             "custom pkg-types only",
-		imageName:        "nginx:alpine",
-		severity:         "",
-		pkgTypes:         "os,library",
-		ignoreUnfixed:    true,
-		expectedContains: []string{"--severity", "HIGH,CRITICAL", "--pkg-types", "os,library", "nginx:alpine"},
-	},
-	{
-		name:             "all custom flags",
-		imageName:        "ubuntu:22.04",
-		severity:         "LOW,MEDIUM,HIGH,CRITICAL",
-		pkgTypes:         "os,library",
-		ignoreUnfixed:    true,
-		expectedContains: []string{"--severity", "LOW,MEDIUM,HIGH,CRITICAL", "--pkg-types", "os,library", "--ignore-unfixed", "ubuntu:22.04"},
-	},
-	{
 		name:                "ignore-unfixed disabled",
 		imageName:           "alpine:latest",
-		severity:            "",
-		pkgTypes:            "",
 		ignoreUnfixed:       false,
 		expectedContains:    []string{"--severity", "HIGH,CRITICAL", "--pkg-types", "os", "alpine:latest"},
 		expectedNotContains: []string{"--ignore-unfixed"},
@@ -329,24 +284,18 @@ var trivyArgsTestCases = []trivyArgsTestCase{
 	{
 		name:             "exit-code always present",
 		imageName:        "test:v1",
-		severity:         "MEDIUM",
-		pkgTypes:         "library",
 		ignoreUnfixed:    false,
 		expectedContains: []string{"--exit-code", "1"},
 	},
 	{
 		name:             "image with registry prefix",
 		imageName:        "ghcr.io/codacy/codacy-cli:latest",
-		severity:         "",
-		pkgTypes:         "",
 		ignoreUnfixed:    true,
 		expectedContains: []string{"ghcr.io/codacy/codacy-cli:latest"},
 	},
 	{
 		name:             "image with digest",
 		imageName:        "nginx@sha256:abc123",
-		severity:         "",
-		pkgTypes:         "",
 		ignoreUnfixed:    true,
 		expectedContains: []string{"nginx@sha256:abc123"},
 	},
@@ -355,8 +304,6 @@ var trivyArgsTestCases = []trivyArgsTestCase{
 func TestBuildTrivyArgs(t *testing.T) {
 	for _, tt := range trivyArgsTestCases {
 		t.Run(tt.name, func(t *testing.T) {
-			severityFlag = tt.severity
-			pkgTypesFlag = tt.pkgTypes
 			ignoreUnfixedFlag = tt.ignoreUnfixed
 
 			args := buildTrivyArgs(tt.imageName)
@@ -386,8 +333,6 @@ func assertTrivyArgsBaseRequirements(t *testing.T, args []string, imageName stri
 }
 
 func TestBuildTrivyArgsOrder(t *testing.T) {
-	severityFlag = ""
-	pkgTypesFlag = ""
 	ignoreUnfixedFlag = true
 
 	args := buildTrivyArgs("test:latest")
@@ -428,16 +373,9 @@ func TestContainerScanCommandRequiresArg(t *testing.T) {
 }
 
 func TestContainerScanFlagDefaults(t *testing.T) {
-	severityFlagDef := containerScanCmd.Flags().Lookup("severity")
-	pkgTypesFlagDef := containerScanCmd.Flags().Lookup("pkg-types")
 	ignoreUnfixedFlagDef := containerScanCmd.Flags().Lookup("ignore-unfixed")
 
-	assert.NotNil(t, severityFlagDef, "severity flag should exist")
-	assert.NotNil(t, pkgTypesFlagDef, "pkg-types flag should exist")
 	assert.NotNil(t, ignoreUnfixedFlagDef, "ignore-unfixed flag should exist")
-
-	assert.Equal(t, "", severityFlagDef.DefValue, "severity default should be empty (uses HIGH,CRITICAL in buildTrivyArgs)")
-	assert.Equal(t, "", pkgTypesFlagDef.DefValue, "pkg-types default should be empty (uses 'os' in buildTrivyArgs)")
 	assert.Equal(t, "true", ignoreUnfixedFlagDef.DefValue, "ignore-unfixed default should be true")
 }
 
@@ -498,26 +436,22 @@ func TestValidateImageNameInvalid(t *testing.T) {
 }
 
 func TestBuildTrivyArgsDefaultsApplied(t *testing.T) {
-	severityFlag = ""
-	pkgTypesFlag = ""
 	ignoreUnfixedFlag = true
 
 	args := buildTrivyArgs("test:latest")
 
 	severityIdx := findArgIndex(args, "--severity")
 	assert.NotEqual(t, -1, severityIdx, "--severity should be present")
-	assert.Equal(t, "HIGH,CRITICAL", args[severityIdx+1], "Default severity should be HIGH,CRITICAL")
+	assert.Equal(t, "HIGH,CRITICAL", args[severityIdx+1], "Severity should be HIGH,CRITICAL")
 
 	pkgTypesIdx := findArgIndex(args, "--pkg-types")
 	assert.NotEqual(t, -1, pkgTypesIdx, "--pkg-types should be present")
-	assert.Equal(t, "os", args[pkgTypesIdx+1], "Default pkg-types should be 'os'")
+	assert.Equal(t, "os", args[pkgTypesIdx+1], "Pkg-types should be 'os'")
 
 	assert.Contains(t, args, "--ignore-unfixed", "--ignore-unfixed should be present when enabled")
 }
 
 func TestBuildTrivyArgsWithDifferentImages(t *testing.T) {
-	severityFlag = "CRITICAL"
-	pkgTypesFlag = ""
 	ignoreUnfixedFlag = true
 
 	images := []string{"alpine:latest", "nginx:1.21", "redis:7"}
@@ -526,7 +460,7 @@ func TestBuildTrivyArgsWithDifferentImages(t *testing.T) {
 		args := buildTrivyArgs(img)
 		assert.Equal(t, img, args[len(args)-1], "Image name should be last argument")
 		assert.Contains(t, args, "--severity", "Should contain severity flag")
-		assert.Contains(t, args, "CRITICAL", "Should use configured severity")
+		assert.Contains(t, args, "HIGH,CRITICAL", "Should use fixed severity HIGH,CRITICAL")
 	}
 }
 

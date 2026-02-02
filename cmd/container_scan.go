@@ -75,14 +75,10 @@ func getExitCode(err error) int {
 
 // Flag variables for container-scan command
 var (
-	severityFlag      string
-	pkgTypesFlag      string
 	ignoreUnfixedFlag bool
 )
 
 func init() {
-	containerScanCmd.Flags().StringVar(&severityFlag, "severity", "", "Comma-separated list of severities to scan for (default: HIGH,CRITICAL)")
-	containerScanCmd.Flags().StringVar(&pkgTypesFlag, "pkg-types", "", "Comma-separated list of package types to scan (default: os)")
 	containerScanCmd.Flags().BoolVar(&ignoreUnfixedFlag, "ignore-unfixed", true, "Ignore unfixed vulnerabilities")
 	rootCmd.AddCommand(containerScanCmd)
 }
@@ -93,18 +89,12 @@ var containerScanCmd = &cobra.Command{
 	Long: `Scan a container image for vulnerabilities using Trivy.
 
 By default, scans for HIGH and CRITICAL vulnerabilities in OS packages,
-ignoring unfixed issues. Use flags to override these defaults.
+ignoring unfixed issues.
 
 The --exit-code 1 flag is always applied (not user-configurable) to ensure
 the command fails when vulnerabilities are found.`,
 	Example: `  # Scan an image
   codacy-cli container-scan myapp:latest
-
-  # Scan only for CRITICAL vulnerabilities
-  codacy-cli container-scan --severity CRITICAL myapp:latest
-
-  # Scan all severities and package types
-  codacy-cli container-scan --severity LOW,MEDIUM,HIGH,CRITICAL --pkg-types os,library myapp:latest
 
   # Include unfixed vulnerabilities
   codacy-cli container-scan --ignore-unfixed=false myapp:latest`,
@@ -266,19 +256,8 @@ func buildTrivyArgs(imageName string) []string {
 		args = append(args, "--ignore-unfixed")
 	}
 
-	// Apply --severity (use default if not specified)
-	severity := severityFlag
-	if severity == "" {
-		severity = "HIGH,CRITICAL"
-	}
-	args = append(args, "--severity", severity)
-
-	// Apply --pkg-types (use default if not specified)
-	pkgTypes := pkgTypesFlag
-	if pkgTypes == "" {
-		pkgTypes = "os"
-	}
-	args = append(args, "--pkg-types", pkgTypes)
+	// Fixed severity and package types (not user-configurable)
+	args = append(args, "--severity", "HIGH,CRITICAL", "--pkg-types", "os")
 
 	// Always apply --exit-code 1 (not user-configurable)
 	args = append(args, "--exit-code", "1")
