@@ -27,6 +27,7 @@ type DownloadConfig struct {
 	FileNameTemplate string            `yaml:"file_name_template"`
 	Extension        ExtensionConfig   `yaml:"extension"`
 	ArchMapping      map[string]string `yaml:"arch_mapping"`
+	OSArchMapping    map[string]string `yaml:"os_arch_mapping"`
 	OSMapping        map[string]string `yaml:"os_mapping"`
 	ReleaseVersion   string            `yaml:"release_version,omitempty"`
 }

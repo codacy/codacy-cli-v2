@@ -169,7 +169,7 @@ func TestGetSupportedTools(t *testing.T) {
 				"pylint",
 				"trivy",
 				"dartanalyzer",
-				"semgrep",
+				"opengrep",
 				"lizard",
 				"codacy-enigma-cli",
 				"revive",

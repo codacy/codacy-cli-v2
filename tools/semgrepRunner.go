@@ -8,12 +8,10 @@ import (
 	"path/filepath"
 )
 
-// RunSemgrep executes Semgrep analysis on the specified directory
-func RunSemgrep(workDirectory string, binary string, files []string, outputFile string, outputFormat string) error {
-	// Construct base command with -m semgrep to run semgrep module
+// RunOpengrep executes Opengrep analysis on the specified directory
+func RunOpengrep(workDirectory string, binary string, files []string, outputFile string, outputFormat string) error {
 	cmdArgs := []string{"scan"}
 
-	// Defaults from https://github.com/codacy/codacy-semgrep/blob/master/internal/tool/command.go
 	cmdArgs = append(cmdArgs, "--max-memory", "2560")
 	cmdArgs = append(cmdArgs, "--timeout", "5")
 	cmdArgs = append(cmdArgs, "--timeout-threshold", "3")
@@ -25,11 +23,11 @@ func RunSemgrep(workDirectory string, binary string, files []string, outputFile 
 		cmdArgs = append(cmdArgs, "--sarif")
 	}
 
-	// Define possible Semgrep config file names
-	semgrepConfigFiles := []string{"semgrep.yml", "semgrep.yaml", "semgrep/semgrep.yml"}
+	// Define possible Opengrep config file names (uses semgrep-compatible config format)
+	opengrepConfigFiles := []string{"semgrep.yml", "semgrep.yaml", "semgrep/semgrep.yml"}
 
 	// Check if a config file exists in the expected location and use it if present
-	if configFile, exists := ConfigFileExists(config.Config, semgrepConfigFiles...); exists {
+	if configFile, exists := ConfigFileExists(config.Config, opengrepConfigFiles...); exists {
 		cmdArgs = append(cmdArgs, "--config", configFile)
 	} else {
 		// add --config auto only if no config file exists
@@ -43,7 +41,7 @@ func RunSemgrep(workDirectory string, binary string, files []string, outputFile 
 		cmdArgs = append(cmdArgs, ".")
 	}
 
-	// Create Semgrep command
+	// Create Opengrep command
 	cmd := exec.Command(binary, cmdArgs...)
 	cmd.Dir = workDirectory
 
@@ -62,11 +60,11 @@ func RunSemgrep(workDirectory string, binary string, files []string, outputFile 
 	}
 	cmd.Stderr = os.Stderr
 
-	// Run Semgrep
+	// Run Opengrep
 	if err := cmd.Run(); err != nil {
-		// Semgrep returns non-zero exit code when it finds issues, which is expected
+		// Opengrep returns non-zero exit code when it finds issues, which is expected
 		if _, ok := err.(*exec.ExitError); !ok {
-			return fmt.Errorf("failed to run semgrep: %w", err)
+			return fmt.Errorf("failed to run opengrep: %w", err)
 		}
 	}
 

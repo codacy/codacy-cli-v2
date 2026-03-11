@@ -24,7 +24,7 @@ var toolConfigRegistry = map[string]ToolConfigCreator{
 	domain.PMD7:         &pmd7ConfigCreator{},
 	domain.PyLint:       &pylintConfigCreator{},
 	domain.DartAnalyzer: &dartAnalyzerConfigCreator{},
-	domain.Semgrep:      &semgrepConfigCreator{},
+	domain.Opengrep:     &opengrepConfigCreator{},
 	domain.Lizard:       &lizardConfigCreator{},
 	domain.Revive:       &reviveConfigCreator{},
 }
@@ -121,23 +121,23 @@ func (d *dartAnalyzerConfigCreator) GetConfigFileName() string {
 }
 func (d *dartAnalyzerConfigCreator) GetToolName() string { return "Dart Analyzer" }
 
-// semgrepConfigCreator implements ToolConfigCreator for Semgrep
-type semgrepConfigCreator struct{}
+// opengrepConfigCreator implements ToolConfigCreator for Opengrep
+type opengrepConfigCreator struct{}
 
-func (s *semgrepConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
-	configData, err := tools.GetSemgrepConfig(patterns)
+func (s *opengrepConfigCreator) CreateConfig(toolsConfigDir string, patterns []domain.PatternConfiguration) error {
+	configData, err := tools.GetOpengrepConfig(patterns)
 	if err != nil {
-		return fmt.Errorf("failed to create Semgrep config: %v", err)
+		return fmt.Errorf("failed to create Opengrep config: %v", err)
 	}
-	err = writeConfigFile(filepath.Join(toolsConfigDir, constants.SemgrepConfigFileName), configData)
+	err = writeConfigFile(filepath.Join(toolsConfigDir, constants.OpengrepConfigFileName), configData)
 	if err == nil {
-		fmt.Println("Semgrep configuration created based on Codacy settings")
+		fmt.Println("Opengrep configuration created based on Codacy settings")
 	}
 	return err
 }
 
-func (s *semgrepConfigCreator) GetConfigFileName() string { return constants.SemgrepConfigFileName }
-func (s *semgrepConfigCreator) GetToolName() string       { return "Semgrep" }
+func (s *opengrepConfigCreator) GetConfigFileName() string { return constants.OpengrepConfigFileName }
+func (s *opengrepConfigCreator) GetToolName() string       { return "Opengrep" }
 
 // lizardConfigCreator implements ToolConfigCreator for Lizard
 type lizardConfigCreator struct{}

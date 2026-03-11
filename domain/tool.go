@@ -28,7 +28,7 @@ const (
 	PMD7         string = "ed7e8287-707d-485a-a0cb-e211004432c2"
 	PyLint       string = "31677b6d-4ae0-4f56-8041-606a8d7a8e61"
 	DartAnalyzer string = "d203d615-6cf1-41f9-be5f-e2f660f7850f"
-	Semgrep      string = "6792c561-236d-41b7-ba5e-9d6bee0d548b"
+	Opengrep     string = "6792c561-236d-41b7-ba5e-9d6bee0d548b"
 	Lizard       string = "76348462-84b3-409a-90d3-955e90abfb87"
 	Revive       string = "bd81d1f4-1406-402d-9181-1274ee09f1aa"
 )
@@ -48,6 +48,6 @@ var SupportedToolsMetadata = map[string]ToolInfo{
 	Trivy:        {Name: "trivy", Priority: 0},
 	DartAnalyzer: {Name: "dartanalyzer", Priority: 0},
 	Lizard:       {Name: "lizard", Priority: 0},
-	Semgrep:      {Name: "semgrep", Priority: 0},
+	Opengrep:     {Name: "opengrep", Priority: 0},
 	Revive:       {Name: "revive", Priority: 0},
 }

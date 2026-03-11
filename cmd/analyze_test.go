@@ -449,7 +449,7 @@ func TestToolConfigFileNameMap(t *testing.T) {
 		"pmd":          constants.PMDConfigFileName,
 		"pylint":       constants.PylintConfigFileName,
 		"dartanalyzer": constants.DartAnalyzerConfigFileName,
-		"semgrep":      constants.SemgrepConfigFileName,
+		"opengrep":     constants.OpengrepConfigFileName,
 		"revive":       constants.ReviveConfigFileName,
 		"lizard":       constants.LizardConfigFileName,
 	}

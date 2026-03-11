@@ -12,7 +12,7 @@ const (
 	PMDConfigFileName          = "ruleset.xml"
 	PylintConfigFileName       = "pylint.rc"
 	DartAnalyzerConfigFileName = "analysis_options.yaml"
-	SemgrepConfigFileName      = "semgrep.yaml"
+	OpengrepConfigFileName     = "semgrep.yaml"
 	ReviveConfigFileName       = "revive.toml"
 	LizardConfigFileName       = "lizard.yaml"
 )
@@ -24,7 +24,7 @@ var ToolConfigFileNames = map[string]string{
 	"pmd":          PMDConfigFileName,
 	"pylint":       PylintConfigFileName,
 	"dartanalyzer": DartAnalyzerConfigFileName,
-	"semgrep":      SemgrepConfigFileName,
+	"opengrep":     OpengrepConfigFileName,
 	"revive":       ReviveConfigFileName,
 	"lizard":       LizardConfigFileName,
 }

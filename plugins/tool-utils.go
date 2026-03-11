@@ -159,8 +159,12 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 
 		// Handle download configuration for directly downloaded tools
 		if pluginConfig.Download.URLTemplate != "" {
-			// Get the mapped architecture
+			// Get the mapped architecture, with optional OS-specific override
 			mappedArch := GetMappedArch(pluginConfig.Download.ArchMapping, runtime.GOARCH)
+			osArchKey := fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH)
+			if override, ok := pluginConfig.Download.OSArchMapping[osArchKey]; ok {
+				mappedArch = override
+			}
 
 			// Get the mapped OS
 			mappedOS := GetMappedOS(pluginConfig.Download.OSMapping, runtime.GOOS)
