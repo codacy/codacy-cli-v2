@@ -15,7 +15,7 @@ tools:
       languages: [Python]
       extensions: [.py]
       files: []
-    - name: semgrep
+    - name: opengrep
       languages: [Java, Javascript, Python]
       extensions: [.java, .js, .jsm, .jsx, .mjs, .py, .vue]
       files: []

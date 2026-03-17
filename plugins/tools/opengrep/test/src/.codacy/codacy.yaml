@@ -1,4 +1,4 @@
 runtimes:
     - python@3.11.11
 tools:
-    - semgrep@1.78.0
+    - opengrep@1.16.2

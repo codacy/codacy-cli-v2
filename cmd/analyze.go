@@ -273,7 +273,7 @@ var versionedToolNames = map[string]map[int]string{
 
 var simpleToolAliases = map[string]string{
 	"lizard":  "Lizard",
-	"semgrep": "Semgrep",
+	"opengrep": "Opengrep",
 	"pylint":  "pylintpython3",
 	"trivy":   "Trivy",
 }
@@ -405,9 +405,9 @@ func runToolByName(toolName string, workDirectory string, pathsToCheck []string,
 	case "dartanalyzer":
 		binaryPath := tool.Binaries[tool.Runtime]
 		return tools.RunDartAnalyzer(workDirectory, tool.InstallDir, binaryPath, pathsToCheck, outputFile, outputFormat)
-	case "semgrep":
+	case "opengrep":
 		binaryPath := tool.Binaries[toolName]
-		return tools.RunSemgrep(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)
+		return tools.RunOpengrep(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)
 	case "lizard":
 		binaryPath := tool.Binaries[tool.Runtime]
 		return lizard.RunLizard(workDirectory, binaryPath, pathsToCheck, outputFile, outputFormat)

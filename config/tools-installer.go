@@ -7,6 +7,7 @@ import (
 	"codacy/cli-v2/utils"
 	"codacy/cli-v2/utils/logger"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -297,29 +298,43 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 		return fmt.Errorf("failed to create installation directory: %w", err)
 	}
 
-	// Extract based on file extension
-	logger.Debug("Extracting tool", logrus.Fields{
-		"tool":             toolInfo.Name,
-		"version":          toolInfo.Version,
-		"fileName":         fileName,
-		"extractDirectory": toolInfo.InstallDir,
-	})
+	isArchive := strings.HasSuffix(fileName, ".zip") || strings.HasSuffix(fileName, ".tar.gz") || strings.HasSuffix(fileName, ".tgz")
 
-	if strings.HasSuffix(fileName, ".zip") {
-		err = utils.ExtractZip(file.Name(), toolInfo.InstallDir)
+	if isArchive {
+		// Extract based on file extension
+		logger.Debug("Extracting tool", logrus.Fields{
+			"tool":             toolInfo.Name,
+			"version":          toolInfo.Version,
+			"fileName":         fileName,
+			"extractDirectory": toolInfo.InstallDir,
+		})
+
+		if strings.HasSuffix(fileName, ".zip") {
+			err = utils.ExtractZip(file.Name(), toolInfo.InstallDir)
+		} else {
+			err = utils.ExtractTarGz(file, toolInfo.InstallDir)
+		}
+
+		if err != nil {
+			return fmt.Errorf("failed to extract tool: %w", err)
+		}
+
+		// Make sure all binaries are executable
+		for _, binaryPath := range toolInfo.Binaries {
+			err = os.Chmod(filepath.Join(toolInfo.InstallDir, filepath.Base(binaryPath)), constants.DefaultDirPerms)
+			if err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("failed to make binary executable: %w", err)
+			}
+		}
 	} else {
-		err = utils.ExtractTarGz(file, toolInfo.InstallDir)
-	}
-
-	if err != nil {
-		return fmt.Errorf("failed to extract tool: %w", err)
-	}
-
-	// Make sure all binaries are executable
-	for _, binaryPath := range toolInfo.Binaries {
-		err = os.Chmod(filepath.Join(toolInfo.InstallDir, filepath.Base(binaryPath)), constants.DefaultDirPerms)
-		if err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("failed to make binary executable: %w", err)
+		// Bare binary — copy directly to the binary destination path
+		logger.Debug("Installing bare binary", logrus.Fields{
+			"tool":         toolInfo.Name,
+			"version":      toolInfo.Version,
+			"downloadPath": downloadPath,
+		})
+		if err = installBareBinary(downloadPath, toolInfo); err != nil {
+			return fmt.Errorf("failed to install binary: %w", err)
 		}
 	}
 
@@ -327,6 +342,44 @@ func installDownloadBasedTool(toolInfo *plugins.ToolInfo) error {
 		"tool":    toolInfo.Name,
 		"version": toolInfo.Version,
 	})
+	return nil
+}
+
+// installBareBinary copies a downloaded bare binary to its destination path and makes it executable.
+func installBareBinary(downloadPath string, toolInfo *plugins.ToolInfo) error {
+	var destPath string
+	for _, p := range toolInfo.Binaries {
+		destPath = p
+		break
+	}
+	if destPath == "" {
+		return fmt.Errorf("no binary destination defined for tool %s", toolInfo.Name)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(destPath), constants.DefaultDirPerms); err != nil {
+		return fmt.Errorf("failed to create binary directory: %w", err)
+	}
+
+	src, err := os.Open(downloadPath)
+	if err != nil {
+		return fmt.Errorf("failed to open downloaded binary: %w", err)
+	}
+	defer src.Close()
+
+	dst, err := os.Create(destPath)
+	if err != nil {
+		return fmt.Errorf("failed to create binary file: %w", err)
+	}
+	defer dst.Close()
+
+	if _, err = io.Copy(dst, src); err != nil {
+		return fmt.Errorf("failed to copy binary: %w", err)
+	}
+
+	if err = os.Chmod(destPath, constants.DefaultDirPerms); err != nil {
+		return fmt.Errorf("failed to make binary executable: %w", err)
+	}
+
 	return nil
 }
 

@@ -55,7 +55,7 @@ var sarifShortNameMap = map[string]string{
 	"Trivy":               "trivy",
 	"Pylint":              "pylintpython3",
 	"dartanalyzer":        "dartanalyzer",
-	"Semgrep":             "semgrep",
+	"Opengrep":            "opengrep",
 	"Lizard":              "lizard",
 	"revive":              "revive",
 }
