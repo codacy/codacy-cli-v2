@@ -188,7 +188,7 @@
         "driver": {
           "name": "Opengrep OSS",
           "rules": null,
-          "semanticVersion": "1.16.2"
+          "semanticVersion": "1.16.4"
         }
       }
     }
