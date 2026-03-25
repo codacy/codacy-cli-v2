@@ -1,4 +1,4 @@
 runtimes:
-    - go@1.22.3
+    - go@1.24.13
 tools:
     - revive@1.7.0
