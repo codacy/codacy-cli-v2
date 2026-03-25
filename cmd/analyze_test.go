@@ -332,49 +332,81 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 	}()
 
 	tests := []struct {
-		name             string
-		toolName         string
-		cliLocalMode     bool
-		apiToken         string
-		configFileExists bool
-		expectError      bool
-		description      string
+		name                          string
+		toolName                      string
+		cliLocalMode                  bool
+		apiToken                      string
+		configFileExists              bool
+		repoRootConfigExists          bool
+		expectError                   bool
+		expectConfigCreatedInToolsDir bool
+		description                   string
 	}{
 		{
-			name:             "tool_without_config_file",
-			toolName:         "unsupported-tool",
-			cliLocalMode:     false,
-			apiToken:         "test-token",
-			configFileExists: false,
-			expectError:      false,
-			description:      "Tool that doesn't use config files should return without error",
+			name:                          "tool_without_config_file",
+			toolName:                      "unsupported-tool",
+			cliLocalMode:                  false,
+			apiToken:                      "test-token",
+			configFileExists:              false,
+			repoRootConfigExists:          false,
+			expectError:                   false,
+			expectConfigCreatedInToolsDir: false,
+			description:                   "Tool that doesn't use config files should return without error",
 		},
 		{
-			name:             "config_file_exists",
-			toolName:         "eslint",
-			cliLocalMode:     false,
-			apiToken:         "test-token",
-			configFileExists: true,
-			expectError:      false,
-			description:      "When config file exists, should find it successfully",
+			name:                          "config_file_exists_in_tools_dir",
+			toolName:                      "eslint",
+			cliLocalMode:                  false,
+			apiToken:                      "test-token",
+			configFileExists:              true,
+			repoRootConfigExists:          false,
+			expectError:                   false,
+			expectConfigCreatedInToolsDir: true,
+			description:                   "When config file exists in tools-configs, should find it successfully",
 		},
 		{
-			name:             "remote_mode_without_token_no_config",
-			toolName:         "eslint",
-			cliLocalMode:     false,
-			apiToken:         "",
-			configFileExists: false,
-			expectError:      false,
-			description:      "Remote mode without token should show appropriate message",
+			name:                          "remote_mode_without_token_no_config",
+			toolName:                      "eslint",
+			cliLocalMode:                  false,
+			apiToken:                      "",
+			configFileExists:              false,
+			repoRootConfigExists:          false,
+			expectError:                   false,
+			expectConfigCreatedInToolsDir: false,
+			description:                   "Remote mode without token and no config anywhere should not create defaults",
 		},
 		{
-			name:             "local_mode_no_config",
-			toolName:         "eslint",
-			cliLocalMode:     true,
-			apiToken:         "",
-			configFileExists: false,
-			expectError:      false,
-			description:      "Local mode should create config file if tools-configs directory exists",
+			name:                          "local_mode_no_config",
+			toolName:                      "eslint",
+			cliLocalMode:                  true,
+			apiToken:                      "",
+			configFileExists:              false,
+			repoRootConfigExists:          false,
+			expectError:                   false,
+			expectConfigCreatedInToolsDir: true,
+			description:                   "Local mode with no config anywhere should create a default config in tools-configs",
+		},
+		{
+			name:                          "local_mode_config_exists_in_repo_root",
+			toolName:                      "eslint",
+			cliLocalMode:                  true,
+			apiToken:                      "",
+			configFileExists:              false,
+			repoRootConfigExists:          true,
+			expectError:                   false,
+			expectConfigCreatedInToolsDir: false,
+			description:                   "Local mode should not create default config when user's own config exists in repo root",
+		},
+		{
+			name:                          "remote_mode_with_token_config_exists_in_repo_root",
+			toolName:                      "eslint",
+			cliLocalMode:                  false,
+			apiToken:                      "test-token",
+			configFileExists:              false,
+			repoRootConfigExists:          true,
+			expectError:                   false,
+			expectConfigCreatedInToolsDir: false,
+			description:                   "Remote mode should not create default config when user's own config exists in repo root",
 		},
 	}
 
@@ -392,7 +424,7 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 			// Mock config to use our temporary directory BEFORE creating files
 			config.Config = *config.NewConfigType(tmpDir, tmpDir, tmpDir)
 
-			// Create config file if needed - using the same path logic as the function under test
+			// Create config file in tools-configs if needed
 			if tt.configFileExists && constants.ToolConfigFileNames[tt.toolName] != "" {
 				// Use config.Config.ToolsConfigDirectory() to get the exact same path the function will use
 				toolsConfigDir := config.Config.ToolsConfigDirectory()
@@ -406,6 +438,13 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 				// Ensure the file was created and can be found
 				_, err = os.Stat(configPath)
 				require.NoError(t, err, "Config file should exist at %s", configPath)
+			}
+
+			// Create config file in repo root if needed
+			if tt.repoRootConfigExists && constants.ToolConfigFileNames[tt.toolName] != "" {
+				repoRootConfigPath := filepath.Join(config.Config.RepositoryDirectory(), constants.ToolConfigFileNames[tt.toolName])
+				err = os.WriteFile(repoRootConfigPath, []byte("user's own config"), constants.DefaultFilePerms)
+				require.NoError(t, err)
 			}
 
 			// Setup initFlags
@@ -423,6 +462,30 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 			// Execute the function
 			err = checkIfConfigExistsAndIsNeeded(tt.toolName, tt.cliLocalMode)
 
+			// Verify results
+			if tt.expectError {
+				assert.Error(t, err, tt.description)
+			} else {
+				assert.NoError(t, err, tt.description)
+			}
+			// Verify whether a config was created in .codacy/tools-configs/
+			if constants.ToolConfigFileNames[tt.toolName] != "" {
+				toolsConfigDir := config.Config.ToolsConfigDirectory()
+				generatedConfigPath := filepath.Join(toolsConfigDir, constants.ToolConfigFileNames[tt.toolName])
+				_, statErr := os.Stat(generatedConfigPath)
+				configCreated := statErr == nil
+
+				if tt.expectConfigCreatedInToolsDir {
+					assert.True(t, configCreated,
+						"%s: expected a config file to exist in tools-configs at %s",
+						tt.description, generatedConfigPath)
+				} else {
+					assert.True(t, os.IsNotExist(statErr),
+						"%s: expected NO config file to be created in tools-configs, but found one at %s",
+						tt.description, generatedConfigPath)
+				}
+			}
+
 			// Clean up any files that might have been created by the function under test
 			if !tt.configFileExists && constants.ToolConfigFileNames[tt.toolName] != "" {
 				toolsConfigDir := config.Config.ToolsConfigDirectory()
@@ -430,13 +493,6 @@ func TestCheckIfConfigExistsAndIsNeeded(t *testing.T) {
 				if _, statErr := os.Stat(configPath); statErr == nil {
 					os.Remove(configPath)
 				}
-			}
-
-			// Verify results
-			if tt.expectError {
-				assert.Error(t, err, tt.description)
-			} else {
-				assert.NoError(t, err, tt.description)
 			}
 		})
 	}
