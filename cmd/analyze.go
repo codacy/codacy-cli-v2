@@ -272,10 +272,10 @@ var versionedToolNames = map[string]map[int]string{
 }
 
 var simpleToolAliases = map[string]string{
-	"lizard":  "Lizard",
+	"lizard":   "Lizard",
 	"opengrep": "Opengrep",
-	"pylint":  "pylintpython3",
-	"trivy":   "Trivy",
+	"pylint":   "pylintpython3",
+	"trivy":    "Trivy",
 }
 
 func getToolName(toolName string, version string) string {
@@ -328,8 +328,15 @@ func checkIfConfigExistsAndIsNeeded(toolName string, cliLocalMode bool) error {
 
 	// Check if the config file exists
 	if _, err := os.Stat(toolConfigPath); os.IsNotExist(err) {
-		// Config file does not exist - create it if we have the means to do so
-		if (!cliLocalMode && initFlags.ApiToken != "") || cliLocalMode {
+		repoConfigPath := filepath.Join(config.Config.RepositoryDirectory(), configFileName)
+		if _, repoErr := os.Stat(repoConfigPath); repoErr == nil {
+			// Config not in .codacy/tools-configs/ - check if it exists in the repo root
+			logger.Info("Config file found in repository root for tool, skipping config creation", logrus.Fields{
+				"tool":           toolName,
+				"toolConfigPath": repoConfigPath,
+			})
+			return nil
+		} else if (!cliLocalMode && initFlags.ApiToken != "") || cliLocalMode {
 			if err := configsetup.CreateToolConfigurationFile(toolName, initFlags); err != nil {
 				return fmt.Errorf("failed to create config file for tool %s: %w", toolName, err)
 			}
