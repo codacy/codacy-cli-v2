@@ -3,6 +3,8 @@ package cmd
 import (
 	"errors"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -10,24 +12,28 @@ import (
 )
 
 type sbomTestState struct {
-	apiToken string
-	provider string
-	org      string
-	repoName string
-	env      string
-	tag    string
-	format string
+	apiToken   string
+	provider   string
+	org        string
+	repoName   string
+	env        string
+	tag        string
+	format     string
+	baseURL    string
+	httpClient httpDoer
 }
 
 func saveSBOMState() sbomTestState {
 	return sbomTestState{
-		apiToken: sbomAPIToken,
-		provider: sbomProvider,
-		org:      sbomOrg,
-		repoName: sbomRepoName,
-		env:      sbomEnv,
-		tag:    sbomTag,
-		format:   sbomFormat,
+		apiToken:   sbomAPIToken,
+		provider:   sbomProvider,
+		org:        sbomOrg,
+		repoName:   sbomRepoName,
+		env:        sbomEnv,
+		tag:        sbomTag,
+		format:     sbomFormat,
+		baseURL:    sbomBaseURL,
+		httpClient: sbomHTTPClient,
 	}
 }
 
@@ -39,6 +45,8 @@ func (s sbomTestState) restore() {
 	sbomEnv = s.env
 	sbomTag = s.tag
 	sbomFormat = s.format
+	sbomBaseURL = s.baseURL
+	sbomHTTPClient = s.httpClient
 }
 
 // setSBOMDefaults sets the minimum required SBOM globals for tests
@@ -50,6 +58,7 @@ func setSBOMDefaults() {
 	sbomEnv = ""
 	sbomTag = ""
 	sbomFormat = "cyclonedx"
+	sbomBaseURL = ""
 }
 
 func TestParseImageRef(t *testing.T) {
@@ -142,7 +151,6 @@ func TestExecuteUploadSBOM_TrivyGenerationFails(t *testing.T) {
 	assert.Equal(t, 2, exitCode)
 }
 
-
 func TestExecuteUploadSBOM_TrivyCalledWithCorrectFormat(t *testing.T) {
 	formats := []string{"cyclonedx", "spdx-json"}
 
@@ -161,7 +169,7 @@ func TestExecuteUploadSBOM_TrivyCalledWithCorrectFormat(t *testing.T) {
 				RunWithStderrFunc: func(_ string, args []string, _ io.Writer) error {
 					for i, arg := range args {
 						if arg == "-o" && i+1 < len(args) {
-							os.WriteFile(args[i+1], []byte(`{}`), 0644)
+							_ = os.WriteFile(args[i+1], []byte(`{}`), 0644)
 							break
 						}
 					}
@@ -169,11 +177,19 @@ func TestExecuteUploadSBOM_TrivyCalledWithCorrectFormat(t *testing.T) {
 				},
 			}
 			commandRunner = mockRunner
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusNoContent)
+			}))
+			defer server.Close()
+
 			setSBOMDefaults()
 			sbomFormat = format
+			sbomBaseURL = server.URL
+			sbomHTTPClient = server.Client()
 
-			// Will fail at upload (no real API), but we can verify Trivy args
-			_ = executeUploadSBOM("alpine:latest")
+			exitCode := executeUploadSBOM("alpine:latest")
+			assert.Equal(t, 0, exitCode)
 
 			assert.Len(t, mockRunner.Calls, 1)
 			assert.Contains(t, mockRunner.Calls[0].Args, "--format")
@@ -182,8 +198,65 @@ func TestExecuteUploadSBOM_TrivyCalledWithCorrectFormat(t *testing.T) {
 	}
 }
 
+func TestExecuteUploadSBOM_DigestImagePassedCorrectly(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+	ss := saveSBOMState()
+	defer ss.restore()
+
+	getTrivyPathResolver = func() (string, error) {
+		return "/usr/local/bin/trivy", nil
+	}
+
+	var capturedImageRef string
+	mockRunner := &MockCommandRunner{
+		RunWithStderrFunc: func(_ string, args []string, _ io.Writer) error {
+			capturedImageRef = args[len(args)-1]
+			for i, arg := range args {
+				if arg == "-o" && i+1 < len(args) {
+					os.WriteFile(args[i+1], []byte(`{}`), 0644)
+					break
+				}
+			}
+			return nil
+		},
+	}
+	commandRunner = mockRunner
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	setSBOMDefaults()
+	sbomBaseURL = server.URL
+	sbomHTTPClient = server.Client()
+
+	exitCode := executeUploadSBOM("nginx@sha256:abc123def456")
+	assert.Equal(t, 0, exitCode)
+	assert.Equal(t, "nginx@sha256:abc123def456", capturedImageRef)
+}
+
+func TestExecuteUploadSBOM_DigestWithTagRejected(t *testing.T) {
+	state := saveState()
+	defer state.restore()
+	ss := saveSBOMState()
+	defer ss.restore()
+
+	setSBOMDefaults()
+	sbomTag = "latest"
+
+	exitCode := executeUploadSBOM("nginx@sha256:abc123def456")
+	assert.Equal(t, 2, exitCode)
+}
+
 func TestUploadSBOMToCodacy_FileNotFound(t *testing.T) {
-	err := uploadSBOMToCodacy("/nonexistent/file.json", "myapp", "latest")
+	params := sbomUploadParams{
+		provider: "gh",
+		org:      "test-org",
+		apiToken: "test-token",
+	}
+	err := uploadSBOMToCodacy("/nonexistent/file.json", "myapp", "latest", params)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to open SBOM file")
 }

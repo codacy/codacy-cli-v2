@@ -442,5 +442,3 @@ func (c *ConfigType) GetCliMode() (string, error) {
 
 	return currentCliMode, nil
 }
-
-

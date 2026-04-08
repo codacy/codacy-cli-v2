@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"codacy/cli-v2/utils/logger"
 
@@ -25,8 +26,16 @@ var (
 	sbomTag       string
 	sbomRepoName  string
 	sbomEnv       string
-	sbomFormat string
+	sbomFormat    string
+	sbomBaseURL   string
+
+	sbomHTTPClient httpDoer = &http.Client{Timeout: 5 * time.Minute}
 )
+
+// httpDoer abstracts the Do method of http.Client for testing.
+type httpDoer interface {
+	Do(req *http.Request) (*http.Response, error)
+}
 
 func init() {
 	uploadSBOMCmd.Flags().StringVarP(&sbomAPIToken, "api-token", "a", "", "API token for Codacy API (required)")
@@ -80,33 +89,71 @@ func executeUploadSBOM(imageRef string) int {
 	}
 
 	imageName, tag := parseImageRef(imageRef)
+	isDigest := strings.Contains(imageRef, "@")
+
 	if sbomTag != "" {
+		if isDigest {
+			color.Red("Error: --tag cannot be used with digest references (image@sha256:...)")
+			return 2
+		}
 		tag = sbomTag
 	}
 	sbomImageName = imageName
 
+	var effectiveImageRef string
+	if isDigest {
+		effectiveImageRef = fmt.Sprintf("%s@%s", imageName, tag)
+	} else {
+		effectiveImageRef = fmt.Sprintf("%s:%s", imageName, tag)
+	}
+
 	logger.Info("Starting SBOM upload", logrus.Fields{
-		"image":    imageRef,
+		"image":    effectiveImageRef,
 		"provider": sbomProvider,
 		"org":      sbomOrg,
 	})
 
-	// Generate SBOM with Trivy
+	sbomPath, err := generateSBOM(effectiveImageRef)
+	if err != nil {
+		return 2
+	}
+	defer os.Remove(sbomPath)
+
+	fmt.Printf("Uploading SBOM to Codacy (org: %s/%s)...\n", sbomProvider, sbomOrg)
+	params := sbomUploadParams{
+		provider: sbomProvider,
+		org:      sbomOrg,
+		apiToken: sbomAPIToken,
+		repoName: sbomRepoName,
+		env:      sbomEnv,
+		baseURL:  sbomBaseURL,
+	}
+	if err := uploadSBOMToCodacy(sbomPath, sbomImageName, tag, params); err != nil {
+		logger.Error("Failed to upload SBOM", logrus.Fields{"error": err.Error()})
+		color.Red("Error: Failed to upload SBOM: %v", err)
+		return 1
+	}
+
+	color.Green("Successfully uploaded SBOM for %s", effectiveImageRef)
+	return 0
+}
+
+// generateSBOM runs Trivy to generate an SBOM file and returns the path to it.
+func generateSBOM(imageRef string) (string, error) {
 	trivyPath, err := getTrivyPath()
 	if err != nil {
 		handleTrivyNotFound(err)
-		return 2
+		return "", err
 	}
 
 	tmpFile, err := os.CreateTemp("", "codacy-sbom-*")
 	if err != nil {
 		logger.Error("Failed to create temp file", logrus.Fields{"error": err.Error()})
 		color.Red("Error: Failed to create temporary file: %v", err)
-		return 2
+		return "", err
 	}
 	tmpFile.Close()
 	sbomPath := tmpFile.Name()
-	defer os.Remove(sbomPath)
 
 	fmt.Printf("Generating SBOM for image: %s\n", imageRef)
 	args := []string{"image", "--format", sbomFormat, "-o", sbomPath, imageRef}
@@ -120,20 +167,11 @@ func executeUploadSBOM(imageRef string) int {
 			color.Red("Error: Failed to generate SBOM: %v", err)
 		}
 		logger.Error("Trivy SBOM generation failed", logrus.Fields{"error": err.Error()})
-		return 2
+		os.Remove(sbomPath)
+		return "", err
 	}
 	fmt.Println("SBOM generated successfully")
-
-	// Upload SBOM to Codacy
-	fmt.Printf("Uploading SBOM to Codacy (org: %s/%s)...\n", sbomProvider, sbomOrg)
-	if err := uploadSBOMToCodacy(sbomPath, sbomImageName, tag); err != nil {
-		logger.Error("Failed to upload SBOM", logrus.Fields{"error": err.Error()})
-		color.Red("Error: Failed to upload SBOM: %v", err)
-		return 1
-	}
-
-	color.Green("Successfully uploaded SBOM for %s:%s", sbomImageName, tag)
-	return 0
+	return sbomPath, nil
 }
 
 // parseImageRef splits an image reference into name and tag.
@@ -162,38 +200,31 @@ func parseImageRef(imageRef string) (string, string) {
 	return imageRef, "latest"
 }
 
-func uploadSBOMToCodacy(sbomPath, imageName, tag string) error {
-	url := fmt.Sprintf("https://app.codacy.com/api/v3/organizations/%s/%s/image-sboms",
-		sbomProvider, sbomOrg)
+type sbomUploadParams struct {
+	provider string
+	org      string
+	apiToken string
+	repoName string
+	env      string
+	baseURL  string
+}
+
+func (p sbomUploadParams) uploadURL() string {
+	base := p.baseURL
+	if base == "" {
+		base = "https://app.codacy.com"
+	}
+	return fmt.Sprintf("%s/api/v3/organizations/%s/%s/image-sboms", base, p.provider, p.org)
+}
+
+func uploadSBOMToCodacy(sbomPath, imageName, tag string, params sbomUploadParams) error {
+	url := params.uploadURL()
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	// Add the SBOM file
-	sbomFile, err := os.Open(sbomPath)
-	if err != nil {
-		return fmt.Errorf("failed to open SBOM file: %w", err)
-	}
-	defer sbomFile.Close()
-
-	part, err := writer.CreateFormFile("sbom", filepath.Base(sbomPath))
-	if err != nil {
-		return fmt.Errorf("failed to create form file: %w", err)
-	}
-	if _, err := io.Copy(part, sbomFile); err != nil {
-		return fmt.Errorf("failed to write SBOM to form: %w", err)
-	}
-
-	// Add required fields
-	writer.WriteField("imageName", imageName)
-	writer.WriteField("tag", tag)
-
-	// Add optional fields
-	if sbomRepoName != "" {
-		writer.WriteField("repositoryName", sbomRepoName)
-	}
-	if sbomEnv != "" {
-		writer.WriteField("environment", sbomEnv)
+	if err := buildSBOMMultipartForm(writer, sbomPath, imageName, tag, params); err != nil {
+		return err
 	}
 
 	if err := writer.Close(); err != nil {
@@ -206,9 +237,9 @@ func uploadSBOMToCodacy(sbomPath, imageName, tag string) error {
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("api-token", sbomAPIToken)
+	req.Header.Set("api-token", params.apiToken)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := sbomHTTPClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}
@@ -217,6 +248,51 @@ func uploadSBOMToCodacy(sbomPath, imageName, tag string) error {
 	if resp.StatusCode != http.StatusNoContent {
 		respBody, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	return nil
+}
+
+// buildSBOMMultipartForm populates the multipart form with the SBOM file and metadata fields.
+func buildSBOMMultipartForm(writer *multipart.Writer, sbomPath, imageName, tag string, params sbomUploadParams) error {
+	if err := addSBOMFile(writer, sbomPath); err != nil {
+		return err
+	}
+
+	fields := map[string]string{
+		"imageName": imageName,
+		"tag":       tag,
+	}
+	if params.repoName != "" {
+		fields["repositoryName"] = params.repoName
+	}
+	if params.env != "" {
+		fields["environment"] = params.env
+	}
+
+	for name, value := range fields {
+		if err := writer.WriteField(name, value); err != nil {
+			return fmt.Errorf("failed to write %s field: %w", name, err)
+		}
+	}
+
+	return nil
+}
+
+// addSBOMFile adds the SBOM file to the multipart form.
+func addSBOMFile(writer *multipart.Writer, sbomPath string) error {
+	sbomFile, err := os.Open(sbomPath)
+	if err != nil {
+		return fmt.Errorf("failed to open SBOM file: %w", err)
+	}
+	defer sbomFile.Close()
+
+	part, err := writer.CreateFormFile("sbom", filepath.Base(sbomPath))
+	if err != nil {
+		return fmt.Errorf("failed to create form file: %w", err)
+	}
+	if _, err := io.Copy(part, sbomFile); err != nil {
+		return fmt.Errorf("failed to write SBOM to form: %w", err)
 	}
 
 	return nil
