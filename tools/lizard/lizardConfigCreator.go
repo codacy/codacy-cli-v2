@@ -19,7 +19,7 @@ func CreateLizardConfig(toolsConfigDir string, patterns []domain.PatternConfigur
 	for _, pattern := range patterns {
 		patternDefinition := pattern.PatternDefinition
 		metricType := getMetricTypeFromPatternId(patternDefinition.Id)
-		
+
 		if metricType == "" {
 			fmt.Printf("Warning: Invalid pattern ID format: %s\n", patternDefinition.Id)
 			continue

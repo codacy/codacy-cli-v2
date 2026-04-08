@@ -84,6 +84,7 @@ func shouldSkipValidation(cmdName string) bool {
 		"codacy-cli", // root command when called without subcommands
 		"update",
 		"container-scan", // container scanning doesn't need codacy.yaml
+		"upload-sbom",    // SBOM upload doesn't need codacy.yaml
 	}
 
 	for _, skipCmd := range skipCommands {
