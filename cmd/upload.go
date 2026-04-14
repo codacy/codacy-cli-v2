@@ -293,7 +293,16 @@ func getPatternByID(patterns []domain.PatternConfiguration, patternID string) *d
 		})
 	}
 	for _, p := range sarifPatterns {
-		if strings.EqualFold(p.ID, patternID) {
+		//Only for PMD v6 or PMD v7 because the patternID is only part
+		//of the original ruleset name and the prefix shouldn't be part of it
+		//because the comparison will be always negative
+		//So we need to clean that prefix first.
+		cleanPMDPrefix := strings.TrimPrefix(patternID, "PMD_")
+		cleanPatternID := strings.TrimPrefix(cleanPMDPrefix, "PMD7_")
+
+		lowerID := strings.ToLower(p.ID)
+		lowerPattern := strings.ToLower(cleanPatternID)
+		if lowerID == lowerPattern || strings.Contains(lowerID, lowerPattern) {
 			return &p
 		}
 	}

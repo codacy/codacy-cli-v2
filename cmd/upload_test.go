@@ -3,6 +3,7 @@ package cmd
 import (
 	"path/filepath"
 	"testing"
+	"codacy/cli-v2/domain"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -126,4 +127,29 @@ func TestGetToolShortName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetPatternByID(t *testing.T) {
+	patterns := []domain.PatternConfiguration{
+		{
+			PatternDefinition: domain.PatternDefinition{Id: "PMD7_category_java_design_NPathComplexity", Category: "BestPractice", Level: "Warning", Description: "Exact match"},
+		},
+	}
+
+	t.Run("exact match returns pattern", func(t *testing.T) {
+		result := getPatternByID(patterns, "PMD7_category_java_design_NPathComplexity")
+		assert.NotNil(t, result)
+		assert.Equal(t, "PMD7_category_java_design_NPathComplexity", result.ID)
+	})
+
+	t.Run("pmd7 prefix match returns pattern", func(t *testing.T) {
+		result := getPatternByID(patterns, "PMD7_NPathComplexity")
+		assert.NotNil(t, result)
+		assert.Equal(t, "PMD7_category_java_design_NPathComplexity", result.ID)
+	})
+
+	t.Run("no matching pattern returns nil", func(t *testing.T) {
+		result := getPatternByID(patterns, "UNKNOWN_PATTERN")
+		assert.Nil(t, result)
+	})
 }
