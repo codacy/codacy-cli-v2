@@ -18,7 +18,6 @@ var DefaultPatterns = []string{
 	"E0113",
 	"E0114",
 	"E0115",
-	"E0116",
 	"E0117",
 	"E0202",
 	"E0203",
