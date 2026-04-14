@@ -131,7 +131,7 @@ func TestGetToolShortName(t *testing.T) {
 func TestGetPatternByID(t *testing.T) {
 	patterns := []domain.PatternConfiguration{
 		{
-			PatternDefinition: domain.PatternDefinition{Id: "PMD7_category_java_design_NPathComplexity", Category: "BestPractice", Level: "Warning", Description: "Exact match"},
+			PatternDefinition: domain.PatternDefinition{Id: "PMD7_category_java_design_NPathComplexity", Category: "BestPractice", Level: "Warning", Description: "Exact match"}
 		}
 	}
 
