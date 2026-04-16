@@ -71,11 +71,27 @@ func getToolShortName(fullName string) string {
 func getRelativePath(baseDir string, fullURI string) string {
 
 	localPath := fullURI
+
+	// GitHub Actions workaround
+	baseDirIndicators := []string{
+		"/home/runner/work/",  // Linux
+		"/Users/runner/work/", // macOS
+		"/__w/",               // Docker Containers
+		"\\a\\",               // Windows (D:\a\)
+	}
+
+	for _, sub := range baseDirIndicators {
+		if strings.Contains(baseDir, sub) {
+			// We are likely in a GitHub Runner
+			localPath = filepath.Join(baseDir, fullURI)
+		}
+	}
 	u, err := url.Parse(fullURI)
 	if err == nil && u.Scheme == "file" {
 		// url.Path extracts the local path component correctly
 		localPath = u.Path
 	}
+
 	relativePath, err := filepath.Rel(baseDir, localPath)
 	if err != nil {
 		// Fallback to the normalized absolute path if calculation fails
