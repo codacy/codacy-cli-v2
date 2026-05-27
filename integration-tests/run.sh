@@ -149,6 +149,21 @@ normalize_yaml_config() {
   fi
 }
 
+normalize_codacy_manifest() {
+  local file=$1
+  awk '
+    /^runtimes:/ { in_runtimes=1; in_tools=0; next }
+    /^tools:/ { in_runtimes=0; in_tools=1; next }
+    /^[^[:space:]-].*:/ { in_runtimes=0; in_tools=0 }
+    (in_runtimes || in_tools) && /^[[:space:]]*-[[:space:]]*/ {
+      value=$0
+      sub(/^[[:space:]]*-[[:space:]]*/, "", value)
+      sub(/@.*/, "", value)
+      print value
+    }
+  ' "$file" | sort
+}
+
 # Normalize ESLint configuration files (.mjs/.js)
 normalize_eslint_config() {
   local file=$1
@@ -509,6 +524,28 @@ compare_files() {
       echo "Actual should be: $actual_file"
       exit 1
     fi
+
+    if [[ "$label" == Test\ init-with-token* ]] && [[ "$filename" == "semgrep.yaml" || "$filename" == "opengrep.yaml" ]]; then
+      echo "ℹ️ Skipping strict comparison for $label/$filename (remote rules may change)"
+      continue
+    fi
+
+    if [[ "$label" == Test\ init-with-token* ]] && [[ "$filename" == "codacy.yaml" ]]; then
+      if diff <(normalize_codacy_manifest "$file") <(normalize_codacy_manifest "$actual_file") >/dev/null 2>&1; then
+        echo "✅ $label/$filename matches expected (ignoring tool/runtime versions)"
+      else
+        echo "❌ $label/$filename does not match expected (ignoring tool/runtime versions)"
+        echo "=== Expected (normalized) ==="
+        normalize_codacy_manifest "$file"
+        echo "=== Actual (normalized) ==="
+        normalize_codacy_manifest "$actual_file"
+        echo "=== Diff ==="
+        diff <(normalize_codacy_manifest "$file") <(normalize_codacy_manifest "$actual_file") || true
+        echo "==================="
+        exit 1
+      fi
+      continue
+    fi
     
     if diff <(normalize_config "$file") <(normalize_config "$actual_file") >/dev/null 2>&1; then
       echo "✅ $label/$filename matches expected"
@@ -657,4 +694,3 @@ run_init_test "$SCRIPT_DIR/init-with-token" "init-with-token" "true"
 run_config_discover_test "$SCRIPT_DIR/config-discover" "config-discover"
 
 echo "All tests completed successfully! 🎉"
-
