@@ -182,9 +182,24 @@ func (c *ConfigType) Tools() map[string]*plugins.ToolInfo {
 	return c.tools
 }
 
+// toolNameAliases maps legacy tool names to their current equivalents
+var toolNameAliases = map[string]string{
+	"semgrep": "opengrep",
+}
+
 func (c *ConfigType) AddTools(configs []plugins.ToolConfig) error {
 	// Get the plugin manager to access tool configurations
 	pluginManager := plugins.GetPluginManager()
+
+	// Resolve any legacy tool name aliases on a copy to avoid mutating the caller's slice
+	resolved := make([]plugins.ToolConfig, len(configs))
+	copy(resolved, configs)
+	for i := range resolved {
+		if alias, ok := toolNameAliases[resolved[i].Name]; ok {
+			resolved[i].Name = alias
+		}
+	}
+	configs = resolved
 
 	// Ensure all required runtimes are present before processing tools
 	for _, toolConfig := range configs {
@@ -255,6 +270,10 @@ func (c *ConfigType) AddTools(configs []plugins.ToolConfig) error {
 
 // AddToolWithDefaultVersion adds a tool with its default version to the configuration
 func (c *ConfigType) AddToolWithDefaultVersion(toolName string) error {
+	if alias, ok := toolNameAliases[toolName]; ok {
+		toolName = alias
+	}
+
 	// Get the default version for the tool from plugins
 	defaultVersions := plugins.GetToolVersions()
 	version, ok := defaultVersions[toolName]

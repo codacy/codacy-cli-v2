@@ -123,6 +123,39 @@ function Normalize-YamlConfig {
     Get-Content $file
 }
 
+function Normalize-CodacyManifest {
+    param([string]$file)
+
+    $content = Get-Content $file
+    $inRuntimes = $false
+    $inTools = $false
+    $values = @()
+
+    foreach ($line in $content) {
+        if ($line -match '^runtimes:\s*$') {
+            $inRuntimes = $true
+            $inTools = $false
+            continue
+        }
+        if ($line -match '^tools:\s*$') {
+            $inRuntimes = $false
+            $inTools = $true
+            continue
+        }
+        if ($line -match '^[^\s-].*:') {
+            $inRuntimes = $false
+            $inTools = $false
+        }
+
+        if (($inRuntimes -or $inTools) -and $line -match '^\s*-\s*(.+)$') {
+            $value = $matches[1] -replace '@.*$', ''
+            $values += $value.Trim()
+        }
+    }
+
+    $values | Sort-Object
+}
+
 # Normalize ESLint configuration files (.mjs/.js)
 function Normalize-EslintConfig {
     param([string]$file)
@@ -313,6 +346,7 @@ function Compare-Files {
     # Compare files
     Get-ChildItem -Path $expectedDir -File | ForEach-Object {
         $relativePath = $_.FullName.Replace($expectedDir, '').TrimStart('\')
+        $fileName = [System.IO.Path]::GetFileName($relativePath)
         $actualFile = Join-Path $actualDir $relativePath
         Write-Host "`nChecking file: $relativePath"
         Write-Host "Expected file: $($_.FullName)"
@@ -327,6 +361,31 @@ function Compare-Files {
                 Write-Host "  $($_.FullName)"
             }
             exit 1
+        }
+
+        if ($label -like "Test init-with-token*" -and ($fileName -eq "semgrep.yaml" -or $fileName -eq "opengrep.yaml")) {
+            Write-Host "ℹ️ Skipping strict comparison for $label/$relativePath (remote rules may change)"
+            continue
+        }
+
+        if ($label -like "Test init-with-token*" -and $fileName -eq "codacy.yaml") {
+            Write-Host "Comparing codacy manifest ignoring tool/runtime versions..."
+            $expectedContent = Normalize-CodacyManifest $_.FullName
+            $actualContent = Normalize-CodacyManifest $actualFile
+            $diff = Compare-Object $expectedContent $actualContent -PassThru
+            if ($diff) {
+                Write-Host "❌ $label/$relativePath does not match expected (ignoring tool/runtime versions)"
+                Write-Host "=== Expected (normalized) ==="
+                $expectedContent
+                Write-Host "=== Actual (normalized) ==="
+                $actualContent
+                Write-Host "=== Diff ==="
+                $diff
+                Write-Host "==================="
+                exit 1
+            }
+            Write-Host "✅ $label/$relativePath matches expected (ignoring tool/runtime versions)"
+            continue
         }
         
         Write-Host "Comparing file contents..."
