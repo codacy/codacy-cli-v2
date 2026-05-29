@@ -1,7 +1,7 @@
 class CodacyCliV2 < Formula
   version "1.0.0-main.377.75d97e9"
   url "https://raw.githubusercontent.com/codacy/codacy-cli-v2/1.0.0-main.377.sha.75d97e9/codacy-cli.sh"
-  sha256 "def852e43b05871b1a5e14dc8fb32015d89e4f4ed33fc3de8570738e6bd180f2"
+  sha256 "1bb82234e74e5385ae6a6e93cb61cbc3356fdffdeb36f907686b88679c0cd82c"
 
   def install
     bin.install "codacy-cli.sh" => "codacy-cli"
