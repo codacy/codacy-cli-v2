@@ -5,6 +5,7 @@ import (
 	"codacy/cli-v2/config"
 	"codacy/cli-v2/domain"
 	"codacy/cli-v2/plugins"
+	"codacy/cli-v2/utils/httpclient"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -251,7 +252,11 @@ func resultsFinalWithProjectToken(commitUUID string, projectToken string) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("project-token", projectToken)
 
-	client := &http.Client{}
+	client, err := httpclient.New()
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -269,7 +274,11 @@ func resultsFinalWithAPIToken(commitUUID string, apiToken string, provider strin
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("api-token", apiToken)
 
-	client := &http.Client{}
+	client, err := httpclient.New()
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -341,7 +350,12 @@ func sendResultsWithProjectToken(payload []map[string]interface{}, commitUUID st
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("project-token", projectToken)
 
-	resp, err := http.DefaultClient.Do(req)
+	client, err := httpclient.New()
+	if err != nil {
+		fmt.Printf("Error creating http client: %v\n", err)
+		os.Exit(1)
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Printf("Error sending results: %v\n", err)
 		os.Exit(1)
@@ -372,7 +386,12 @@ func sendResultsWithAPIToken(payload []map[string]interface{}, commitUUID string
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("api-token", apiToken)
 
-	resp, err := http.DefaultClient.Do(req)
+	client, err := httpclient.New()
+	if err != nil {
+		fmt.Printf("Error creating http client: %v\n", err)
+		os.Exit(1)
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Printf("Error sending results: %v\n", err)
 		os.Exit(1)
