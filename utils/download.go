@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"codacy/cli-v2/utils/httpclient"
 	"codacy/cli-v2/utils/logger"
 	"fmt"
 	"io"
@@ -47,7 +48,10 @@ func DownloadFile(url string, destDir string) (string, error) {
 	logger.Debug("Making HTTP GET request", logrus.Fields{
 		"url": url,
 	})
-	client := &http.Client{}
+	client, err := httpclient.New(httpclient.WithTimeout(0)) // no timeout: large binaries
+	if err != nil {
+		return "", fmt.Errorf("failed to create http client: %w", err)
+	}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)

@@ -2,6 +2,7 @@ package tools
 
 import (
 	"codacy/cli-v2/domain"
+	"codacy/cli-v2/utils/httpclient"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,8 +12,9 @@ import (
 
 // FetchDefaultEnabledPatterns fetches default patterns from Codacy API for a given tool UUID
 func FetchDefaultEnabledPatterns(toolUUID string) ([]domain.PatternDefinition, error) {
-	client := &http.Client{
-		Timeout: 10 * time.Second,
+	client, err := httpclient.New(httpclient.WithTimeout(10 * time.Second))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create http client: %w", err)
 	}
 
 	// Fetch default patterns from Codacy API
