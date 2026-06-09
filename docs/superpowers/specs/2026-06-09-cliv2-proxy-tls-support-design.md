@@ -160,12 +160,31 @@ here. The Go harness gives equivalent coverage of the proxy/TLS logic without it
 (A `CODACY_API_BASE_URL` override to enable end-to-end black-box runs is a reasonable
 follow-up; see below.)
 
-**Manual matrix (documented in README, run before release):**
-- Direct run + `mitmproxy` (real corporate-MITM simulation): fails, then passes with its
-  CA via `SSL_CERT_FILE`.
-- `NO_PROXY` excluded host bypasses the proxy.
-- Launched via MCP server with proxy env set.
-- Launched via VS Code extension.
+**Real-life harness (`integration-tests/proxy-tls/run.sh`) — already written:**
+Runs the actual `cli-v2` binary through a real `mitmproxy` (real CA, real TLS
+interception) against the real `app.codacy.com`, using tokenless `cli-v2 init` as the
+network-touching command. A mitmproxy addon (`connect_logger.py`) records proxy
+traversal at CONNECT time, so traversal is detected even when the client rejects the
+cert. Four cases: A custom-CA, B no-CA-fails, C insecure, D NO_PROXY-bypass. Loopable
+via `PROXY_TLS_LOOP=N`.
+
+Baseline run (pre-implementation) confirms the gap and validates the design:
+
+| Case | Baseline result | Note |
+|------|-----------------|------|
+| A custom-CA | FAIL (`certificate is not trusted`), proxy traversed | `SSL_CERT_FILE` ignored today |
+| B no-CA | PASS (TLS correctly fails), proxy traversed | no insecure default |
+| C insecure | FAIL, proxy traversed | `CODACY_CLI_INSECURE` not implemented |
+| D NO_PROXY | PASS, proxy bypassed | env-bypass works |
+
+A and C must flip to green after implementation; that is the acceptance gate.
+
+**Confirmed on macOS:** Go does **not** auto-read `SSL_CERT_FILE` (case A fails with the
+system trust path). This validates building the root pool explicitly
+(`SystemCertPool()` + `AppendCertsFromPEM`) rather than relying on Go's implicit env
+handling.
+
+- Also run via MCP server and VS Code extension with proxy env set (manual).
 
 ## Documentation
 
