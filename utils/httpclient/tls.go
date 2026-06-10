@@ -22,12 +22,15 @@ func buildTLSConfig() (*tls.Config, error) {
 		return cfg, nil
 	}
 
-	pool, err := x509.SystemCertPool()
-	if err != nil || pool == nil {
-		pool = x509.NewCertPool()
-	}
-
+	// Only override RootCAs when a custom CA bundle is configured. Otherwise leave
+	// it nil so Go falls back to default system verification — building an explicit
+	// pool unconditionally is wasteful and, if SystemCertPool fails, would leave an
+	// empty pool that rejects every TLS handshake.
 	if path := caBundlePath(); path != "" {
+		pool, err := x509.SystemCertPool()
+		if err != nil || pool == nil {
+			pool = x509.NewCertPool()
+		}
 		pemBytes, err := os.ReadFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read CA bundle from %s (%s): %w", EnvCABundle, path, err)
@@ -35,9 +38,9 @@ func buildTLSConfig() (*tls.Config, error) {
 		if !pool.AppendCertsFromPEM(pemBytes) {
 			return nil, fmt.Errorf("no valid certificates found in CA bundle %s (%s)", EnvCABundle, path)
 		}
+		cfg.RootCAs = pool
 	}
 
-	cfg.RootCAs = pool
 	return cfg, nil
 }
 

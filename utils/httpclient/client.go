@@ -20,10 +20,11 @@ func New(opts ...Option) (*http.Client, error) {
 		return nil, err
 	}
 
-	transport := &http.Transport{
-		Proxy:           http.ProxyFromEnvironment,
-		TLSClientConfig: tlsCfg,
-	}
+	// Clone DefaultTransport to preserve Go's tuned defaults (connection pooling,
+	// idle/handshake timeouts, HTTP/2) and only override proxy + TLS.
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.Proxy = http.ProxyFromEnvironment
+	transport.TLSClientConfig = tlsCfg
 
 	return &http.Client{
 		Timeout:   o.Timeout,
