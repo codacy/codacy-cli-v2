@@ -7,9 +7,24 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestDefaultSBOMClient_UsesHTTPClientFactory(t *testing.T) {
+	saved := sbomHTTPClient
+	defer func() { sbomHTTPClient = saved }()
+
+	sbomHTTPClient = nil // force default path
+	c, err := defaultSBOMClient()
+	require.NoError(t, err)
+	require.NotNil(t, c)
+	hc, ok := c.(*http.Client)
+	require.True(t, ok)
+	assert.Equal(t, 5*time.Minute, hc.Timeout)
+}
 
 type sbomTestState struct {
 	apiToken   string

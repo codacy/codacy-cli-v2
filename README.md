@@ -262,3 +262,34 @@ export CODACY_CLI_V2_VERSION="1.0.0-main.133.3607792"
 Check the [releases](https://github.com/codacy/codacy-cli-v2/releases) page for all available versions.
 
 ---
+
+## Proxy & TLS
+
+The CLI honors standard proxy environment variables for all outbound HTTP(S):
+
+- `HTTP_PROXY` / `HTTPS_PROXY` — proxy URL for plain/HTTPS requests
+- `NO_PROXY` — comma-separated hosts that bypass the proxy
+
+### Corporate proxies with TLS interception
+
+If your proxy presents its own (MITM) certificate, point the CLI at the proxy's CA bundle so TLS verification still passes:
+
+```sh
+export SSL_CERT_FILE=/path/to/corporate-ca.pem
+```
+
+`SSL_CERT_FILE` certificates are appended to the system trust store.
+
+### Disabling TLS verification (last resort)
+
+```sh
+export CODACY_CLI_INSECURE=1
+```
+
+This disables certificate verification entirely and prints a warning. Prefer `SSL_CERT_FILE`. Insecure mode is never enabled by default.
+
+### Testing proxy/TLS behavior
+
+`integration-tests/proxy-tls/run.sh` runs the CLI through a real `mitmproxy` (`brew install mitmproxy`) against `app.codacy.com` and asserts the matrix above. Loop with `PROXY_TLS_LOOP=5 integration-tests/proxy-tls/run.sh`.
+
+---

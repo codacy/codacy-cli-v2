@@ -45,3 +45,6 @@ codacy-cli
 
 #Ignore vscode AI rules
 .github/instructions/codacy.instructions.md
+
+#Ignore superpowers docs
+docs/superpowers/

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"codacy/cli-v2/utils/httpclient"
 	"codacy/cli-v2/utils/logger"
 
 	"github.com/fatih/color"
@@ -29,12 +30,23 @@ var (
 	sbomFormat    string
 	sbomBaseURL   string
 
-	sbomHTTPClient httpDoer = &http.Client{Timeout: 5 * time.Minute}
+	// sbomHTTPClient is nil by default and resolved lazily via defaultSBOMClient.
+	// Tests may set it to a stub implementing httpDoer.
+	sbomHTTPClient httpDoer
 )
 
 // httpDoer abstracts the Do method of http.Client for testing.
 type httpDoer interface {
 	Do(req *http.Request) (*http.Response, error)
+}
+
+// defaultSBOMClient returns the injected client if set, else a factory client
+// honoring proxy/TLS configuration.
+func defaultSBOMClient() (httpDoer, error) {
+	if sbomHTTPClient != nil {
+		return sbomHTTPClient, nil
+	}
+	return httpclient.New(httpclient.WithTimeout(5 * time.Minute))
 }
 
 func init() {
@@ -239,7 +251,11 @@ func uploadSBOMToCodacy(sbomPath, imageName, tag string, params sbomUploadParams
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("api-token", params.apiToken)
 
-	resp, err := sbomHTTPClient.Do(req)
+	client, err := defaultSBOMClient()
+	if err != nil {
+		return fmt.Errorf("failed to create http client: %w", err)
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}

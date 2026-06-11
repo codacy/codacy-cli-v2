@@ -3,6 +3,8 @@ package logger
 import (
 	"codacy/cli-v2/constants"
 	"fmt"
+	"io"
+	stdlog "log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -84,6 +86,11 @@ func Initialize(logsDir string) error {
 
 	// We'll handle caller information ourselves
 	fileLogger.SetReportCaller(false)
+
+	// Mirror Go's standard logger into the same log file while preserving terminal
+	// output. User-facing warnings emitted via log.Printf/log.Fatalf — including
+	// proxy/TLS failures — otherwise reach only the terminal, never codacy-cli.log.
+	stdlog.SetOutput(io.MultiWriter(os.Stderr, lumberjackLogger))
 
 	return nil
 }

@@ -2,6 +2,7 @@ package codacyclient
 
 import (
 	"codacy/cli-v2/domain"
+	"codacy/cli-v2/utils/httpclient"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,8 +17,9 @@ const timeout = 10 * time.Second
 var CodacyApiBase = "https://app.codacy.com"
 
 func getRequest(url string, apiToken string) ([]byte, error) {
-	client := &http.Client{
-		Timeout: timeout,
+	client, err := httpclient.New(httpclient.WithTimeout(timeout))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create http client: %w", err)
 	}
 
 	req, err := http.NewRequest("GET", url, nil)
