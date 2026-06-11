@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -16,9 +17,10 @@ func buildTLSConfig() (*tls.Config, error) {
 
 	if insecureEnv() {
 		cfg.InsecureSkipVerify = true
-		fmt.Fprintln(os.Stderr,
-			"WARNING: TLS certificate verification is DISABLED (CODACY_CLI_INSECURE set). "+
-				"Traffic can be intercepted. Prefer setting SSL_CERT_FILE to your proxy's CA instead.")
+		// Routed through the standard logger so it lands in codacy-cli.log too
+		// (logger.Initialize mirrors stdlib log output into the file).
+		log.Println("WARNING: TLS certificate verification is DISABLED (CODACY_CLI_INSECURE set). " +
+			"Traffic can be intercepted. Prefer setting SSL_CERT_FILE to your proxy's CA instead.")
 		return cfg, nil
 	}
 
