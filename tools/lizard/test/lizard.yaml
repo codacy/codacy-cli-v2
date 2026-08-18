@@ -1,0 +1,43 @@
+# Test input, not a snapshot of Codacy's current Lizard patterns: it pins the pattern
+# set so the SARIF assertion doesn't depend on the live API returning the same patterns.
+patterns:
+    Lizard_ccn-medium:
+        id: Lizard_ccn-medium
+        category: CodeStyle
+        level: Warning
+        severityLevel: Warning
+        title: Cyclomatic complexity
+        description: Checks if the cyclomatic complexity of a function or logic block exceeds the medium threshold (default is 8).
+        explanation: Functions with a high cyclomatic complexity are harder to test and maintain.
+        timeToFix: 5
+        threshold: 8
+    Lizard_file-nloc-medium:
+        id: Lizard_file-nloc-medium
+        category: CodeStyle
+        level: Warning
+        severityLevel: Warning
+        title: File lines of code
+        description: This rule checks if the number of lines of code (excluding comments) in a file exceeds a medium threshold, typically 500 lines.
+        explanation: Large files usually mix several concerns and are harder to navigate.
+        timeToFix: 5
+        threshold: 500
+    Lizard_nloc-medium:
+        id: Lizard_nloc-medium
+        category: CodeStyle
+        level: Warning
+        severityLevel: Warning
+        title: Method lines of code
+        description: Checks if the number of lines of code (excluding comments) in a function exceeds a medium threshold (default 50 lines).
+        explanation: Long functions usually handle more than one responsibility.
+        timeToFix: 5
+        threshold: 50
+    Lizard_parameter-count-medium:
+        id: Lizard_parameter-count-medium
+        category: CodeStyle
+        level: Warning
+        severityLevel: Warning
+        title: Parameter count
+        description: This rule checks the number of parameters passed to a function and raises an issue if it exceeds a medium threshold, which by default is 8 parameters.
+        explanation: A wide signature is hard to call correctly.
+        timeToFix: 5
+        threshold: 8

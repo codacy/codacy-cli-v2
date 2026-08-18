@@ -5,7 +5,7 @@ confidence = 0.8
 errorCode = 0
 warningCode = 0
 
-rules = ["blank-imports", "context-as-argument", "context-keys-type", "dot-imports", "empty-block", "error-naming", "error-return", "error-strings", "errorf", "exported", "increment-decrement", "indent-error-flow", "package-comments", "range", "receiver-naming", "redefines-builtin-id", "superfluous-else", "time-naming", "unexported-return", "unreachable-code", "unused-parameter", "var-declaration", "var-naming"]
+rules = ["blank-imports", "context-as-argument", "context-keys-type", "dot-imports", "empty-block", "errorf", "error-naming", "error-return", "error-strings", "exported", "increment-decrement", "indent-error-flow", "package-comments", "range", "receiver-naming", "redefines-builtin-id", "superfluous-else", "time-naming", "unexported-return", "unreachable-code", "unused-parameter", "var-declaration", "var-naming"]
 
 [rule.blank-imports]
 
@@ -17,13 +17,13 @@ rules = ["blank-imports", "context-as-argument", "context-keys-type", "dot-impor
 
 [rule.empty-block]
 
+[rule.errorf]
+
 [rule.error-naming]
 
 [rule.error-return]
 
 [rule.error-strings]
-
-[rule.errorf]
 
 [rule.exported]
 
