@@ -1,20 +1,20 @@
 patterns:
     Lizard_ccn-minor:
         category: Complexity
-        description: Checks that the cyclomatic complexity of functions or logic blocks does not exceed a minor threshold, defaulting to 5.
+        description: Reports a Minor issue when a function's cyclomatic complexity (the number of independent decision paths through it) reaches the configured threshold, which defaults to 10. This is the earliest warning tier, flagging functions that are beginning to accumulate branching logic.
         explanation: |-
             # Minor Cyclomatic Complexity control
 
-            Check the Cyclomatic Complexity value of a function or logic block. If the threshold is not met, raise a Minor issue. The default threshold is 4.
+            Check the Cyclomatic Complexity value of a function or logic block. If the threshold is exceeded, raise a Minor issue. The default threshold is 10.
         id: Lizard_ccn-minor
         level: Info
         severityLevel: Info
-        threshold: 5
+        threshold: 10
         timeToFix: 5
-        title: Enforce Minor Cyclomatic Complexity Threshold
+        title: Limit Function Cyclomatic Complexity (Minor)
     Lizard_nloc-critical:
         category: Complexity
-        description: Checks if functions or logic blocks exceed a set maximum number of lines of code (excluding comments), defaulting to 100 lines.
+        description: Reports a Critical issue when a function's number of lines of code (excluding comments) reaches the configured threshold, which defaults to 100. A function this large almost certainly bundles many responsibilities and is very hard to understand, test, and change safely.
         explanation: |-
             # Critical NLOC control - Number of Lines of Code (without comments)
 
@@ -24,10 +24,10 @@ patterns:
         severityLevel: Error
         threshold: 100
         timeToFix: 15
-        title: Enforce Maximum Number of Lines of Code in Functions
+        title: Limit Function Length (Critical)
     Lizard_nloc-medium:
         category: Complexity
-        description: Checks if the number of lines of code (excluding comments) in a function exceeds a medium threshold (default 50 lines).
+        description: Reports a Medium issue when a function's number of lines of code (excluding comments) reaches the configured threshold, which defaults to 50. Functions this long usually handle more than one responsibility and are noticeably harder to follow.
         explanation: |-
             # Medium NLOC control - Number of Lines of Code (without comments)
 
@@ -37,4 +37,4 @@ patterns:
         severityLevel: Warning
         threshold: 50
         timeToFix: 10
-        title: Enforce Medium Number of Lines of Code (NLOC) Limit
+        title: Limit Function Length (Medium)

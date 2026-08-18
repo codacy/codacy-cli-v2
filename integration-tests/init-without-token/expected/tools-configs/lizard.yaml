@@ -1,30 +1,30 @@
 patterns:
-    Lizard_ccn-medium:
+    Lizard_ccn-minor:
         category: Complexity
-        description: Checks if the cyclomatic complexity of a function or logic block exceeds the medium threshold (default is 8).
+        description: Reports a Minor issue when a function's cyclomatic complexity (the number of independent decision paths through it) reaches the configured threshold, which defaults to 10. This is the earliest warning tier, flagging functions that are beginning to accumulate branching logic.
         explanation: |-
-            # Medium Cyclomatic Complexity control
+            # Minor Cyclomatic Complexity control
 
-            Check the Cyclomatic Complexity value of a function or logic block. If the threshold is not met, raise a Medium issue. The default threshold is 7.
-        id: Lizard_ccn-medium
-        level: Warning
-        severityLevel: Warning
-        threshold: 8
-        timeToFix: 10
-        title: Enforce Medium Cyclomatic Complexity Threshold
+            Check the Cyclomatic Complexity value of a function or logic block. If the threshold is exceeded, raise a Minor issue. The default threshold is 10.
+        id: Lizard_ccn-minor
+        level: Info
+        severityLevel: Info
+        threshold: 10
+        timeToFix: 5
+        title: Limit Function Cyclomatic Complexity (Minor)
     Lizard_file-nloc-medium:
         category: Complexity
-        description: This rule checks if the number of lines of code (excluding comments) in a file exceeds a medium threshold, typically 500 lines.
+        description: Reports a Medium issue when a file's number of lines of code (excluding comments) reaches the configured threshold, which defaults to 500. Files this large typically mix several concerns and are noticeably harder to navigate and maintain.
         explanation: ""
         id: Lizard_file-nloc-medium
         level: Warning
         severityLevel: Warning
         threshold: 500
         timeToFix: 10
-        title: Enforce Medium File Length Limit Based on Number of Lines of Code
+        title: Limit File Length (Medium)
     Lizard_nloc-medium:
         category: Complexity
-        description: Checks if the number of lines of code (excluding comments) in a function exceeds a medium threshold (default 50 lines).
+        description: Reports a Medium issue when a function's number of lines of code (excluding comments) reaches the configured threshold, which defaults to 50. Functions this long usually handle more than one responsibility and are noticeably harder to follow.
         explanation: |-
             # Medium NLOC control - Number of Lines of Code (without comments)
 
@@ -34,10 +34,10 @@ patterns:
         severityLevel: Warning
         threshold: 50
         timeToFix: 10
-        title: Enforce Medium Number of Lines of Code (NLOC) Limit
+        title: Limit Function Length (Medium)
     Lizard_parameter-count-medium:
         category: Complexity
-        description: This rule checks the number of parameters passed to a function and raises an issue if it exceeds a medium threshold, which by default is 8 parameters.
+        description: Reports a Medium issue when a function's parameter count reaches the configured threshold, which defaults to 8. A signature this wide is hard to call correctly and usually signals that the function has taken on too many responsibilities.
         explanation: |-
             # Medium Parameter count control
 
@@ -47,4 +47,4 @@ patterns:
         severityLevel: Warning
         threshold: 8
         timeToFix: 10
-        title: Enforce Medium Parameter Count Limit
+        title: Limit Function Parameter Count (Medium)
