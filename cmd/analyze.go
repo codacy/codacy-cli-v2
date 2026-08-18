@@ -336,7 +336,7 @@ func checkIfConfigExistsAndIsNeeded(toolName string, cliLocalMode bool) error {
 				"toolConfigPath": repoConfigPath,
 			})
 			return nil
-		} else if (!cliLocalMode && initFlags.ApiToken != "") || cliLocalMode {
+		} else if (!cliLocalMode && initFlags.HasRemoteToken()) || cliLocalMode {
 			if err := configsetup.CreateToolConfigurationFile(toolName, initFlags); err != nil {
 				return fmt.Errorf("failed to create config file for tool %s: %w", toolName, err)
 			}
@@ -351,7 +351,7 @@ func checkIfConfigExistsAndIsNeeded(toolName string, cliLocalMode bool) error {
 			logger.Debug("Config file not found for tool, using tool defaults", logrus.Fields{
 				"tool":           toolName,
 				"toolConfigPath": toolConfigPath,
-				"message":        "No API token provided",
+				"message":        "No API token or project token provided",
 			})
 		}
 	} else if err != nil {
@@ -507,6 +507,8 @@ var analyzeCmd = &cobra.Command{
 	
 Supports API token, provider, and repository flags to automatically fetch tool configurations from Codacy API if they don't exist locally.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		cmdutils.PrepareRemoteFlags(cmd, &initFlags)
+
 		// Validate paths before proceeding
 		if err := validatePaths(args); err != nil {
 			fmt.Println(err)
@@ -519,7 +521,7 @@ Supports API token, provider, and repository flags to automatically fetch tool c
 			log.Fatalf("Failed to get current working directory: %v", err)
 		}
 
-		cliLocalMode := len(initFlags.ApiToken) == 0
+		cliLocalMode := !initFlags.HasRemoteToken()
 
 		var toolsToRun map[string]*plugins.ToolInfo
 

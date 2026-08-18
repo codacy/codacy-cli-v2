@@ -103,7 +103,7 @@ func CreateConfigurationFilesForDiscoveredTools(discoveredToolNames map[string]s
 		currentCliMode = "local" // Default to local
 	}
 
-	if currentCliMode == "remote" && initFlags.ApiToken != "" {
+	if currentCliMode == "remote" && initFlags.HasRemoteToken() {
 		// Remote mode - create configurations based on cloud repository settings
 		return createRemoteToolConfigurationsForDiscovered(discoveredToolNames, initFlags)
 	}
@@ -200,7 +200,7 @@ func createDefaultConfigurationsForSpecificTools(discoveredToolNames map[string]
 // createToolConfigurationsForUUIDs creates tool configurations for specific UUIDs
 func createToolConfigurationsForUUIDs(uuids []string, toolsConfigDir string, initFlags domain.InitFlags) error {
 	for _, uuid := range uuids {
-		patternsConfig, err := codacyclient.GetToolPatternsConfig(initFlags, uuid, true)
+		patternsConfig, err := codacyclient.GetToolPatternsConfig(domain.InitFlags{}, uuid, true)
 		if err != nil {
 			logToolConfigWarning(uuid, "Failed to get default patterns", err)
 			continue

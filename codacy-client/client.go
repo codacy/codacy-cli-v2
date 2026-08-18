@@ -16,7 +16,7 @@ const timeout = 10 * time.Second
 // CodacyApiBase is the base URL for the Codacy API
 var CodacyApiBase = "https://app.codacy.com"
 
-func getRequest(url string, apiToken string) ([]byte, error) {
+func getRequest(url string, flags domain.InitFlags) ([]byte, error) {
 	client, err := httpclient.New(httpclient.WithTimeout(timeout))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create http client: %w", err)
@@ -27,8 +27,12 @@ func getRequest(url string, apiToken string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	if apiToken != "" {
-		req.Header.Set("api-token", apiToken)
+	// A repository token is only accepted by the repository-scoped v3 reads this client uses;
+	// when both are given the account token wins, since it works everywhere.
+	if flags.ApiToken != "" {
+		req.Header.Set("api-token", flags.ApiToken)
+	} else if flags.ProjectToken != "" {
+		req.Header.Set("project-token", flags.ProjectToken)
 	}
 
 	resp, err := client.Do(req)
@@ -58,7 +62,7 @@ func GetPage[T any](
 	initFlags domain.InitFlags,
 	parser func([]byte) ([]T, string, error),
 ) ([]T, string, error) {
-	response, err := getRequest(url, initFlags.ApiToken)
+	response, err := getRequest(url, initFlags)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get page: %w", err)
 	}
@@ -213,7 +217,7 @@ func GetRepositoryTools(initFlags domain.InitFlags) ([]domain.Tool, error) {
 		initFlags.Organization,
 		initFlags.Repository)
 
-	bodyResponse, err := getRequest(baseURL, initFlags.ApiToken)
+	bodyResponse, err := getRequest(baseURL, initFlags)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get repository tools: %w", err)
 	}
@@ -253,7 +257,7 @@ func GetRepositoryTools(initFlags domain.InitFlags) ([]domain.Tool, error) {
 func GetToolsVersions() ([]domain.Tool, error) {
 	baseURL := fmt.Sprintf("%s/api/v3/tools", CodacyApiBase)
 
-	bodyResponse, err := getRequest(baseURL, "")
+	bodyResponse, err := getRequest(baseURL, domain.InitFlags{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tool versions: %w", err)
 	}
@@ -275,7 +279,7 @@ func GetRepositoryLanguages(initFlags domain.InitFlags) ([]domain.RepositoryLang
 		initFlags.Organization,
 		initFlags.Repository)
 
-	bodyResponse, err := getRequest(baseURL, initFlags.ApiToken)
+	bodyResponse, err := getRequest(baseURL, initFlags)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get repository languages: %w", err)
 	}
@@ -293,7 +297,7 @@ func GetRepositoryLanguages(initFlags domain.InitFlags) ([]domain.RepositoryLang
 func GetLanguageTools() ([]domain.LanguageTool, error) {
 	baseURL := fmt.Sprintf("%s/api/v3/languages/tools", CodacyApiBase)
 
-	bodyResponse, err := getRequest(baseURL, "")
+	bodyResponse, err := getRequest(baseURL, domain.InitFlags{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get language tools: %w", err)
 	}
