@@ -19,7 +19,7 @@ func TestGetRequest_Success(t *testing.T) {
 	defer ts.Close()
 
 	initFlags := domain.InitFlags{ApiToken: "dummy"}
-	resp, err := getRequest(ts.URL, initFlags.ApiToken)
+	resp, err := getRequest(ts.URL, initFlags)
 	assert.NoError(t, err)
 	assert.Contains(t, string(resp), "ok")
 }
@@ -31,7 +31,7 @@ func TestGetRequest_Failure(t *testing.T) {
 	defer ts.Close()
 
 	initFlags := domain.InitFlags{ApiToken: "dummy"}
-	_, err := getRequest(ts.URL, initFlags.ApiToken)
+	_, err := getRequest(ts.URL, initFlags)
 	assert.Error(t, err)
 }
 
@@ -106,4 +106,32 @@ func TestGetToolPatternsConfig_Empty(t *testing.T) {
 	patterns, err := GetToolPatternsConfigWithCodacyAPIBase(CodacyApiBase, initFlags, "tool-uuid", true)
 	assert.NoError(t, err)
 	assert.Empty(t, patterns)
+}
+
+func TestGetRequest_AuthHeaders(t *testing.T) {
+	tests := []struct {
+		name                 string
+		flags                domain.InitFlags
+		expectedApiToken     string
+		expectedProjectToken string
+	}{
+		{"account token", domain.InitFlags{ApiToken: "api"}, "api", ""},
+		{"repository token", domain.InitFlags{ProjectToken: "project"}, "", "project"},
+		{"both tokens prefer account token", domain.InitFlags{ApiToken: "api", ProjectToken: "project"}, "api", ""},
+		{"no token", domain.InitFlags{}, "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, tt.expectedApiToken, r.Header.Get("api-token"))
+				assert.Equal(t, tt.expectedProjectToken, r.Header.Get("project-token"))
+				w.Write([]byte(`{"data": "ok"}`))
+			}))
+			defer ts.Close()
+
+			_, err := getRequest(ts.URL, tt.flags)
+			assert.NoError(t, err)
+		})
+	}
 }

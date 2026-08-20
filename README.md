@@ -63,13 +63,17 @@ Bootstraps the CLI configuration in your project's folder. This command creates 
 - **Remote mode (fetch configuration from Codacy):**
   ```bash
   codacy-cli init --api-token <token> --provider <gh|gl|bb> --organization <org> --repository <repo>
+
+  # or, with a repository token instead of an account API token
+  codacy-cli init --project-token <token> --provider <gh|gl|bb> --organization <org> --repository <repo>
   ```
 
 **Flags:**
-- `--api-token` (string): Codacy API token (optional; enables fetching remote config)
-- `--provider` (string): Provider (`gh`, `gl`, `bb`), required with `--api-token`
-- `--organization` (string): Organization name, required with `--api-token`
-- `--repository` (string): Repository name, required with `--api-token`
+- `--api-token` (string): Codacy account API token (optional; enables fetching remote config)
+- `--project-token` (string): [Codacy repository token](https://docs.codacy.com/codacy-api/api-tokens/#repository-api-tokens), alternative to `--api-token`. Falls back to the `CODACY_PROJECT_TOKEN` environment variable, but only when `--provider`, `--organization` and `--repository` are also given — the variable alone never switches a local run to remote mode
+- `--provider` (string): Provider (`gh`, `gl`, `bb`), required with `--api-token` or `--project-token`
+- `--organization` (string): Organization name, required with `--api-token` or `--project-token`
+- `--repository` (string): Repository name, required with `--api-token` or `--project-token`
 
 ### `config reset` — Reset Configuration
 
@@ -90,7 +94,7 @@ codacy-cli config reset --api-token <token> --provider <gh|gl|bb> --organization
 - Overwrites existing `.codacy/codacy.yaml` and tool configurations
 - Creates or updates `.codacy/.gitignore` file
 
-**Flags:** Same as `init` command (api-token, provider, organization, repository)
+**Flags:** Same as `init` command (api-token, project-token, provider, organization, repository)
 
 ### `config discover` — Discover Project Languages
 

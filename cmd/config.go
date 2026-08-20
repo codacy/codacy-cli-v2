@@ -51,12 +51,14 @@ var configResetCmd = &cobra.Command{
 			currentCliMode = "local" // Default to local as per existing logic
 		}
 
-		apiTokenFlagProvided := len(configResetInitFlags.ApiToken) > 0
+		// Resolve the environment fallback first, so a CI run that exports the token and
+		// passes the repository coordinates counts as an explicit remote reset below.
+		cmdutils.PrepareRemoteFlags(cmd, &configResetInitFlags)
 
-		// If current mode is 'remote', prevent resetting to local without explicit API token for a remote reset.
-		if currentCliMode == "remote" && !apiTokenFlagProvided {
+		// If current mode is 'remote', prevent resetting to local without a token for a remote reset.
+		if currentCliMode == "remote" && !configResetInitFlags.HasRemoteToken() {
 			fmt.Println("Error: Your Codacy CLI is currently configured in 'remote' (cloud) mode.")
-			fmt.Println("To reset your configuration using remote settings, you must provide the --api-token, --provider, --organization, and --repository flags.")
+			fmt.Println("To reset your configuration using remote settings, you must provide --api-token (or --project-token) together with the --provider, --organization, and --repository flags.")
 			fmt.Println("Running 'config reset' without these flags is not permitted while configured for 'remote' mode.")
 			fmt.Println("This prevents an accidental switch to a local default configuration.")
 			fmt.Println()
@@ -64,19 +66,6 @@ var configResetCmd = &cobra.Command{
 				log.Printf("Warning: Failed to display command help: %v\n", errHelp)
 			}
 			os.Exit(1)
-		}
-
-		// Validate flags: if API token is provided, other related flags must also be provided.
-		if apiTokenFlagProvided {
-			if configResetInitFlags.Provider == "" || configResetInitFlags.Organization == "" || configResetInitFlags.Repository == "" {
-				fmt.Println("Error: When using --api-token, you must also provide --provider, --organization, and --repository flags.")
-				fmt.Println("Please provide all required flags and try again.")
-				fmt.Println()
-				if errHelp := cmd.Help(); errHelp != nil {
-					log.Fatalf("Failed to display command help: %v", errHelp)
-				}
-				os.Exit(1)
-			}
 		}
 
 		codacyConfigFile := config.Config.ProjectConfigFile()
@@ -106,7 +95,7 @@ func runConfigResetLogic(cmd *cobra.Command, args []string, flags domain.InitFla
 	}
 
 	// Determine if running in local mode (no API token)
-	cliLocalMode := len(flags.ApiToken) == 0
+	cliLocalMode := !flags.HasRemoteToken()
 
 	if cliLocalMode {
 		fmt.Println()
@@ -125,7 +114,7 @@ func runConfigResetLogic(cmd *cobra.Command, args []string, flags domain.InitFla
 		}
 	} else {
 		// API token provided, fetch configuration from Codacy
-		fmt.Println("API token specified. Fetching and applying repository-specific configurations from Codacy...")
+		fmt.Println("Token specified. Fetching and applying repository-specific configurations from Codacy...")
 		if err := configsetup.BuildRepositoryConfigurationFiles(flags); err != nil {
 			log.Fatalf("Failed to build repository-specific configuration files: %v", err)
 		}
@@ -158,6 +147,8 @@ var configDiscoverCmd = &cobra.Command{
 		"In Cloud mode, tools are only added if enabled in the cloud for the repository.",
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		cmdutils.PrepareRemoteFlags(cmd, &configResetInitFlags)
+
 		discoverPath = args[0]
 
 		// Check if path exists
@@ -306,7 +297,7 @@ func updateCodacyYAMLForTools(detectedTools map[string]struct{}, codacyYAMLPath 
 
 	candidateToolsToAdd := detectedTools
 
-	if cliMode == "remote" && initFlags.ApiToken != "" {
+	if cliMode == "remote" && initFlags.HasRemoteToken() {
 		fmt.Println("Cloud mode: Verifying tools against repository settings...")
 		cloudTools, err := codacyclient.GetRepositoryTools(initFlags)
 		if err != nil {

@@ -25,6 +25,8 @@ var initCmd = &cobra.Command{
 	Short: "Bootstraps project configuration",
 	Long:  "Bootstraps project configuration, creates codacy configuration file",
 	Run: func(cmd *cobra.Command, args []string) {
+		cmdutils.PrepareRemoteFlags(cmd, &initFlags)
+
 		// Create local codacy directory first
 		if err := config.Config.CreateLocalCodacyDir(); err != nil {
 			log.Fatalf("Failed to create local codacy directory: %v", err)
@@ -36,11 +38,11 @@ var initCmd = &cobra.Command{
 			log.Fatalf("Failed to create tools-configs directory: %v", err)
 		}
 
-		cliLocalMode := len(initFlags.ApiToken) == 0
+		cliLocalMode := !initFlags.HasRemoteToken()
 
 		if cliLocalMode {
 			fmt.Println()
-			fmt.Println("ℹ️  No project token was specified, fetching codacy default configurations")
+			fmt.Println("ℹ️  No API token or project token was specified, fetching codacy default configurations")
 			noTools := []domain.Tool{}
 			err := configsetup.CreateConfigurationFiles(noTools, cliLocalMode, initFlags)
 			if err != nil {
