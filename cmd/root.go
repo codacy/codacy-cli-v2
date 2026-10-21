@@ -136,7 +136,7 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 
 ` + color.New(color.FgCyan).Sprint("Configuration Example") + ` (.codacy/codacy.yaml):
   runtimes:
-    - node@22.2.0
+    - node@22.23.4
   tools:
     - eslint@8.57.0
 

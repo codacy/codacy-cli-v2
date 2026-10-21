@@ -232,7 +232,7 @@ func TestEslintInstallationValidationLogic(t *testing.T) {
 			},
 			nodeRuntime: &plugins.RuntimeInfo{
 				Name:    "node",
-				Version: "22.2.0",
+				Version: "22.23.4",
 			},
 			isToolInstalled:        false,
 			expectInstallTriggered: true,
@@ -247,7 +247,7 @@ func TestEslintInstallationValidationLogic(t *testing.T) {
 			},
 			nodeRuntime: &plugins.RuntimeInfo{
 				Name:    "node",
-				Version: "22.2.0",
+				Version: "22.23.4",
 			},
 			isToolInstalled:        true,
 			expectInstallTriggered: false,
