@@ -159,4 +159,8 @@ func TestVenvUsesRuntime(t *testing.T) {
 	assert.True(t, venvUsesRuntime(tool, same))
 	assert.False(t, venvUsesRuntime(tool, bumped))
 	assert.False(t, venvUsesRuntime(&plugins.ToolInfo{InstallDir: t.TempDir()}, same))
+	assert.False(t, venvUsesRuntime(tool, &plugins.RuntimeInfo{Binaries: map[string]string{}}))
+
+	assert.NoError(t, os.WriteFile(filepath.Join(toolDir, "venv", "pyvenv.cfg"), []byte("version = 3.11.11\n"), 0600))
+	assert.False(t, venvUsesRuntime(tool, same))
 }
