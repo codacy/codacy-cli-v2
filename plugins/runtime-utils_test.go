@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"path"
 	"runtime"
 	"testing"
 
@@ -163,4 +164,30 @@ func TestProcessRuntimes(t *testing.T) {
 
 	assert.Equal(t, nodeBinary, nodeInfo.Binaries["node"])
 	assert.Equal(t, npmBinary, nodeInfo.Binaries["npm"])
+}
+
+func TestProcessRuntimesVersionsPythonAndGoInstallDir(t *testing.T) {
+	runtimesDir := "/test/runtimes"
+
+	for _, name := range []string{"python", "go"} {
+		oldInfo, err := processRuntime(RuntimeConfig{Name: name, Version: "1.0.0"}, runtimesDir)
+		assert.NoError(t, err)
+		newInfo, err := processRuntime(RuntimeConfig{Name: name, Version: "2.0.0"}, runtimesDir)
+		assert.NoError(t, err)
+
+		assert.Equal(t, runtimesDir+"/"+newInfo.FileName+"/"+name, newInfo.InstallDir)
+		assert.NotEqual(t, oldInfo.InstallDir, newInfo.InstallDir)
+		// The installer downloads the archive next to the extract dir; same path breaks extraction
+		assert.NotEqual(t, runtimesDir+"/"+path.Base(newInfo.DownloadURL), path.Dir(newInfo.InstallDir))
+	}
+}
+
+func TestProcessRuntimesPythonReleaseVersionOverride(t *testing.T) {
+	pinned, err := processRuntime(RuntimeConfig{Name: "python", Version: "3.11.11"}, "/test/runtimes")
+	assert.NoError(t, err)
+	assert.Contains(t, pinned.DownloadURL, "/20250317/cpython-3.11.11+20250317-")
+
+	current, err := processRuntime(RuntimeConfig{Name: "python", Version: "3.11.17"}, "/test/runtimes")
+	assert.NoError(t, err)
+	assert.Contains(t, current.DownloadURL, "/20261021/cpython-3.11.17+20261021-")
 }

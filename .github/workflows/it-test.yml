@@ -74,7 +74,7 @@ jobs:
             exit $LASTEXITCODE
           }
         env:
-          CODACY_API_TOKEN: ${{ secrets.CODACY_API_TOKEN }}
+          CODACY_CLI_TEST_PROJECT_TOKEN: ${{ secrets.CODACY_CLI_TEST_PROJECT_TOKEN }}
 
       - name: Run init tests on Unix
         if: matrix.os != 'windows-latest'
@@ -82,7 +82,7 @@ jobs:
         continue-on-error: true
         shell: bash
         env:
-          CODACY_API_TOKEN: ${{ secrets.CODACY_API_TOKEN }}
+          CODACY_CLI_TEST_PROJECT_TOKEN: ${{ secrets.CODACY_CLI_TEST_PROJECT_TOKEN }}
         run: |
           chmod +x integration-tests/run.sh
           ./integration-tests/run.sh

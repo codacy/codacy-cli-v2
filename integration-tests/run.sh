@@ -8,9 +8,9 @@ CLI_PATH="$(pwd)/cli-v2"
 echo "Script directory: $SCRIPT_DIR"
 echo "Current working directory: $(pwd)"
 
-# Check if API token is provided for token-based test
-if [ -z "$CODACY_API_TOKEN" ]; then
-  echo "Warning: CODACY_API_TOKEN environment variable is not set. Token-based test will be skipped."
+# Check if project token is provided for token-based test
+if [ -z "$CODACY_CLI_TEST_PROJECT_TOKEN" ]; then
+  echo "Warning: CODACY_CLI_TEST_PROJECT_TOKEN environment variable is not set. Token-based test will be skipped."
 fi
 
 # Function to normalize and sort configuration values
@@ -339,7 +339,7 @@ normalize_xml_config() {
       current_rule_block = "";
       current_rule_ref = "";
     }
-    /^ *<rule ref=.*>$/ { 
+    /^ *<rule ref="[^"]*">$/ { 
       # Start of a rule block with properties
       in_rule_block = 1;
       current_rule_ref = $0;
@@ -592,12 +592,12 @@ run_init_test() {
   rm -rf .codacy
   
   if [ "$use_token" = "true" ]; then
-    [ -n "$CODACY_API_TOKEN" ] || { 
-      echo "❌ Skipping token-based test: CODACY_API_TOKEN not set"
+    [ -n "$CODACY_CLI_TEST_PROJECT_TOKEN" ] || { 
+      echo "❌ Skipping token-based test: CODACY_CLI_TEST_PROJECT_TOKEN not set"
       cleanup_codacy
       return 0
     }
-    "$CLI_PATH" init --api-token "$CODACY_API_TOKEN" --organization troubleshoot-codacy-dev --provider gh --repository codacy-cli-test
+    "$CLI_PATH" init --project-token "$CODACY_CLI_TEST_PROJECT_TOKEN" --organization troubleshoot-codacy-dev --provider gh --repository codacy-cli-test
   else
     "$CLI_PATH" init
   fi

@@ -5,7 +5,7 @@ description: Go is an open source programming language that makes it easy to bui
 default_version: 1.26.10
 download:
   url_template: "https://go.dev/dl/go{{.Version}}.{{.OS}}-{{.Arch}}.tar.gz"
-  file_name_template: "go{{.Version}}.{{.OS}}-{{.Arch}}.tar.gz"
+  file_name_template: "go{{.Version}}.{{.OS}}-{{.Arch}}"
   extension:
     default: tar.gz
     windows: zip

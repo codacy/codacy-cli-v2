@@ -399,6 +399,12 @@ func (c *ConfigType) IsRuntimeInstalled(name string, runtime *plugins.RuntimeInf
 
 // IsToolInstalled checks if a tool is already installed
 func (c *ConfigType) IsToolInstalled(name string, tool *plugins.ToolInfo) bool {
+	if tool.Runtime == "python" {
+		if runtimeInfo, ok := c.Runtimes()["python"]; ok && !venvUsesRuntime(tool, runtimeInfo) {
+			return false
+		}
+	}
+
 	// If there are no binaries, check the install directory
 	if len(tool.Binaries) == 0 {
 		_, err := os.Stat(tool.InstallDir)
@@ -424,6 +430,21 @@ func (c *ConfigType) IsToolInstalled(name string, tool *plugins.ToolInfo) bool {
 		}
 	}
 
+	return false
+}
+
+// venvUsesRuntime is false when the venv was built on another runtime, so a Python bump rebuilds it.
+func venvUsesRuntime(toolInfo *plugins.ToolInfo, runtimeInfo *plugins.RuntimeInfo) bool {
+	cfg, err := os.ReadFile(filepath.Join(toolInfo.InstallDir, "venv", "pyvenv.cfg"))
+	if err != nil {
+		return false
+	}
+	runtimeBin := filepath.Dir(runtimeInfo.Binaries["python3"])
+	for _, line := range strings.Split(string(cfg), "\n") {
+		if key, value, ok := strings.Cut(line, "="); ok && strings.TrimSpace(key) == "home" {
+			return filepath.Clean(strings.TrimSpace(value)) == filepath.Clean(runtimeBin)
+		}
+	}
 	return false
 }
 

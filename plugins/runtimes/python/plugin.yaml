@@ -1,10 +1,12 @@
 name: python
 description: Python runtime
-default_version: "3.11.11"
+default_version: "3.11.17"
 download:
   url_template: "https://github.com/astral-sh/python-build-standalone/releases/download/{{.ReleaseVersion}}/cpython-{{.Version}}+{{.ReleaseVersion}}-{{.Arch}}-{{.OS}}-install_only.{{.Extension}}"
   file_name_template: "cpython-{{.Version}}+{{.ReleaseVersion}}-{{.Arch}}-{{.OS}}"
-  release_version: "20250317"
+  release_version: "20261021"
+  release_versions:
+    "3.11.11": "20250317"
   extension:
     windows: "tar.gz"
     default: "tar.gz"

@@ -145,3 +145,18 @@ func TestAddDownloadBasedTool(t *testing.T) {
 	expectedBinaryPath := filepath.Join(expectedInstallDir, "trivy")
 	assert.Equal(t, expectedBinaryPath, trivyInfo.Binaries["trivy"])
 }
+
+func TestVenvUsesRuntime(t *testing.T) {
+	toolDir := t.TempDir()
+	assert.NoError(t, os.MkdirAll(filepath.Join(toolDir, "venv"), 0755))
+	cfg := "home = /runtimes/cpython-3.11.11/python/bin\nversion = 3.11.11\n"
+	assert.NoError(t, os.WriteFile(filepath.Join(toolDir, "venv", "pyvenv.cfg"), []byte(cfg), 0644))
+	tool := &plugins.ToolInfo{InstallDir: toolDir}
+
+	same := &plugins.RuntimeInfo{Binaries: map[string]string{"python3": "/runtimes/cpython-3.11.11/python/bin/python3"}}
+	bumped := &plugins.RuntimeInfo{Binaries: map[string]string{"python3": "/runtimes/cpython-3.11.17/python/bin/python3"}}
+
+	assert.True(t, venvUsesRuntime(tool, same))
+	assert.False(t, venvUsesRuntime(tool, bumped))
+	assert.False(t, venvUsesRuntime(&plugins.ToolInfo{InstallDir: t.TempDir()}, same))
+}

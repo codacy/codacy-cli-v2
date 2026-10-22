@@ -2,7 +2,7 @@ runtimes:
     - go@1.26.10
     - java@17.0.10
     - node@22.23.4
-    - python@3.11.11
+    - python@3.11.17
 tools:
     - eslint@9.38.0
     - lizard@1.17.31

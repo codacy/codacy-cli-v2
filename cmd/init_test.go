@@ -23,7 +23,7 @@ func TestConfigFileTemplate(t *testing.T) {
 			tools: []domain.Tool{},
 			expected: []string{
 				"node@22.23.4",
-				"python@3.11.11",
+				"python@3.11.17",
 				"eslint@8.57.0",
 				"trivy@0.69.3",
 				"pylint@3.3.6",
@@ -45,7 +45,7 @@ func TestConfigFileTemplate(t *testing.T) {
 				"eslint@9.4.0",
 			},
 			notExpected: []string{
-				"python@3.11.11",
+				"python@3.11.17",
 				"pylint",
 				"pmd",
 				"trivy",
@@ -61,7 +61,7 @@ func TestConfigFileTemplate(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"python@3.11.11",
+				"python@3.11.17",
 				"pylint@3.4.0",
 			},
 			notExpected: []string{
@@ -91,7 +91,7 @@ func TestConfigFileTemplate(t *testing.T) {
 				"trivy@0.60.0",
 			},
 			notExpected: []string{
-				"python@3.11.11",
+				"python@3.11.17",
 				"pylint",
 				"pmd",
 			},
@@ -122,7 +122,7 @@ func TestConfigFileTemplate(t *testing.T) {
 			},
 			expected: []string{
 				"node@22.23.4",
-				"python@3.11.11",
+				"python@3.11.17",
 				"eslint@9.4.0",
 				"trivy@0.60.0",
 				"pylint@3.4.0",

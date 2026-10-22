@@ -30,6 +30,8 @@ type DownloadConfig struct {
 	OSArchMapping    map[string]string `yaml:"os_arch_mapping"`
 	OSMapping        map[string]string `yaml:"os_mapping"`
 	ReleaseVersion   string            `yaml:"release_version,omitempty"`
+	// Overrides release_version for versions not shipped in that release (e.g. older pinned Python)
+	ReleaseVersions map[string]string `yaml:"release_versions,omitempty"`
 }
 
 // Binary represents a binary executable provided by the runtime or tool
