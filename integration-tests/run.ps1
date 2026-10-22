@@ -13,9 +13,9 @@ Write-Host "OS: $([System.Environment]::OSVersion.Platform)"
 Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)"
 Write-Host "==============================`n"
 
-# Check if API token is provided for token-based test
-if (-not $env:CODACY_API_TOKEN) {
-    Write-Host "Warning: CODACY_API_TOKEN environment variable is not set. Token-based test will be skipped."
+# Check if project token is provided for token-based test
+if (-not $env:CODACY_CLI_TEST_PROJECT_TOKEN) {
+    Write-Host "Warning: CODACY_CLI_TEST_PROJECT_TOKEN environment variable is not set. Token-based test will be skipped."
 }
 
 # Function to normalize and sort configuration values
@@ -460,12 +460,12 @@ function Run-InitTest {
         }
         
         if ($useToken) {
-            if (-not $env:CODACY_API_TOKEN) {
-                Write-Host "❌ Skipping token-based test: CODACY_API_TOKEN not set"
+            if (-not $env:CODACY_CLI_TEST_PROJECT_TOKEN) {
+                Write-Host "❌ Skipping token-based test: CODACY_CLI_TEST_PROJECT_TOKEN not set"
                 return
             }
             Write-Host "Running CLI with token..."
-            & $CLI_PATH init --api-token $env:CODACY_API_TOKEN --organization troubleshoot-codacy-dev --provider gh --repository codacy-cli-test
+            & $CLI_PATH init --project-token $env:CODACY_CLI_TEST_PROJECT_TOKEN --organization troubleshoot-codacy-dev --provider gh --repository codacy-cli-test
         } else {
             Write-Host "Running CLI without token..."
             & $CLI_PATH init
