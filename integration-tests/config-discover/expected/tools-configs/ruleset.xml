@@ -89,7 +89,6 @@
     <rule ref="category/java/errorprone.xml/AvoidInstanceofChecksInCatchClause"/>
     <rule ref="category/java/errorprone.xml/AvoidMultipleUnaryOperators"/>
     <rule ref="category/java/errorprone.xml/BrokenNullCheck"/>
-    <rule ref="category/java/errorprone.xml/CheckSkipResult"/>
     <rule ref="category/java/errorprone.xml/CompareObjectsWithEquals">
         <properties>
             <property name="typesThatCompareByReference" value="java.lang.Enum,java.lang.Class"/>

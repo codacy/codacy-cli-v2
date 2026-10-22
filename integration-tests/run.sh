@@ -8,9 +8,9 @@ CLI_PATH="$(pwd)/cli-v2"
 echo "Script directory: $SCRIPT_DIR"
 echo "Current working directory: $(pwd)"
 
-# Check if API token is provided for token-based test
-if [ -z "$CODACY_API_TOKEN" ]; then
-  echo "Warning: CODACY_API_TOKEN environment variable is not set. Token-based test will be skipped."
+# Check if project token is provided for token-based test
+if [ -z "$CODACY_CLI_TEST_PROJECT_TOKEN" ]; then
+  echo "Warning: CODACY_CLI_TEST_PROJECT_TOKEN environment variable is not set. Token-based test will be skipped."
 fi
 
 # Function to normalize and sort configuration values
@@ -174,7 +174,7 @@ normalize_eslint_config() {
       inRules = 1; 
       next 
     }
-    inRules && /^\s*\}/ { 
+    inRules && /^[[:space:]]*\}/ { 
       # Print collected rules in sorted order using pipe to sort
       for (rule in rules) {
         print rules[rule] | "sort"
@@ -201,11 +201,11 @@ normalize_eslint_config() {
         if (match(obj, /^\{.*\}$/)) {
           # Remove braces and split by comma
           content = substr(obj, 2, length(obj)-2)
-          gsub(/^\s+|\s+$/, "", content)  # trim spaces
+          gsub(/^[[:space:]]+|[[:space:]]+$/, "", content)  # trim spaces
           
           if (content != "") {
             # Split by comma (simple approach)
-            n = split(content, parts, /,\s*/)
+            n = split(content, parts, /,[[:space:]]*/)
             # Sort the parts
             for (i = 1; i <= n; i++) {
               for (j = i+1; j <= n; j++) {
@@ -249,7 +249,7 @@ normalize_toml_config() {
         array_content = substr($2, start+1, end-start-1)
         if (array_content) {
           # Split and sort values
-          n = split(array_content, values, /,\s*/)
+          n = split(array_content, values, /,[[:space:]]*/)
           # Sort using a simple bubble sort since asort is not available
           for (i = 1; i <= n; i++) {
             for (j = i+1; j <= n; j++) {
@@ -339,7 +339,7 @@ normalize_xml_config() {
       current_rule_block = "";
       current_rule_ref = "";
     }
-    /^ *<rule ref=.*>$/ { 
+    /^ *<rule ref="[^"]*">$/ { 
       # Start of a rule block with properties
       in_rule_block = 1;
       current_rule_ref = $0;
@@ -471,8 +471,8 @@ validate_languages_config_contains_all_tools() {
   codacy_tools=$(awk '
     /^tools:/ { in_tools=1; next }
     /^[a-zA-Z][^:]*:/ { in_tools=0 }
-    in_tools && /^\s*-\s+[a-zA-Z0-9_-]+@/ { 
-      gsub(/^\s*-\s*/, ""); 
+    in_tools && /^[[:space:]]*-[[:space:]]+[a-zA-Z0-9_-]+@/ { 
+      gsub(/^[[:space:]]*-[[:space:]]*/, ""); 
       gsub(/@.*$/, ""); 
       print 
     }
@@ -592,12 +592,12 @@ run_init_test() {
   rm -rf .codacy
   
   if [ "$use_token" = "true" ]; then
-    [ -n "$CODACY_API_TOKEN" ] || { 
-      echo "❌ Skipping token-based test: CODACY_API_TOKEN not set"
+    [ -n "$CODACY_CLI_TEST_PROJECT_TOKEN" ] || { 
+      echo "❌ Skipping token-based test: CODACY_CLI_TEST_PROJECT_TOKEN not set"
       cleanup_codacy
       return 0
     }
-    "$CLI_PATH" init --api-token "$CODACY_API_TOKEN" --organization troubleshoot-codacy-dev --provider gh --repository codacy-cli-test
+    "$CLI_PATH" init --project-token "$CODACY_CLI_TEST_PROJECT_TOKEN" --organization troubleshoot-codacy-dev --provider gh --repository codacy-cli-test
   else
     "$CLI_PATH" init
   fi
