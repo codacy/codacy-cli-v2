@@ -190,4 +190,6 @@ func TestProcessRuntimesPythonReleaseVersionOverride(t *testing.T) {
 	current, err := processRuntime(RuntimeConfig{Name: "python", Version: "3.11.17"}, "/test/runtimes")
 	assert.NoError(t, err)
 	assert.Contains(t, current.DownloadURL, "/20261021/cpython-3.11.17+20261021-")
+	// A release-only bump must change the install dir too, or it never re-downloads
+	assert.Contains(t, current.InstallDir, "/cpython-3.11.17+20261021-")
 }

@@ -174,7 +174,7 @@ normalize_eslint_config() {
       inRules = 1; 
       next 
     }
-    inRules && /^\s*\}/ { 
+    inRules && /^[[:space:]]*\}/ { 
       # Print collected rules in sorted order using pipe to sort
       for (rule in rules) {
         print rules[rule] | "sort"
@@ -201,11 +201,11 @@ normalize_eslint_config() {
         if (match(obj, /^\{.*\}$/)) {
           # Remove braces and split by comma
           content = substr(obj, 2, length(obj)-2)
-          gsub(/^\s+|\s+$/, "", content)  # trim spaces
+          gsub(/^[[:space:]]+|[[:space:]]+$/, "", content)  # trim spaces
           
           if (content != "") {
             # Split by comma (simple approach)
-            n = split(content, parts, /,\s*/)
+            n = split(content, parts, /,[[:space:]]*/)
             # Sort the parts
             for (i = 1; i <= n; i++) {
               for (j = i+1; j <= n; j++) {
@@ -249,7 +249,7 @@ normalize_toml_config() {
         array_content = substr($2, start+1, end-start-1)
         if (array_content) {
           # Split and sort values
-          n = split(array_content, values, /,\s*/)
+          n = split(array_content, values, /,[[:space:]]*/)
           # Sort using a simple bubble sort since asort is not available
           for (i = 1; i <= n; i++) {
             for (j = i+1; j <= n; j++) {
@@ -471,8 +471,8 @@ validate_languages_config_contains_all_tools() {
   codacy_tools=$(awk '
     /^tools:/ { in_tools=1; next }
     /^[a-zA-Z][^:]*:/ { in_tools=0 }
-    in_tools && /^\s*-\s+[a-zA-Z0-9_-]+@/ { 
-      gsub(/^\s*-\s*/, ""); 
+    in_tools && /^[[:space:]]*-[[:space:]]+[a-zA-Z0-9_-]+@/ { 
+      gsub(/^[[:space:]]*-[[:space:]]*/, ""); 
       gsub(/@.*$/, ""); 
       print 
     }

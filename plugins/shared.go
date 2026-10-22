@@ -128,13 +128,14 @@ func GetMajorVersion(version string) string {
 }
 
 // GetFileName generates the filename based on the template
-func GetFileName(fileNameTemplate string, version string, mappedArch string, goos string) string {
+func GetFileName(fileNameTemplate string, version string, mappedArch string, goos string, releaseVersion string) string {
 	// Prepare template data
 	data := templateData{
-		Version:      version,
-		MajorVersion: GetMajorVersion(version),
-		OS:           goos,
-		Arch:         mappedArch,
+		Version:        version,
+		MajorVersion:   GetMajorVersion(version),
+		OS:             goos,
+		Arch:           mappedArch,
+		ReleaseVersion: releaseVersion,
 	}
 
 	// Execute template substitution for filename

@@ -148,9 +148,9 @@ func TestAddDownloadBasedTool(t *testing.T) {
 
 func TestVenvUsesRuntime(t *testing.T) {
 	toolDir := t.TempDir()
-	assert.NoError(t, os.MkdirAll(filepath.Join(toolDir, "venv"), 0755))
+	assert.NoError(t, os.MkdirAll(filepath.Join(toolDir, "venv"), 0700))
 	cfg := "home = /runtimes/cpython-3.11.11/python/bin\nversion = 3.11.11\n"
-	assert.NoError(t, os.WriteFile(filepath.Join(toolDir, "venv", "pyvenv.cfg"), []byte(cfg), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(toolDir, "venv", "pyvenv.cfg"), []byte(cfg), 0600))
 	tool := &plugins.ToolInfo{InstallDir: toolDir}
 
 	same := &plugins.RuntimeInfo{Binaries: map[string]string{"python3": "/runtimes/cpython-3.11.11/python/bin/python3"}}

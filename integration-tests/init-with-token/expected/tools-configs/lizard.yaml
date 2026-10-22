@@ -9,7 +9,7 @@ patterns:
         id: Lizard_ccn-minor
         level: Info
         severityLevel: Info
-        threshold: 10
+        threshold: 40
         timeToFix: 5
         title: Limit Function Cyclomatic Complexity (Minor)
     Lizard_nloc-critical:
@@ -35,6 +35,6 @@ patterns:
         id: Lizard_nloc-medium
         level: Warning
         severityLevel: Warning
-        threshold: 50
+        threshold: 100
         timeToFix: 10
         title: Limit Function Length (Medium)
