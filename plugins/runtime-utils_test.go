@@ -193,3 +193,10 @@ func TestProcessRuntimesPythonReleaseVersionOverride(t *testing.T) {
 	// A release-only bump must change the install dir too, or it never re-downloads
 	assert.Contains(t, current.InstallDir, "/cpython-3.11.17+20261021-")
 }
+
+func TestGoDownloadURLUsesWindowsZip(t *testing.T) {
+	cfg, err := GetPluginManager().GetRuntimeConfig("go")
+	assert.NoError(t, err)
+	url := GetDownloadURL(cfg.Download.URLTemplate, "", "1.26.10", "amd64", "windows", GetExtension(cfg.Download.Extension, "windows"), "")
+	assert.Equal(t, "https://go.dev/dl/go1.26.10.windows-amd64.zip", url)
+}
