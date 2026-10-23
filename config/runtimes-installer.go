@@ -118,20 +118,25 @@ func downloadAndExtractRuntime(runtimeInfo *plugins.RuntimeInfo) error {
 	}
 	defer file.Close()
 
+	extractDir := filepath.Dir(runtimeInfo.InstallDir)
+	if err := os.MkdirAll(extractDir, constants.DefaultDirPerms); err != nil {
+		return fmt.Errorf("failed to create extract directory: %w", err)
+	}
+
 	// Extract based on file extension
 	logger.Debug("Extracting runtime", logrus.Fields{
 		"runtime":          runtimeInfo.Name,
 		"version":          runtimeInfo.Version,
 		"fileName":         fileName,
-		"extractDirectory": runtimesDir,
+		"extractDirectory": extractDir,
 	})
 
 	if strings.HasSuffix(fileName, ".zip") {
-		err = utils.ExtractZip(file.Name(), runtimesDir)
+		err = utils.ExtractZip(file.Name(), extractDir)
 	} else if strings.HasSuffix(fileName, ".tar.xz") || strings.HasSuffix(fileName, ".txz") {
-		err = utils.ExtractTarXz(file, runtimesDir)
+		err = utils.ExtractTarXz(file, extractDir)
 	} else {
-		err = utils.ExtractTarGz(file, runtimesDir)
+		err = utils.ExtractTarGz(file, extractDir)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to extract runtime: %w", err)

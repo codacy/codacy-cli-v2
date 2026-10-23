@@ -417,7 +417,7 @@ func installPythonTool(name string, toolInfo *plugins.ToolInfo) error {
 		"venvDir": filepath.Join(toolInfo.InstallDir, "venv"),
 	})
 
-	cmd := exec.Command(pythonBinary, "-m", "venv", filepath.Join(toolInfo.InstallDir, "venv"))
+	cmd := exec.Command(pythonBinary, "-m", "venv", "--clear", filepath.Join(toolInfo.InstallDir, "venv"))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to create venv: %s\nError: %w", string(output), err)

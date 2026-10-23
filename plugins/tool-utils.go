@@ -174,7 +174,7 @@ func ProcessTools(configs []ToolConfig, toolDir string, runtimes map[string]*Run
 			info.Extension = extension
 
 			// Get the filename using the template
-			fileName := GetFileName(pluginConfig.Download.FileNameTemplate, config.Version, mappedArch, runtime.GOOS)
+			fileName := GetFileName(pluginConfig.Download.FileNameTemplate, config.Version, mappedArch, runtime.GOOS, pluginConfig.Download.ReleaseVersion)
 			info.FileName = fileName
 
 			// Get the download URL using the template

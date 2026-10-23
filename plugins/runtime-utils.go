@@ -43,24 +43,26 @@ func processRuntime(config RuntimeConfig, runtimesDir string) (*RuntimeInfo, err
 	// Get the appropriate extension
 	extension := GetExtension(pluginConfig.Download.Extension, runtime.GOOS)
 
-	// Get the filename using the template
-	fileName := GetFileName(pluginConfig.Download.FileNameTemplate, config.Version, mappedArch, runtime.GOOS)
+	releaseVersion := pluginConfig.Download.ReleaseVersion
+	if r, ok := pluginConfig.Download.ReleaseVersions[config.Version]; ok {
+		releaseVersion = r
+	}
+
+	fileName := GetFileName(pluginConfig.Download.FileNameTemplate, config.Version, mappedArch, runtime.GOOS, releaseVersion)
 
 	customURLConfig, hasCustomURL := getCustomDownloadURL(pluginConfig.Download.CustomURLConfig, runtime.GOOS)
 	// Get the download URL using the template
 	downloadURL := ""
 	if hasCustomURL {
-		downloadURL = GetDownloadURL(customURLConfig, fileName, config.Version, mappedArch, mappedOS, extension, pluginConfig.Download.ReleaseVersion)
+		downloadURL = GetDownloadURL(customURLConfig, fileName, config.Version, mappedArch, mappedOS, extension, releaseVersion)
 	} else {
-		downloadURL = GetDownloadURL(pluginConfig.Download.URLTemplate, fileName, config.Version, mappedArch, mappedOS, extension, pluginConfig.Download.ReleaseVersion)
+		downloadURL = GetDownloadURL(pluginConfig.Download.URLTemplate, fileName, config.Version, mappedArch, mappedOS, extension, releaseVersion)
 	}
 
-	// For Python, we want to use a simpler directory structure
+	// Python and Go archives unpack to a fixed folder; nest it so a version bump re-downloads.
 	var installDir string
-	if config.Name == "python" {
-		installDir = path.Join(runtimesDir, "python")
-	} else if config.Name == "go" {
-		installDir = path.Join(runtimesDir, "go")
+	if config.Name == "python" || config.Name == "go" {
+		installDir = path.Join(runtimesDir, fileName, config.Name)
 	} else {
 		installDir = path.Join(runtimesDir, fileName)
 	}
