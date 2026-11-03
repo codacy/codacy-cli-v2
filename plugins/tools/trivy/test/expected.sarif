@@ -34,7 +34,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2021-33203\nSeverity: MEDIUM\nFixed Version: 2.2.24, 3.1.12, 3.2.4\nLink: [CVE-2021-33203](https://avd.aquasec.com/nvd/cve-2021-33203)"
           },
           "ruleId": "CVE-2021-33203",
-          "ruleIndex": 25
+          "ruleIndex": 26
         },
         {
           "level": "error",
@@ -61,7 +61,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2022-36359\nSeverity: HIGH\nFixed Version: 3.2.15, 4.0.7\nLink: [CVE-2022-36359](https://avd.aquasec.com/nvd/cve-2022-36359)"
           },
           "ruleId": "CVE-2022-36359",
-          "ruleIndex": 21
+          "ruleIndex": 22
         },
         {
           "level": "error",
@@ -115,7 +115,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2024-45231\nSeverity: MEDIUM\nFixed Version: 5.1.1, 5.0.9, 4.2.16\nLink: [CVE-2024-45231](https://avd.aquasec.com/nvd/cve-2024-45231)"
           },
           "ruleId": "CVE-2024-45231",
-          "ruleIndex": 26
+          "ruleIndex": 27
         },
         {
           "level": "warning",
@@ -142,7 +142,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2025-48432\nSeverity: MEDIUM\nFixed Version: 5.2.2, 5.1.10, 4.2.22\nLink: [CVE-2025-48432](https://avd.aquasec.com/nvd/cve-2025-48432)"
           },
           "ruleId": "CVE-2025-48432",
-          "ruleIndex": 27
+          "ruleIndex": 28
         },
         {
           "level": "error",
@@ -169,7 +169,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2025-57833\nSeverity: HIGH\nFixed Version: 4.2.24, 5.1.12, 5.2.6\nLink: [CVE-2025-57833](https://avd.aquasec.com/nvd/cve-2025-57833)"
           },
           "ruleId": "CVE-2025-57833",
-          "ruleIndex": 22
+          "ruleIndex": 23
         },
         {
           "level": "note",
@@ -223,7 +223,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2025-64458\nSeverity: HIGH\nFixed Version: 5.2.8, 5.1.14, 4.2.26\nLink: [CVE-2025-64458](https://avd.aquasec.com/nvd/cve-2025-64458)"
           },
           "ruleId": "CVE-2025-64458",
-          "ruleIndex": 23
+          "ruleIndex": 24
         },
         {
           "level": "error",
@@ -250,7 +250,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2025-64459\nSeverity: CRITICAL\nFixed Version: 5.2.8, 5.1.14, 4.2.26\nLink: [CVE-2025-64459](https://avd.aquasec.com/nvd/cve-2025-64459)"
           },
           "ruleId": "CVE-2025-64459",
-          "ruleIndex": 20
+          "ruleIndex": 21
         },
         {
           "level": "warning",
@@ -388,6 +388,33 @@
           "ruleIndex": 2
         },
         {
+          "level": "warning",
+          "locations": [
+            {
+              "message": {
+                "text": "package-lock.json: minimatch@3.1.2"
+              },
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package-lock.json",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "endColumn": 1,
+                  "endLine": 1101,
+                  "startColumn": 1,
+                  "startLine": 1091
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Package: minimatch\nInstalled Version: 3.1.2\nVulnerability CVE-2026-118764\nSeverity: MEDIUM\nFixed Version: 11.0.1\nLink: [CVE-2026-118764](https://avd.aquasec.com/nvd/cve-2026-118764)"
+          },
+          "ruleId": "CVE-2026-118764",
+          "ruleIndex": 20
+        },
+        {
           "level": "error",
           "locations": [
             {
@@ -466,7 +493,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2026-15307\nSeverity: HIGH\nFixed Version: 5.2.17, 6.0.8\nLink: [CVE-2026-15307](https://avd.aquasec.com/nvd/cve-2026-15307)"
           },
           "ruleId": "CVE-2026-15307",
-          "ruleIndex": 24
+          "ruleIndex": 25
         },
         {
           "level": "warning",
@@ -493,7 +520,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2026-15830\nSeverity: MEDIUM\nFixed Version: 5.2.17, 6.0.8, 6.1.1\nLink: [CVE-2026-15830](https://avd.aquasec.com/nvd/cve-2026-15830)"
           },
           "ruleId": "CVE-2026-15830",
-          "ruleIndex": 28
+          "ruleIndex": 29
         },
         {
           "level": "error",
@@ -682,7 +709,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2026-48587\nSeverity: LOW\nFixed Version: 5.2.15, 6.0.6\nLink: [CVE-2026-48587](https://avd.aquasec.com/nvd/cve-2026-48587)"
           },
           "ruleId": "CVE-2026-48587",
-          "ruleIndex": 31
+          "ruleIndex": 32
         },
         {
           "level": "note",
@@ -709,7 +736,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2026-48588\nSeverity: LOW\nFixed Version: 5.2.16, 6.0.7\nLink: [CVE-2026-48588](https://avd.aquasec.com/nvd/cve-2026-48588)"
           },
           "ruleId": "CVE-2026-48588",
-          "ruleIndex": 32
+          "ruleIndex": 33
         },
         {
           "level": "warning",
@@ -763,7 +790,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2026-53877\nSeverity: MEDIUM\nFixed Version: 5.2.16, 6.0.7\nLink: [CVE-2026-53877](https://avd.aquasec.com/nvd/cve-2026-53877)"
           },
           "ruleId": "CVE-2026-53877",
-          "ruleIndex": 29
+          "ruleIndex": 30
         },
         {
           "level": "warning",
@@ -790,7 +817,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2026-53878\nSeverity: MEDIUM\nFixed Version: 5.2.16, 6.0.7\nLink: [CVE-2026-53878](https://avd.aquasec.com/nvd/cve-2026-53878)"
           },
           "ruleId": "CVE-2026-53878",
-          "ruleIndex": 30
+          "ruleIndex": 31
         },
         {
           "level": "error",
@@ -844,7 +871,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2026-6873\nSeverity: LOW\nFixed Version: 5.2.15, 6.0.6\nLink: [CVE-2026-6873](https://avd.aquasec.com/nvd/cve-2026-6873)"
           },
           "ruleId": "CVE-2026-6873",
-          "ruleIndex": 33
+          "ruleIndex": 34
         },
         {
           "level": "error",
@@ -898,7 +925,7 @@
             "text": "Package: django\nInstalled Version: 1.11.29\nVulnerability CVE-2026-8404\nSeverity: LOW\nFixed Version: 5.2.15, 6.0.6\nLink: [CVE-2026-8404](https://avd.aquasec.com/nvd/cve-2026-8404)"
           },
           "ruleId": "CVE-2026-8404",
-          "ruleIndex": 34
+          "ruleIndex": 35
         },
         {
           "level": "error",
