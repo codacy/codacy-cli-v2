@@ -1,3 +1,10 @@
+> [!WARNING]
+> **Codacy CLI v2 is deprecated and no longer receives new features.** Use the
+> [Codacy Analysis CLI](https://docs.codacy.com/codacy-analysis-cli/) instead
+> (`npm i -g @codacy/analysis-cli`). It covers local analysis, uploading results to
+> Codacy, container scanning (`container-scan`) and image SBOM upload (`upload-sbom`).
+> In GitHub Actions, use [`codacy/analysis-cli-action`](https://github.com/codacy/analysis-cli-action).
+
 # Codacy CLI v2
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/8cae070168cf488db82478ba6505a005)](https://app.codacy.com/gh/codacy/codacy-cli-v2/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade) [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/8cae070168cf488db82478ba6505a005)](https://app.codacy.com/gh/codacy/codacy-cli-v2/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
